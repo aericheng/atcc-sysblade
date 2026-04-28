@@ -46,7 +46,9 @@ data/processed/**
 *.pt
 *.pth
 *.onnx
+*.onnx.data
 *.ckpt
+models/
 mlruns/
 wandb/
 lightning_logs/
