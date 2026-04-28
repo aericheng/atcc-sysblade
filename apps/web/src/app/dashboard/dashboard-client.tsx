@@ -189,8 +189,10 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                 </div>
               ))}
               <div className="pt-3 mt-3 border-t border-border text-xs text-muted leading-relaxed">
-                Buckets driven by Battery Twin SOH inference. Anything <span className="text-foreground">&lt; 85 %</span> goes
-                into the Tier 3 replacement queue.
+                Buckets driven by Battery Twin SOH inference. Tier-3 queue admits any device with
+                <span className="text-foreground"> SOH &lt; 85 %</span> <em>or</em>
+                <span className="text-foreground"> RUL &lt; 800 cycles</span> — so a few healthy-SOH
+                devices show up on the queue once their RUL prediction tightens.
               </div>
             </CardBody>
           </Card>
