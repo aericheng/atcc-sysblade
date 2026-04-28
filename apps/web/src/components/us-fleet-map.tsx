@@ -8,6 +8,8 @@ import {
   Marker,
   ZoomableGroup,
 } from "react-simple-maps";
+// Bundled at build time so we don't have to think about basePath / CDN.
+import usStates from "../../public/us-states.json";
 
 interface Device {
   id: string;
@@ -52,7 +54,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
         style={{ width: "100%", height: "100%" }}
       >
         <ZoomableGroup center={[-96, 38]} zoom={1}>
-          <Geographies geography="/us-states.json">
+          <Geographies geography={usStates as object}>
             {({ geographies }) =>
               geographies.map((geo) => (
                 <Geography
