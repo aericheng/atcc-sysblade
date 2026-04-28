@@ -1,0 +1,188 @@
+import Link from "next/link";
+import { Card, CardBody } from "@/components/ui/card";
+import { Activity, BarChart3, Cpu, ArrowRight, Zap } from "lucide-react";
+
+export default function HomePage() {
+  return (
+    <div className="space-y-24">
+      {/* Hero */}
+      <section className="pt-12 pb-4">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs text-muted mb-6">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
+          OCP Mt. Diablo 400 ready · LFP + LIC hybrid · 2026 Q4 EVT
+        </div>
+        <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05] max-w-4xl text-balance">
+          Hybrid energy buffer for{" "}
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            AI-rack millisecond transients
+          </span>
+        </h1>
+        <p className="mt-6 max-w-2xl text-lg text-muted leading-relaxed">
+          Sysblade HyperBuffer combines LFP cells with lithium-ion capacitors and an embedded battery digital twin to absorb the ±30 % power
+          swings GB200/GB300 racks impose on the grid — and turn that data into a SaaS service for the operators who need it.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/twin"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition"
+          >
+            See the physics demo <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/tco"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-2.5 text-sm font-medium hover:bg-surface transition"
+          >
+            Run TCO calculator
+          </Link>
+        </div>
+      </section>
+
+      {/* Headline numbers from PyBaMM scenarios */}
+      <section>
+        <div className="text-xs uppercase tracking-[0.2em] text-muted mb-4">
+          Headline results · PyBaMM DFN simulation
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[
+            { v: "3.1×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
+            { v: "5.7×", label: "Lower power-stress to LFP after LIC split", tone: "from-accent to-primary" },
+            { v: "10 yr", label: "BBU service life at >80 % SOH (Severson-fit)", tone: "from-primary to-accent" },
+            { v: "33 %", label: "Customer 10-year TCO reduction vs traditional BBU", tone: "from-accent to-primary" },
+          ].map((s) => (
+            <Card key={s.label}>
+              <CardBody>
+                <div className={`text-4xl md:text-5xl font-semibold tabular-nums bg-gradient-to-br ${s.tone} bg-clip-text text-transparent`}>
+                  {s.v}
+                </div>
+                <div className="text-sm text-muted mt-2 leading-relaxed">{s.label}</div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Three pillars */}
+      <section className="space-y-8">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-muted mb-3">Software platform</div>
+          <h2 className="text-3xl font-semibold tracking-tight max-w-2xl">
+            Hardware-Defined, Software-Augmented.
+          </h2>
+          <p className="mt-3 text-muted max-w-2xl">
+            We don&rsquo;t sell a cheaper BBU &mdash; we sell the only rack-level system that simultaneously solves
+            millisecond transients, the HVDC transition, and ops-side observability.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <PillarCard
+            href="/twin"
+            icon={<Cpu className="h-5 w-5" />}
+            kicker="01"
+            title="Battery Digital Twin"
+            body="PyBaMM DFN physics + LSTM RUL trained on Severson 2019 (124 LFP cells). MAPE target <10 %; cloud trains, edge (STM32N6) infers, OTA updates weights."
+            cta="Run physics simulation"
+          />
+          <PillarCard
+            href="/tco"
+            icon={<BarChart3 className="h-5 w-5" />}
+            kicker="02"
+            title="TCO Calculator"
+            body="B2B lead-gen: feed your rack count, electricity price, and current BBU spec — get 10-year TCO, ROI, and CO₂ savings out the other side. Drives LinkedIn ad funnel."
+            cta="Calculate savings"
+          />
+          <PillarCard
+            href="/dashboard"
+            icon={<Activity className="h-5 w-5" />}
+            kicker="03"
+            title="Fleet Health Dashboard"
+            body="Visualizes the three service tiers — real-time monitoring, proactive maintenance, predictive ops — across a 1,000-device synthetic fleet weighted to Texas + Virginia."
+            cta="Open dashboard"
+          />
+        </div>
+      </section>
+
+      {/* The competitive angle */}
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-muted mb-3">Why now</div>
+            <h2 className="text-3xl font-semibold tracking-tight">The transient gap nobody is filling.</h2>
+            <p className="mt-4 text-muted leading-relaxed">
+              Microsoft Azure published the underlying problem (arXiv 2508.14318): LLM-training compute&ndash;sync cycles
+              swing rack power &plusmn;30 % over 1&ndash;50 ms. NVIDIA put capacitors inside the GB300 PSU; we put a
+              hybrid LFP+LIC buffer at the rack level so existing ORV3 deployments don&rsquo;t need PSU swaps.
+            </p>
+            <p className="mt-4 text-muted leading-relaxed">
+              Schneider &times; NVIDIA chase 800 V hyperscalers. Vertiv chases facility-level UPS. The middle tier &mdash;
+              CoreWeave, Lambda, Equinix, Digital Realty &mdash; is left on hardware that wasn&rsquo;t designed for AI
+              workloads.
+            </p>
+          </div>
+          <Card>
+            <CardBody className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-warning">
+                <Zap className="h-4 w-4" />
+                The 5 kJ / rack rule
+              </div>
+              <p className="text-sm text-muted leading-relaxed">
+                One GB200 NVL72 rack pulls <span className="text-foreground font-medium">120 kW</span>; a &plusmn;30 %
+                swing over 100 ms costs about <span className="text-foreground font-medium">3.6 kJ</span> in
+                buffered energy. With 30 % margin and back-to-back triggers, the design target is{" "}
+                <span className="text-foreground font-medium">~5 kJ/rack</span>.
+              </p>
+              <p className="text-sm text-muted leading-relaxed">
+                We over-provision to <span className="text-foreground font-medium">345 kJ</span> by using 2&times; off-the-shelf
+                Eaton XLR 48 V LIC modules. The 69&times; headroom is deliberate: lower ESR, low DoD (1.5 %) extends LIC life
+                to 10⁷ cycles, N+1 redundancy, and avoids a USD 50k+ NRE for a custom 5 kJ pack.
+              </p>
+              <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
+                <Mini label="Need" value="5 kJ" />
+                <Mini label="Configured" value="345 kJ" />
+                <Mini label="Headroom" value="69×" tone="text-success" />
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PillarCard({
+  href, icon, kicker, title, body, cta,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  kicker: string;
+  title: string;
+  body: string;
+  cta: string;
+}) {
+  return (
+    <Link href={href} className="group block">
+      <Card className="h-full transition-colors group-hover:border-primary/40">
+        <CardBody className="space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted font-mono tracking-widest">{kicker}</span>
+            <span className="text-muted group-hover:text-primary transition-colors">{icon}</span>
+          </div>
+          <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+          <p className="text-sm text-muted leading-relaxed">{body}</p>
+          <div className="pt-2 inline-flex items-center gap-1 text-sm text-primary group-hover:gap-2 transition-all">
+            {cta} <ArrowRight className="h-3.5 w-3.5" />
+          </div>
+        </CardBody>
+      </Card>
+    </Link>
+  );
+}
+
+function Mini({ label, value, tone = "text-foreground" }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="rounded-md border border-border bg-background/40 p-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted">{label}</div>
+      <div className={`text-base font-semibold tabular-nums ${tone}`}>{value}</div>
+    </div>
+  );
+}

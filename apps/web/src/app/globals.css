@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0e1a;
+  --foreground: #e6edf3;
+  --surface: #131927;
+  --border: rgba(148, 163, 184, 0.18);
+  --muted: #94a3b8;
+  --primary: #6366f1;
+  --primary-foreground: #f5f3ff;
+  --accent: #22d3ee;
+  --accent-foreground: #022c33;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(34, 211, 238, 0.08), transparent),
+    var(--background);
+  background-attachment: fixed;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang TC",
+    "Microsoft JhengHei", sans-serif;
+}
+
+/* Recharts overrides for dark surface */
+.recharts-cartesian-grid line {
+  stroke: rgba(148, 163, 184, 0.12) !important;
+}
+.recharts-cartesian-axis-line {
+  stroke: rgba(148, 163, 184, 0.3) !important;
+}
+.recharts-text {
+  fill: var(--muted) !important;
+  font-size: 11px;
+}
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+/* Subtle simulated-data watermark for /dashboard */
+.simulated-watermark {
+  position: relative;
+}
+.simulated-watermark::after {
+  content: "SIMULATED DATA";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: rgba(251, 191, 36, 0.18);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 1;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
