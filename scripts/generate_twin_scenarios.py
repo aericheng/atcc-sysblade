@@ -348,20 +348,35 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
             age_months[i] = rng.uniform(72, 108)
             rul[i] = rng.uniform(200, 1200)
 
-    # Status: 95 % healthy, 4 % thermal_warn, 1 % early_aging
-    status_roll = rng.random(n)
-    status = np.where(
-        status_roll < 0.95, "healthy",
-        np.where(status_roll < 0.99, "thermal_warn", "early_aging"),
-    )
-
-    # Per-device telemetry snapshot
+    # Per-device telemetry snapshot.
+    # Status is now DERIVED from SOH / RUL / temperature so it is internally
+    # consistent — a device with RUL < 600 will never show "healthy".
     devices = []
     for i in range(n):
         s = SITES[site_idx[i]]
-        # Tiny lat/lng jitter so dots don't all overlap on a map
-        lat = s[3] + rng.normal(0, 0.02)
+        lat = s[3] + rng.normal(0, 0.02)  # tiny jitter so markers don't fully overlap
         lng = s[4] + rng.normal(0, 0.02)
+
+        # Temperature: hotter for older / lower-SOH packs (more internal resistance).
+        # Plus ~4 % of devices have an INDEPENDENT cooling fault (clogged filter,
+        # rack hot-aisle problem, fan PWM fault) that bumps temps regardless of age.
+        temp_penalty = max(0.0, 1.0 - soh[i]) * 26.0
+        cooling_fault = rng.random() < 0.04
+        cooling_bump_lfp = rng.uniform(8, 14) if cooling_fault else 0.0
+        cooling_bump_lic = rng.uniform(10, 18) if cooling_fault else 0.0
+        temp_lfp = rng.uniform(28, 38) + temp_penalty * 0.4 + cooling_bump_lfp
+        temp_lic = rng.uniform(35, 50) + temp_penalty * 0.5 + cooling_bump_lic
+
+        # Derive status from physically meaningful thresholds.
+        # Aging takes priority over thermal because it implies the device is on
+        # the replacement queue regardless of why it's running hot.
+        if soh[i] < 0.85 or rul[i] < 800:
+            status_i = "early_aging"
+        elif temp_lfp > 45.0 or temp_lic > 60.0:
+            status_i = "thermal_warn"
+        else:
+            status_i = "healthy"
+
         devices.append({
             "id": f"SYS-TX-{i:04d}",
             "site": s[0],
@@ -373,10 +388,13 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
             "rul_cycles": int(rul[i]),
             "age_months": round(float(age_months[i]), 1),
             "transient_events_24h": int(rng.poisson(1100)),
-            "temp_lfp_c": round(float(rng.uniform(28, 44)), 1),
-            "temp_lic_c": round(float(rng.uniform(35, 60)), 1),
-            "status": str(status[i]),
+            "temp_lfp_c": round(float(temp_lfp), 1),
+            "temp_lic_c": round(float(temp_lic), 1),
+            "status": status_i,
         })
+
+    # Status array (for the summary stats below)
+    status = np.array([d["status"] for d in devices])
 
     payload = {
         "title": "Synthetic fleet — 1000 Sysblade BBU devices",
