@@ -1,0 +1,59 @@
+[project]
+name = "battery-twin"
+version = "0.1.0"
+description = "Sysblade Battery Digital Twin — PyBaMM DFN simulation + LSTM RUL predictor"
+authors = [{ name = "ATCC C13 Team" }]
+requires-python = ">=3.11,<3.13"
+readme = "README.md"
+license = { text = "Proprietary — ATCC competition use" }
+
+dependencies = [
+    # Physical simulation
+    "pybamm>=24.5",
+    "casadi>=3.6",
+    "scipy>=1.13",
+
+    # ML
+    "torch>=2.3",
+    "scikit-learn>=1.5",
+    "onnx>=1.16",
+    "onnxruntime>=1.18",
+
+    # Data
+    "numpy>=1.26,<2.0",
+    "pandas>=2.2",
+    "pyarrow>=16.0",
+    "h5py>=3.11",
+    "scipy>=1.13",
+
+    # IO / utilities
+    "requests>=2.32",
+    "tqdm>=4.66",
+    "typer>=0.12",
+    "pydantic>=2.7",
+    "loguru>=0.7",
+
+    # Plotting (notebook)
+    "matplotlib>=3.9",
+    "plotly>=5.22",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter>=1.0",
+    "jupyterlab>=4.2",
+    "ipykernel>=6.29",
+    "ruff>=0.5",
+]
+api = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pybamm_sim*", "lstm_rul*", "data_loaders*"]

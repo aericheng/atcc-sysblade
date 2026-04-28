@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+.vercel/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Data (large datasets)
+data/raw/**
+data/processed/**
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.mat
+*.h5
+*.parquet
+*.csv
+!packages/shared/**/*.csv
+
+# ML
+*.pt
+*.pth
+*.onnx
+*.ckpt
+mlruns/
+wandb/
+lightning_logs/
+
+# Notebook
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# OS
+desktop.ini
