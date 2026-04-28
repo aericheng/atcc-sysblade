@@ -131,8 +131,9 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
               <USFleetMap devices={filtered} height={400} />
               <p className="text-xs text-muted mt-3">
                 State outlines from <code className="text-foreground">us-atlas</code> (US Census 2017, 1:10M).
-                Texas + Virginia clusters dominate, matching JLL Year-End 2025 site weighting (§C.1). Hover any
-                marker for device-level telemetry.
+                Texas + Virginia clusters dominate, matching JLL Year-End 2025 site weighting (§C.1).
+                <span className="text-foreground"> Click any city marker</span> to drill into per-device
+                telemetry; hover for status breakdown.
               </p>
             </CardBody>
           </Card>
