@@ -8,7 +8,13 @@ Usage:
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+# Make `packages/battery-twin` importable when this script is invoked directly
+# from the repo root (i.e., before `pip install -e packages/battery-twin`).
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO_ROOT / "packages" / "battery-twin"))
 
 import typer
 from loguru import logger
