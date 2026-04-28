@@ -23,14 +23,21 @@ from loguru import logger
 
 @dataclass
 class CycleData:
-    """One cycle of measurements for a single cell."""
+    """One cycle of measurements for a single cell.
+
+    The Severson 2019 .mat files include both raw vectors (V, Qd, ...) and
+    pre-interpolated curves on a fixed voltage grid (Qdlin, Tdlin). The
+    interpolated form is what the paper's headline feature uses.
+    """
 
     index: int
-    Qd: np.ndarray             # discharge capacity (Ah) vs sample
-    V: np.ndarray              # voltage (V) vs sample
-    T: np.ndarray              # temperature (°C) vs sample
-    t: np.ndarray              # time (s, since cycle start)
-    discharge_dQdV: np.ndarray | None = None  # may be present in some batches
+    Qd: np.ndarray             # discharge capacity (Ah) vs sample (raw)
+    V: np.ndarray              # voltage (V) vs sample (raw, spans whole cycle)
+    T: np.ndarray              # temperature (°C) vs sample (raw)
+    t: np.ndarray              # time (s, since cycle start) (raw)
+    Qdlin: np.ndarray | None = None       # discharge Q on common 1000-point voltage grid
+    Tdlin: np.ndarray | None = None       # discharge T on the same grid
+    discharge_dQdV: np.ndarray | None = None  # paper-equivalent dQ/dV curve
 
 
 @dataclass
@@ -43,6 +50,7 @@ class Cell:
     policy: str                # charging policy label, e.g. "5.4C(60%)-3.6C-newstructure"
     summary: dict              # per-cycle aggregate metrics (capacity fade, IR, etc.)
     cycles: list[CycleData] = field(default_factory=list)
+    vdlin: np.ndarray | None = None  # batch-level common voltage grid (1000 pts) used by Qdlin
 
     @property
     def n_cycles(self) -> int:
@@ -67,6 +75,13 @@ def _open_mat(path: Path):
         # v7.3 → fall back to h5py
         import h5py
         return h5py.File(str(path), "r"), "h5py"
+
+
+def _safe_array(x) -> np.ndarray:
+    """np.asarray that never errors for ndarray-or-None-or-scalar inputs."""
+    if x is None:
+        return np.empty(0, dtype=np.float64)
+    return np.asarray(x, dtype=np.float64).flatten()
 
 
 def _scipy_to_cells(mat: dict, batch_label: str) -> list[Cell]:
@@ -96,16 +111,15 @@ def _scipy_to_cells(mat: dict, batch_label: str) -> list[Cell]:
 
             parsed_cycles: list[CycleData] = []
             for j, cyc in enumerate(raw_cycles):
+                dqdv = _safe_array(cyc.get("discharge_dQdV"))
                 parsed_cycles.append(
                     CycleData(
                         index=j + 1,
-                        Qd=np.asarray(cyc.get("Qd", []), dtype=np.float64).flatten(),
-                        V=np.asarray(cyc.get("V", []), dtype=np.float64).flatten(),
-                        T=np.asarray(cyc.get("T", []), dtype=np.float64).flatten(),
-                        t=np.asarray(cyc.get("t", []), dtype=np.float64).flatten(),
-                        discharge_dQdV=np.asarray(
-                            cyc.get("discharge_dQdV", []), dtype=np.float64
-                        ).flatten() or None,
+                        Qd=_safe_array(cyc.get("Qd")),
+                        V=_safe_array(cyc.get("V")),
+                        T=_safe_array(cyc.get("T")),
+                        t=_safe_array(cyc.get("t")),
+                        discharge_dQdV=dqdv if dqdv.size else None,
                     )
                 )
             cells.append(
@@ -124,53 +138,105 @@ def _scipy_to_cells(mat: dict, batch_label: str) -> list[Cell]:
     return cells
 
 
-def _h5py_to_cells(h5, batch_label: str) -> list[Cell]:
-    """Parse v7.3 MAT (HDF5) structure.
+def _h5_string(f, ref) -> str:
+    """Decode a MATLAB v7.3 string (uint16 array stored under a ref)."""
+    try:
+        arr = np.asarray(f[ref]).flatten()
+        # MATLAB stores chars as uint16; build a Python str
+        return "".join(chr(int(c)) for c in arr if c)
+    except Exception:  # noqa: BLE001
+        return "unknown"
 
-    The HDF5 layout uses object references — accessing a field returns a
-    reference array, and the actual data lives at h5[ref][...].
+
+def _h5py_to_cells(f, batch_label: str) -> list[Cell]:
+    """Parse v7.3 MAT (HDF5) layout into Cell objects.
+
+    The Severson v7.3 layout is:
+        f["batch"] is an HDF5 Group with sub-datasets named after struct
+        fields: cycle_life, charge_policy, summary, cycles.
+
+    Each sub-dataset holds an (n_cells, 1) array of object references; the
+    pattern is f[ref][...] to resolve the reference to actual data.
     """
-    if "batch" not in h5:
-        raise ValueError(f"unexpected HDF5 structure; root keys: {list(h5.keys())}")
-    refs = h5["batch"]
-    n_cells = refs.shape[1] if refs.ndim == 2 else len(refs)
+    if "batch" not in f:
+        raise ValueError(f"unexpected HDF5 structure; root keys: {list(f.keys())}")
+    batch = f["batch"]
 
-    def deref(ref) -> np.ndarray:
-        return np.asarray(h5[ref])
+    if "cycle_life" not in batch:
+        raise ValueError(f"batch group is missing 'cycle_life'; keys: {list(batch.keys())}")
+    cycle_life_refs = batch["cycle_life"]
+    n_cells = cycle_life_refs.shape[0]
+
+    # Vdlin is the 1000-point voltage grid that Qdlin / Tdlin / discharge_dQdV
+    # are interpolated onto. It's batch-level (same for every cell) so we read
+    # it once. Stored under each cell so downstream code doesn't need to know
+    # about batches. Like every Severson field, it's a reference array.
+    vdlin: np.ndarray | None = None
+    if "Vdlin" in batch:
+        vdlin_refs = batch["Vdlin"]
+        # Single-cell-style refs: take the first reference
+        try:
+            vdlin = np.asarray(f[vdlin_refs[0, 0]]).flatten().astype(np.float64)
+        except (IndexError, TypeError):
+            try:
+                vdlin = np.asarray(f[vdlin_refs[0]]).flatten().astype(np.float64)
+            except Exception:  # noqa: BLE001
+                logger.warning("could not dereference Vdlin; downstream features will use raw V/Qd")
 
     cells: list[Cell] = []
     for i in range(n_cells):
         cell_id = f"{batch_label}c{i}"
         try:
-            life_ref = refs["cycle_life"][0, i] if "cycle_life" in refs.dtype.names else None
-            cycle_life = int(deref(life_ref).flatten()[0]) if life_ref is not None else 0
+            cycle_life = int(np.asarray(f[cycle_life_refs[i, 0]]).flatten()[0])
 
-            cycles_ref = refs["cycles"][0, i]
-            cyc_struct = h5[cycles_ref]
-            n_cyc = cyc_struct["I"].shape[1] if "I" in cyc_struct else 0
+            policy = "unknown"
+            if "policy_readable" in batch:
+                policy = _h5_string(f, batch["policy_readable"][i, 0])
+            elif "policy" in batch:
+                policy = _h5_string(f, batch["policy"][i, 0])
+
+            cycles_grp = f[batch["cycles"][i, 0]]
+            # Each cycle field (I, V, Qd, T, t, Qdlin, ...) is an (n_cycles, 1)
+            # dataset of refs whose targets are the per-cycle 1-D vectors.
+            n_cyc = cycles_grp["V"].shape[0] if "V" in cycles_grp else 0
+
+            def col(grp, name: str, j: int) -> np.ndarray:
+                if name not in grp:
+                    return np.empty(0, dtype=np.float64)
+                return np.asarray(f[grp[name][j, 0]]).flatten().astype(np.float64)
+
             parsed_cycles: list[CycleData] = []
             for j in range(n_cyc):
+                qdlin = col(cycles_grp, "Qdlin", j) if "Qdlin" in cycles_grp else None
+                tdlin = col(cycles_grp, "Tdlin", j) if "Tdlin" in cycles_grp else None
+                dqdv = col(cycles_grp, "discharge_dQdV", j) if "discharge_dQdV" in cycles_grp else None
                 parsed_cycles.append(
                     CycleData(
                         index=j + 1,
-                        Qd=deref(cyc_struct["Qd"][0, j]).flatten(),
-                        V=deref(cyc_struct["V"][0, j]).flatten(),
-                        T=deref(cyc_struct["T"][0, j]).flatten(),
-                        t=deref(cyc_struct["t"][0, j]).flatten(),
+                        Qd=col(cycles_grp, "Qd", j),
+                        V=col(cycles_grp, "V", j),
+                        T=col(cycles_grp, "T", j),
+                        t=col(cycles_grp, "t", j),
+                        Qdlin=qdlin if (qdlin is not None and qdlin.size) else None,
+                        Tdlin=tdlin if (tdlin is not None and tdlin.size) else None,
+                        discharge_dQdV=dqdv if (dqdv is not None and dqdv.size) else None,
                     )
                 )
+
             cells.append(
                 Cell(
                     cell_id=cell_id,
                     batch=batch_label,
                     cycle_life=cycle_life,
-                    policy="unknown",  # parsing the HDF5 string reference is fiddly; punt for now
-                    summary={},
+                    policy=policy,
+                    summary={},  # summary parsing skipped — not used downstream
                     cycles=parsed_cycles,
+                    vdlin=vdlin,
                 )
             )
         except Exception as exc:  # noqa: BLE001
-            logger.warning(f"  skipped cell {cell_id}: {exc}")
+            logger.warning(f"  skipped cell {cell_id}: {type(exc).__name__}: {exc}")
+
     return cells
 
 
@@ -230,26 +296,28 @@ def load_all(root: Path) -> list[Cell]:
 def delta_q_100_10(cell: Cell, voltage_grid: np.ndarray | None = None) -> np.ndarray | None:
     """Compute ΔQ_{100-10}(V), the headline Severson 2019 feature.
 
-    ΔQ(V) = Q_{100}(V) - Q_{10}(V), interpolated onto a common voltage grid.
-    Returns None for cells with fewer than 100 cycles.
+    Severson .mat files ship a *pre-interpolated* discharge curve (`Qdlin`)
+    on a fixed 1000-point voltage grid (`Vdlin`). This is what the paper
+    actually uses, so we read it directly when available and only fall back
+    to manual interpolation of raw (V, Qd) when Qdlin isn't present.
 
-    The variance of this curve is the single feature that hits ~9.1 % MAPE on
-    test cells in the original paper.
+    Returns None for cells with fewer than 100 cycles or missing curves.
     """
     if cell.n_cycles < 100:
         return None
 
-    if voltage_grid is None:
-        # Severson uses 1000 evenly-spaced points across the discharge range
-        voltage_grid = np.linspace(2.0, 3.5, 1000)
-
     cyc_10 = cell.cycle(10)
     cyc_100 = cell.cycle(100)
+
+    # Preferred path: Qdlin is already on the same grid for both cycles.
+    if cyc_10.Qdlin is not None and cyc_100.Qdlin is not None:
+        return np.asarray(cyc_100.Qdlin) - np.asarray(cyc_10.Qdlin)
+
+    # Fallback: interpolate the raw discharge V-Qd points to a shared grid.
+    if voltage_grid is None:
+        voltage_grid = np.linspace(2.0, 3.5, 1000)
     if len(cyc_10.V) < 5 or len(cyc_100.V) < 5:
         return None
-
-    # Discharge phase: voltage is monotonically decreasing → np.interp wants
-    # the x-array sorted ascending, so we reverse.
     Q10 = np.interp(voltage_grid, cyc_10.V[::-1], cyc_10.Qd[::-1], left=np.nan, right=np.nan)
     Q100 = np.interp(voltage_grid, cyc_100.V[::-1], cyc_100.Qd[::-1], left=np.nan, right=np.nan)
     return Q100 - Q10
