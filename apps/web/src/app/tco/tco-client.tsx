@@ -59,8 +59,11 @@ export function TcoClient() {
         <div className="text-xs uppercase tracking-[0.2em] text-muted">TCO Calculator · 10-year horizon</div>
         <h1 className="text-4xl font-semibold tracking-tight">How much does the transient gap cost you?</h1>
         <p className="text-muted max-w-3xl leading-relaxed">
-          Cost model from the proposal §G.3, line-by-line. Adjust the rack count, electricity price, and grid carbon
-          intensity for your site. Numbers update live.
+          Cost model from the proposal §G.3, line-by-line. The reference baseline at
+          <span className="text-foreground"> $0.10 / kWh</span> and
+          <span className="text-foreground"> PUE 1.4</span> is the headline 33 % savings claim;
+          this calculator scales transient and ops costs by your electricity rate so your specific
+          scenario will land slightly above or below 33 %.
         </p>
       </header>
 
