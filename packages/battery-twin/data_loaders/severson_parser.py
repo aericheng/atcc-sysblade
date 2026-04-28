@@ -403,6 +403,46 @@ def severson_features_full(cell: Cell) -> dict | None:
     }
 
 
+def per_cycle_summary(cell: Cell, cycles_to_use: range = range(2, 101)) -> np.ndarray | None:
+    """Per-cycle scalar summary as a (T, 7) sequence for LSTM input.
+
+    For each cycle in `cycles_to_use` we extract:
+      0  cycle_index_norm   = cycle / 100
+      1  qd_max             = peak discharge capacity (Ah)
+      2  qd_min             = min Qd (typically near 0)
+      3  v_mean             = mean V over the cycle
+      4  v_std              = std V (proxy for swing magnitude)
+      5  t_max              = max temperature (°C)
+      6  cycle_duration_s   = total cycle wall-clock time
+
+    Returns None if any expected cycle is missing or all-NaN. Shape (T, 7).
+    """
+    rows: list[list[float]] = []
+    for idx in cycles_to_use:
+        try:
+            cyc = cell.cycle(idx)
+        except IndexError:
+            return None
+        if cyc.Qd is None or cyc.Qd.size == 0 or cyc.V is None or cyc.V.size == 0:
+            return None
+        qd = cyc.Qd[np.isfinite(cyc.Qd)]
+        v = cyc.V[np.isfinite(cyc.V)]
+        t = cyc.T[np.isfinite(cyc.T)] if cyc.T is not None else np.array([np.nan])
+        ts = cyc.t[np.isfinite(cyc.t)] if cyc.t is not None else np.array([0.0])
+        if qd.size == 0 or v.size == 0:
+            return None
+        rows.append([
+            idx / 100.0,
+            float(qd.max()),
+            float(qd.min()),
+            float(v.mean()),
+            float(v.std()),
+            float(t.max()) if t.size else 0.0,
+            float(ts.max() - ts.min()) if ts.size else 0.0,
+        ])
+    return np.asarray(rows, dtype=np.float64)
+
+
 def features_for_all(cells: Iterable[Cell], full: bool = True) -> list[dict]:
     """Bulk feature extraction. Returns rows ready for pandas.DataFrame.
 
