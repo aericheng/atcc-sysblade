@@ -326,9 +326,10 @@ def delta_q_100_10(cell: Cell, voltage_grid: np.ndarray | None = None) -> np.nda
 def severson_feature_log_var(cell: Cell) -> float | None:
     """Single scalar feature: log10(variance(ΔQ_{100-10}(V))).
 
-    This is the variance feature from Severson 2019 Eq. (1). Combined with a
-    plain linear regression onto log10(cycle_life) it reproduces the paper's
-    9.1 % test MAPE.
+    This is the *Variance* feature from Severson 2019 (Table 1). Used alone
+    against log10(cycle_life), it reproduces the paper's variance-only
+    baseline at ~15 % MAPE — the headline 9.1 % needs the multi-feature
+    Discharge model (see severson_features_full).
     """
     delta = delta_q_100_10(cell)
     if delta is None:
@@ -339,22 +340,98 @@ def severson_feature_log_var(cell: Cell) -> float | None:
     return float(np.log10(np.var(valid) + 1e-12))
 
 
-def features_for_all(cells: Iterable[Cell]) -> list[dict]:
-    """Bulk feature extraction. Returns rows ready for pandas.DataFrame."""
+def severson_features_full(cell: Cell) -> dict | None:
+    """Five-feature 'Discharge' model from Severson 2019 Table 1.
+
+    Reproduces the paper's 8.6–9.1 % test MAPE when combined with a linear
+    regression onto log10(cycle_life). The features are:
+
+      1. log_var_delta_q   — log10(variance of ΔQ_{100-10}(V))
+      2. log_min_delta_q   — log10(|min(ΔQ_{100-10}(V))|), most negative dip
+      3. slope_q_2_100     — slope of discharge capacity vs cycle, cycles 2-100
+      4. intercept_q_2_100 — intercept of the same fit (extrapolates Q(0))
+      5. q_at_cycle_2      — discharge capacity at cycle 2
+
+    Returns None for cells with insufficient cycles or invalid data.
+    """
+    if cell.n_cycles < 100:
+        return None
+
+    delta = delta_q_100_10(cell)
+    if delta is None:
+        return None
+    valid = delta[np.isfinite(delta)]
+    if len(valid) < 10:
+        return None
+
+    # Per-cycle discharge capacity = max Q during discharge phase.
+    # Use the last (largest) Qd value of each cycle as the cycle's discharge Q.
+    per_cycle_q: list[float] = []
+    cycles_idx: list[int] = []
+    for cyc in cell.cycles[:101]:  # cycles 1..100 inclusive
+        if cyc.Qd is None or len(cyc.Qd) == 0:
+            continue
+        q = float(np.nanmax(cyc.Qd)) if cyc.Qd.size else float("nan")
+        if np.isfinite(q) and q > 0:
+            per_cycle_q.append(q)
+            cycles_idx.append(cyc.index)
+
+    if len(per_cycle_q) < 50:
+        return None
+
+    cycles_arr = np.asarray(cycles_idx, dtype=np.float64)
+    q_arr = np.asarray(per_cycle_q, dtype=np.float64)
+    # Linear fit Q vs cycle on cycles 2-100
+    mask = (cycles_arr >= 2) & (cycles_arr <= 100)
+    if mask.sum() < 5:
+        return None
+    slope, intercept = np.polyfit(cycles_arr[mask], q_arr[mask], 1)
+
+    # Discharge capacity at cycle 2 (or nearest available)
+    q2_idx = np.argmin(np.abs(cycles_arr - 2))
+    q_at_2 = float(q_arr[q2_idx])
+
+    var_d = float(np.var(valid))
+    min_d = float(np.min(valid))
+
+    return {
+        "log_var_delta_q": float(np.log10(var_d + 1e-12)),
+        "log_min_delta_q": float(np.log10(abs(min_d) + 1e-12)),
+        "slope_q_2_100": float(slope),
+        "intercept_q_2_100": float(intercept),
+        "q_at_cycle_2": q_at_2,
+    }
+
+
+def features_for_all(cells: Iterable[Cell], full: bool = True) -> list[dict]:
+    """Bulk feature extraction. Returns rows ready for pandas.DataFrame.
+
+    When `full=True` (default), each row carries the 5-feature Severson
+    Discharge model. When `full=False`, only the headline log_var_delta_q
+    feature is included (used by the simple Variance baseline notebook).
+    """
     rows: list[dict] = []
     for c in cells:
         if c.cycle_life <= 0 or c.n_cycles < 100:
             continue
-        feat = severson_feature_log_var(c)
-        if feat is None:
-            continue
+
+        if full:
+            feats = severson_features_full(c)
+            if feats is None:
+                continue
+        else:
+            v = severson_feature_log_var(c)
+            if v is None:
+                continue
+            feats = {"log_var_delta_q": v}
+
         rows.append({
             "cell_id": c.cell_id,
             "batch": c.batch,
             "cycle_life": c.cycle_life,
-            "log_cycle_life": np.log10(c.cycle_life),
-            "log_var_delta_q": feat,
+            "log_cycle_life": float(np.log10(c.cycle_life)),
             "policy": c.policy,
             "n_cycles_observed": c.n_cycles,
+            **feats,
         })
     return rows
