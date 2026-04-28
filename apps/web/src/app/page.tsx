@@ -1,8 +1,25 @@
 import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/card";
 import { Activity, BarChart3, Cpu, ArrowRight, Zap } from "lucide-react";
+import fs from "node:fs/promises";
+import path from "node:path";
 
-export default function HomePage() {
+interface ModelValidationLite {
+  metrics: { test_mape_pct: number };
+  latency: { p99_ms: number; p50_ms: number };
+}
+
+async function loadModelValidation(): Promise<ModelValidationLite | null> {
+  try {
+    const file = path.join(process.cwd(), "public", "scenarios", "model_validation.json");
+    return JSON.parse(await fs.readFile(file, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  const mv = await loadModelValidation();
   return (
     <div className="space-y-24">
       {/* Hero */}
@@ -42,12 +59,15 @@ export default function HomePage() {
         <div className="text-xs uppercase tracking-[0.2em] text-muted mb-4">
           Headline results · PyBaMM DFN simulation
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[
             { v: "3.1×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
             { v: "5.7×", label: "Lower power-stress to LFP after LIC split", tone: "from-accent to-primary" },
             { v: "10 yr", label: "BBU service life at >80 % SOH (Severson-fit)", tone: "from-primary to-accent" },
-            { v: "≈33 %", label: "Reference 10-year TCO reduction vs traditional BBU · proposal §G.3 baseline", tone: "from-accent to-primary" },
+            { v: "≈33 %", label: "Reference 10-year TCO reduction · proposal §G.3 baseline", tone: "from-accent to-primary" },
+            mv
+              ? { v: `${mv.latency.p99_ms.toFixed(1)} ms`, label: `ONNX p99 inference latency · ${mv.metrics.test_mape_pct.toFixed(1)} % MAPE on Severson 2019`, tone: "from-primary to-accent" }
+              : { v: "<50 ms", label: "Edge inference latency target · STM32N6 ONNX path (W2)", tone: "from-primary to-accent" },
           ].map((s) => (
             <Card key={s.label}>
               <CardBody>

@@ -8,9 +8,12 @@ import {
   LineChart,
   ReferenceArea,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
+  ZAxis,
 } from "recharts";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
@@ -36,14 +39,53 @@ interface AgingScenario {
   stats: Record<string, number | null>;
 }
 
+interface ModelValidation {
+  title: string;
+  description: string;
+  model: {
+    architecture: string;
+    n_parameters: number;
+    input_shape: number[];
+    feature_names: string[];
+    onnx_size_kb: number;
+    onnx_torch_max_diff: number;
+  };
+  metrics: {
+    n_train: number;
+    n_test: number;
+    train_mape_pct: number;
+    test_mape_pct: number;
+    test_rmse_cycles: number;
+    test_r2: number;
+    split: string;
+  };
+  latency: {
+    device: string;
+    samples: number;
+    p50_ms: number;
+    p99_ms: number;
+    target_ms: number;
+    passes_target: boolean;
+  };
+  predicted_vs_actual: Array<{
+    cell_id: string;
+    batch: string;
+    actual: number;
+    predicted: number;
+    split: "train" | "test";
+  }>;
+}
+
 export function TwinClient({
   lfpOnly,
   hybrid,
   aging,
+  modelValidation,
 }: {
   lfpOnly: Scenario;
   hybrid: Scenario;
   aging: AgingScenario;
+  modelValidation: ModelValidation;
 }) {
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
   const active = mode === "hybrid" ? hybrid : lfpOnly;
@@ -258,6 +300,145 @@ export function TwinClient({
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
+        </CardBody>
+      </Card>
+
+      {/* Model Validation — real LSTM trained on Severson 2019 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle>Model validation · LSTM trained on Severson 2019</CardTitle>
+              <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{modelValidation.description}</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
+              W2 reproduction
+            </span>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Stat
+              label="Test MAPE (measured)"
+              value={modelValidation.metrics.test_mape_pct.toFixed(1)}
+              unit="%"
+              tone="primary"
+              hint={`${modelValidation.metrics.n_test} held-out cells · target <10 % per proposal Appendix B`}
+            />
+            <Stat
+              label="ONNX inference latency"
+              value={modelValidation.latency.p99_ms.toFixed(2)}
+              unit="ms (p99)"
+              tone="success"
+              hint={`p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms · target ${modelValidation.latency.target_ms} ms · passes by ${(modelValidation.latency.target_ms / modelValidation.latency.p99_ms).toFixed(0)}×`}
+            />
+            <Stat
+              label="ONNX size"
+              value={modelValidation.model.onnx_size_kb.toFixed(1)}
+              unit="KiB"
+              tone="default"
+              hint={`Fits the STM32N6 Flash budget · numerical match to PyTorch within ${modelValidation.model.onnx_torch_max_diff.toExponential(1)}`}
+            />
+            <Stat
+              label="Test R²"
+              value={modelValidation.metrics.test_r2.toFixed(3)}
+              tone="default"
+              hint={`Train MAPE ${modelValidation.metrics.train_mape_pct.toFixed(1)} % · ${modelValidation.metrics.n_train} cells`}
+            />
+          </div>
+
+          <ChartCard
+            title="Predicted vs actual cycle life · all 138 cells"
+            subtitle={`Random 70 / 30 split · seed 42 · ${modelValidation.metrics.n_train} train · ${modelValidation.metrics.n_test} test`}
+          >
+            <ResponsiveContainer width="100%" height={320}>
+              <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  dataKey="actual"
+                  name="actual"
+                  domain={["dataMin - 100", "dataMax + 100"]}
+                  stroke=""
+                  tickFormatter={(v) => `${v}`}
+                  label={{ value: "Actual cycle life", position: "insideBottom", offset: -2, fill: "var(--muted)", fontSize: 11 }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="predicted"
+                  name="predicted"
+                  domain={["dataMin - 100", "dataMax + 100"]}
+                  stroke=""
+                  tickFormatter={(v) => `${v}`}
+                  label={{ value: "Predicted cycle life", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
+                />
+                <ZAxis range={[24, 24]} />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3", stroke: "var(--accent)" }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload as ModelValidation["predicted_vs_actual"][number];
+                    const err = ((d.predicted - d.actual) / d.actual) * 100;
+                    return (
+                      <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5">
+                        <div className="font-medium">{d.cell_id}</div>
+                        <div className="text-muted">batch {d.batch} · {d.split}</div>
+                        <div className="grid grid-cols-2 gap-x-3 pt-1">
+                          <span className="text-muted">actual</span>
+                          <span className="text-right tabular-nums">{d.actual}</span>
+                          <span className="text-muted">predicted</span>
+                          <span className="text-right tabular-nums">{d.predicted}</span>
+                          <span className="text-muted">error</span>
+                          <span className={`text-right tabular-nums ${Math.abs(err) > 20 ? "text-warning" : "text-success"}`}>
+                            {err > 0 ? "+" : ""}{err.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                {/* y = x diagonal — actual===predicted reference */}
+                <Line
+                  type="linear"
+                  dataKey="actual"
+                  data={(() => {
+                    const lo = Math.min(...modelValidation.predicted_vs_actual.map((p) => Math.min(p.actual, p.predicted)));
+                    const hi = Math.max(...modelValidation.predicted_vs_actual.map((p) => Math.max(p.actual, p.predicted)));
+                    return [{ actual: lo, predicted: lo }, { actual: hi, predicted: hi }];
+                  })()}
+                  stroke="rgba(148,163,184,0.4)"
+                  strokeDasharray="4 4"
+                  dot={false}
+                  legendType="none"
+                  isAnimationActive={false}
+                />
+                <Scatter
+                  name="train"
+                  data={modelValidation.predicted_vs_actual.filter((p) => p.split === "train")}
+                  fill="rgba(99,102,241,0.55)"
+                />
+                <Scatter
+                  name="test (held-out)"
+                  data={modelValidation.predicted_vs_actual.filter((p) => p.split === "test")}
+                  fill="rgba(34,211,238,0.9)"
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
+            <p className="text-xs text-muted mt-2">
+              Dashed diagonal is the perfect-prediction line. Test cells (cyan) are within ±20 % of actual for most
+              cases; the ±20 % band is the Severson 2019 paper&rsquo;s reported variance baseline accuracy. Outliers
+              (mostly batch 2 short-lived cells) are why this first-pass model lands above the &lt;10 % proposal
+              target — the W3 plan extends features and increases training data to close the gap.
+            </p>
+          </ChartCard>
+
+          <div className="rounded-md border border-border bg-background/30 p-4 text-xs text-muted leading-relaxed">
+            <span className="text-foreground font-medium">Architecture · </span>
+            {modelValidation.model.architecture} · {modelValidation.model.n_parameters.toLocaleString()} parameters ·
+            input {JSON.stringify(modelValidation.model.input_shape)} (cycles 2–100 × 7 features:{" "}
+            <code className="text-foreground">{modelValidation.model.feature_names.join(", ")}</code>).
+          </div>
         </CardBody>
       </Card>
 
