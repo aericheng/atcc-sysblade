@@ -4,8 +4,11 @@
   "private": true,
   "description": "Sysblade HyperBuffer SaaS — ATCC C13",
   "scripts": {
-    "dev:tco": "pnpm --filter tco-calculator dev",
-    "build:tco": "pnpm --filter tco-calculator build"
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "lint": "pnpm --filter web lint",
+    "typecheck": "pnpm --filter web exec tsc --noEmit",
+    "scenarios": "python scripts/generate_twin_scenarios.py"
   },
   "packageManager": "pnpm@9.12.0"
 }
