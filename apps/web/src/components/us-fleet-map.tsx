@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -56,19 +56,22 @@ function aggregateByCity(devices: Device[]): CityAggregate[] {
   }));
 }
 
-type Hover =
-  | { type: "city"; c: CityAggregate; x: number; y: number }
-  | { type: "device"; d: Device; x: number; y: number }
-  | null;
+type Hover = { type: "city"; c: CityAggregate } | { type: "device"; d: Device } | null;
 
 interface Props {
   devices: Device[];
   height?: number;
 }
 
+const FLEET_VIEW = { center: [-96, 38] as [number, number], zoom: 1 };
+const CITY_DRILL_ZOOM = 60;
+
 export function USFleetMap({ devices, height = 380 }: Props) {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [hovered, setHovered] = useState<Hover>(null);
+  // Controlled view state — lets the user wheel/pinch zoom after drill-in
+  // without us snapping back to a hard-coded zoom on every render.
+  const [view, setView] = useState<{ center: [number, number]; zoom: number }>(FLEET_VIEW);
 
   const cities = useMemo(() => aggregateByCity(devices), [devices]);
   const selectedAgg = selectedCity ? cities.find((c) => c.name === selectedCity) ?? null : null;
@@ -76,8 +79,22 @@ export function USFleetMap({ devices, height = 380 }: Props) {
   // If the active filter removes the drilled city's devices, fall back to fleet view
   const effectiveAgg = selectedAgg && selectedAgg.count > 0 ? selectedAgg : null;
 
-  const center: [number, number] = effectiveAgg ? [effectiveAgg.lng, effectiveAgg.lat] : [-96, 38];
-  const zoom = effectiveAgg ? 60 : 1;
+  // If filter wipes the drilled city, exit drill mode + reset view
+  useEffect(() => {
+    if (selectedCity && !effectiveAgg) {
+      setSelectedCity(null);
+      setView(FLEET_VIEW);
+    }
+  }, [selectedCity, effectiveAgg]);
+
+  const drillInto = (c: CityAggregate) => {
+    setSelectedCity(c.name);
+    setView({ center: [c.lng, c.lat], zoom: CITY_DRILL_ZOOM });
+  };
+  const backToFleet = () => {
+    setSelectedCity(null);
+    setView(FLEET_VIEW);
+  };
 
   // sqrt scaling so a 492-device city isn't 10x the radius of a 47-device one
   const maxCount = cities.reduce((m, c) => Math.max(m, c.count), 1);
@@ -92,7 +109,17 @@ export function USFleetMap({ devices, height = 380 }: Props) {
         height={height}
         style={{ width: "100%", height: "100%" }}
       >
-        <ZoomableGroup center={center} zoom={zoom}>
+        <ZoomableGroup
+          center={view.center}
+          zoom={view.zoom}
+          minZoom={1}
+          maxZoom={400}
+          onMoveEnd={(pos) => {
+            setView({ center: pos.coordinates as [number, number], zoom: pos.zoom });
+            // wheel out far enough -> implicitly leave drill mode
+            if (selectedCity && pos.zoom < 5) setSelectedCity(null);
+          }}
+        >
           <Geographies geography={usStates as object}>
             {({ geographies }) =>
               geographies.map((geo) => (
@@ -120,10 +147,8 @@ export function USFleetMap({ devices, height = 380 }: Props) {
                 <Marker
                   key={c.name}
                   coordinates={[c.lng, c.lat]}
-                  onClick={() => setSelectedCity(c.name)}
-                  onMouseEnter={(e) =>
-                    setHovered({ type: "city", c, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })
-                  }
+                  onClick={() => drillInto(c)}
+                  onMouseEnter={() => setHovered({ type: "city", c })}
                   onMouseLeave={() => setHovered(null)}
                   style={{
                     default: { cursor: "pointer" },
@@ -163,9 +188,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
               <Marker
                 key={d.id}
                 coordinates={[d.lng, d.lat]}
-                onMouseEnter={(e) =>
-                  setHovered({ type: "device", d, x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY })
-                }
+                onMouseEnter={() => setHovered({ type: "device", d })}
                 onMouseLeave={() => setHovered(null)}
               >
                 <circle
@@ -206,7 +229,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
             )}
           </div>
           <button
-            onClick={() => setSelectedCity(null)}
+            onClick={backToFleet}
             className="absolute top-3 right-3 rounded-md border border-border bg-background/85 backdrop-blur px-3 py-1.5 text-xs hover:bg-background"
           >
             ← Back to fleet
@@ -221,11 +244,11 @@ export function USFleetMap({ devices, height = 380 }: Props) {
         </div>
       )}
 
-      {/* Tooltip — city (overview) or device (drilled) */}
+      {/* Tooltip — pinned to top-center of map so it never gets clipped or
+          covered by the cursor. Below the breadcrumb when drilled. */}
       {hovered?.type === "city" && (
         <div
-          className="pointer-events-none fixed z-50 rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5 min-w-[180px]"
-          style={{ left: hovered.x + 12, top: hovered.y + 12 }}
+          className={`pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 ${effectiveAgg ? "top-12" : "top-3"} rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5 min-w-[180px]`}
         >
           <div className="font-semibold text-foreground">{hovered.c.name}</div>
           <div className="text-muted">{hovered.c.count} devices · click to drill in</div>
@@ -241,8 +264,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
       )}
       {hovered?.type === "device" && (
         <div
-          className="pointer-events-none fixed z-50 rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5"
-          style={{ left: hovered.x + 12, top: hovered.y + 12 }}
+          className={`pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 ${effectiveAgg ? "top-12" : "top-3"} rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5 min-w-[200px]`}
         >
           <div className="font-medium text-foreground">{hovered.d.id}</div>
           <div className="text-muted">{hovered.d.site}</div>
