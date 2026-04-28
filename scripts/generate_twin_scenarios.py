@@ -255,7 +255,11 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             "v_cell_pp_stable": _stable_window_pp(sim_t, v_cell),
             "p_lfp_std_kw": float(np.std(p_lfp)),
             "lic_peak_kw": float(np.max(np.abs(p_lic))),
-            "lic_energy_kj_used": float(np.trapz(np.abs(p_lic), t)),
+            # np.trapz is removed in NumPy 2.0; np.trapezoid is the forward
+            # alias and exists in 1.26+ as well.
+            "lic_energy_kj_used": float(
+                getattr(np, "trapezoid", np.trapz)(np.abs(p_lic), t)
+            ),
             "lic_energy_kj_capacity": LIC_ENERGY_KJ_PER_RACK * LIC_OVERPROV_FACTOR,
         },
     }

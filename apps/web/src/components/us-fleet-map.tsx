@@ -10,31 +10,7 @@ import {
 } from "react-simple-maps";
 // Bundled at build time so we don't have to think about basePath / CDN.
 import usStates from "../../public/us-states.json";
-
-interface Device {
-  id: string;
-  site: string;
-  location: string;
-  lat: number;
-  lng: number;
-  soh_lfp: number;
-  rul_cycles: number;
-  age_months: number;
-  temp_lfp_c: number;
-  status: "healthy" | "thermal_warn" | "early_aging";
-}
-
-const STATUS_COLOR: Record<Device["status"], string> = {
-  healthy: "#34d399",
-  thermal_warn: "#fbbf24",
-  early_aging: "#f87171",
-};
-
-const STATUS_LABEL: Record<Device["status"], string> = {
-  healthy: "Healthy",
-  thermal_warn: "Thermal warning",
-  early_aging: "Early aging",
-};
+import { type Device, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
 
 interface Props {
   devices: Device[];
