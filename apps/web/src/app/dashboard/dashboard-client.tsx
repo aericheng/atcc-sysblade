@@ -68,10 +68,13 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
     return buckets;
   }, [fleet.devices]);
 
+  // Most-urgent first: smallest RUL at the top, so row 1 is the device that
+  // needs replacing soonest. Aligned with the Tier-1 status logic — anything
+  // already flagged early_aging (SOH < 0.85 OR rul < 800) is on the queue.
   const replacementCandidates = useMemo(
     () =>
       fleet.devices
-        .filter((d) => d.rul_cycles < 600)
+        .filter((d) => d.status === "early_aging")
         .sort((a, b) => a.rul_cycles - b.rul_cycles)
         .slice(0, 8),
     [fleet.devices],
@@ -200,7 +203,7 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
         <Card className="simulated-watermark">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Top 8 devices by descending RUL urgency
+              Most urgent 8 · sorted by lowest RUL first
             </CardTitle>
           </CardHeader>
           <CardBody>
