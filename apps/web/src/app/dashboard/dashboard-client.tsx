@@ -1,19 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-  ZAxis,
-} from "recharts";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
+import { USFleetMap } from "@/components/us-fleet-map";
 import { Activity, AlertTriangle, MapPin, Shield, Zap } from "lucide-react";
 
 interface Device {
@@ -162,72 +152,11 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
               <CardTitle>Geographic distribution · 1000-device fleet</CardTitle>
             </CardHeader>
             <CardBody>
-              <ResponsiveContainer width="100%" height={360}>
-                <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    type="number"
-                    dataKey="lng"
-                    name="longitude"
-                    domain={[-125, -75]}
-                    stroke=""
-                    tickFormatter={(v) => `${v}°`}
-                    tickCount={6}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="lat"
-                    name="latitude"
-                    domain={[28, 50]}
-                    stroke=""
-                    tickFormatter={(v) => `${v}°`}
-                  />
-                  <ZAxis type="number" range={[15, 80]} />
-                  <Tooltip
-                    cursor={{ stroke: "var(--accent)", strokeDasharray: "3 3" }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload as Device;
-                      return (
-                        <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5">
-                          <div className="font-medium text-foreground">{d.id}</div>
-                          <div className="text-muted">{d.site}</div>
-                          <div className="text-muted">{d.location}</div>
-                          <div className="pt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5">
-                            <span className="text-muted">SOH LFP</span>
-                            <span className="text-right tabular-nums">{(d.soh_lfp * 100).toFixed(1)}%</span>
-                            <span className="text-muted">RUL</span>
-                            <span className="text-right tabular-nums">{d.rul_cycles} cycles</span>
-                            <span className="text-muted">Temp LFP</span>
-                            <span className="text-right tabular-nums">{d.temp_lfp_c}°C</span>
-                            <span className="text-muted">Status</span>
-                            <span
-                              className="text-right font-medium"
-                              style={{ color: STATUS_COLOR[d.status] }}
-                            >
-                              {STATUS_LABEL[d.status]}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
-                  {(["healthy", "thermal_warn", "early_aging"] as const).map((s) => (
-                    <Scatter
-                      key={s}
-                      name={STATUS_LABEL[s]}
-                      data={filtered.filter((d) => d.status === s)}
-                      fill={STATUS_COLOR[s]}
-                      fillOpacity={0.65}
-                    />
-                  ))}
-                </ScatterChart>
-              </ResponsiveContainer>
+              <USFleetMap devices={filtered} height={400} />
               <p className="text-xs text-muted mt-3">
-                Geo plot uses raw lat/lng (no map tile rendered to keep the demo offline-friendly). Larger / brighter
-                clusters indicate Texas (Plano, Dallas, Austin) and Virginia (Ashburn) — matching JLL Year-End 2025
-                site weighting (§C.1).
+                State outlines from <code className="text-foreground">us-atlas</code> (US Census 2017, 1:10M).
+                Texas + Virginia clusters dominate, matching JLL Year-End 2025 site weighting (§C.1). Hover any
+                marker for device-level telemetry.
               </p>
             </CardBody>
           </Card>
