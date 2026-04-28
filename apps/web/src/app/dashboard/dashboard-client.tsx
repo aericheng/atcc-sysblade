@@ -29,7 +29,7 @@ interface Fleet {
   geographic_distribution: Record<string, number>;
   status_summary: Record<string, number>;
   soh_buckets: Record<string, number>;
-  needs_replacement_in_6mo: number;
+  replacement_queue_count: number;
   devices: Device[];
 }
 
@@ -254,8 +254,9 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
             </div>
             <p className="text-xs text-muted mt-4 flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-              {fleet.needs_replacement_in_6mo} devices flagged for replacement within 6 months — automatically
-              registered into the customer&rsquo;s ServiceNow / Jira pipeline via webhook.
+              {fleet.replacement_queue_count} devices currently on the replacement queue (status =
+              early_aging) — automatically registered into the customer&rsquo;s ServiceNow / Jira
+              pipeline via webhook.
             </p>
           </CardBody>
         </Card>

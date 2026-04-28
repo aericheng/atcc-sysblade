@@ -47,8 +47,15 @@ from loguru import logger
 _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO / "packages" / "battery-twin"))
 
-OUT_DIR = _REPO / "packages" / "shared" / "scenarios"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+# Two sinks: the canonical store under packages/shared, and the Next.js
+# public/ folder so the web demo can fetch the JSONs directly. Writing to
+# both here removes the "forgot to cp" footgun.
+OUT_DIRS = [
+    _REPO / "packages" / "shared" / "scenarios",
+    _REPO / "apps" / "web" / "public" / "scenarios",
+]
+for d in OUT_DIRS:
+    d.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -66,19 +73,30 @@ TRANSIENT_PERIOD_S = 0.10       # 100 ms square wave
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _save(name: str, payload: dict) -> Path:
-    """Round-trip serialise to keep numpy types out of JSON, write to disk."""
+def _save(name: str, payload: dict) -> list[Path]:
+    """Serialize once and write to every sink, sharing one timestamp.
+
+    Sharing a single _meta.generated_at across both copies means the SHA-256
+    of the two files matches, which lets CI / pre-commit hooks easily detect
+    drift.
+    """
     payload["_meta"] = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "generator": "scripts/generate_twin_scenarios.py",
         "pybamm_version": pybamm.__version__,
         "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.1.pdf",
     }
-    path = OUT_DIR / name
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, separators=(",", ":"), default=float)
-    logger.success(f"wrote {path.relative_to(_REPO)}  ({path.stat().st_size/1024:.1f} KiB)")
-    return path
+    body = json.dumps(payload, separators=(",", ":"), default=float)
+    paths: list[Path] = []
+    for d in OUT_DIRS:
+        p = d / name
+        p.write_text(body, encoding="utf-8")
+        paths.append(p)
+    logger.success(
+        f"wrote {name}  ({paths[0].stat().st_size/1024:.1f} KiB) → "
+        + ", ".join(str(p.relative_to(_REPO)) for p in paths)
+    )
+    return paths
 
 
 def _decimate(arr: np.ndarray, max_points: int) -> np.ndarray:
@@ -415,7 +433,14 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
             "85_to_95": int(np.sum((soh >= 0.85) & (soh < 0.95))),
             "lt_85": int(np.sum(soh < 0.85)),
         },
-        "needs_replacement_in_6mo": int(np.sum(rul < 200)),
+        # Devices that should already be on the replacement queue, defined the
+        # same way the UI computes Tier-3 candidates: status == early_aging
+        # (which is SOH < 0.85 OR RUL < 800 cycles). Keeping the JSON field
+        # aligned with the UI logic avoids drift between Tier-1 counts, the
+        # geographic markers, and the table.
+        "replacement_queue_count": int(
+            sum(1 for d in devices if d["status"] == "early_aging")
+        ),
         "devices": devices,
     }
     _save("fleet_devices.json", payload)
