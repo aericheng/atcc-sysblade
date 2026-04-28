@@ -24,7 +24,6 @@ dependencies = [
     "pandas>=2.2",
     "pyarrow>=16.0",
     "h5py>=3.11",
-    "scipy>=1.13",
 
     # IO / utilities
     "requests>=2.32",
