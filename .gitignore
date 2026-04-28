@@ -60,3 +60,6 @@ logs/
 
 # OS
 desktop.ini
+
+# tooling local settings — never commit
+.claude/
