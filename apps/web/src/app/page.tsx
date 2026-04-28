@@ -47,7 +47,7 @@ export default function HomePage() {
             { v: "3.1×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
             { v: "5.7×", label: "Lower power-stress to LFP after LIC split", tone: "from-accent to-primary" },
             { v: "10 yr", label: "BBU service life at >80 % SOH (Severson-fit)", tone: "from-primary to-accent" },
-            { v: "33 %", label: "Customer 10-year TCO reduction vs traditional BBU", tone: "from-accent to-primary" },
+            { v: "≈33 %", label: "Reference 10-year TCO reduction vs traditional BBU · proposal §G.3 baseline", tone: "from-accent to-primary" },
           ].map((s) => (
             <Card key={s.label}>
               <CardBody>
