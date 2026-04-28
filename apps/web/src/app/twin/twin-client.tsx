@@ -167,7 +167,7 @@ export function TwinClient({
 
           <ChartCard
             title={mode === "hybrid" ? "Power split: total → LIC + LFP" : "Power: full profile through LFP"}
-            subtitle={mode === "hybrid" ? "Low-pass filter τ = 0.5 s routes >2 Hz to LIC" : "No filtering — single-stage path"}
+            subtitle={mode === "hybrid" ? "Low-pass filter τ = 0.5 s · cutoff ≈ 0.32 Hz · everything faster goes to LIC" : "No filtering — single-stage path"}
           >
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -275,7 +275,7 @@ export function TwinClient({
           <Method
             icon={<Activity className="h-4 w-4" />}
             title="Hybrid split"
-            body="A first-order LPF (τ = 0.5 s) approximates the DC-DC control law: high-frequency content (>2 Hz) goes to the LIC, the low-frequency residual to the LFP. The 0.5 s constant is the engineered boundary between LIC's 1–100 ms domain and the LFP's 30–90 s graceful-shutdown role."
+            body="A first-order low-pass filter (τ = 0.5 s, cutoff ≈ 0.32 Hz) approximates the DC-DC control law. Content faster than the cutoff is routed to the LIC; the slow residual goes to the LFP. The boundary is set above the GB200 pulse rate (10 Hz, comfortably faster than LIC) and well below the 30–90 s graceful-shutdown timescale that defines the LFP's role; both regimes are cleanly separated."
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}

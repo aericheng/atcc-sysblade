@@ -4,23 +4,8 @@ import { useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
 import { USFleetMap } from "@/components/us-fleet-map";
+import { type Device, type DeviceStatus, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
 import { Activity, AlertTriangle, MapPin, Shield, Zap } from "lucide-react";
-
-interface Device {
-  id: string;
-  site: string;
-  location: string;
-  lat: number;
-  lng: number;
-  soh_lfp: number;
-  soh_lic: number;
-  rul_cycles: number;
-  age_months: number;
-  transient_events_24h: number;
-  temp_lfp_c: number;
-  temp_lic_c: number;
-  status: "healthy" | "thermal_warn" | "early_aging";
-}
 
 interface Fleet {
   title: string;
@@ -33,20 +18,8 @@ interface Fleet {
   devices: Device[];
 }
 
-const STATUS_COLOR: Record<Device["status"], string> = {
-  healthy: "#34d399",
-  thermal_warn: "#fbbf24",
-  early_aging: "#f87171",
-};
-
-const STATUS_LABEL: Record<Device["status"], string> = {
-  healthy: "Healthy",
-  thermal_warn: "Thermal warning",
-  early_aging: "Early aging",
-};
-
 export function DashboardClient({ fleet }: { fleet: Fleet }) {
-  const [filter, setFilter] = useState<"all" | Device["status"]>("all");
+  const [filter, setFilter] = useState<"all" | DeviceStatus>("all");
 
   const filtered = useMemo(
     () => (filter === "all" ? fleet.devices : fleet.devices.filter((d) => d.status === filter)),
