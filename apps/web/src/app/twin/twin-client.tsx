@@ -337,7 +337,6 @@ export function TwinClient({
                     stroke="white"
                     strokeOpacity={0.6}
                     strokeWidth={1}
-                    isFront
                   />
                 )}
               </LineChart>
@@ -386,7 +385,6 @@ export function TwinClient({
                     stroke="white"
                     strokeOpacity={0.6}
                     strokeWidth={1}
-                    isFront
                   />
                 )}
               </LineChart>
