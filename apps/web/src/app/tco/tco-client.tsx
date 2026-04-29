@@ -39,6 +39,36 @@ const PRESETS: Record<string, TcoInputs> = {
 
 const DEFAULT_PRESET = "Mid-tier (50 racks · Texas)";
 
+// Stable references for Recharts props. Inline functions / new objects on
+// every parent render combine with ResponsiveContainer's ResizeObserver to
+// cause "Maximum update depth exceeded" loops on rapid input changes
+// (e.g. dragging the rack-count slider). Hoisting them out is the fix.
+const LEGEND_WRAPPER_STYLE = { fontSize: 11, color: "var(--muted)" } as const;
+
+function BreakdownTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string | number; value?: number; color?: string }>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl">
+      <div className="text-muted mb-1">{label}</div>
+      {payload.map((p) => (
+        <div key={String(p.name)} className="flex items-center gap-2 tabular-nums">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
+          <span>{p.name}</span>
+          <span className="ml-auto font-medium">${p.value!.toLocaleString()}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function TcoClient() {
   const [presetName, setPresetName] = useState<string>(DEFAULT_PRESET);
   const [inputs, setInputs] = useState<TcoInputs>(() => ({ ...PRESETS[DEFAULT_PRESET] }));
@@ -193,42 +223,31 @@ export function TcoClient() {
               <CardTitle>Cost breakdown · per rack · 10 year horizon</CardTitle>
             </CardHeader>
             <CardBody>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={breakdown}
-                  layout="vertical"
-                  margin={{ top: 8, right: 16, left: isNarrow ? 0 : 80, bottom: 8 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} stroke="" />
-                  <YAxis
-                    type="category"
-                    dataKey={isNarrow ? "short" : "item"}
-                    stroke=""
-                    width={isNarrow ? 64 : 100}
-                  />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      return (
-                        <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl">
-                          <div className="text-muted mb-1">{label}</div>
-                          {payload.map((p) => (
-                            <div key={p.name} className="flex items-center gap-2 tabular-nums">
-                              <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
-                              <span>{p.name}</span>
-                              <span className="ml-auto font-medium">${p.value!.toLocaleString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
-                  <Bar dataKey="traditional" name="Traditional NMC BBU" fill="rgba(251,191,36,0.8)" radius={[0, 3, 3, 0]} />
-                  <Bar dataKey="sysblade" name="Sysblade HyperBuffer" fill="rgba(99,102,241,0.85)" radius={[0, 3, 3, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {/* Fixed-height wrapper stabilises the ResizeObserver feedback
+                  loop ResponsiveContainer can hit when the parent grid cell
+                  re-flows on every input change. */}
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                  <BarChart
+                    data={breakdown}
+                    layout="vertical"
+                    margin={{ top: 8, right: 16, left: isNarrow ? 0 : 80, bottom: 8 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} stroke="" />
+                    <YAxis
+                      type="category"
+                      dataKey={isNarrow ? "short" : "item"}
+                      stroke=""
+                      width={isNarrow ? 64 : 100}
+                    />
+                    <Tooltip content={<BreakdownTooltip />} />
+                    <Legend wrapperStyle={LEGEND_WRAPPER_STYLE} />
+                    <Bar dataKey="traditional" name="Traditional NMC BBU" fill="rgba(251,191,36,0.8)" radius={[0, 3, 3, 0]} />
+                    <Bar dataKey="sysblade" name="Sysblade HyperBuffer" fill="rgba(99,102,241,0.85)" radius={[0, 3, 3, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardBody>
           </Card>
         </div>
