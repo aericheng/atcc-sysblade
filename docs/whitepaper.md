@@ -149,8 +149,8 @@ duty 在 10–30 ms 內可能瞬間吃 5–10 C,SPM 會低估 solid-phase
 
 | 情境 | 內容 | 輸出 JSON |
 |------|------|-----------|
-| `transient_lfp_only.json` | 50 kW 突發負載,純 LFP 應對 | 電壓震盪 ΔV ≈ 6.4 V |
-| `transient_hybrid.json` | 同負載,LFP+LIC 混合應對 | ΔV ≈ 2.1 V (3.1× 改善) |
+| `transient_lfp_only.json` | 50 kW 突發負載,純 LFP 應對 | 電壓震盪 ΔV ≈ 62 mV (steady-state pp) |
+| `transient_hybrid.json` | 同負載,LFP+LIC 混合應對 | ΔV ≈ 18 mV (steady-state pp,3.5× 改善) |
 | `aging_lfp.json` | 3000 cycle BBU duty 下 SOH 衰減 | 80 % SOH @ ~3000 cycles |
 | `model_validation.json` | LSTM 推論逐 cycle trajectory + actual | 9 個 curated cells |
 
@@ -173,9 +173,9 @@ $$
 時間常數 $\tau = 0.5$ s,在 PyBaMM 模擬下:
 
 * **LFP 接收功率** RMS:純電池 8.7 kW → 混合 1.5 kW → **5.7× 降低**
-* **電池電壓震盪** peak-to-peak:純電池 6.4 V → 混合 2.1 V → **3.1× 降低**
+* **電池電壓震盪** peak-to-peak (steady-state window):純電池 ~62 mV → 混合 ~18 mV → **3.5× 降低**
 
-兩個數字直接對應首頁的 `5.7×` 與 `3.1×` 頭條。
+兩個數字直接對應首頁的 `5.7×` 與 `3.5×` 頭條。
 
 ### 3.3 RUL 預測 — Severson 重現 + Full model 改進
 
@@ -291,8 +291,42 @@ proposal §E.1 Tier-C 規格)。輸入是每 cycle 的 7 維摘要向量
 3. **Cumulative prediction** — 在 cycle k 截斷時的預測值 vs 真實循環壽命
 4. **Dense head** — 64 → 32 → 1 全連接層的逐步運算說明
 
-> 業師可在簡報現場點任一 cell 觀察推論過程,從 best-prediction(0 % 誤差)
-> 到 worst-prediction(88 % 誤差)的 9 顆 cell 涵蓋模型行為空間。
+> 業師可在簡報現場點任一 cell 觀察推論過程,9 顆 cell 涵蓋從健康主流到
+> 故障早夭的完整 fleet 狀態空間。
+
+#### 3.3.7 機率輸出 — Monte Carlo Dropout 預測區間
+
+**為什麼加這個**:Severson 訓練資料的 cycle-life 尾部稀疏(`cycle_life < 200`
+只有 1/138 顆 cell),點預測模型對這類 cell 系統性高估(b2c1 真實 148,
+deterministic 預測 332,**+124 % 點誤差**)。直接呈現點誤差會讓觀眾以為
+「模型壞了」,實際是「模型不知道自己不知道」。
+
+**做法**:Gal & Ghahramani (2016) 的 Monte Carlo Dropout —— 推論時保留
+LSTM 兩處 dropout 開啟(`lstm.train()` + `head.Dropout`),做 100 次
+forward pass 得到後驗預測分布。中位數作為點估計,5–95 percentile
+作為 90 % 預測區間 (PI)。**不需重訓**,套在已 export 的 checkpoint 上。
+
+**結果**(`scripts/export_lstm_onnx.py` `--mc-dropout` 路徑):
+
+| 指標 | 值 | 解讀 |
+|------|---:|------|
+| Test set 90 % PI coverage | **100 %** (42/42 cells in PI) | 過度覆蓋(實際應 ≤ 90 %),代表 PIs 偏寬保守,但**沒有 under-cover 風險** |
+| 中位數 PI 寬度 | ~1660 cycles | 反映訓練資料訊號相對於目標尺度的雜訊 |
+| b2c1 critical 真值 148 | PI [113, 783] ✓ 包含 | 模型誠實說「我不確定,但你的真值在區間裡」 |
+| b3c38 healthy 真值 1934 | PI [370, 2312] ✓ 包含 | 同上,wide PI 反映訓練 healthy 尾部稀疏 |
+
+**已知限制**:
+* MC Dropout 僅捕捉 **epistemic** uncertainty(模型不確定性),不含
+  aleatoric(資料雜訊)。
+* 100 % 覆蓋表示 PIs 比理論值寬;這雖避免 under-cover 但犧牲 sharpness
+  (預測區間越寬越沒實際決策價值)。
+* W3 計畫:**conformal calibration** post-hoc 縮窄 PIs,目標把 90 %
+  PI coverage 拉回 ~90 %、median width 縮短 ~ 30 %。
+
+**與 deterministic 點 MAPE 的關係**:點 MAPE(在中位數上算)約 16 %,
+**跟 deterministic 模型差不多** —— Probabilistic 不會自動降低點誤差。
+它解決的是「報告誠實度」,不是「準確度」。要再降 MAPE 需要更多 LFP
+資料 + 特徵工程(W3 規劃)。
 
 ### 3.4 邊緣端佈署 — ONNX + STM32N6 NPU
 
@@ -410,7 +444,7 @@ $$
 
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
-| 3.1× 電壓震盪降低 | `transient_hybrid.json` vs `transient_lfp_only.json`,PyBaMM DFN 模擬 | DFN 模擬,非實機;依賴 `Prada2013` 參數集適用性 |
+| 3.5× 電壓震盪降低 | `transient_hybrid.json` vs `transient_lfp_only.json`,PyBaMM DFN 模擬 | DFN 模擬,非實機;依賴 `Prada2013` 參數集適用性 |
 | 5.7× LFP 接收功率波動降低 | 同上 | 同上 |
 | 8–12 yr 服役壽命 | `aging_lfp.json` 對齊 Severson 衰減模型,3000 cycle 達 80 % SOH | BBU duty 假設(每年 < 50 等效完整循環);若客戶 duty 不同需重做 |
 | LFP 熱安全優於 NMC | 公開文獻(NFPA 855 認證歷史) | 模組級熱失控傳播仍須 abuse 測試,W4–Q3 計畫進行 |
@@ -425,6 +459,8 @@ $$
 | **承諾** < 13 % MAPE 達到 | 12.60 % 隨機 split | 跨 batch / 跨化學不適用 |
 | Cross-batch 沒改善 | 19.88 % → 19.93 %,R² 為負 | 已誠實寫入 §3.3.4,protocol-specific 為原因 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
+| **MC Dropout 90 % PI 涵蓋率** | 100 % (42/42 test cells in PI) | **過寬保守**,W3 conformal calibration 縮窄至 ~ 90 % 目標 |
+| **PI 中位數寬度** | ~1660 cycles | 反映訓練尾部稀疏;sharp PI 需更多 LFP 早夭資料 |
 | LSTM 推論 < 1 ms 筆電 CPU | onnxruntime profiling | 非 STM32N6 實機;X-CUBE-AI trace 待補 |
 | STM32N6 NPU < 1 ms 預估 | ST datasheet | **未實機驗證**;0.3 ms 為廠商 spec |
 
@@ -489,9 +525,11 @@ $$
 | W2 (本週) | LSTM 訓練、ONNX 匯出、CPU latency benchmark | ✅ |
 | W2 (本週) | 9-feat Full model 改進(本白皮書 §3.3.3) | ✅ |
 | W2 (本週) | NASA cross-dataset 驗證(本白皮書 §3.3.5) | ✅ |
+| W2 (本週) | MC Dropout 機率輸出 + 90 % PI(§3.3.7) | ✅ |
 | W2 (本週) | 學生競賽簡報(D-1) | ⏳ |
 | W3 | STM32N6 X-CUBE-AI 靜態 trace(附錄 C) | ⏳ |
 | W3 | FastAPI 後端整合 | ⏳ |
+| W3 | Conformal calibration:把 PI 從 100 % 過寬縮回 ~ 90 % 目標(§3.3.7) | ⏳ |
 | W3 | 本白皮書 v1.0 提交(2026-05-05 初賽繳交) | ⏳ |
 | W4–Q3 | NFPA 855 abuse 測試、OCP 認證送件 | 規劃 |
 | 2027 Q1–Q2 | 第一個 Tier-2 colo 客戶 PoC | 規劃 |

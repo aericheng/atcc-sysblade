@@ -238,6 +238,64 @@ def _pick_walkthrough_cells(
     return picks
 
 
+# ---------------------------------------------------------------------------
+# Probabilistic prediction via Monte Carlo Dropout
+#
+# Gal & Ghahramani (2016) "Dropout as a Bayesian Approximation": running N
+# forward passes with dropout left active at inference yields a posterior-
+# predictive distribution over the model's output. We keep the existing
+# trained checkpoint as-is and add this on top so the demo can show
+# per-cell prediction intervals without re-training.
+#
+# Empirical caveats (documented in whitepaper §6.2):
+#   - MC dropout produces *epistemic* uncertainty (model uncertainty), not
+#     aleatoric (data noise). For LSTM with dropout=0.15 the resulting PIs
+#     can under-cover; we report the actual coverage on the held-out test
+#     set so the calibration story is honest.
+#   - Conformal calibration (a post-hoc rescale that guarantees coverage)
+#     is in the W3 plan if the raw coverage is meaningfully <90 %.
+# ---------------------------------------------------------------------------
+def _enable_dropout_for_inference(model: torch.nn.Module) -> None:
+    """Set every Dropout layer (including the LSTM's internal dropout) to
+    train mode while keeping the rest of the network in eval mode."""
+    model.eval()
+    for m in model.modules():
+        if isinstance(m, torch.nn.Dropout):
+            m.train()
+    # nn.LSTM applies its `dropout` argument only when the module itself is
+    # in train mode; toggling the inner Dropout modules above isn't enough.
+    if isinstance(model.lstm, torch.nn.LSTM):
+        model.lstm.train()
+
+
+def predict_mc_dropout(
+    model: torch.nn.Module,
+    scaler,
+    X: np.ndarray,
+    n_samples: int = 100,
+) -> dict[str, np.ndarray]:
+    """Run ``n_samples`` MC-dropout passes and return predictive percentiles.
+
+    Returns a dict with keys ``{"median", "p5", "p10", "p90", "p95"}``,
+    each a (N,) array of cycle-life estimates aligned with ``X``.
+    """
+    _enable_dropout_for_inference(model)
+    Xn = torch.tensor(scaler.transform(X), dtype=torch.float32)
+    samples: list[np.ndarray] = []
+    with torch.no_grad():
+        for _ in range(n_samples):
+            log_pred = model(Xn).cpu().numpy()
+            samples.append(10.0 ** log_pred)
+    arr = np.stack(samples, axis=0)  # (n_samples, N)
+    return {
+        "median": np.percentile(arr, 50, axis=0),
+        "p5":     np.percentile(arr,  5, axis=0),
+        "p10":    np.percentile(arr, 10, axis=0),
+        "p90":    np.percentile(arr, 90, axis=0),
+        "p95":    np.percentile(arr, 95, axis=0),
+    }
+
+
 def extract_walkthroughs(
     model,
     scaler,
@@ -247,13 +305,14 @@ def extract_walkthroughs(
     batches: list[str],
     pred_all: np.ndarray,
     cell_indices: list[tuple[int, str, str, float]],
+    pi: dict[str, np.ndarray] | None = None,
 ) -> list[dict]:
     """Capture (input, hidden state, cumulative prediction) for chosen cells.
 
     ``cell_indices`` carries (idx, label, fleet_status, fleet_pct) per cell.
-    Output includes the same four extras alongside the per-cycle tensors so
-    the /twin UI can render the dropdown ("healthy · 67% · 1934 cycles")
-    and a status pill on the cell summary tile.
+    ``pi`` (optional) carries MC-dropout percentiles aligned with ``X`` and,
+    when present, threads ``pi_lower`` / ``pi_upper`` / ``pi_median`` per
+    cell into the JSON payload so the /twin UI can render a 90 % PI bar.
     """
     model.eval()
     out: list[dict] = []
@@ -277,7 +336,7 @@ def extract_walkthroughs(
                 pred_log = model.head(lstm_out[:, t_idx, :])
                 cumul.append(float(10.0 ** float(pred_log.item())))
 
-            out.append({
+            entry = {
                 "cell_id": ids[idx],
                 "batch": batches[idx],
                 "label": label,
@@ -286,12 +345,17 @@ def extract_walkthroughs(
                 "actual": int(round(float(y[idx]))),
                 "predicted": int(round(float(pred_all[idx]))),
                 "input_raw": [
-                    [round(float(v), 5) for v in row]
-                    for row in x_raw.tolist()
+                    [round(float(v), 5) for v in cycle_row]
+                    for cycle_row in x_raw.tolist()
                 ],
                 "hidden_activation": [round(float(v), 4) for v in hidden_act.tolist()],
                 "cumulative_pred": [int(round(c)) for c in cumul],
-            })
+            }
+            if pi is not None:
+                entry["pi_median"] = int(round(float(pi["median"][idx])))
+                entry["pi_lower"]  = int(round(float(pi["p5"][idx])))
+                entry["pi_upper"]  = int(round(float(pi["p95"][idx])))
+            out.append(entry)
     return out
 
 
@@ -435,6 +499,28 @@ def main() -> None:
         "predicted_vs_actual": _build_predicted_vs_actual(ids, batches, y, pred_all, te),
     }
 
+    # MC Dropout — 100 stochastic forward passes per cell to convert the
+    # deterministic point prediction into a posterior-predictive
+    # distribution. Median is used as the point estimate; 5th–95th
+    # percentile as the 90 % prediction interval. See predict_mc_dropout
+    # docstring for the calibration caveat.
+    print("computing MC Dropout uncertainty (100 samples)...")
+    pi = predict_mc_dropout(res.model, res.scaler, X, n_samples=100)
+    # Test-set coverage: what fraction of held-out cells fall inside the
+    # 90 % PI? Well-calibrated → ~90 %; under-covered → MC dropout is too
+    # narrow (a known property; conformal post-hoc fix is W3 work).
+    test_in_pi = (y[te] >= pi["p5"][te]) & (y[te] <= pi["p95"][te])
+    coverage = float(np.mean(test_in_pi))
+    pi_widths = pi["p95"] - pi["p5"]
+    print(f"  90% PI test coverage: {coverage*100:.1f}% (target ~90%)")
+    print(f"  median PI width: {float(np.median(pi_widths)):.0f} cycles")
+    payload["uncertainty"] = {
+        "method": "mc_dropout",
+        "n_samples": 100,
+        "test_coverage_90pct": coverage,
+        "median_pi_width_cycles": float(np.median(pi_widths)),
+    }
+
     # Walkthroughs — per-cell input + hidden state + cumulative-prediction
     # trajectory for a curated set of cells. Used by the /twin "Inference
     # walkthrough" UI to let the viewer step through one cell at a time.
@@ -447,12 +533,14 @@ def main() -> None:
     ))
     picks = _pick_walkthrough_cells(y, pred_all, n_picks=9)
     payload["walkthroughs"] = extract_walkthroughs(
-        res.model, res.scaler, X, y, ids, batches, pred_all, picks
+        res.model, res.scaler, X, y, ids, batches, pred_all, picks, pi=pi,
     )
     payload["fleet_status_distribution_pct"] = fleet_dist
     print(f"  captured {len(payload['walkthroughs'])} cells:")
     for w in payload["walkthroughs"]:
-        print(f"    [{w['fleet_status']:11s}] {w['cell_id']:6s} · {w['label']}")
+        print(f"    [{w['fleet_status']:11s}] {w['cell_id']:6s} · "
+              f"actual {w['actual']:>4d}  median {w['pi_median']:>4d}  "
+              f"90% PI [{w['pi_lower']:>4d}, {w['pi_upper']:>5d}]")
 
     body = json.dumps(payload, separators=(",", ":"), default=float)
     out.write_text(body, encoding="utf-8")
