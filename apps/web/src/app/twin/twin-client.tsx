@@ -112,12 +112,20 @@ interface ModelValidation {
     cell_id: string;
     batch: string;
     label: string;
+    fleet_status: "healthy" | "warning" | "early_aging" | "critical";
+    fleet_pct: number;            // % of /dashboard fleet in this status bucket
     actual: number;
     predicted: number;
     input_raw: number[][];        // (99, 7) features in original physical units
     hidden_activation: number[];  // (99,) mean |tanh activation| across 64 dims
     cumulative_pred: number[];    // (99,)
   }>;
+  fleet_status_distribution_pct?: {
+    healthy: number;
+    warning: number;
+    early_aging: number;
+    critical: number;
+  };
 }
 
 export function TwinClient({
@@ -813,6 +821,24 @@ function ErrorByLifetimeBucket({
 // ---------------------------------------------------------------------------
 type Walkthrough = NonNullable<ModelValidation["walkthroughs"]>[number];
 
+// Fleet-status visual mapping. Mirrors the colour coding /dashboard uses
+// for its status chips so a viewer who scrolled through the dashboard
+// recognises the same palette here.
+const STATUS_TONE: Record<Walkthrough["fleet_status"], "success" | "warning" | "danger" | "default"> = {
+  healthy: "success",
+  warning: "warning",
+  early_aging: "warning",
+  critical: "danger",
+};
+// Chinese phrase only — the underlying status (healthy/warning/...) lives
+// in the Stat tile's `unit` slot for the English-reading viewer.
+const STATUS_LABEL_ZH: Record<Walkthrough["fleet_status"], string> = {
+  healthy: "主要族群",
+  warning: "接近替換",
+  early_aging: "Tier-3 隊列",
+  critical: "故障早夭",
+};
+
 function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] }) {
   const [pickedId, setPickedId] = useState<string>(walkthroughs[0].cell_id);
   const cell = walkthroughs.find((w) => w.cell_id === pickedId) ?? walkthroughs[0];
@@ -828,11 +854,15 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             <div className="min-w-0">
               <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
-                Nine cells spanning the full cycle-life range — from early failures (~150 cycles)
-                through typical mid-life cells (700–900) up to premium long-lived hero cells
-                (1,900+). Pick any one and the chart below shows the actual per-cycle measurements
-                the LSTM consumed for that cell over its first 100 cycles, alongside how many
-                cycles the model predicted vs how many it actually lasted.
+                Nine cells curated to mirror the four fleet states you just saw on
+                <span className="text-foreground"> /dashboard</span> — main population
+                <span className="text-foreground"> healthy</span>, watch list
+                <span className="text-foreground"> warning</span>, Tier-3 replacement queue
+                <span className="text-foreground"> early_aging</span>, and outright failure
+                <span className="text-foreground"> critical</span>. The mix is weighted by
+                the dashboard's actual 1,000-device distribution. Pick any cell to see the
+                per-cycle measurements the LSTM consumed, and how its prediction compared to
+                the cell's real cycle life.
               </p>
             </div>
           </div>
@@ -852,8 +882,15 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
 
       <CardBody className="space-y-6">
         {/* Per-cell summary tiles */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Stat label="Cell ID" value={cell.cell_id} hint={`batch ${cell.batch}`} />
+          <Stat
+            label="Fleet status"
+            value={STATUS_LABEL_ZH[cell.fleet_status]}
+            unit={cell.fleet_status}
+            tone={STATUS_TONE[cell.fleet_status]}
+            hint={`~${cell.fleet_pct.toFixed(0)}% of /dashboard fleet`}
+          />
           <Stat
             label="Actual cycle life"
             value={cell.actual.toLocaleString()}
