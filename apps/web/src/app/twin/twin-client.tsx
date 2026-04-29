@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -154,15 +154,15 @@ interface ModelValidation {
 /** Looping left-to-right sweep used by the transient charts to give them
  *  an oscilloscope-like "wave traveling rightward" feel instead of a static
  *  snapshot. Returns a fraction in [0, 1]; rises linearly over `sweepMs`,
- *  holds at 1 for `pauseMs`, then loops. Throttled to ~24 fps so the chart
- *  re-renders ~24 times/sec instead of every animation frame. Pause via
+ *  holds at 1 for `pauseMs`, then loops. Throttled to ``fps`` so the chart
+ *  re-renders ``fps`` times/sec instead of every animation frame. Pause via
  *  `paused` (e.g. on hover) to immediately show the full waveform. */
-function useSweep(sweepMs: number, pauseMs: number, paused: boolean): number {
+function useSweep(sweepMs: number, pauseMs: number, paused: boolean, fps: number = 16): number {
   const [progress, setProgress] = useState(0);
   const startRef = useRef<number>(0);
   useEffect(() => {
     if (paused) return; // hold whatever the last value was; caller short-circuits to 1
-    const period = 1000 / 24;
+    const period = 1000 / fps;
     const total = sweepMs + pauseMs;
     let raf = 0;
     let last = 0;
@@ -177,8 +177,133 @@ function useSweep(sweepMs: number, pauseMs: number, paused: boolean): number {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [sweepMs, pauseMs, paused]);
+  }, [sweepMs, pauseMs, paused, fps]);
   return paused ? 1 : progress;
+}
+
+/** Two scope-style charts (cell voltage, power split) animated as a
+ *  left-to-right sweep. Isolated into its own component so the sweep's
+ *  setProgress tick (~16 fps) doesn't re-render the rest of /twin —
+ *  Scatter, bucket chart, walkthrough, aging chart, and Method panel
+ *  stay stable while only this subtree updates. ``data`` is expected
+ *  to be already-decimated (~400 points is plenty for visual fidelity
+ *  at chart-pixel scales; 800 makes path generation needlessly expensive
+ *  per frame). */
+type ScopePoint = { t: number; v: number; p_total: number; p_lfp: number };
+
+function ScopeCharts({
+  data,
+  mode,
+  durationS,
+}: {
+  data: ScopePoint[];
+  mode: "lfp" | "hybrid";
+  durationS: number;
+}) {
+  const [paused, setPaused] = useState(false);
+  const sweep = useSweep(4500, 1500, paused);
+  // useDeferredValue lets React drop sweep updates if the main thread is
+  // busy with a more urgent render. Animation may visibly skip a frame
+  // under load, but the rest of the UI stays responsive.
+  const deferredSweep = useDeferredValue(sweep);
+
+  const sweptData = useMemo(() => {
+    const cut = Math.max(2, Math.ceil(data.length * deferredSweep));
+    return data.slice(0, cut);
+  }, [data, deferredSweep]);
+
+  const xDomain: [number, number] = [0, durationS];
+  const leadingPoint = sweptData[sweptData.length - 1];
+  const showLeadingDot = !paused && deferredSweep < 1 && leadingPoint != null;
+
+  return (
+    <div
+      className="space-y-6"
+      onPointerEnter={() => setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+    >
+      <ChartCard title="Cell voltage (V)" subtitle="ms-resolution PyBaMM DFN solve · Prada2013 LFP">
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <ReferenceArea x1={4} x2={6} fill="rgba(99,102,241,0.06)" stroke="none" />
+            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
+            <YAxis domain={[3.05, 3.5]} stroke="" tickFormatter={(v) => v.toFixed(2)} />
+            <Tooltip content={<DarkTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="v"
+              stroke={mode === "hybrid" ? "var(--success)" : "var(--warning)"}
+              strokeWidth={1.2}
+              dot={false}
+              name="V cell"
+              isAnimationActive={false}
+            />
+            {showLeadingDot && (
+              <ReferenceDot
+                x={leadingPoint.t}
+                y={leadingPoint.v}
+                r={4}
+                fill={mode === "hybrid" ? "var(--success)" : "var(--warning)"}
+                stroke="white"
+                strokeOpacity={0.6}
+                strokeWidth={1}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+        <p className="text-xs text-muted mt-2">
+          Highlighted band [4 s, 6 s] = steady-state window after transient settles. Headline
+          numbers above come from this region. Hover the chart to pause the sweep and read
+          exact values.
+        </p>
+      </ChartCard>
+
+      <ChartCard
+        title={mode === "hybrid" ? "Power split: total → LIC + LFP" : "Power: full profile through LFP"}
+        subtitle={mode === "hybrid" ? "Low-pass filter τ = 0.5 s · cutoff ≈ 0.32 Hz · everything faster goes to LIC" : "No filtering — single-stage path"}
+      >
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
+            <YAxis stroke="" tickFormatter={(v) => `${v}`} />
+            <Tooltip content={<DarkTooltip />} />
+            <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+            <Line
+              type="linear"
+              dataKey="p_total"
+              stroke="var(--muted)"
+              strokeWidth={0.8}
+              dot={false}
+              name="Total rack (kW)"
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="p_lfp"
+              stroke="var(--primary)"
+              strokeWidth={1.6}
+              dot={false}
+              name={mode === "hybrid" ? "→ LFP (smoothed)" : "→ LFP (full)"}
+              isAnimationActive={false}
+            />
+            {showLeadingDot && (
+              <ReferenceDot
+                x={leadingPoint.t}
+                y={leadingPoint.p_lfp}
+                r={4}
+                fill="var(--primary)"
+                stroke="white"
+                strokeOpacity={0.6}
+                strokeWidth={1}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
 }
 
 export function TwinClient({
@@ -194,34 +319,43 @@ export function TwinClient({
 }) {
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
   const active = mode === "hybrid" ? hybrid : lfpOnly;
-  const [scopePaused, setScopePaused] = useState(false);
-  const sweep = useSweep(4500, 1500, scopePaused);
 
-  const chartData = useMemo(() => {
+  // Full-resolution chart data lives here only to feed the scope component;
+  // the sweep state itself is owned inside <ScopeCharts> so its 16 fps
+  // setProgress doesn't trigger a re-render of every other section on /twin
+  // (Scatter, bucket chart, walkthrough, aging, Method panel).
+  const scopeData: ScopePoint[] = useMemo(() => {
     const t = active.series.t;
     const v = active.series.v_cell;
     const p = active.series.p_total_kw;
     const pLfp = mode === "hybrid" ? active.series.p_lfp_kw : p;
-    return t.map((time, i) => ({
-      t: Number(time.toFixed(3)),
-      v: Number(v[i].toFixed(4)),
-      p_total: Number(p[i].toFixed(2)),
-      p_lfp: Number(pLfp[i].toFixed(2)),
-    }));
+    // Decimate to ≤400 points before passing to the scope. The Python
+    // generator already wrote 800 points (40 Hz over a 10 s window) which
+    // is 4× Nyquist for the 10 Hz transient — we can halve again with no
+    // visible loss and gain ~2× faster path generation per sweep frame.
+    const target = 400;
+    const step = t.length > target ? Math.floor(t.length / target) : 1;
+    const out: ScopePoint[] = [];
+    for (let i = 0; i < t.length; i += step) {
+      out.push({
+        t: Number(t[i].toFixed(3)),
+        v: Number(v[i].toFixed(4)),
+        p_total: Number(p[i].toFixed(2)),
+        p_lfp: Number(pLfp[i].toFixed(2)),
+      });
+    }
+    // Always keep the final sample so the axis domain matches the data.
+    const lastIdx = t.length - 1;
+    if (out[out.length - 1]?.t !== Number(t[lastIdx].toFixed(3))) {
+      out.push({
+        t: Number(t[lastIdx].toFixed(3)),
+        v: Number(v[lastIdx].toFixed(4)),
+        p_total: Number(p[lastIdx].toFixed(2)),
+        p_lfp: Number(pLfp[lastIdx].toFixed(2)),
+      });
+    }
+    return out;
   }, [active, mode]);
-
-  // Slice the data array to whatever proportion the sweep has uncovered so
-  // the line "draws" left-to-right like a scope trace. Always keep at least
-  // 2 points so Recharts has something to render. The XAxis domain below
-  // is pinned to the full duration so the axis doesn't shrink with the data.
-  const sweptChartData = useMemo(() => {
-    const cut = Math.max(2, Math.ceil(chartData.length * sweep));
-    return chartData.slice(0, cut);
-  }, [chartData, sweep]);
-  const xDomain: [number, number] = [0, active.duration_s ?? 10];
-  // Marker that rides the leading edge of the sweep so the eye picks up
-  // where the wavefront is right now.
-  const leadingPoint = sweptChartData[sweptChartData.length - 1];
 
   const agingData = useMemo(
     () =>
@@ -314,96 +448,7 @@ export function TwinClient({
             />
           </div>
 
-          {/* Hover anywhere over the two scope charts to pause the sweep
-              and reveal the full waveform — useful for inspecting the
-              tooltip values; leaving resumes the loop. */}
-          <div
-            className="space-y-6"
-            onPointerEnter={() => setScopePaused(true)}
-            onPointerLeave={() => setScopePaused(false)}
-          >
-          <ChartCard title="Cell voltage (V)" subtitle="ms-resolution PyBaMM DFN solve · Prada2013 LFP">
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={sweptChartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <ReferenceArea x1={4} x2={6} fill="rgba(99,102,241,0.06)" stroke="none" />
-                <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
-                <YAxis domain={[3.05, 3.5]} stroke="" tickFormatter={(v) => v.toFixed(2)} />
-                <Tooltip content={<DarkTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke={mode === "hybrid" ? "var(--success)" : "var(--warning)"}
-                  strokeWidth={1.2}
-                  dot={false}
-                  name="V cell"
-                  isAnimationActive={false}
-                />
-                {/* Leading-edge marker = wavefront indicator. Hidden once the
-                    sweep is at the right edge / paused on hover. */}
-                {!scopePaused && sweep < 1 && leadingPoint && (
-                  <ReferenceDot
-                    x={leadingPoint.t}
-                    y={leadingPoint.v}
-                    r={4}
-                    fill={mode === "hybrid" ? "var(--success)" : "var(--warning)"}
-                    stroke="white"
-                    strokeOpacity={0.6}
-                    strokeWidth={1}
-                  />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="text-xs text-muted mt-2">
-              Highlighted band [4 s, 6 s] = steady-state window after transient settles. Headline numbers above
-              come from this region. Hover the chart to pause the sweep and read exact values.
-            </p>
-          </ChartCard>
-
-          <ChartCard
-            title={mode === "hybrid" ? "Power split: total → LIC + LFP" : "Power: full profile through LFP"}
-            subtitle={mode === "hybrid" ? "Low-pass filter τ = 0.5 s · cutoff ≈ 0.32 Hz · everything faster goes to LIC" : "No filtering — single-stage path"}
-          >
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={sweptChartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
-                <YAxis stroke="" tickFormatter={(v) => `${v}`} />
-                <Tooltip content={<DarkTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
-                <Line
-                  type="linear"
-                  dataKey="p_total"
-                  stroke="var(--muted)"
-                  strokeWidth={0.8}
-                  dot={false}
-                  name="Total rack (kW)"
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="p_lfp"
-                  stroke="var(--primary)"
-                  strokeWidth={1.6}
-                  dot={false}
-                  name={mode === "hybrid" ? "→ LFP (smoothed)" : "→ LFP (full)"}
-                  isAnimationActive={false}
-                />
-                {!scopePaused && sweep < 1 && leadingPoint && (
-                  <ReferenceDot
-                    x={leadingPoint.t}
-                    y={leadingPoint.p_lfp}
-                    r={4}
-                    fill="var(--primary)"
-                    stroke="white"
-                    strokeOpacity={0.6}
-                    strokeWidth={1}
-                  />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartCard>
-          </div>
+          <ScopeCharts data={scopeData} mode={mode} durationS={active.duration_s ?? 10} />
         </CardBody>
       </Card>
 
