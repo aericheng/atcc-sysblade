@@ -1157,7 +1157,9 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
 
 /** All seven per-cycle features overlaid on one chart, normalised to [0, 1]
  *  so they're visually comparable despite their wildly different units.
- *  The tooltip restores the raw physical value for every feature. */
+ *  Tooltip restores the raw physical value; legend buttons toggle each line
+ *  on / off so the chart stays readable on phone widths where 7 overlaid
+ *  traces would otherwise crowd into a coloured fog. */
 function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
   // Per-feature min/max across the 99 cycles, used to map raw → [0, 1].
   const ranges = useMemo(() => {
@@ -1190,6 +1192,22 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
 
   const fmt = (v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(3));
 
+  // Set of hidden feature keys; the user toggles via the legend buttons.
+  // Default visible: everything. Hidden lines stay in the chart's data but
+  // render with `hide` so axes / tooltip don't reshuffle on toggle.
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
+  const toggle = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  const showAll = () => setHidden(new Set());
+  const hideAll = () => setHidden(new Set(PER_CYCLE_FEATURES.map((f) => f.key)));
+  const noneVisible = hidden.size === PER_CYCLE_FEATURES.length;
+
   return (
     <div>
       <ResponsiveContainer width="100%" height={320}>
@@ -1201,11 +1219,13 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const p = payload[0].payload as Record<string, number>;
+              const visibleFeatures = PER_CYCLE_FEATURES.filter((f) => !hidden.has(f.key));
+              if (visibleFeatures.length === 0) return null;
               return (
                 <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-1">
                   <div className="text-muted">cycle {p.cycle}</div>
                   <div className="grid grid-cols-[14px_1fr_auto_auto] gap-x-2 gap-y-0.5 items-center">
-                    {PER_CYCLE_FEATURES.map((f) => (
+                    {visibleFeatures.map((f) => (
                       <Fragment key={f.key}>
                         <span
                           className="inline-block h-2 w-2 rounded-full"
@@ -1231,25 +1251,66 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
               dot={false}
               isAnimationActive={false}
               name={f.label}
+              hide={hidden.has(f.key)}
             />
           ))}
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Compact legend with min/max ranges underneath */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1.5 mt-3 text-xs">
-        {PER_CYCLE_FEATURES.map((f, fi) => {
-          const r = ranges[fi];
-          return (
-            <div key={f.key} className="flex items-center gap-2 min-w-0">
-              <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ background: f.color }} />
-              <span className="text-foreground truncate">{f.label}</span>
-              <span className="text-muted text-[10px] tabular-nums ml-auto whitespace-nowrap">
-                {fmt(r.min)}–{fmt(r.max)} {f.unit}
-              </span>
-            </div>
-          );
-        })}
+      {/* Click-to-toggle legend — taps a feature to show / hide its line.
+          Mobile stacks label and range vertically so neither truncates;
+          desktop keeps them side-by-side for density. */}
+      <div className="mt-3">
+        <div className="flex items-center justify-between text-[10px] text-muted mb-1.5">
+          <span>{noneVisible ? "All hidden — tap a row to add it back" : "Tap any row to toggle that line"}</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={showAll}
+              disabled={hidden.size === 0}
+              className="text-primary hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-default"
+            >
+              Show all
+            </button>
+            <span className="text-muted/60">·</span>
+            <button
+              type="button"
+              onClick={hideAll}
+              disabled={noneVisible}
+              className="text-muted hover:text-foreground disabled:opacity-40 disabled:cursor-default"
+            >
+              Hide all
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 text-xs">
+          {PER_CYCLE_FEATURES.map((f, fi) => {
+            const r = ranges[fi];
+            const isHidden = hidden.has(f.key);
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => toggle(f.key)}
+                aria-pressed={!isHidden}
+                className={`flex sm:items-center items-start gap-2 min-w-0 rounded px-1.5 py-1 text-left transition-colors hover:bg-surface/60 sm:flex-row flex-col ${
+                  isHidden ? "opacity-40" : ""
+                }`}
+              >
+                <span className="flex items-center gap-2 min-w-0 sm:flex-initial flex-1 w-full">
+                  <span
+                    className="inline-block h-2 w-2 rounded-full shrink-0"
+                    style={{ background: isHidden ? "transparent" : f.color, borderColor: f.color, borderWidth: 1, borderStyle: "solid" }}
+                  />
+                  <span className={`truncate ${isHidden ? "line-through text-muted" : "text-foreground"}`}>{f.label}</span>
+                </span>
+                <span className="text-muted text-[10px] tabular-nums whitespace-nowrap sm:ml-auto sm:pl-2 pl-4">
+                  {fmt(r.min)}–{fmt(r.max)} {f.unit}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
