@@ -128,6 +128,53 @@ def _eval(features: tuple[str, ...], df: pd.DataFrame, split: str) -> dict:
     }
 
 
+def _feature_distribution_check(
+    features: tuple[str, ...],
+    sev_df: pd.DataFrame,
+    nasa_df: pd.DataFrame,
+) -> dict:
+    """For each feature, check whether NASA values lie within Severson's training range.
+
+    The cross-dataset OLS prediction is only meaningful when test-set
+    features fall inside the training distribution. If any feature is
+    out-of-range, the linear model is extrapolating — and extrapolation in
+    log-space can produce wildly wrong cycle-life predictions even when
+    each input shift is modest. This block surfaces the per-feature shift
+    so the headline MAPE is interpretable: a 10000% MAPE driven by 5/5
+    out-of-range features is a *distributional* failure, not a modeling
+    failure that would respond to more training cells.
+    """
+    rows: list[dict] = []
+    for f in features:
+        s_min = float(sev_df[f].min())
+        s_max = float(sev_df[f].max())
+        s_mean = float(sev_df[f].mean())
+        s_std = float(sev_df[f].std()) or 1e-12
+        n_min = float(nasa_df[f].min())
+        n_max = float(nasa_df[f].max())
+        # z-distance: how many train-stds away the closest NASA point is
+        # from the Severson mean (lower bound on the 'extrapolation budget'
+        # the OLS coefficients are being asked to handle).
+        worst_z = max(abs(n_min - s_mean), abs(n_max - s_mean)) / s_std
+        rows.append({
+            "feature": f,
+            "severson_min": round(s_min, 4),
+            "severson_max": round(s_max, 4),
+            "severson_mean": round(s_mean, 4),
+            "severson_std": round(s_std, 4),
+            "nasa_min": round(n_min, 4),
+            "nasa_max": round(n_max, 4),
+            "nasa_within_severson_range": (n_min >= s_min) and (n_max <= s_max),
+            "worst_z_from_severson_mean": round(worst_z, 2),
+        })
+    n_outside = sum(1 for r in rows if not r["nasa_within_severson_range"])
+    return {
+        "per_feature": rows,
+        "n_features_outside_training_range": n_outside,
+        "n_features_total": len(features),
+    }
+
+
 def _eval_cross_dataset(
     features: tuple[str, ...],
     sev_df: pd.DataFrame,
@@ -151,6 +198,7 @@ def _eval_cross_dataset(
         "test_mape_pct": round(metrics["mape_pct"], 2),
         "test_rmse_cycles": round(metrics["rmse_cycles"], 0),
         "test_r2": round(metrics["r2"], 3),
+        "feature_distribution_check": _feature_distribution_check(features, sev_df, nasa_df),
         "test_predictions": [
             {
                 "cell_id": str(r["cell_id"]),
@@ -204,13 +252,25 @@ def main() -> int:
         cross.append({"label": label, **r})
         print(f"  {label:9s} (n_feat={len(feats)})  test MAPE={r['test_mape_pct']:5.2f}%  R2={r['test_r2']:6.3f}")
 
+    cross_check = cross[0]["feature_distribution_check"]
+    print(
+        f"\n  feature distribution: "
+        f"{cross_check['n_features_outside_training_range']}/{cross_check['n_features_total']} "
+        f"NASA features outside Severson training range — see JSON for per-feature z-distances"
+    )
+
     out = {
         "summary": (
-            "Severson 9-feature Full-model OLS evaluated on three progressively "
-            "harder regimes. Cross-dataset MAPE quantifies the LFP -> NMC "
-            "chemistry shift; the gap from in-distribution Severson MAPE is "
-            "the headline 'don't deploy this on different cells without "
-            "retraining' number."
+            "Severson cycle-life regression evaluated on three progressively "
+            "harder regimes. The cross-dataset (Severson -> NASA) result is "
+            "dominated by feature-distribution shift: every NASA feature "
+            "lies outside the Severson training range, so the linear OLS "
+            "extrapolates into a regime where its coefficients have no "
+            "support and predicted cycle lives diverge by orders of "
+            "magnitude. The headline finding for the white paper is "
+            "therefore *distributional* (cannot deploy across chemistries "
+            "without per-chemistry calibration) rather than a clean "
+            "MAPE-degradation curve."
         ),
         "feature_sets": {
             "discharge": list(bl.DISCHARGE_FEATURES),
