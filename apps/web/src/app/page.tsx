@@ -62,16 +62,45 @@ export default async function HomePage() {
           Headline results · PyBaMM DFN simulation
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
-          {[
-            { v: "3.5×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
-            { v: "5.7×", label: "Lower power-stress to LFP after LIC split", tone: "from-accent to-primary" },
-            { v: "10 yr", label: "BBU service life at >80 % SOH (Severson-fit)", tone: "from-primary to-accent" },
-            { v: "≈33 %", label: "Reference 10-year TCO reduction · proposal §G.3 baseline", tone: "from-accent to-primary" },
+          {([
+            {
+              v: "3.5×",
+              label: (<>Lower <span className="text-foreground font-medium">cell-voltage swing</span> under GB200 transient</>),
+              tone: "from-primary to-accent",
+            },
+            {
+              v: "5.7×",
+              label: (<>Lower <span className="text-foreground font-medium">power-stress to LFP</span> after LIC split</>),
+              tone: "from-accent to-primary",
+            },
+            {
+              v: "10 yr",
+              label: (<><span className="text-foreground font-medium">BBU service life</span> at &gt;80 % SOH (Severson-fit)</>),
+              tone: "from-primary to-accent",
+            },
+            {
+              v: "≈33 %",
+              label: (<><span className="text-foreground font-medium">10-year TCO reduction</span> · proposal §G.3 baseline</>),
+              tone: "from-accent to-primary",
+            },
             mv
-              ? { v: `${mv.latency.p99_ms.toFixed(1)} ms`, label: `ONNX p99 on laptop CPU · 50 ms spec target met by ${(50 / mv.latency.p99_ms).toFixed(0)}× · STM32N6 NPU est. ≈5 ms`, tone: "from-primary to-accent" }
-              : { v: "<50 ms", label: "Edge inference latency target · STM32N6 ONNX path (W2)", tone: "from-primary to-accent" },
-          ].map((s) => (
-            <Card key={s.label}>
+              ? {
+                  v: `${mv.latency.p99_ms.toFixed(1)} ms`,
+                  label: (
+                    <>
+                      ONNX p99 on laptop CPU · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× under spec</span>{" "}
+                      · STM32N6 NPU est. ≈5 ms
+                    </>
+                  ),
+                  tone: "from-primary to-accent",
+                }
+              : {
+                  v: "<50 ms",
+                  label: (<><span className="text-foreground font-medium">Edge inference latency target</span> · STM32N6 ONNX path (W2)</>),
+                  tone: "from-primary to-accent",
+                },
+          ] as const).map((s, i) => (
+            <Card key={i}>
               <CardBody>
                 <div className={`text-3xl sm:text-4xl md:text-5xl font-semibold tabular-nums bg-gradient-to-br ${s.tone} bg-clip-text text-transparent`}>
                   {s.v}
@@ -91,8 +120,11 @@ export default async function HomePage() {
             Hardware-Defined, Software-Augmented.
           </h2>
           <p className="mt-3 text-muted max-w-2xl">
-            We don&rsquo;t sell a cheaper BBU &mdash; we sell the only rack-level system that simultaneously solves
-            millisecond transients, the HVDC transition, and ops-side observability.
+            We don&rsquo;t sell a cheaper BBU &mdash; we sell the only{" "}
+            <span className="text-foreground font-medium">rack-level system</span> that simultaneously solves{" "}
+            <span className="text-foreground font-medium">millisecond transients</span>, the{" "}
+            <span className="text-foreground font-medium">HVDC transition</span>, and{" "}
+            <span className="text-foreground font-medium">ops-side observability</span>.
           </p>
         </div>
 
@@ -102,7 +134,16 @@ export default async function HomePage() {
             icon={<Cpu className="h-5 w-5" />}
             kicker="01"
             title="Battery Digital Twin"
-            body="PyBaMM DFN physics + LSTM RUL trained on 188 LFP cells (138 Severson 2019 + 50 PyBaMM-calibrated BBU-duty), with 90 % prediction intervals from MC Dropout + split conformal (PIs 44 % sharper than the raw sampler, ≥90 % coverage held). Cloud trains, edge (STM32N6) infers, OTA updates weights."
+            body={
+              <>
+                <span className="text-foreground font-medium">PyBaMM DFN physics</span> +{" "}
+                <span className="text-foreground font-medium">LSTM RUL</span> trained on{" "}
+                <span className="text-foreground font-medium">188 LFP cells</span> (138 Severson 2019 + 50 PyBaMM-calibrated BBU-duty),
+                with 90 % prediction intervals from{" "}
+                <span className="text-success font-medium">MC Dropout + split conformal</span> (PIs 44 % sharper, ≥90 % coverage held).
+                Cloud trains, edge (STM32N6) infers, OTA updates weights.
+              </>
+            }
             cta="Run physics simulation"
           />
           <PillarCard
@@ -110,7 +151,13 @@ export default async function HomePage() {
             icon={<BarChart3 className="h-5 w-5" />}
             kicker="02"
             title="TCO Calculator"
-            body="B2B lead-gen: feed your rack count, electricity price, and current BBU spec — get 10-year TCO, ROI, and CO₂ savings out the other side. Drives LinkedIn ad funnel."
+            body={
+              <>
+                B2B lead-gen: feed rack count, electricity price, and current BBU spec — get{" "}
+                <span className="text-foreground font-medium">10-year TCO, ROI, and CO₂ savings</span> out the other side.
+                Drives LinkedIn ad funnel.
+              </>
+            }
             cta="Calculate savings"
           />
           <PillarCard
@@ -118,7 +165,12 @@ export default async function HomePage() {
             icon={<Activity className="h-5 w-5" />}
             kicker="03"
             title="Fleet Health Dashboard"
-            body="Visualizes the three service tiers — real-time monitoring, proactive maintenance, predictive ops — across a 1,000-device synthetic fleet weighted to Texas + Virginia."
+            body={
+              <>
+                Visualizes the <span className="text-foreground font-medium">three service tiers</span> — real-time monitoring, proactive maintenance, predictive ops — across a{" "}
+                <span className="text-foreground font-medium">1,000-device synthetic fleet</span> weighted to Texas + Virginia.
+              </>
+            }
             cta="Open dashboard"
           />
         </div>
@@ -154,9 +206,12 @@ export default async function HomePage() {
                 <span className="text-foreground font-medium">~5 kJ/rack</span>.
               </p>
               <p className="text-sm text-muted leading-relaxed">
-                We over-provision to <span className="text-foreground font-medium">345 kJ</span> by using 2&times; off-the-shelf
-                Eaton XLR 48 V LIC modules. The 69&times; headroom is deliberate: lower ESR, low DoD (1.5 %) extends LIC life
-                to 10⁷ cycles, N+1 redundancy, and avoids a USD 50k+ NRE for a custom 5 kJ pack.
+                We over-provision to <span className="text-foreground font-medium">345 kJ</span> via{" "}
+                <span className="text-foreground font-medium">2× off-the-shelf Eaton XLR 48 V LIC modules</span>.
+                The <span className="text-success font-medium">69× headroom</span> is deliberate: lower ESR,{" "}
+                <span className="text-foreground">low DoD (1.5 %)</span> extends LIC life to{" "}
+                <span className="text-foreground">10⁷ cycles</span>, N+1 redundancy, and avoids a{" "}
+                <span className="text-foreground">USD 50k+ NRE</span> for a custom 5 kJ pack.
               </p>
               <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
                 <Mini label="Need" value="5 kJ" />
@@ -178,7 +233,7 @@ function PillarCard({
   icon: React.ReactNode;
   kicker: string;
   title: string;
-  body: string;
+  body: React.ReactNode;
   cta: string;
 }) {
   return (
