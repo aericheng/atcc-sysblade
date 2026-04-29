@@ -908,6 +908,11 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             value={`${errorPct >= 0 ? "+" : ""}${errorPct.toFixed(1)}`}
             unit="%"
             tone={Math.abs(errorPct) < 10 ? "success" : Math.abs(errorPct) < 25 ? "warning" : "danger"}
+            hint={
+              Math.abs(errorPct) >= 25
+                ? "Cycle-life tail — model under-trained on this distribution edge. W3 plan adds NASA + CALCE cells."
+                : `vs 16% test-set average MAPE`
+            }
           />
         </div>
 
