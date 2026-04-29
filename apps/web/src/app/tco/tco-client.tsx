@@ -37,8 +37,11 @@ const PRESETS: Record<string, TcoInputs> = {
   },
 };
 
+const DEFAULT_PRESET = "Mid-tier (50 racks · Texas)";
+
 export function TcoClient() {
-  const [inputs, setInputs] = useState<TcoInputs>(PRESETS["Mid-tier (50 racks · Texas)"]);
+  const [presetName, setPresetName] = useState<string>(DEFAULT_PRESET);
+  const [inputs, setInputs] = useState<TcoInputs>(() => ({ ...PRESETS[DEFAULT_PRESET] }));
   const result = useMemo(() => computeTco(inputs), [inputs]);
 
   const breakdown = useMemo(() => {
@@ -77,9 +80,14 @@ export function TcoClient() {
             <div>
               <label className="text-xs text-muted uppercase tracking-wider">Quick preset</label>
               <select
-                onChange={(e) => setInputs(PRESETS[e.target.value])}
+                value={presetName}
+                onChange={(e) => {
+                  setPresetName(e.target.value);
+                  setInputs({ ...PRESETS[e.target.value] });
+                }}
                 className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               >
+                <option value="custom" disabled hidden>Custom</option>
                 {Object.keys(PRESETS).map((k) => (
                   <option key={k} value={k}>
                     {k}
@@ -94,7 +102,10 @@ export function TcoClient() {
               min={1}
               max={5000}
               step={1}
-              onChange={(v) => setInputs((s) => ({ ...s, racks: v }))}
+              onChange={(v) => {
+                setPresetName("custom");
+                setInputs((s) => ({ ...s, racks: v }));
+              }}
             />
             <NumberField
               label="Electricity price (USD / kWh)"
@@ -102,7 +113,10 @@ export function TcoClient() {
               min={0.04}
               max={0.25}
               step={0.005}
-              onChange={(v) => setInputs((s) => ({ ...s, electricityPriceUsdPerKwh: v }))}
+              onChange={(v) => {
+                setPresetName("custom");
+                setInputs((s) => ({ ...s, electricityPriceUsdPerKwh: v }));
+              }}
               format={(n) => `$${n.toFixed(3)}`}
             />
             <NumberField
@@ -111,7 +125,10 @@ export function TcoClient() {
               min={1.05}
               max={2.0}
               step={0.05}
-              onChange={(v) => setInputs((s) => ({ ...s, pue: v }))}
+              onChange={(v) => {
+                setPresetName("custom");
+                setInputs((s) => ({ ...s, pue: v }));
+              }}
               format={(n) => n.toFixed(2)}
             />
             <NumberField
@@ -120,7 +137,10 @@ export function TcoClient() {
               min={0.05}
               max={0.8}
               step={0.01}
-              onChange={(v) => setInputs((s) => ({ ...s, gridCarbonKgPerKwh: v }))}
+              onChange={(v) => {
+                setPresetName("custom");
+                setInputs((s) => ({ ...s, gridCarbonKgPerKwh: v }));
+              }}
               format={(n) => n.toFixed(2)}
             />
           </CardBody>
@@ -147,7 +167,10 @@ export function TcoClient() {
               tone="default"
               hint={
                 <span className="inline-flex items-center gap-1">
-                  <Leaf className="h-3 w-3" /> {(result.fleet.co2SavedKg / 1000 / 25).toFixed(0)} cars / yr equivalent
+                  {/* EPA average passenger vehicle ≈ 4.6 t CO₂/yr (10y → 46 t).
+                      Dividing fleet 10-year savings by 46 t gives the
+                      "passenger cars taken off the road for a year" headline. */}
+                  <Leaf className="h-3 w-3" /> ≈ {(result.fleet.co2SavedKg / 1000 / 4.6 / 10).toFixed(0)} cars / yr equivalent
                 </span>
               }
             />
