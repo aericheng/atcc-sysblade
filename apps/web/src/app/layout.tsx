@@ -17,8 +17,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased min-h-screen">
         <SiteNav />
-        <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
-        <footer className="mx-auto max-w-7xl px-6 py-10 text-xs text-muted border-t border-border mt-20">
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-10">{children}</main>
+        <footer className="mx-auto max-w-7xl px-4 sm:px-6 py-10 text-xs text-muted border-t border-border mt-20">
           <p>
             Sysblade HyperBuffer™ is an ATCC 23rd-edition competition concept (議題 C13 · Sysgration). Demo data is generated from PyBaMM
             DFN simulation (Prada2013 LFP) and analytic Severson-calibrated aging models. Production deployment, customer logos, and

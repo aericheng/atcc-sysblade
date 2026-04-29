@@ -65,52 +65,74 @@ def _build_predicted_vs_actual(
     ]
 
 
+def _battery_scenario_label(cycle_life: int) -> str:
+    """Describe what kind of battery this cell represents (not the model's
+    accuracy on it). Bands roughly match Severson's distribution: median
+    around 800 cycles, anything < 200 is treated as an outright early
+    failure, anything > 1500 is a 'hero' long-lived cell."""
+    if cycle_life < 200:
+        return "early failure"
+    if cycle_life < 400:
+        return "short-lived"
+    if cycle_life < 700:
+        return "below-median lifetime"
+    if cycle_life < 1000:
+        return "typical lifetime"
+    if cycle_life < 1300:
+        return "above-median lifetime"
+    if cycle_life < 1600:
+        return "long-lived"
+    return "premium long-lived"
+
+
 def _pick_walkthrough_cells(
-    y: np.ndarray, pred: np.ndarray, n_random: int = 4
+    y: np.ndarray, pred: np.ndarray, n_picks: int = 9
 ) -> list[tuple[int, str]]:
-    """Pick a curated set of cells that tell different stories.
+    """Pick a curated, evenly-spread set of cells across the cycle-life range.
 
-    Returns (index, label) tuples in display order. Each cell gets a one-line
-    label that explains why it's interesting:
+    Replaces the older 'best / worst / median + random' picker — that one
+    cherry-picked extremes of model accuracy, which framed the demo around
+    the model rather than around the batteries. The new picker spans the
+    cycle-life percentiles so the dropdown reads as 'a representative tour
+    of the battery population' rather than 'the model's hits and misses'.
 
-      - Longest-lived (the model's hardest extreme on the upside)
-      - Shortest-lived (early-failure case)
-      - Median cell (typical behaviour)
-      - Best prediction (smallest absolute error)
-      - Worst prediction (largest absolute error — explains a failure case)
-      - n_random additional cells for variety
+    Returns (index, label) tuples in display order. The label describes the
+    BATTERY scenario; per-cell error rate is still shown in the UI summary.
     """
-    err = np.abs(pred - y) / y
-    picked: dict[int, str] = {}
+    n = len(y)
+    if n_picks > n:
+        n_picks = n
 
-    idx_long = int(np.argmax(y))
-    picked[idx_long] = f"longest-lived ({int(y[idx_long])} cycles)"
-    idx_short = int(np.argmin(y))
-    picked[idx_short] = f"shortest-lived early failure ({int(y[idx_short])} cycles)"
-    idx_med = int(np.argsort(y)[len(y) // 2])
-    if idx_med not in picked:
-        picked[idx_med] = f"median cell ({int(y[idx_med])} cycles)"
+    # Pick at fixed percentiles so the spread is independent of dataset size.
+    # 10/22/35/45/55/65/78/90 % covers the body of the distribution; the two
+    # endpoints are forced to the absolute min and max so the most extreme
+    # battery scenarios (early failure vs hero long-lived) always appear.
+    inner_pcts = [10, 22, 35, 45, 55, 65, 78, 90]
+    inner_pcts = inner_pcts[: max(0, n_picks - 2)]
+    sorted_idx = np.argsort(y)
+    picked: dict[int, None] = {}
 
-    sorted_by_err = np.argsort(err)
-    for i in sorted_by_err:
-        i = int(i)
-        if i not in picked:
-            picked[i] = f"best prediction (error {err[i] * 100:.1f} %)"
-            break
-    for i in sorted_by_err[::-1]:
-        i = int(i)
-        if i not in picked:
-            picked[i] = f"worst prediction (error {err[i] * 100:.1f} %)"
-            break
+    # Always include the absolute extremes
+    picked[int(sorted_idx[0])] = None
+    picked[int(sorted_idx[-1])] = None
 
-    rng = np.random.default_rng(7)
-    remaining = [i for i in range(len(y)) if i not in picked]
-    rng.shuffle(remaining)
-    for i in remaining[:n_random]:
-        picked[int(i)] = "varied · for cross-comparison"
+    for pct in inner_pcts:
+        rank = int(round((pct / 100.0) * (n - 1)))
+        idx = int(sorted_idx[rank])
+        # If a tie pulls us back onto an already-picked index, walk forward.
+        while idx in picked and rank < n - 1:
+            rank += 1
+            idx = int(sorted_idx[rank])
+        picked[idx] = None
 
-    # Stable display order: by actual cycle life ascending
-    return sorted(picked.items(), key=lambda kv: y[kv[0]])
+    # Build descriptive labels and sort by actual cycle life ascending.
+    out: list[tuple[int, str]] = []
+    for idx in picked:
+        scenario = _battery_scenario_label(int(y[idx]))
+        label = f"{scenario} · {int(y[idx])} cycles"
+        out.append((idx, label))
+    out.sort(key=lambda kv: y[kv[0]])
+    return out
 
 
 def extract_walkthroughs(
@@ -321,7 +343,7 @@ def main() -> None:
     # trajectory for a curated set of cells. Used by the /twin "Inference
     # walkthrough" UI to let the viewer step through one cell at a time.
     print("extracting per-cell walkthrough trajectories...")
-    picks = _pick_walkthrough_cells(y, pred_all, n_random=4)
+    picks = _pick_walkthrough_cells(y, pred_all, n_picks=9)
     payload["walkthroughs"] = extract_walkthroughs(
         res.model, res.scaler, X, y, ids, batches, pred_all, picks
     )

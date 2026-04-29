@@ -165,8 +165,8 @@ export function TwinClient({
     <div className="space-y-10">
       <header className="space-y-3">
         <div className="text-xs uppercase tracking-[0.2em] text-muted">Battery Digital Twin · Live PyBaMM DFN</div>
-        <h1 className="text-4xl font-semibold tracking-tight">Solving the GB200 millisecond transient.</h1>
-        <p className="text-muted max-w-3xl leading-relaxed">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Solving the GB200 millisecond transient.</h1>
+        <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
           We simulate one rack&rsquo;s worth of LFP cells under a real-world AI-training power profile — baseline
           80 kW with a &plusmn;30 % square pulse every 100 ms (the pattern Microsoft Azure documented in
           arXiv 2508.14318). Toggle below to see what happens when the LIC absorbs the high-frequency component.
@@ -174,7 +174,7 @@ export function TwinClient({
       </header>
 
       {/* Mode toggle */}
-      <div className="inline-flex rounded-lg border border-border bg-surface/50 p-1">
+      <div className="flex flex-wrap rounded-lg border border-border bg-surface/50 p-1 max-w-full sm:inline-flex sm:w-auto">
         <ModeButton active={mode === "lfp"} onClick={() => setMode("lfp")} label="LFP only (baseline)" />
         <ModeButton active={mode === "hybrid"} onClick={() => setMode("hybrid")} label="LFP + LIC hybrid" />
       </div>
@@ -182,8 +182,8 @@ export function TwinClient({
       {/* Main scenario card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div>
+          <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
               <CardTitle>{mode === "hybrid" ? "Hybrid · Power split + cell response" : "Baseline · Pure LFP cell response"}</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{active.description}</p>
             </div>
@@ -359,8 +359,8 @@ export function TwinClient({
       {/* Model Validation — real LSTM trained on Severson 2019 */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div>
+          <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
               <CardTitle>Model validation · LSTM trained on Severson 2019</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{modelValidation.description}</p>
             </div>
@@ -537,8 +537,8 @@ function ModeButton({ active, onClick, label }: { active: boolean; onClick: () =
       onClick={onClick}
       className={
         active
-          ? "px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow"
-          : "px-4 py-2 rounded-md text-sm text-muted hover:text-foreground transition"
+          ? "flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow"
+          : "flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-md text-sm text-muted hover:text-foreground transition"
       }
     >
       {label}
@@ -624,10 +624,10 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Microscope className="h-5 w-5 text-primary" />
-            <div>
+        <div className="flex items-start lg:items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3 min-w-0">
+            <Microscope className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="min-w-0">
               <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
                 Pick any of the {walkthroughs.length} cells below — each is curated to expose a
@@ -640,7 +640,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <select
             value={pickedId}
             onChange={(e) => setPickedId(e.target.value)}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
+            className="w-full lg:w-auto rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
           >
             {walkthroughs.map((w) => (
               <option key={w.cell_id} value={w.cell_id}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -44,15 +44,27 @@ export function TcoClient() {
   const [inputs, setInputs] = useState<TcoInputs>(() => ({ ...PRESETS[DEFAULT_PRESET] }));
   const result = useMemo(() => computeTco(inputs), [inputs]);
 
+  // Recharts vertical-bar layout reserves a fixed pixel column for category
+  // labels — at <640 px we shrink it (and shorten the labels) so the bars
+  // themselves stay visible on a phone.
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsNarrow(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const breakdown = useMemo(() => {
     const t = result.perRack.traditional;
     const s = result.perRack.sysblade;
     return [
-      { item: "Initial purchase", traditional: t.initial, sysblade: s.initial },
-      { item: "Replacements", traditional: t.replacements, sysblade: s.replacements },
-      { item: "Transient losses", traditional: t.transient, sysblade: s.transient },
-      { item: "Ops labor", traditional: t.ops, sysblade: s.ops },
-      { item: "HVDC transition", traditional: t.hvdc, sysblade: s.hvdc },
+      { item: "Initial purchase", short: "Purchase", traditional: t.initial, sysblade: s.initial },
+      { item: "Replacements", short: "Replace", traditional: t.replacements, sysblade: s.replacements },
+      { item: "Transient losses", short: "Transient", traditional: t.transient, sysblade: s.transient },
+      { item: "Ops labor", short: "Ops", traditional: t.ops, sysblade: s.ops },
+      { item: "HVDC transition", short: "HVDC", traditional: t.hvdc, sysblade: s.hvdc },
     ];
   }, [result]);
 
@@ -60,8 +72,8 @@ export function TcoClient() {
     <div className="space-y-10">
       <header className="space-y-3">
         <div className="text-xs uppercase tracking-[0.2em] text-muted">TCO Calculator · 10-year horizon</div>
-        <h1 className="text-4xl font-semibold tracking-tight">How much does the transient gap cost you?</h1>
-        <p className="text-muted max-w-3xl leading-relaxed">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">How much does the transient gap cost you?</h1>
+        <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
           Cost model from the proposal §G.3, line-by-line. The reference baseline at
           <span className="text-foreground"> $0.10 / kWh</span> and
           <span className="text-foreground"> PUE 1.4</span> is the headline 33 % savings claim;
@@ -182,10 +194,19 @@ export function TcoClient() {
             </CardHeader>
             <CardBody>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={breakdown} layout="vertical" margin={{ top: 8, right: 24, left: 80, bottom: 8 }}>
+                <BarChart
+                  data={breakdown}
+                  layout="vertical"
+                  margin={{ top: 8, right: 16, left: isNarrow ? 0 : 80, bottom: 8 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} stroke="" />
-                  <YAxis type="category" dataKey="item" stroke="" width={100} />
+                  <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} stroke="" />
+                  <YAxis
+                    type="category"
+                    dataKey={isNarrow ? "short" : "item"}
+                    stroke=""
+                    width={isNarrow ? 64 : 100}
+                  />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;

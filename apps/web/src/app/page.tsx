@@ -21,20 +21,20 @@ async function loadModelValidation(): Promise<ModelValidationLite | null> {
 export default async function HomePage() {
   const mv = await loadModelValidation();
   return (
-    <div className="space-y-24">
+    <div className="space-y-16 sm:space-y-24">
       {/* Hero */}
       <section className="pt-12 pb-4">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs text-muted mb-6">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
           OCP Mt. Diablo 400 ready · LFP + LIC hybrid · 2026 Q4 EVT
         </div>
-        <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05] max-w-4xl text-balance">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-semibold tracking-tight leading-[1.1] md:leading-[1.05] max-w-4xl text-balance">
           Hybrid energy buffer for{" "}
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             AI-rack millisecond transients
           </span>
         </h1>
-        <p className="mt-6 max-w-2xl text-lg text-muted leading-relaxed">
+        <p className="mt-5 sm:mt-6 max-w-2xl text-base sm:text-lg text-muted leading-relaxed">
           Sysblade HyperBuffer combines LFP cells with lithium-ion capacitors and an embedded battery digital twin to absorb the ±30 % power
           swings GB200/GB300 racks impose on the grid — and turn that data into a SaaS service for the operators who need it.
         </p>
@@ -59,7 +59,7 @@ export default async function HomePage() {
         <div className="text-xs uppercase tracking-[0.2em] text-muted mb-4">
           Headline results · PyBaMM DFN simulation
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
           {[
             { v: "3.5×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
             { v: "5.7×", label: "Lower power-stress to LFP after LIC split", tone: "from-accent to-primary" },
@@ -71,7 +71,7 @@ export default async function HomePage() {
           ].map((s) => (
             <Card key={s.label}>
               <CardBody>
-                <div className={`text-4xl md:text-5xl font-semibold tabular-nums bg-gradient-to-br ${s.tone} bg-clip-text text-transparent`}>
+                <div className={`text-3xl sm:text-4xl md:text-5xl font-semibold tabular-nums bg-gradient-to-br ${s.tone} bg-clip-text text-transparent`}>
                   {s.v}
                 </div>
                 <div className="text-sm text-muted mt-2 leading-relaxed">{s.label}</div>
