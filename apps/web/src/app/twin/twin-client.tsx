@@ -679,17 +679,21 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
         {/* Stage 1 · INPUT */}
         <Stage
           n={1}
-          title="Input · 7 features × 99 cycles (z-scored)"
-          body="What the LSTM literally sees on the wire. Each row is one feature, each column is one cycle (cycle 2 → cycle 100). Red = above the training mean, blue = below."
+          title="Input · 7 features × 99 cycles"
+          body="What the LSTM literally sees on the wire. Each row is one of the 7 per-cycle summary features; each column is one of cycles 2 → 100. Each row is independently colour-scaled to its own min/max so you can see how that feature evolves over the cell's early life — dark = the row's lowest value, bright yellow = the row's highest."
         >
-          {/* input_scaled is (99, 7) — transpose to (7, 99) so features are rows */}
+          {/* input_scaled is (99, 7) — transpose, then per-row normalise so
+              every feature shows its own time-evolution clearly under viridis. */}
           <Heatmap
-            data={transpose(cell.input_scaled)}
+            data={normaliseRowsTo01(transpose(cell.input_scaled))}
             rowLabels={PER_CYCLE_FEATURE_NAMES}
             colAxisLabel="cycle index (2 → 100)"
             cellWidth={6}
             cellHeight={18}
-            scale="diverging"
+            scale="viridis"
+            vmin={0}
+            vmax={1}
+            formatValue={(v) => `${(v * 100).toFixed(0)} %`}
           />
         </Stage>
 
@@ -697,14 +701,17 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
         <Stage
           n={2}
           title="LSTM hidden state · 64 dims × 99 timesteps"
-          body="The model's internal opinion at every timestep. Each row is one of the 64 hidden dimensions. Some dimensions stay quiet, others light up only in specific cycle windows — that's the model picking up degradation patterns."
+          body="The model's internal opinion at every timestep. Each row is one of the 64 hidden dimensions; brightness shows how strongly that dimension is firing (|tanh activation|). Dark = quiet, bright yellow = active. Some dimensions stay dark the whole time, others only light up in specific cycle windows — that's the model picking up degradation patterns."
         >
           <Heatmap
-            data={transpose(cell.hidden_state)}
+            data={absMatrix(transpose(cell.hidden_state))}
             colAxisLabel="cycle index (2 → 100)"
             cellWidth={6}
             cellHeight={6}
-            scale="diverging"
+            scale="viridis"
+            vmin={0}
+            vmax={1}
+            formatValue={(v) => v.toFixed(2)}
           />
         </Stage>
 
@@ -810,4 +817,32 @@ function transpose<T>(m: T[][]): T[][] {
   const out: T[][] = Array.from({ length: c }, () => Array(r));
   for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) out[j][i] = m[i][j];
   return out;
+}
+
+/** Normalise each row of a matrix to [0, 1] of its own min/max range.
+ *  Lets a viridis colormap make every feature individually readable
+ *  ('this row goes from low to high over time') without losing the
+ *  pattern to one dominant feature's scale. */
+function normaliseRowsTo01(m: number[][]): number[][] {
+  return m.map((row) => {
+    let mn = Infinity;
+    let mx = -Infinity;
+    for (const v of row) {
+      if (Number.isFinite(v)) {
+        if (v < mn) mn = v;
+        if (v > mx) mx = v;
+      }
+    }
+    const range = mx - mn;
+    if (range === 0) return row.map(() => 0.5);
+    return row.map((v) => (Number.isFinite(v) ? (v - mn) / range : 0));
+  });
+}
+
+/** Element-wise absolute value of a matrix. Used to convert tanh-bounded
+ *  hidden activations (range [-1, 1]) into 'magnitude' (range [0, 1])
+ *  so a single-direction colormap reads naturally as
+ *  'dark = quiet dimension, bright = active dimension'. */
+function absMatrix(m: number[][]): number[][] {
+  return m.map((row) => row.map((v) => (Number.isFinite(v) ? Math.abs(v) : 0)));
 }
