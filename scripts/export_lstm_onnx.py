@@ -127,22 +127,32 @@ def extract_walkthroughs(
 
     For each picked cell, returns:
       cell_id / batch / actual / predicted / label
-      input_scaled       — (99, 7) the LSTM's actual input after standardisation
-      hidden_state       — (99, 64) LSTM layer-2 hidden output at each timestep
-      cumulative_pred    — (99,) predicted cycle-life if we stopped at each timestep
+      input_raw          — (99, 7) features in original physical units
+                           (Ah / V / °C / sec — what the demo actually shows)
+      hidden_activation  — (99,) mean |tanh activation| across the 64 hidden
+                           dims at each timestep ('how active is the model?')
+      cumulative_pred    — (99,) predicted cycle-life if we stopped at each
+                           timestep (what the model would have said with only
+                           that much data)
 
-    Capturing all 99 hidden states per cell is what lets the UI show
-    'the model's confidence converging' — see Stage 3 in the UX spec.
+    Earlier versions also exported the full (99, 7) z-scored input and the
+    full (99, 64) hidden state for a heatmap UI; both were dropped in favour
+    of line charts that read more naturally for non-ML viewers.
     """
     model.eval()
     out: list[dict] = []
     with torch.no_grad():
         for idx, label in cell_indices:
+            x_raw = X[idx]                            # (99, 7) original units
             x_scaled = scaler.transform(X[idx : idx + 1])  # (1, 99, 7)
             x_t = torch.tensor(x_scaled, dtype=torch.float32)
 
             # Run only the LSTM portion to get hidden states at every timestep.
             lstm_out, _ = model.lstm(x_t)  # (1, 99, hidden_dim)
+
+            # Mean |activation| collapses the 64 hidden dims into a single
+            # 'how strongly is the model firing right now' scalar per timestep.
+            hidden_act = lstm_out[0].abs().mean(dim=-1).numpy()  # (99,)
 
             # Cumulative prediction: at each timestep apply the head as if we
             # stopped there. Lets the UI show convergence over the 99 cycles.
@@ -157,14 +167,11 @@ def extract_walkthroughs(
                 "label": label,
                 "actual": int(round(float(y[idx]))),
                 "predicted": int(round(float(pred_all[idx]))),
-                "input_scaled": [
-                    [round(float(v), 4) for v in row]
-                    for row in x_scaled[0].tolist()
+                "input_raw": [
+                    [round(float(v), 5) for v in row]
+                    for row in x_raw.tolist()
                 ],
-                "hidden_state": [
-                    [round(float(v), 4) for v in row]
-                    for row in lstm_out[0].numpy().tolist()
-                ],
+                "hidden_activation": [round(float(v), 4) for v in hidden_act.tolist()],
                 "cumulative_pred": [int(round(c)) for c in cumul],
             })
     return out
