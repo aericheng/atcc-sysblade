@@ -601,9 +601,11 @@ function Method({ icon, title, body }: { icon: React.ReactNode; title: string; b
 }
 
 // ---------------------------------------------------------------------------
-// Inference walkthrough — pick a cell, see the LSTM's input → hidden state →
-// cumulative prediction → final answer. The four "Stage" blocks each cover
-// one part of the inference flow described in the model architecture docs.
+// Inference walkthrough — pick a cell, see the per-cycle measurements the
+// LSTM ingested over its first 100 cycles. Earlier versions also showed
+// hidden-state activation, cumulative prediction, and the dense-head
+// breakdown; those were removed because the input charts alone already
+// carry the demo's story (and adding more was noise for non-ML viewers).
 // ---------------------------------------------------------------------------
 type Walkthrough = NonNullable<ModelValidation["walkthroughs"]>[number];
 
@@ -613,17 +615,6 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
 
   const errorPct = ((cell.predicted - cell.actual) / cell.actual) * 100;
 
-  // Cumulative prediction series for Stage 3 line chart.
-  const cumulativeData = useMemo(
-    () =>
-      cell.cumulative_pred.map((p, i) => ({
-        cycle: i + 2, // we use cycles 2..100
-        predicted: p,
-        actual: cell.actual,
-      })),
-    [cell],
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -631,12 +622,12 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <div className="flex items-center gap-3">
             <Microscope className="h-5 w-5 text-primary" />
             <div>
-              <CardTitle>Inference walkthrough · pick a cell, watch the LSTM think</CardTitle>
+              <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
-                Black-box NN claims are easy to challenge. Pick any of the {walkthroughs.length} cells
-                below — each is curated to expose a different model behaviour — and the four stages
-                show exactly what the LSTM saw, what its internal state did, and how its prediction
-                converged over the 99 observed cycles.
+                Pick any of the {walkthroughs.length} cells below — each is curated to expose a
+                different behaviour (longest-lived, early failure, best/worst prediction, etc.) —
+                and the seven small charts show the actual per-cycle measurements the LSTM
+                consumed for that cell over its first 100 cycles.
               </p>
             </div>
           </div>
@@ -678,12 +669,15 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           />
         </div>
 
-        {/* Stage 1 · INPUT */}
-        <Stage
-          n={1}
-          title="Input · 7 per-cycle features"
-          body="What the LSTM literally sees on the wire. One small line chart per feature; x-axis is cycle index 2 → 100. Y-axis is the actual physical unit so you can read 'capacity dropped 0.04 Ah' or 'temperature peaked at 38 °C' directly off the chart."
-        >
+        {/* INPUT — 7 per-cycle features as small line charts */}
+        <div className="rounded-lg border border-border bg-background/30 p-5 space-y-3">
+          <div>
+            <h4 className="text-sm font-medium">Per-cycle measurements (cycles 2 → 100)</h4>
+            <p className="text-xs text-muted leading-relaxed mt-1">
+              Each chart is one of the seven features the LSTM ingests, in its actual physical
+              unit (Ah / V / °C / sec). Hover any line to see the value at a specific cycle.
+            </p>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {PER_CYCLE_FEATURES.map((f, fi) => {
               const series = cell.input_raw.map((row, i) => ({ cycle: i + 2, v: row[fi] }));
@@ -698,133 +692,15 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
               );
             })}
           </div>
-        </Stage>
-
-        {/* Stage 2 · MODEL ACTIVATION */}
-        <Stage
-          n={2}
-          title="Model activation · how strongly the LSTM is firing"
-          body="The 64 hidden dimensions reduced to a single 'how active is the model right now?' line — mean |tanh activation| across all dims at each timestep. Low values mean the model has nothing strong to say (early life, not enough info); the line rising indicates the model has identified a degradation pattern and is committing to a prediction."
-        >
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart
-              data={cell.hidden_activation.map((v, i) => ({ cycle: i + 2, activation: v }))}
-              margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="cycle" type="number" domain={[2, 100]} stroke="" />
-              <YAxis stroke="" domain={[0, "auto"]} tickFormatter={(v) => v.toFixed(2)} />
-              <Tooltip content={<DarkTooltip />} />
-              <Line
-                type="monotone"
-                dataKey="activation"
-                stroke="var(--accent)"
-                strokeWidth={1.8}
-                dot={false}
-                name="mean |activation|"
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Stage>
-
-        {/* Stage 3 · CUMULATIVE PREDICTION */}
-        <Stage
-          n={3}
-          title="Cumulative prediction · convergence over the 99 cycles"
-          body="If we'd stopped reading at cycle X, what would the model say? Early-life predictions are poor (the model has barely seen anything); they converge to the final answer as more cycles arrive — exactly the behaviour the proposal claims."
-        >
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={cumulativeData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="cycle" type="number" domain={[2, 100]} stroke="" />
-              <YAxis stroke="" tickFormatter={(v) => `${v}`} />
-              <Tooltip content={<DarkTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
-              <Line
-                type="stepAfter"
-                dataKey="actual"
-                stroke="rgba(148,163,184,0.45)"
-                strokeDasharray="4 4"
-                strokeWidth={1.4}
-                dot={false}
-                name={`actual (${cell.actual.toLocaleString()} cycles)`}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="predicted"
-                stroke="var(--primary)"
-                strokeWidth={1.8}
-                dot={false}
-                name="prediction at this cycle"
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Stage>
-
-        {/* Stage 4 · DENSE HEAD */}
-        <Stage
-          n={4}
-          title="Dense head · 64 → 32 → 1"
-          body={`The final hidden state at cycle 100 (64 numbers) goes through a Dense(64→32) + ReLU + Dropout + Linear(32→1) — see the architecture summary above. The single scalar output is log10(cycle_life) = ${(Math.log10(cell.predicted)).toFixed(4)}, which becomes 10^x = ${cell.predicted.toLocaleString()} cycles.`}
-        >
-          <div className="rounded-md border border-border bg-background/30 p-4 font-mono text-xs leading-relaxed text-muted">
-            <div className="text-foreground">final_hidden_64 → Dense(64→32) → ReLU → Dropout → Linear(32→1)</div>
-            <div className="mt-2">
-              <span className="text-muted">log_pred</span> ={" "}
-              <span className="text-primary">{Math.log10(cell.predicted).toFixed(4)}</span>
-            </div>
-            <div>
-              <span className="text-muted">10^log_pred</span> ={" "}
-              <span className="text-primary tabular-nums">{cell.predicted.toLocaleString()}</span> cycles
-            </div>
-            <div>
-              <span className="text-muted">actual</span> ={" "}
-              <span className="tabular-nums">{cell.actual.toLocaleString()}</span> cycles
-            </div>
-            <div>
-              <span className="text-muted">error</span> ={" "}
-              <span className={Math.abs(errorPct) < 10 ? "text-success" : Math.abs(errorPct) < 25 ? "text-warning" : "text-danger"}>
-                {errorPct >= 0 ? "+" : ""}{errorPct.toFixed(1)} %
-              </span>
-            </div>
-          </div>
-        </Stage>
+        </div>
       </CardBody>
     </Card>
   );
 }
 
-function Stage({
-  n,
-  title,
-  body,
-  children,
-}: {
-  n: number;
-  title: string;
-  body: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-background/30 p-5 space-y-3">
-      <div className="flex items-baseline gap-3">
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-semibold">
-          {n}
-        </span>
-        <h4 className="text-sm font-medium">{title}</h4>
-      </div>
-      <p className="text-xs text-muted leading-relaxed">{body}</p>
-      <div>{children}</div>
-    </div>
-  );
-}
-
-/** Small line chart for one per-cycle feature. Used in Stage 1 of the
- *  Inference walkthrough: 7 of these tile into a grid so the viewer can
- *  read the actual physical unit (Ah, V, °C, sec) for each cycle. */
+/** Small line chart for one per-cycle feature. Used in the inference
+ *  walkthrough: 7 of these tile into a grid so the viewer can read the
+ *  actual physical unit (Ah, V, °C, sec) for each cycle. */
 function FeatureSparkline({
   label,
   unit,
