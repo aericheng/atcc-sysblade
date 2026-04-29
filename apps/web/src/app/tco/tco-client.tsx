@@ -1,15 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
 import { computeTco, formatTons, formatUsd, type TcoInputs } from "@/lib/tco";
@@ -38,65 +29,74 @@ const PRESETS: Record<string, TcoInputs> = {
 
 const DEFAULT_PRESET = "Mid-tier (50 racks · Texas)";
 
-// Stable references for Recharts props. Inline functions / new objects on
-// every parent render fed back through ResponsiveContainer's ResizeObserver
-// to cause "Maximum update depth exceeded" loops on rapid input changes
-// (e.g. dragging the rack-count slider). Hoisting helps but the underlying
-// loop comes from ResponsiveContainer remeasuring during render — we now
-// measure width ourselves with rAF-debounced ResizeObserver and pass fixed
-// pixel dimensions to <BarChart>, see useChartWidth below.
-const LEGEND_WRAPPER_STYLE = { fontSize: 11, color: "var(--muted)" } as const;
-const CHART_HEIGHT_PX = 300;
+// The cost-breakdown chart is intentionally rendered as plain HTML / CSS
+// rather than recharts. recharts 3.x's internal Redux store dispatches
+// state updates during render in response to prop churn, which manifests
+// as a "Maximum update depth" infinite loop the moment the user drags any
+// of the four sliders. ResponsiveContainer + ResizeObserver workarounds
+// (commits 11d2073 and 9204809) reduced but did not eliminate the loop;
+// dropping recharts entirely on this page is the only stable fix. The
+// table below the chart still surfaces the exact dollar values, so the
+// chart only needs to communicate "visual proportion".
+type BreakdownRow = {
+  item: string;
+  short: string;
+  traditional: number;
+  sysblade: number;
+};
 
-/** Track an element's width via a ResizeObserver, but defer the setState to
- *  the next animation frame so we never call it synchronously inside React's
- *  render or commit phase. Negative / zero widths reported during DOM
- *  reflow are ignored. Returns [ref, width] — width is 0 until first
- *  measurement, so callers should guard rendering on `width > 0`. */
-function useChartWidth() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let raf = 0;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0;
-      if (w <= 0) return;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        setWidth((prev) => (Math.abs(prev - w) < 1 ? prev : Math.floor(w)));
-      });
-    });
-    ro.observe(el);
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-    };
-  }, []);
-  return [ref, width] as const;
-}
-
-function BreakdownTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: Array<{ name?: string | number; value?: number; color?: string }>;
-  label?: string | number;
-}) {
-  if (!active || !payload?.length) return null;
+function BreakdownBars({ rows, isNarrow }: { rows: BreakdownRow[]; isNarrow: boolean }) {
+  const max = Math.max(1, ...rows.flatMap((r) => [r.traditional, r.sysblade]));
   return (
-    <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl">
-      <div className="text-muted mb-1">{label}</div>
-      {payload.map((p) => (
-        <div key={String(p.name)} className="flex items-center gap-2 tabular-nums">
-          <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
-          <span>{p.name}</span>
-          <span className="ml-auto font-medium">${p.value!.toLocaleString()}</span>
-        </div>
-      ))}
+    <div className="space-y-3">
+      {rows.map((row) => {
+        const tw = (row.traditional / max) * 100;
+        const sw = (row.sysblade / max) * 100;
+        const labelText = isNarrow ? row.short : row.item;
+        return (
+          <div
+            key={row.item}
+            className="grid grid-cols-[80px_1fr_auto] sm:grid-cols-[140px_1fr_auto] items-center gap-3"
+          >
+            <div className="text-xs text-muted truncate">{labelText}</div>
+            <div className="space-y-1.5 min-w-0">
+              <div
+                className="relative h-2.5 w-full rounded bg-surface/40"
+                title={`Traditional NMC BBU · $${row.traditional.toLocaleString()}`}
+              >
+                <div
+                  className="absolute inset-y-0 left-0 rounded"
+                  style={{ width: `${tw}%`, background: "rgba(251,191,36,0.85)" }}
+                />
+              </div>
+              <div
+                className="relative h-2.5 w-full rounded bg-surface/40"
+                title={`Sysblade HyperBuffer · $${row.sysblade.toLocaleString()}`}
+              >
+                <div
+                  className="absolute inset-y-0 left-0 rounded"
+                  style={{ width: `${sw}%`, background: "rgba(99,102,241,0.9)" }}
+                />
+              </div>
+            </div>
+            <div className="text-right tabular-nums text-xs whitespace-nowrap">
+              <div className="text-warning">${row.traditional.toLocaleString()}</div>
+              <div className="text-primary">${row.sysblade.toLocaleString()}</div>
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3 mt-2 border-t border-border text-xs text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(251,191,36,0.85)" }} />
+          Traditional NMC BBU
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(99,102,241,0.9)" }} />
+          Sysblade HyperBuffer
+        </span>
+        <span className="ml-auto">Bar widths normalised to the largest line item.</span>
+      </div>
     </div>
   );
 }
@@ -118,7 +118,7 @@ export function TcoClient() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  const breakdown = useMemo(() => {
+  const breakdown = useMemo<BreakdownRow[]>(() => {
     const t = result.perRack.traditional;
     const s = result.perRack.sysblade;
     return [
@@ -129,16 +129,6 @@ export function TcoClient() {
       { item: "HVDC transition", short: "HVDC", traditional: t.hvdc, sysblade: s.hvdc },
     ];
   }, [result]);
-
-  // Stable margin object — passing a fresh literal on every render fed the
-  // recharts internals' shouldComponentUpdate path and contributed to the
-  // ResizeObserver loop on slider drag.
-  const chartMargin = useMemo(
-    () => ({ top: 8, right: 16, left: isNarrow ? 0 : 80, bottom: 8 }),
-    [isNarrow],
-  );
-
-  const [chartContainerRef, chartWidth] = useChartWidth();
 
   return (
     <div className="space-y-10">
@@ -265,39 +255,7 @@ export function TcoClient() {
               <CardTitle>Cost breakdown · per rack · 10 year horizon</CardTitle>
             </CardHeader>
             <CardBody>
-              {/* Width is measured outside React's render cycle (see
-                  useChartWidth) so the BarChart receives stable pixel
-                  dimensions. ResponsiveContainer is intentionally avoided
-                  here — its internal ResizeObserver fed back into recharts'
-                  state and produced 'Maximum update depth' on slider drag. */}
-              <div
-                ref={chartContainerRef}
-                className="w-full overflow-hidden"
-                style={{ height: CHART_HEIGHT_PX }}
-              >
-                {chartWidth > 0 && (
-                  <BarChart
-                    width={chartWidth}
-                    height={CHART_HEIGHT_PX}
-                    data={breakdown}
-                    layout="vertical"
-                    margin={chartMargin}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} stroke="" />
-                    <YAxis
-                      type="category"
-                      dataKey={isNarrow ? "short" : "item"}
-                      stroke=""
-                      width={isNarrow ? 64 : 100}
-                    />
-                    <Tooltip content={<BreakdownTooltip />} />
-                    <Legend wrapperStyle={LEGEND_WRAPPER_STYLE} />
-                    <Bar dataKey="traditional" name="Traditional NMC BBU" fill="rgba(251,191,36,0.8)" radius={[0, 3, 3, 0]} />
-                    <Bar dataKey="sysblade" name="Sysblade HyperBuffer" fill="rgba(99,102,241,0.85)" radius={[0, 3, 3, 0]} />
-                  </BarChart>
-                )}
-              </div>
+              <BreakdownBars rows={breakdown} isNarrow={isNarrow} />
             </CardBody>
           </Card>
         </div>
