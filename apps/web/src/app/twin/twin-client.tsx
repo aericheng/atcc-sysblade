@@ -649,6 +649,7 @@ function Method({ icon, title, body }: { icon: React.ReactNode; title: string; b
 
 type Bucket = {
   label: string;
+  range: string;
   min: number;
   max: number;
   count: number;
@@ -658,12 +659,16 @@ type Bucket = {
   avgPred: number;
 };
 
-const BUCKET_DEFS: Array<{ label: string; min: number; max: number }> = [
-  { label: "Short\n(<400)",        min: 0,    max: 400 },
-  { label: "Mid-low\n(400-700)",   min: 400,  max: 700 },
-  { label: "Typical\n(700-1000)",  min: 700,  max: 1000 },
-  { label: "Mid-high\n(1000-1300)",min: 1000, max: 1300 },
-  { label: "Long\n(≥1300)",        min: 1300, max: Infinity },
+// Short axis label first, full range second. Recharts doesn't honour '\n'
+// inside a tick string and the long forms collided badly on mobile widths,
+// so the axis carries only the one-word category and the range is shown
+// in the chart subtitle + tooltip instead.
+const BUCKET_DEFS: Array<{ label: string; range: string; min: number; max: number }> = [
+  { label: "Short",     range: "<400",      min: 0,    max: 400 },
+  { label: "Mid-low",   range: "400–700",   min: 400,  max: 700 },
+  { label: "Typical",   range: "700–1000",  min: 700,  max: 1000 },
+  { label: "Mid-high",  range: "1000–1300", min: 1000, max: 1300 },
+  { label: "Long",      range: "≥1300",     min: 1300, max: Infinity },
 ];
 
 function buildBuckets(
@@ -673,7 +678,10 @@ function buildBuckets(
     const sub = rows.filter((r) => r.actual >= b.min && r.actual < b.max);
     const n = sub.length;
     if (n === 0) {
-      return { label: b.label, min: b.min, max: b.max, count: 0, mape: 0, meanErr: 0, avgActual: 0, avgPred: 0 };
+      return {
+        label: b.label, range: b.range, min: b.min, max: b.max,
+        count: 0, mape: 0, meanErr: 0, avgActual: 0, avgPred: 0,
+      };
     }
     let sumAbs = 0;
     let sumSign = 0;
@@ -688,6 +696,7 @@ function buildBuckets(
     }
     return {
       label: b.label,
+      range: b.range,
       min: b.min,
       max: b.max,
       count: n,
@@ -717,7 +726,7 @@ function ErrorByLifetimeBucket({
   return (
     <ChartCard
       title="Error pattern by cell lifetime"
-      subtitle="Where the model is good vs where regression-to-mean hurts"
+      subtitle="Buckets · <400 / 400–700 / 700–1000 / 1000–1300 / ≥1300 cycles"
     >
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={buckets} margin={{ top: 8, right: 32, left: 8, bottom: 32 }}>
@@ -744,7 +753,9 @@ function ErrorByLifetimeBucket({
               if (b.count === 0) return null;
               return (
                 <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5">
-                  <div className="font-medium text-foreground whitespace-pre-line">{b.label}</div>
+                  <div className="font-medium text-foreground">
+                    {b.label} <span className="text-muted text-[10px]">({b.range})</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-x-3 pt-1.5">
                     <span className="text-muted">cells</span>
                     <span className="text-right tabular-nums">{b.count}</span>
