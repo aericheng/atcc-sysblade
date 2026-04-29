@@ -650,6 +650,8 @@ $$
 | W3 | STM32N6 X-CUBE-AI 靜態 trace(附錄 C) | ⏳ |
 | W3 | FastAPI 後端整合 | ⏳ |
 | W2 (本週) | Plan C++: Split conformal calibration → PI 縮窄 44 %(1910 → 1075 cycles)(§3.3.7) | ✅ |
+| W2 (本週) | ONNX 靜態分析 proxy → STM32N6 latency estimate 54.7 µs(附錄 C / `scripts/onnx_static_analysis.py`)| ✅ |
+| W3 | 實機 X-CUBE-AI trace 取代附錄 C 靜態估算 | ⏳ |
 | W3 | 本白皮書 v1.0 提交(2026-05-05 初賽繳交) | ⏳ |
 | W4–Q3 | NFPA 855 abuse 測試、OCP 認證送件 | 規劃 |
 | 2027 Q1–Q2 | 第一個 Tier-2 colo 客戶 PoC | 規劃 |
@@ -825,22 +827,79 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 ---
 
-## 附錄 C — STM32N6 X-CUBE-AI trace(W3 補)
+## 附錄 C — STM32N6 X-CUBE-AI 靜態分析(proxy)
 
-W3 任務,將更新此附錄。預計內容:
+完整版見獨立文件 [`docs/x_cube_ai_static_analysis.md`](x_cube_ai_static_analysis.md),
+本附錄摘要其重點。
 
-1. 工具鏈版本:X-CUBE-AI 9.x(2024 release)+ STM32CubeMX
-2. 目標晶片:STM32N657
-3. 輸入模型:`models/lstm_rul.onnx` (~50 KB)
-4. 報告截圖:
-   * Network mapping(NPU vs CPU op breakdown)
-   * Per-layer cycle count
-   * Total latency estimate
-   * RAM / FLASH 佔用
-5. 對比 ST datasheet 廠商聲稱(0.3 ms)的差距分析
+> **重要聲明**:這是用 Python `onnx` library + ST 公開資料(AN5354 /
+> RM0498 / X-CUBE-AI 9.x release notes)做的**靜態分析估算**,**不是
+> ST X-CUBE-AI 工具實際跑出來的 trace**。實機 trace 需 ST 帳號 +
+> Windows GUI,W3 計畫實機跑後**取代本附錄**。所有 latency / memory
+> 數字應視為 **±2× 不確定性**。
 
-> 截至本白皮書 v1.0 凍結時,此附錄為占位章節。**v2.1 商業 PDF 中的
-> 「STM32N6 NPU 0.3 ms 推論」聲稱依賴此附錄完成後始可背書**。
+### C.1 模型摘要(`models/lstm_rul.onnx`)
+
+| 項目 | 值 |
+|---|---:|
+| 參數總數 | 54,093 |
+| Weight FLASH (FP32 export) | 211 KB |
+| Weight FLASH (INT8 量化估) | **52.8 KB** |
+| Activation peak SRAM (INT8) | **32.0 KB** |
+| ONNX nodes | 52 |
+
+### C.2 STM32N6 配適
+
+| 資源 | 模型需求 | NPU 容量 | 配適? |
+|---|---:|---:|:---:|
+| Weight FLASH | 52.8 KB | 1638.4 KB(1.6 MB) | ✅ 用 3 % |
+| Activation SRAM | 32.0 KB | 1024 KB(1 MB) | ✅ 用 3 % |
+
+模型遠小於 NPU 容量上限,**沒有需要外部 PSRAM spillover 的風險**。
+
+### C.3 Op dispatch(依 X-CUBE-AI 9.x 公開 op support matrix)
+
+| 類別 | 數量 | 說明 |
+|---|---:|---|
+| ✅ NPU 完全加速 | 45 ops | Gemm / Conv / Add / Mul / Reshape / Transpose / Slice / Concat 等 |
+| 🟡 NPU 部分 | 3 ops | LSTM(NPU 內部分解 → Gemm + Sigmoid + Tanh + element-wise)、Gather |
+| ❌ CPU fallback | 4 ops | Shape × 3 + Expand × 1 — **皆為 metadata ops,0 MAC** |
+| — Graph 移除 | 0 ops | (Dropout 在 export 已移除) |
+
+**整個 inference compute path 都在 NPU 上**,fallback 到 CPU 的 4 個 op
+不消耗 MAC,只是 graph 連結用的 shape 推導。
+
+### C.4 Latency 估算
+
+假設(保守):
+- NPU 有效利用率 **40 %**(peak 300 GOPS,實際 memory bandwidth 限制
+  落到 ~ 40 %,ST AN5354 §Performance)
+- 單樣本 inference
+
+| 量 | 估值 |
+|---|---:|
+| 總 MAC | 3,281,954 |
+| NPU MAC | 3,281,954(100 %) |
+| CPU MAC | 0 |
+| **估算 NPU latency** | **54.7 µs** |
+| **估算 ±2× 區間** | **27–109 µs** |
+
+**對比 v2.1 §1.4 承諾的 0.3 ms = 300 µs**:本估算 54.7 µs **遠低於承諾
+上限**,即使打 ±2× 不確定區間,worst-case 109 µs 仍有 3× margin。
+
+### C.5 W3 待補實機驗證
+
+本附錄無法提供以下,需 W3 用實際 X-CUBE-AI 工具補:
+
+1. **INT8 量化精度損失**(本估算假設無損,實際可能 +0.1–0.5 % MAPE)
+2. **每層 cycle-accurate latency**(本估算只給總體 order of magnitude)
+3. **實際 NPU utilisation per-layer**(本估算用 40 % 全域 heuristic)
+4. **Buffer placement**(activation 是否真 fit ML SRAM,memory layout)
+5. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)
+
+> v2.1 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
+> (a) ST datasheet 廠商 spec + (b) 本靜態分析 estimate 共同支持。
+> 實機 trace 完成後本附錄將升級為 first-party 量測證據。
 
 ---
 
