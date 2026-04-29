@@ -116,6 +116,9 @@ interface ModelValidation {
     fleet_pct: number;            // % of /dashboard fleet in this status bucket
     actual: number;
     predicted: number;
+    pi_median: number;            // 50th-percentile MC Dropout estimate (point pred)
+    pi_lower: number;             // 5th-percentile  → 90% PI lower
+    pi_upper: number;             // 95th-percentile → 90% PI upper
     input_raw: number[][];        // (99, 7) features in original physical units
     hidden_activation: number[];  // (99,) mean |tanh activation| across 64 dims
     cumulative_pred: number[];    // (99,)
@@ -125,6 +128,12 @@ interface ModelValidation {
     warning: number;
     early_aging: number;
     critical: number;
+  };
+  uncertainty?: {
+    method: string;
+    n_samples: number;
+    test_coverage_90pct: number;       // 0..1; 0.9 = perfect calibration
+    median_pi_width_cycles: number;
   };
 }
 
@@ -539,7 +548,10 @@ export function TwinClient({
 
       {/* Inference walkthrough — pick a cell, see exactly what the LSTM did */}
       {modelValidation.walkthroughs && modelValidation.walkthroughs.length > 0 && (
-        <InferenceWalkthrough walkthroughs={modelValidation.walkthroughs} />
+        <InferenceWalkthrough
+          walkthroughs={modelValidation.walkthroughs}
+          testMapePct={modelValidation.metrics.test_mape_pct}
+        />
       )}
 
       {/* Method panel */}
@@ -806,10 +818,13 @@ function ErrorByLifetimeBucket({
         axis) is the mean absolute percentage error within that bucket. Typical-lifetime cells
         (700–1000 cycles, near the training median) land at ~11 % MAPE; the short and long
         extremes jump to 30 %+ because the model regresses toward the training median when it
-        sees an unusual cell. We tried adding NASA NMC cells as out-of-distribution validation
-        and confirmed cross-chemistry transfer fails (5/5 features OOD, z = 5–65 σ, whitepaper
-        §B). The path forward is therefore more diverse LFP early-failure samples (CALCE) plus
-        chemistry-aware features — not more NASA data.
+        sees an unusual cell. The Inference Walkthrough above now reports a 90 % MC-Dropout
+        prediction interval per cell — wide PIs for tail buckets are the calibrated answer to
+        this problem (the model says &ldquo;I don&rsquo;t know&rdquo; instead of pretending to be
+        certain). Cross-dataset NASA NMC was tested and confirmed not transferable (5/5
+        features OOD, z = 5–65 σ, whitepaper §B); CALCE CS2 is LCO chemistry so the same
+        problem applies. Sharper PIs come from more LFP early-failure data, not from more
+        cells of any chemistry.
       </p>
     </ChartCard>
   );
@@ -864,7 +879,13 @@ const STATUS_LABEL: Record<Walkthrough["fleet_status"], string> = {
   critical: "Premature failure",
 };
 
-function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] }) {
+function InferenceWalkthrough({
+  walkthroughs,
+  testMapePct,
+}: {
+  walkthroughs: Walkthrough[];
+  testMapePct: number;
+}) {
   const [pickedId, setPickedId] = useState<string>(walkthroughs[0].cell_id);
   const cell = walkthroughs.find((w) => w.cell_id === pickedId) ?? walkthroughs[0];
 
@@ -885,9 +906,11 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 <span className="text-foreground"> warning</span>, Tier-3 replacement queue
                 <span className="text-foreground"> early_aging</span>, and outright failure
                 <span className="text-foreground"> critical</span>. The mix is weighted by
-                the dashboard&rsquo;s actual 1,000-device distribution. Pick any cell to see the
-                per-cycle measurements the LSTM consumed, and how its prediction compared to
-                the cell&rsquo;s real cycle life.
+                the dashboard&rsquo;s actual 1,000-device distribution. Each prediction now
+                carries a <span className="text-foreground">90% prediction interval</span> via
+                Monte Carlo Dropout (100 forward passes with active dropout) — wide PIs for
+                tail cells like critical are the model honestly reporting it has limited
+                training signal there, narrow PIs for healthy cells reflect actual confidence.
               </p>
             </div>
           </div>
@@ -912,9 +935,8 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <Stat
             label="Fleet status"
             value={STATUS_LABEL[cell.fleet_status]}
-            unit={cell.fleet_status}
             tone={STATUS_TONE[cell.fleet_status]}
-            hint={`~${cell.fleet_pct.toFixed(0)}% of /dashboard fleet`}
+            hint={`${cell.fleet_status} · ~${cell.fleet_pct.toFixed(0)}% of /dashboard fleet`}
           />
           <Stat
             label="Actual cycle life"
@@ -923,20 +945,27 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             tone="default"
           />
           <Stat
-            label="Predicted"
-            value={cell.predicted.toLocaleString()}
+            label="Predicted (median)"
+            value={cell.pi_median.toLocaleString()}
             unit="cycles"
             tone="primary"
+            hint={`90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout, 100 samples`}
           />
           <Stat
             label="Error"
             value={`${errorPct >= 0 ? "+" : ""}${errorPct.toFixed(1)}`}
             unit="%"
-            tone={Math.abs(errorPct) < 10 ? "success" : Math.abs(errorPct) < 25 ? "warning" : "danger"}
+            tone={
+              cell.actual >= cell.pi_lower && cell.actual <= cell.pi_upper
+                ? "success"
+                : Math.abs(errorPct) < 25
+                  ? "warning"
+                  : "danger"
+            }
             hint={
-              Math.abs(errorPct) >= 25
-                ? "Cycle-life tail under-represented in Severson. NASA NMC didn’t transfer (5/5 features OOD, see whitepaper §B); fix needs more LFP early-failure samples."
-                : `vs 16% test-set average MAPE`
+              cell.actual >= cell.pi_lower && cell.actual <= cell.pi_upper
+                ? `Actual ${cell.actual.toLocaleString()} lies inside the 90% PI — model honestly reports its uncertainty here.`
+                : `Actual ${cell.actual.toLocaleString()} falls outside the 90% PI — calibration TODO (conformal post-hoc, W3).`
             }
           />
         </div>
