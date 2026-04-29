@@ -471,6 +471,7 @@ $$
 | 重現 Severson Variance baseline | 16.40 % MAPE(paper 15.0 %) | 138 vs 124 cells;feature filter 差異 |
 | 9-feat 改進 28 % | 17.64 % → 12.60 % MAPE 隨機 split | 同 chemistry 同 batch 訓 / 測 |
 | **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365 | LSTM 預測對 BBU duty **偏保守上界**;真實衰減率預計低於 model 預測。沒有公開 LFP-BBU-duty 資料集是業界共同問題;W3+ 計畫用 PyBaMM 生成 BBU duty 模擬 cell 補訓練資料(§3.1 + §8) |
+| **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(JM Energy / Eaton XLR datasheet),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %,**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
 | **不**承諾 < 5 % MAPE | v2.1 附錄 B 明文 | 即使模型達到也不在白皮書聲明 |
 | **承諾** < 13 % MAPE 達到 | 12.60 % 隨機 split | 跨 batch / 跨化學不適用 |
 | Cross-batch 沒改善 | 19.88 % → 19.93 %,R² 為負 | 已誠實寫入 §3.3.4,protocol-specific 為原因 |

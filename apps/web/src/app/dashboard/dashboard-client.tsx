@@ -175,6 +175,16 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                   service remaining. The 800-cycle threshold is the &ldquo;needs replacement
                   within ~16 years&rdquo; gate, not 800 days.
                 </p>
+                <p>
+                  <span className="font-medium text-foreground">SOH source:</span>{" "}
+                  <span className="text-foreground">soh_lfp</span> is the LSTM&rsquo;s output
+                  on Severson-trained features.{" "}
+                  <span className="text-foreground">soh_lic</span> is a datasheet-derived
+                  estimate (LIC ≥ 100,000 nominal cycles per JM Energy / Eaton XLR specs)
+                  — LIC public cycling data is too scarce to train on, and BBU duty doesn&rsquo;t
+                  push LIC near its limits, so calendar-life lookup is the deliberate scope
+                  for this version (whitepaper §6.2).
+                </p>
               </div>
             </CardBody>
           </Card>
