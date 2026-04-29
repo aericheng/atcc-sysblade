@@ -337,23 +337,44 @@ LSTM 兩處 dropout 開啟(`lstm.train()` + `head.Dropout`),做 100 次
 forward pass 得到後驗預測分布。中位數作為點估計,5–95 percentile
 作為 90 % 預測區間 (PI)。**不需重訓**,套在已 export 的 checkpoint 上。
 
-**結果**(`scripts/export_lstm_onnx.py` `--mc-dropout` 路徑,Severson 138 +
-BBU 50 = 188 cells 的最終 LSTM):
+**結果**(`scripts/export_lstm_onnx.py`,Severson 138 + BBU 50 = 188 cells
+的最終 LSTM,3-way 60/20/20 split):
 
-| 指標 | 值 | 解讀 |
-|------|---:|------|
-| Test set 90 % PI coverage | **100 %** (57/57 cells in PI) | 過度覆蓋(實際應 ≤ 90 %),代表 PIs 偏寬保守,但**沒有 under-cover 風險** |
-| 中位數 PI 寬度 | ~1686 cycles | 反映訓練資料訊號相對於目標尺度的雜訊 |
-| b2c1 critical 真值 148 | PI [136, 577] ✓ 包含 | 模型誠實說「我不確定,但你的真值在區間裡」 |
-| b3c38 healthy 真值 1934 | PI [1636, 25071] ✓ 包含 | wide PI 反映訓練 healthy 尾部稀疏 + BBU 增強後 healthy 上限延伸到 13131 cycles |
+| 指標 | 原始 MC Dropout | + Conformal (Plan C++) |
+|------|---:|---:|
+| Test set 90 % PI coverage | 100 % | **100 %** (≥ 90 % 保證) |
+| 中位數 PI 寬度 (cycles) | 1910 | **1075** |
+| Sharpening | — | **−44 %** |
+
+**Conformal q_factor = 0.563** — calibration set 上 score 90 % quantile
+< 1,代表 raw PIs 太寬,於是縮窄。**核心保證**(Vovk 2005, Lei 2018):
+在 data exchangeability 下(我們是 random split,自動成立),conformal
+PIs 在 test 上 coverage **保證 ≥ 90 %**,即使 calibration 集很小也成立。
+我們實測 100 %(over-covers)是因為 test set 偶然比 calibration set 容易,
+不是 conformal 的失敗。
+
+**Walkthrough 的具體變化**(/twin Inference Walkthrough 顯示的就是
+conformal 後的 PI):
+
+| Cell | Status | Actual | Median | Before PI | **After PI** |
+|---|---|---:|---:|:---:|:---:|
+| b2c1 | critical | 148 | 238 | [113, 783] | **[144, 332]** |
+| b2c16 | early_aging | 483 | 573 | [194, 1068] | **[356, 791]** |
+| b1c44 | warning | 616 | 880 | [350, 2111] | **[506, 1254]** |
+| b3c22 | healthy | 1002 | 1150 | [285, 2152] | **[464, 1836]** |
+| bbu_c023 | healthy | 7016 | 7326 | [856, 13797] | **[856, 13797]** ← BBU 範圍 |
+
+所有 actual 仍在 PI 內(coverage 維持 100 %),但 PI 寬度系統性收縮
+~ 44 %,**Tier-3 admission 決策變得有意義**(從「不確定 ±1500 cycles」
+到「不確定 ±500 cycles」)。
 
 **已知限制**:
 * MC Dropout 僅捕捉 **epistemic** uncertainty(模型不確定性),不含
-  aleatoric(資料雜訊)。
-* 100 % 覆蓋表示 PIs 比理論值寬;這雖避免 under-cover 但犧牲 sharpness
-  (預測區間越寬越沒實際決策價值)。
-* **Conformal calibration** post-hoc 縮窄 PIs(W3 計畫,§8 列為待辦),
-  目標把 90 % PI coverage 拉回 ~90 %、median width 縮短 ~ 30 %。
+  aleatoric(資料雜訊);conformal 不改變這點。
+* Conformal 假設 calibration / test exchangeable;若 deploy 到 deployment
+  drift(如新批號 cell)需重新 calibrate(W3 計畫客戶 PoC SOP)。
+* PI 縮窄是 q < 1 才會發生;若未來訓練改善導致 raw PIs already tight,
+  conformal 反而會 widen — 這是**特性不是 bug**(維持 90 % 覆蓋)。
 
 **與 deterministic 點 MAPE 的關係**:LSTM 中位數點預測在
 Severson + BBU 188-cell test 集上 MAPE = **22.5 %**(per-batch 17.96 %
@@ -554,8 +575,8 @@ $$
 | **未達 v2.1 §B「< 10 % MAPE」承諾(誠實聲明)** | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;我們現在 **random split median 14.51 %、cross-batch 14.54 %**,差 ~ 4–5 pp | **原因**:(a) 138 cells 比 paper 124 寬鬆,某些早夭 outlier 拉高 MAPE;(b) 我們的 13-feat 跟 paper 9-feat 不完全等價(我們多了 cycles 2-100 window 的 slope/intercept/Q@2,可能 over-parameterise);(c) 訓練 seed 變異 ±3 pp 使 median 比 best seed 高。**W3+ 進一步補洞**:更嚴 cell filter(paper 用 cycle_life > 200 但實際 124 cells 暗示更嚴) + ensemble 多 seed 預測 → 預期可拉到 11–12 % 等級。**簡報 / 投資人對話絕不引用 9.71 % / 10.05 % 等 cherry-pick best-seed 數字**,只引 median 14.51 %、cross-batch 14.54 % 並主動聲明差距 |
 | Cross-batch 沒改善 | 19.88 % → 19.93 %,R² 為負 | 已誠實寫入 §3.3.4,protocol-specific 為原因 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
-| **MC Dropout 90 % PI 涵蓋率** | 100 % (42/42 test cells in PI) | **過寬保守**,W3 conformal calibration 縮窄至 ~ 90 % 目標 |
-| **PI 中位數寬度** | ~1660 cycles | 反映訓練尾部稀疏;sharp PI 需更多 LFP 早夭資料 |
+| **MC Dropout + Split Conformal 90 % PI 涵蓋率** | 100 % test coverage(≥ 90 % 保證) | Conformal **q_factor = 0.563** 縮窄 PI 44 %;coverage 仍 100 % 是因 test 比 cal 容易 |
+| **PI 中位數寬度** | 1075 cycles(原 1910 cycles,Plan C++ 縮窄 44 %) | b2c1 critical PI [144, 332] / b1c44 warning [506, 1254] — Tier-3 admission 變得 actionable |
 | LSTM 推論 < 1 ms 筆電 CPU | onnxruntime profiling | 非 STM32N6 實機;X-CUBE-AI trace 待補 |
 | STM32N6 NPU < 1 ms 預估 | ST datasheet | **未實機驗證**;0.3 ms 為廠商 spec |
 
@@ -628,7 +649,7 @@ $$
 | W2 (本週) | 學生競賽簡報(D-1) | ⏳ |
 | W3 | STM32N6 X-CUBE-AI 靜態 trace(附錄 C) | ⏳ |
 | W3 | FastAPI 後端整合 | ⏳ |
-| W3 | Conformal calibration:把 PI 從 100 % 過寬縮回 ~ 90 % 目標(§3.3.7) | ⏳ |
+| W2 (本週) | Plan C++: Split conformal calibration → PI 縮窄 44 %(1910 → 1075 cycles)(§3.3.7) | ✅ |
 | W3 | 本白皮書 v1.0 提交(2026-05-05 初賽繳交) | ⏳ |
 | W4–Q3 | NFPA 855 abuse 測試、OCP 認證送件 | 規劃 |
 | 2027 Q1–Q2 | 第一個 Tier-2 colo 客戶 PoC | 規劃 |
