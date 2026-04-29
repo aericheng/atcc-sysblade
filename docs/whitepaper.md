@@ -11,10 +11,13 @@ abstract: |
   BBU(電池備援單元)市場,以 LFP 15S × 3.2 V 主電 + 鋰離子電容(LIC)輔助的
   混合拓撲解決三個目前市場上沒有整合方案的痛點:毫秒級電壓瞬態、48 V → ±400 V
   HVDC 過渡、雲端化維運可視化。在演算法側,我們完整重現 Severson 2019 的循環壽命
-  資料庫驅動預測,將 9-feature Full-model OLS 在隨機 split 上的測試 MAPE 從
-  5-feature Discharge baseline 的 17.64 % 降到 12.60 %,並在跨資料集(Severson →
-  NASA NMC)上以 z-distance 量化證明跨化學部署需要 per-chemistry 校準。所有
-  資料、程式碼、實驗結果可在 GitHub `aericheng/atcc-sysblade` 完整追溯。
+  資料庫驅動預測,**11-feature paper-aligned Full model 在 paper-style filter
+  + 10-seed 隨機 split 上 median test MAPE = 14.21 %**(best 11.83 %、worst
+  19.13 %)。**未達 v2.1 §B 對齊 paper 9.1 % 的 < 10 % 承諾,差 ~ 4 pp**;
+  原因是 Severson v7.3 .mat 內部電阻 feature 在我們 HDF5 解析路徑下未取
+  (W3+ 補洞)。我們同時在跨資料集(Severson → NASA NMC)上以 z-distance
+  量化證明跨化學部署需要 per-chemistry 校準。所有資料、程式碼、實驗結果可在
+  GitHub `aericheng/atcc-sysblade` 完整追溯。
 ---
 
 # Sysblade HyperBuffer 技術白皮書
@@ -194,40 +197,58 @@ cycle_life > 200 篩選)。
 |------|------:|------|
 | **Variance** | 1 | $\log_{10} \mathrm{Var}(\Delta Q_{100-10}(V))$,paper 頭條單變數 |
 | **Discharge** | 5 | + min, slope, intercept, Q-at-cycle-2 — paper Table 1 |
-| **Full** | 9 | + max temp, temp integral, charge time, late-cycle slope — paper Table S2 |
+| **Full** | 11 | + max T, temp integral, charge time, slope_91_100, **intercept_91_100, Q@100** — paper Table S2 對齊 |
 
-完整 9 個 feature 的數學定義見 **附錄 A**。
+完整 11 個 feature 的數學定義見 **附錄 A**。我們本來只有 9-feat,後來
+加入 paper Table S2 的 `intercept_q_91_100` 與 `q_at_cycle_100` 兩個
+feature(共用同一條 cycles 91-100 polyfit)以更貼近 paper 設計。
+Paper 還有兩個 internal-resistance feature 我們沒納入(IR 在
+v7.3 .mat 的 `summary` 欄位,當前 HDF5 解析路徑跳過該欄;W3+ 補)。
 
-#### 3.3.3 Severson 隨機 split 結果(in-distribution)
+#### 3.3.3 Severson 隨機 split 結果(in-distribution,**10-seed median**)
 
-依 paper 70/30 隨機 split(seed=0,3 batch 混合),OLS 在 log-log 空間
-(target: $\log_{10}$ cycle_life)的測試集 MAPE:
+依 paper 70/30 隨機 split,OLS 在 log-log 空間
+(target: $\log_{10}$ cycle_life)的測試集 MAPE。我們**跨 10 個 random
+seed 取 median 而非單顆 seed**,因為單一 seed 落在帶 critical 離群值
+(b2c1)的 fold 上時 OLS 係數會爆衝,掩蓋模型真實表現。
 
-| 模型 | feat 數 | Train MAPE | Test MAPE | RMSE (cycles) | R² |
-|------|---:|---:|---:|---:|---:|
-| Variance | 1 | 17.91 % | **16.40 %** | — | 0.661 |
-| Discharge | 5 | 13.64 % | 17.64 % | — | 0.701 |
-| **Full** | **9** | **12.67 %** | **12.60 %** | — | **0.729** |
+##### 全 138 cells(no filter)
 
-> **結論**:9-feature Full model 相對 5-feature Discharge baseline 帶來
-> **28 % 相對 MAPE 降低**(17.64 % → 12.60 %)。Variance 單變數重現
-> paper 約 15 % 的數字差距 1.4 pp,可歸因於我們 138 vs paper 124 的
-> filter 差異。
+| 模型 | feat 數 | Test MAPE median | Test MAPE [min, max] | R² median |
+|------|---:|---:|:---:|---:|
+| Variance | 1 | 17.86 % | [16.40, 21.50] | 0.570 |
+| Discharge | 5 | 17.48 % | [13.73, 25.21] | 0.527 |
+| **Full** | **11** | **16.98 %** | [13.76, 30.12] | 0.498 |
+
+##### Paper-style filter(`cycle_life ≥ 200`,n=137)
+
+| 模型 | feat 數 | Test MAPE median | Test MAPE [min, max] | R² median |
+|------|---:|---:|:---:|---:|
+| Variance | 1 | 18.18 % | [15.52, 22.22] | 0.559 |
+| Discharge | 5 | 15.08 % | [12.56, 18.42] | 0.447 |
+| **Full** | **11** | **14.21 %** | **[11.83, 19.13]** | 0.547 |
+
+> **結論**:Paper-style filter + 11-feat 帶來 ~3 pp 的 median MAPE 改進
+> (16.98 → 14.21 %)。但 **median 14.21 % 仍超過 v2.1 §B 對齊 paper 9.1
+> % baseline 的 < 10 % 承諾**。詳見 §6.2 的差距分析與 W3 補洞計畫。
 
 #### 3.3.4 Severson 跨 batch 結果(誠實討論)
 
 更困難的設定:用 b1 + b2 訓練,b3 測試(b3 採用 b1/b2 沒看過的快充政策):
 
-| 模型 | feat 數 | Train MAPE | Test MAPE | R² |
-|------|---:|---:|---:|---:|
-| Variance | 1 | 17.73 % | 15.81 % | 0.167 |
-| Discharge | 5 | 14.05 % | **19.88 %** | -0.164 |
-| Full | 9 | 11.42 % | **19.93 %** | -0.191 |
+(Cross-batch split 是固定的 b1+b2→b3,沒有 random seed 變數,所以
+單一數字即代表全部。)
 
-**5-feat → 9-feat 在 cross-batch 上沒有改善**。原因:9-feat 新加的 4 個
-feature(charge time + max temp + temp integral + slope_91_100)
-都是 protocol-specific(快充政策決定 charge time 與 thermal
-envelope),b1/b2 訓出來的係數套到 b3 時 over-fit 政策而非物理。
+| 模型 | feat 數 | Test MAPE (paper-filter, n_test=44) | R² |
+|------|---:|---:|---:|
+| Variance | 1 | 16.26 % | 0.114 |
+| Discharge | 5 | 19.25 % | -0.125 |
+| Full | 11 | 18.37 % | -0.108 |
+
+**5-feat → 11-feat 在 cross-batch 上沒有顯著改善(19.25 → 18.37 %)**。
+原因:新加的 thermal / charge / late-fade feature 都是 protocol-specific
+(快充政策決定 charge time 與 thermal envelope),b1/b2 訓出來的係數套到
+b3 時 over-fit 政策而非物理。
 
 > 這個結果是我們**不敢隱瞞**的負面發現。它說明:同一化學、不同政策
 > 之間,額外 thermal/charge feature 帶來的訊息有限;這也是我們將
@@ -509,12 +530,12 @@ $$
 
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
-| 重現 Severson Variance baseline | 16.40 % MAPE(paper 15.0 %) | 138 vs 124 cells;feature filter 差異 |
-| 9-feat 改進 28 % | 17.64 % → 12.60 % MAPE 隨機 split | 同 chemistry 同 batch 訓 / 測 |
+| 重現 Severson Variance baseline | 17.86 % MAPE 10-seed median(paper 15.0 %,seed 不公開) | 138 vs 124 cells;feature 變體;單一 seed 比較不嚴謹 |
+| 11-feat Full + paper-style filter | **median 14.21 %** test MAPE(best 11.83 %、worst 19.13 %、std 2.4 pp) | n=137 paper-filtered cells;cross-batch / 跨化學不適用 |
 | **訓練情境 ≠ 產品情境(regime gap)— 已部分緩解 W2** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**W2 已加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 一起訓練**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| 訓練後 BBU 樣本 MAPE = 18.34 %,Severson 樣本 MAPE = 18–20 %,**模型現在能 span 兩個 regime**(R² 從 0.7 → 0.93)。**未完全解決**:仍是合成 cell 而非真實 BBU duty 量測,W3+ 計畫用真客戶 PoC 第一年累積資料校準 |
 | **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(JM Energy / Eaton XLR datasheet),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %,**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
 | **不**承諾 < 5 % MAPE | v2.1 附錄 B 明文 | 即使模型達到也不在白皮書聲明 |
-| **承諾** < 13 % MAPE 達到 | 12.60 % 隨機 split | 跨 batch / 跨化學不適用 |
+| **未達 v2.1 §B「< 10 % MAPE」承諾(誠實聲明)** | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;我們現在 **median 14.21 %**,差 ~ 4 pp | **原因**:(a) Severson v7.3 .mat 的 internal-resistance feature 在我們 HDF5 解析路徑下未取(paper 9.1 % Discharge model 含 IR);(b) 138 cells 比 paper 124 寬鬆。**W3+ 補洞**:re-parse summary 取 IR features → 預期可拉到 11–12 % 等級。**簡報 / 投資人對話絕不引用 12.60 % 那個單一 seed 數字**,只引 median 14.21 % 並主動聲明差距 |
 | Cross-batch 沒改善 | 19.88 % → 19.93 %,R² 為負 | 已誠實寫入 §3.3.4,protocol-specific 為原因 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
 | **MC Dropout 90 % PI 涵蓋率** | 100 % (42/42 test cells in PI) | **過寬保守**,W3 conformal calibration 縮窄至 ~ 90 % 目標 |
@@ -585,6 +606,8 @@ $$
 | W2 (本週) | NASA cross-dataset 驗證(本白皮書 §3.3.5) | ✅ |
 | W2 (本週) | MC Dropout 機率輸出 + 90 % PI(§3.3.7) | ✅ |
 | W2 (本週) | BBU-duty 增強訓練集 + dashboard fleet RUL 改用 LSTM(§3.3.8) | ✅ |
+| W2 (本週) | 11-feature paper-aligned Full model + 10-seed eval(§3.3.3) | ✅ |
+| W3 | Re-parse Severson v7.3 .mat `summary` 取 IR features → 補洞 v2.1 < 10 % MAPE(§6.2) | ⏳ |
 | W2 (本週) | 學生競賽簡報(D-1) | ⏳ |
 | W3 | STM32N6 X-CUBE-AI 靜態 trace(附錄 C) | ⏳ |
 | W3 | FastAPI 後端整合 | ⏳ |
@@ -663,7 +686,7 @@ $$
 
 ---
 
-## 附錄 A — 9-feature 工程詳述
+## 附錄 A — 11-feature 工程詳述
 
 依 Severson 2019 Table S2 Full model 對應關係。所有特徵的提取程式碼在
 `packages/battery-twin/data_loaders/severson_parser.py`,以下是公式定義:
@@ -685,7 +708,7 @@ $$
 5. **`q_at_cycle_2`**
    cycle 2 的峰值 $Q_d$。
 
-### 4 個延伸 feature(Severson Table S2 Full model)
+### 6 個延伸 feature(Severson Table S2 Full model 對齊)
 
 6. **`log_max_temp_2_100`**
    $\log_{10}\bigl(\max_{i=2..100} \max_t T_i(t)\bigr)$
@@ -699,12 +722,21 @@ $$
 9. **`slope_q_91_100`**
    per-cycle 峰值 $Q_d$ 對 cycle 編號的線性回歸斜率(cycles 91–100)。
    局部後段衰減速率,比 2–100 全程斜率對 SEI 形成後的 fade rate 更敏感。
+10. **`intercept_q_91_100`**
+    cycles 91–100 polyfit 的截距(外推到 cycle 0 的容量),共用同一條
+    polyfit 與 #9。**Plan C 新加 paper Table S2 feat 4 對齊**。
+11. **`q_at_cycle_100`**
+    用 cycles 91–100 polyfit 在 cycle = 100 估值(對 cycle 100 的觀測值
+    缺失或 noisy 時更穩定),**Plan C 新加 paper Table S2 feat 5 對齊**。
 
 ### 我們未使用的 paper feature
 
-Severson Table S2 Full model 包含兩個內阻(IR)相關 feature。我們解析的
-v7.3 .mat 走 HDF5 路徑跳過 `summary` 欄位(IR 即在此欄),以
-`slope_q_91_100` 替代,捕捉同樣的「late-formation 衰減速率」訊號。
+Severson Table S2 Full model 含兩個 internal-resistance(IR)feature
+(min IR cycles 2-100、IR difference 100-2)。我們解析的 v7.3 .mat 走
+HDF5 路徑跳過 `summary` 欄位(IR 即在此欄),以 `slope_q_91_100` 等
+late-formation 訊號替代,捕捉相近(但不完全等價)的衰減動態。**這是
+我們沒能達到 v2.1 < 10 % MAPE 承諾的關鍵原因之一,W3+ 計畫 re-parse
+summary 把 IR features 補回**(§6.2 + §8)。
 
 ---
 
