@@ -502,10 +502,13 @@ def main() -> None:
             "onnxruntime_version": ort.__version__,
             "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.1.pdf",
         },
-        "title": "LSTM RUL — Severson 2019 reproduction + ONNX edge inference",
+        "title": "LSTM RUL — Severson 2019 + PyBaMM BBU-duty + ONNX edge inference",
         "description": (
-            f"PyTorch 2-layer LSTM (hidden=64) trained on per-cycle summary "
-            f"features from {X.shape[0]} LFP cells (Severson 2019 batches 1+2+3). "
+            f"PyTorch 2-layer LSTM (hidden=64) trained on per-cycle summary features "
+            f"from {X.shape[0]} LFP cells "
+            f"({sum(1 for b in batches if b != 'bbu')} Severson 2019 batches 1+2+3 + "
+            f"{sum(1 for b in batches if b == 'bbu')} PyBaMM-calibrated BBU-duty cells "
+            f"to close the regime gap, see whitepaper §3.3.5). "
             f"Exported to ONNX and benchmarked under onnxruntime CPU as a "
             f"proxy for the STM32N6 NPU deployment path."
         ),

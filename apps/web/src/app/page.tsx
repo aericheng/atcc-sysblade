@@ -66,7 +66,7 @@ export default async function HomePage() {
             { v: "10 yr", label: "BBU service life at >80 % SOH (Severson-fit)", tone: "from-primary to-accent" },
             { v: "≈33 %", label: "Reference 10-year TCO reduction · proposal §G.3 baseline", tone: "from-accent to-primary" },
             mv
-              ? { v: `${mv.latency.p99_ms.toFixed(1)} ms`, label: `ONNX p99 on laptop CPU · ${mv.metrics.test_mape_pct.toFixed(1)} % MAPE on Severson 2019 · STM32N6 NPU est. ≈5 ms`, tone: "from-primary to-accent" }
+              ? { v: `${mv.latency.p99_ms.toFixed(1)} ms`, label: `ONNX p99 on laptop CPU · 50 ms spec target met by ${(50 / mv.latency.p99_ms).toFixed(0)}× · STM32N6 NPU est. ≈5 ms`, tone: "from-primary to-accent" }
               : { v: "<50 ms", label: "Edge inference latency target · STM32N6 ONNX path (W2)", tone: "from-primary to-accent" },
           ].map((s) => (
             <Card key={s.label}>
@@ -100,7 +100,7 @@ export default async function HomePage() {
             icon={<Cpu className="h-5 w-5" />}
             kicker="01"
             title="Battery Digital Twin"
-            body="PyBaMM DFN physics + LSTM RUL trained on Severson 2019 (124 LFP cells). MAPE target <10 %; cloud trains, edge (STM32N6) infers, OTA updates weights."
+            body="PyBaMM DFN physics + LSTM RUL trained on 188 LFP cells (138 Severson 2019 + 50 PyBaMM-calibrated BBU-duty), with 90 % MC-Dropout prediction intervals. Cloud trains, edge (STM32N6) infers, OTA updates weights."
             cta="Run physics simulation"
           />
           <PillarCard

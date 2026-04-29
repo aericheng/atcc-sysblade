@@ -376,12 +376,12 @@ export function TwinClient({
         </CardBody>
       </Card>
 
-      {/* Model Validation — real LSTM trained on Severson 2019 */}
+      {/* Model Validation — real LSTM trained on Severson 2019 + 50 PyBaMM BBU-duty cells */}
       <Card>
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>Model validation · LSTM trained on Severson 2019</CardTitle>
+              <CardTitle>Model validation · LSTM trained on Severson + PyBaMM BBU-duty</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{modelValidation.description}</p>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -658,13 +658,15 @@ function Method({ icon, title, body }: { icon: React.ReactNode; title: string; b
 // ---------------------------------------------------------------------------
 // Error pattern by cell lifetime
 // ---------------------------------------------------------------------------
-// Bin all 138 cells by actual cycle life, then show:
+// Bin every cell by actual cycle life, then show:
 //   - a bar (left axis) for cell count per bucket
 //   - a line (right axis) for that bucket's MAPE
-// The pattern surfaces regression-to-mean: typical-lifetime cells (700-1000)
-// land at ~11 % MAPE; the extremes jump to 30 %+ because the model is
-// pulled toward the training median. Without this chart the per-cell
-// scatter plot above hints at the trend but doesn't quantify it.
+// Story (post BBU-duty augmentation): the Long bucket is now dominated by
+// PyBaMM BBU cells (5,000–13,000 cycle lifetimes) rather than the few
+// Severson long cells, so adding BBU cells widened the model's regime
+// coverage at the cost of pushing test MAPE up from ~16 % to ~22 %. The
+// Short bucket (n≈4 cells) still shows the model's worst miss because
+// Severson early failures are sparse — that tail is W3+ work.
 
 type Bucket = {
   label: string;
@@ -814,16 +816,17 @@ function ErrorByLifetimeBucket({
       </ResponsiveContainer>
       <p className="text-xs text-muted mt-2">
         Bars (left axis) show how many cells live in each lifetime bucket. The amber line (right
-        axis) is the mean absolute percentage error within that bucket. Typical-lifetime cells
-        (700–1000 cycles, near the training median) land at ~11 % MAPE; the short and long
-        extremes jump to 30 %+ because the model regresses toward the training median when it
-        sees an unusual cell. The Inference Walkthrough above now reports a 90 % MC-Dropout
-        prediction interval per cell — wide PIs for tail buckets are the calibrated answer to
-        this problem (the model says &ldquo;I don&rsquo;t know&rdquo; instead of pretending to be
-        certain). Cross-dataset NASA NMC was tested and confirmed not transferable (5/5
-        features OOD, z = 5–65 σ, whitepaper §B); CALCE CS2 is LCO chemistry so the same
-        problem applies. Sharper PIs come from more LFP early-failure data, not from more
-        cells of any chemistry.
+        axis) is the mean absolute percentage error within that bucket. The Long bucket is now
+        dominated by 50 PyBaMM-calibrated BBU-duty cells with 5,000–13,000 cycle lifetimes —
+        adding them widened the model&rsquo;s regime coverage so it can speak about the actual
+        BBU operating point, but pushed test MAPE up from the Severson-only ~16 % to ~22 %
+        (whitepaper §3.3.5 explains the trade-off). The Short bucket still has the largest
+        MAPE because Severson holds only a handful of early-failure cells; that tail is the
+        clearest W3+ data gap. Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and
+        ruled out (whitepaper §B), so the answer is more LFP early-failure data, not more
+        chemistries. The Inference Walkthrough above reports a 90 % MC-Dropout prediction
+        interval per cell — wide PIs on the Short bucket are the model honestly saying it has
+        thin training signal there.
       </p>
     </ChartCard>
   );
@@ -906,13 +909,15 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 training signal there, narrow PIs for healthy cells reflect actual confidence.
               </p>
               <p className="text-xs text-warning/90 mt-2 max-w-3xl leading-relaxed">
-                <span className="font-medium">Regime note:</span> these 9 cells come from the
-                Severson 2019 fast-charge benchmark (3.6C–8C, ~365 cycles/yr lab regime).
-                Real BBU duty is much gentler (~0.05C float, ~50 cycles/yr). The LSTM trained
-                here is therefore a <span className="text-foreground">conservative upper
-                bound</span> on degradation — actual BBU cells are expected to fade more
-                slowly. Using PyBaMM-generated BBU-duty cells to retrain is on the W3+ list
-                (whitepaper §6.2 + §8).
+                <span className="font-medium">Regime note:</span> the dropdown contains both
+                <span className="text-foreground"> Severson fast-charge cells</span> (b1/b2/b3
+                IDs, 3.6C–8C, lab-stress lifetimes 100–2,000 cycles) and{" "}
+                <span className="text-foreground">PyBaMM-calibrated BBU-duty cells</span>
+                {" "}(bbu_* IDs, ~0.05C float, ~50 cycles/yr → 5,000–13,000 cycle lifetimes).
+                The LSTM is now trained on both regimes (188 cells total) so it can speak
+                about the actual BBU operating point — pick a `bbu_*` cell to see what the
+                model predicts on the regime your customer&rsquo;s pack will live in.
+                Whitepaper §3.3.5 covers the calibration of the synthetic BBU cells.
               </p>
             </div>
           </div>
