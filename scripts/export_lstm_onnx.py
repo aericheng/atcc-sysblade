@@ -44,6 +44,132 @@ SEED = 42
 TEST_SIZE = 0.30
 
 
+def _build_predicted_vs_actual(
+    ids: list[str],
+    batches: list[str],
+    y: np.ndarray,
+    pred: np.ndarray,
+    te: np.ndarray,
+) -> list[dict]:
+    """Per-cell prediction rows for the UI's scatter chart."""
+    test_set = set(int(i) for i in te)
+    return [
+        {
+            "cell_id": ids[i],
+            "batch": batches[i],
+            "actual": int(round(float(y[i]))),
+            "predicted": int(round(float(pred[i]))),
+            "split": "test" if i in test_set else "train",
+        }
+        for i in range(len(ids))
+    ]
+
+
+def _pick_walkthrough_cells(
+    y: np.ndarray, pred: np.ndarray, n_random: int = 4
+) -> list[tuple[int, str]]:
+    """Pick a curated set of cells that tell different stories.
+
+    Returns (index, label) tuples in display order. Each cell gets a one-line
+    label that explains why it's interesting:
+
+      - Longest-lived (the model's hardest extreme on the upside)
+      - Shortest-lived (early-failure case)
+      - Median cell (typical behaviour)
+      - Best prediction (smallest absolute error)
+      - Worst prediction (largest absolute error — explains a failure case)
+      - n_random additional cells for variety
+    """
+    err = np.abs(pred - y) / y
+    picked: dict[int, str] = {}
+
+    idx_long = int(np.argmax(y))
+    picked[idx_long] = f"longest-lived ({int(y[idx_long])} cycles)"
+    idx_short = int(np.argmin(y))
+    picked[idx_short] = f"shortest-lived early failure ({int(y[idx_short])} cycles)"
+    idx_med = int(np.argsort(y)[len(y) // 2])
+    if idx_med not in picked:
+        picked[idx_med] = f"median cell ({int(y[idx_med])} cycles)"
+
+    sorted_by_err = np.argsort(err)
+    for i in sorted_by_err:
+        i = int(i)
+        if i not in picked:
+            picked[i] = f"best prediction (error {err[i] * 100:.1f} %)"
+            break
+    for i in sorted_by_err[::-1]:
+        i = int(i)
+        if i not in picked:
+            picked[i] = f"worst prediction (error {err[i] * 100:.1f} %)"
+            break
+
+    rng = np.random.default_rng(7)
+    remaining = [i for i in range(len(y)) if i not in picked]
+    rng.shuffle(remaining)
+    for i in remaining[:n_random]:
+        picked[int(i)] = "varied · for cross-comparison"
+
+    # Stable display order: by actual cycle life ascending
+    return sorted(picked.items(), key=lambda kv: y[kv[0]])
+
+
+def extract_walkthroughs(
+    model,
+    scaler,
+    X: np.ndarray,
+    y: np.ndarray,
+    ids: list[str],
+    batches: list[str],
+    pred_all: np.ndarray,
+    cell_indices: list[tuple[int, str]],
+) -> list[dict]:
+    """Capture (input, hidden state, cumulative prediction) for chosen cells.
+
+    For each picked cell, returns:
+      cell_id / batch / actual / predicted / label
+      input_scaled       — (99, 7) the LSTM's actual input after standardisation
+      hidden_state       — (99, 64) LSTM layer-2 hidden output at each timestep
+      cumulative_pred    — (99,) predicted cycle-life if we stopped at each timestep
+
+    Capturing all 99 hidden states per cell is what lets the UI show
+    'the model's confidence converging' — see Stage 3 in the UX spec.
+    """
+    model.eval()
+    out: list[dict] = []
+    with torch.no_grad():
+        for idx, label in cell_indices:
+            x_scaled = scaler.transform(X[idx : idx + 1])  # (1, 99, 7)
+            x_t = torch.tensor(x_scaled, dtype=torch.float32)
+
+            # Run only the LSTM portion to get hidden states at every timestep.
+            lstm_out, _ = model.lstm(x_t)  # (1, 99, hidden_dim)
+
+            # Cumulative prediction: at each timestep apply the head as if we
+            # stopped there. Lets the UI show convergence over the 99 cycles.
+            cumul: list[float] = []
+            for t_idx in range(lstm_out.shape[1]):
+                pred_log = model.head(lstm_out[:, t_idx, :])
+                cumul.append(float(10.0 ** float(pred_log.item())))
+
+            out.append({
+                "cell_id": ids[idx],
+                "batch": batches[idx],
+                "label": label,
+                "actual": int(round(float(y[idx]))),
+                "predicted": int(round(float(pred_all[idx]))),
+                "input_scaled": [
+                    [round(float(v), 4) for v in row]
+                    for row in x_scaled[0].tolist()
+                ],
+                "hidden_state": [
+                    [round(float(v), 4) for v in row]
+                    for row in lstm_out[0].numpy().tolist()
+                ],
+                "cumulative_pred": [int(round(c)) for c in cumul],
+            })
+    return out
+
+
 def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
     cells_path = REPO / "data" / "processed" / "severson_cells.pkl"
     cells = pickle.loads(cells_path.read_bytes())
@@ -151,27 +277,27 @@ def main() -> None:
         },
         "title": "LSTM RUL — Severson 2019 reproduction + ONNX edge inference",
         "description": (
-            "PyTorch 2-layer LSTM (hidden=64) trained on per-cycle summary "
-            "features from 138 LFP cells (Severson 2019 batches 1+2+3). "
-            "Exported to ONNX and benchmarked under onnxruntime CPU as a "
-            "proxy for the STM32N6 NPU deployment path."
+            f"PyTorch 2-layer LSTM (hidden=64) trained on per-cycle summary "
+            f"features from {X.shape[0]} LFP cells (Severson 2019 batches 1+2+3). "
+            f"Exported to ONNX and benchmarked under onnxruntime CPU as a "
+            f"proxy for the STM32N6 NPU deployment path."
         ),
         "model": {
             "architecture": "LSTM(input=7, hidden=64, layers=2) + Dense(32) + Linear(1)",
             "n_parameters": int(sum(p.numel() for p in res.model.parameters())),
             "input_shape": list(X.shape[1:]),
-            "feature_names": ["cycle_norm", "qd_max", "qd_min", "v_mean", "v_std", "t_max", "duration_s"],
+            "feature_names": list(sp.PER_CYCLE_FEATURE_NAMES),
             "onnx_size_kb": onnx_size_kb,
             "onnx_torch_max_diff": diff,
         },
         "metrics": {
-            "n_train": int(len(tr)),
-            "n_test": int(len(te)),
+            "n_train": len(tr),
+            "n_test": len(te),
             "train_mape_pct": metrics_train["mape_pct"],
             "test_mape_pct": metrics_test["mape_pct"],
             "test_rmse_cycles": metrics_test["rmse_cycles"],
             "test_r2": metrics_test["r2"],
-            "split": "random_70_30_seed42",
+            "split": f"random_{int(round((1-TEST_SIZE)*100))}_{int(round(TEST_SIZE*100))}_seed{SEED}",
         },
         "latency": {
             "device": "CPU (laptop) via onnxruntime",
@@ -181,17 +307,20 @@ def main() -> None:
             "target_ms": 50,
             "passes_target": p99 < 50,
         },
-        "predicted_vs_actual": [
-            {
-                "cell_id": ids[i],
-                "batch": batches[i],
-                "actual": int(y[i]),
-                "predicted": int(pred_all[i]),
-                "split": ("test" if i in set(te) else "train"),
-            }
-            for i in range(len(X))
-        ],
+        "predicted_vs_actual": _build_predicted_vs_actual(ids, batches, y, pred_all, te),
     }
+
+    # Walkthroughs — per-cell input + hidden state + cumulative-prediction
+    # trajectory for a curated set of cells. Used by the /twin "Inference
+    # walkthrough" UI to let the viewer step through one cell at a time.
+    print("extracting per-cell walkthrough trajectories...")
+    picks = _pick_walkthrough_cells(y, pred_all, n_random=4)
+    payload["walkthroughs"] = extract_walkthroughs(
+        res.model, res.scaler, X, y, ids, batches, pred_all, picks
+    )
+    print(f"  captured {len(payload['walkthroughs'])} cells: " + ", ".join(
+        f"{w['cell_id']} ({w['label']})" for w in payload["walkthroughs"]
+    ))
 
     body = json.dumps(payload, separators=(",", ":"), default=float)
     out.write_text(body, encoding="utf-8")
