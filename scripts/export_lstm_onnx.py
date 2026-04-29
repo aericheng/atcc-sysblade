@@ -41,7 +41,10 @@ from lstm_rul.baseline import evaluate
 
 DEVICE = "cpu"
 SEED = 42
-TEST_SIZE = 0.30
+TEST_SIZE = 0.20      # held-out test fraction
+CALIB_SIZE = 0.20     # held-out calibration fraction (for split conformal)
+# Remaining 0.60 trains the LSTM. Calibration set is unseen by training so
+# conformal residuals reflect true generalisation error, not in-sample fit.
 
 
 def _build_predicted_vs_actual(
@@ -296,6 +299,90 @@ def predict_mc_dropout(
     }
 
 
+# ---------------------------------------------------------------------------
+# Split conformal calibration (Vovk et al. 2005; Lei et al. 2018 split CP).
+#
+# Raw MC Dropout PIs over-cover at 100 % on our test set (median width
+# ~1700 cycles). Split conformal post-processes the raw PIs using a held-
+# out calibration set the model never saw at training time:
+#
+#   1. For each calibration cell i, compute the *adaptive nonconformity
+#      score* s_i = |actual_i - median_i| / half_width_i where
+#      half_width_i = (upper_i - lower_i) / 2 from MC Dropout.
+#   2. q = quantile(s_i, ceil((n_cal + 1) * (1 - α)) / n_cal) — the
+#      finite-sample-corrected (1-α) quantile (α = 0.10 for 90 % PI).
+#   3. Test-time PIs become [median - q * half_width, median + q * half_width].
+#
+# If q < 1 the raw PIs were too wide and conformal sharpens them; if q > 1
+# they were too narrow and conformal widens them. Coverage on the test
+# set is provably ≥ (1 - α) under data exchangeability, which holds for
+# our random split. The trade-off: PIs become symmetric around the
+# median — we lose any asymmetry MC Dropout captured (rare in practice).
+# ---------------------------------------------------------------------------
+def _conformal_quantile(scores: np.ndarray, alpha: float = 0.10) -> float:
+    """Finite-sample-corrected (1-α) quantile.
+
+    Standard split conformal needs q at level ceil((n+1)(1-α))/n rather
+    than the empirical (1-α)-quantile, so coverage holds even for small
+    calibration sets.
+    """
+    n = len(scores)
+    if n == 0:
+        raise ValueError("calibration set is empty")
+    rank = int(np.ceil((n + 1) * (1.0 - alpha)))
+    rank = min(rank, n)  # cap at n; happens when (1-α) ≥ n/(n+1)
+    return float(np.sort(scores)[rank - 1])
+
+
+def conformal_calibrate(
+    cal_pi: dict[str, np.ndarray],
+    cal_actual: np.ndarray,
+    alpha: float = 0.10,
+) -> tuple[float, dict[str, float]]:
+    """Compute the conformal scale factor q from a calibration set.
+
+    Returns ``(q, diagnostics)`` where ``diagnostics`` exposes the
+    intermediate values used in the whitepaper's calibration table.
+    """
+    median = cal_pi["median"]
+    half_width = (cal_pi["p95"] - cal_pi["p5"]) / 2.0
+    # Avoid div-by-zero on degenerate cells (PI collapsed to a point).
+    half_width = np.where(half_width < 1e-6, 1e-6, half_width)
+    residuals = np.abs(cal_actual - median)
+    scores = residuals / half_width
+    q = _conformal_quantile(scores, alpha=alpha)
+    raw_in_pi = (cal_actual >= cal_pi["p5"]) & (cal_actual <= cal_pi["p95"])
+    return q, {
+        "n_cal": int(len(cal_actual)),
+        "alpha": alpha,
+        "raw_pi_coverage_pct": float(np.mean(raw_in_pi) * 100.0),
+        "score_min":    float(np.min(scores)),
+        "score_median": float(np.median(scores)),
+        "score_max":    float(np.max(scores)),
+        "q_factor": float(q),
+    }
+
+
+def apply_conformal(pi: dict[str, np.ndarray], q: float) -> dict[str, np.ndarray]:
+    """Rescale MC-Dropout PIs by conformal factor ``q`` around the median."""
+    median = pi["median"]
+    half_width = (pi["p95"] - pi["p5"]) / 2.0
+    new_lower = median - q * half_width
+    new_upper = median + q * half_width
+    # Cycle life is bounded below by 0; clip to keep the UI sensible.
+    new_lower = np.maximum(new_lower, 0.0)
+    return {
+        "median": median,
+        "p5":     pi["p5"],
+        "p10":    pi["p10"],
+        "p90":    pi["p90"],
+        "p95":    pi["p95"],
+        "conformal_lower": new_lower,
+        "conformal_upper": new_upper,
+        "conformal_q": np.full_like(median, q),
+    }
+
+
 def extract_walkthroughs(
     model,
     scaler,
@@ -419,10 +506,19 @@ def main() -> None:
     y = 10.0 ** y_log
     print(f"  {X.shape[0]} cells, X.shape={X.shape}")
 
+    # Three-way split: train / calibration / test. Calibration set is
+    # unseen by the LSTM and used for split conformal post-hoc PI
+    # calibration (so coverage on test is the conformal guarantee, not
+    # an in-sample fit artefact).
     rng = np.random.default_rng(SEED)
     idx = rng.permutation(len(X))
-    split_at = int(len(X) * (1.0 - TEST_SIZE))
-    tr, te = idx[:split_at], idx[split_at:]
+    n = len(X)
+    n_test = int(n * TEST_SIZE)
+    n_cal = int(n * CALIB_SIZE)
+    te = idx[:n_test]
+    cal = idx[n_test : n_test + n_cal]
+    tr = idx[n_test + n_cal :]
+    print(f"  split sizes: train={len(tr)} cal={len(cal)} test={len(te)}")
 
     print("training LSTM...")
     res = M.train_model(
@@ -543,24 +639,59 @@ def main() -> None:
     # MC Dropout — 100 stochastic forward passes per cell to convert the
     # deterministic point prediction into a posterior-predictive
     # distribution. Median is used as the point estimate; 5th–95th
-    # percentile as the 90 % prediction interval. See predict_mc_dropout
-    # docstring for the calibration caveat.
+    # percentile as the raw 90 % prediction interval (then conformal-
+    # calibrated below to enforce coverage).
     print("computing MC Dropout uncertainty (100 samples)...")
     pi = predict_mc_dropout(res.model, res.scaler, X, n_samples=100)
-    # Test-set coverage: what fraction of held-out cells fall inside the
-    # 90 % PI? Well-calibrated → ~90 %; under-covered → MC dropout is too
-    # narrow (a known property; conformal post-hoc fix is W3 work).
-    test_in_pi = (y[te] >= pi["p5"][te]) & (y[te] <= pi["p95"][te])
-    coverage = float(np.mean(test_in_pi))
-    pi_widths = pi["p95"] - pi["p5"]
-    print(f"  90% PI test coverage: {coverage*100:.1f}% (target ~90%)")
-    print(f"  median PI width: {float(np.median(pi_widths)):.0f} cycles")
+    pi_widths_raw = pi["p95"] - pi["p5"]
+
+    # Raw test-set coverage: what fraction of held-out cells fall inside
+    # the 90 % PI before conformal calibration? Should be over-covering.
+    raw_test_in_pi = (y[te] >= pi["p5"][te]) & (y[te] <= pi["p95"][te])
+    raw_coverage = float(np.mean(raw_test_in_pi))
+    print(f"  raw 90% PI test coverage: {raw_coverage*100:.1f}% (over-covers if >90%)")
+    print(f"  raw median PI width: {float(np.median(pi_widths_raw)):.0f} cycles")
+
+    # Split conformal calibration — fit q_factor on the unseen cal set,
+    # then rescale PIs around the median. New PIs are guaranteed (under
+    # exchangeability) to cover ≥ 90 % on test.
+    print("running split conformal calibration...")
+    cal_pi = {k: v[cal] for k, v in pi.items()}
+    q_factor, conformal_diag = conformal_calibrate(cal_pi, y[cal], alpha=0.10)
+    pi_cal = apply_conformal(pi, q_factor)
+    pi_widths_conf = pi_cal["conformal_upper"] - pi_cal["conformal_lower"]
+    cal_test_in_pi = (
+        (y[te] >= pi_cal["conformal_lower"][te])
+        & (y[te] <= pi_cal["conformal_upper"][te])
+    )
+    cal_coverage = float(np.mean(cal_test_in_pi))
+    print(f"  q_factor={q_factor:.3f}  (raw_pi_cov on cal={conformal_diag['raw_pi_coverage_pct']:.1f}%)")
+    print(f"  conformal 90% PI test coverage: {cal_coverage*100:.1f}% (target ~90%)")
+    print(f"  conformal median PI width: {float(np.median(pi_widths_conf)):.0f} cycles "
+          f"(raw {float(np.median(pi_widths_raw)):.0f}; "
+          f"{'sharpened' if q_factor < 1 else 'widened'} {abs(1-q_factor)*100:.0f}%)")
+
     payload["uncertainty"] = {
         "method": "mc_dropout",
         "n_samples": 100,
-        "test_coverage_90pct": coverage,
-        "median_pi_width_cycles": float(np.median(pi_widths)),
+        # Raw MC Dropout
+        "raw_test_coverage_90pct": raw_coverage,
+        "raw_median_pi_width_cycles": float(np.median(pi_widths_raw)),
+        # Split conformal post-hoc
+        "conformal_method": "split_conformal_adaptive",
+        "conformal_alpha": 0.10,
+        "conformal_q_factor": q_factor,
+        "conformal_n_calibration": int(len(cal)),
+        "conformal_test_coverage_90pct": cal_coverage,
+        "conformal_median_pi_width_cycles": float(np.median(pi_widths_conf)),
+        # Backward-compat aliases (older UI fields)
+        "test_coverage_90pct": cal_coverage,
+        "median_pi_width_cycles": float(np.median(pi_widths_conf)),
     }
+
+    # Replace raw PI with conformal-calibrated one in the per-cell output.
+    pi["p5"] = pi_cal["conformal_lower"]
+    pi["p95"] = pi_cal["conformal_upper"]
 
     # Walkthroughs — per-cell input + hidden state + cumulative-prediction
     # trajectory for a curated set of cells. Used by the /twin "Inference
