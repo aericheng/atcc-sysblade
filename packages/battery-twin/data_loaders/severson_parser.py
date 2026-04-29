@@ -340,7 +340,7 @@ def severson_feature_log_var(cell: Cell) -> float | None:
     return float(np.log10(np.var(valid) + 1e-12))
 
 
-def severson_features_full(cell: Cell) -> dict | None:
+def severson_features_discharge(cell: Cell) -> dict | None:
     """Five-feature 'Discharge' model from Severson 2019 Table 1.
 
     Reproduces the paper's 8.6–9.1 % test MAPE when combined with a linear
@@ -403,17 +403,212 @@ def severson_features_full(cell: Cell) -> dict | None:
     }
 
 
+# ---------------------------------------------------------------------------
+# Extended ('Full' model) features — adds thermal + charge-time + late-life
+# slope on top of the 5-feature Discharge model. Maps to Severson 2019
+# Table S2 features 6, 7, 8 directly; feature 9 is a substitute for the
+# paper's internal-resistance feature, which is not available in our parsed
+# CycleData (IR lives in the .mat ``summary`` field, which the v7.3 HDF5
+# parse path skips — see ``_h5py_to_cells``).
+# ---------------------------------------------------------------------------
+def _charge_time(cyc: CycleData) -> float | None:
+    """Charge-phase duration: time from cycle start to peak voltage.
+
+    Severson cycle timestamps begin at the start of charge; voltage rises
+    during charge (CC + CV), peaks at end-of-charge, then drops during
+    discharge. ``argmax(V)`` therefore marks the charge → discharge
+    transition. Returns ``None`` if voltages or timestamps are missing or
+    the inferred duration is non-positive.
+    """
+    if cyc.V is None or cyc.t is None:
+        return None
+    if cyc.V.size < 5 or cyc.V.size != cyc.t.size:
+        return None
+    finite = np.isfinite(cyc.V) & np.isfinite(cyc.t)
+    if finite.sum() < 5:
+        return None
+    V = cyc.V[finite]
+    t = cyc.t[finite]
+    end_idx = int(np.argmax(V))
+    if end_idx <= 0:
+        return None
+    duration = float(t[end_idx] - t[0])
+    return duration if duration > 0 else None
+
+
+def _temp_stats_2_100(cell: Cell) -> tuple[float, float] | None:
+    """``(max_T_observed, integral_T_dt)`` over cycles 2..100 inclusive.
+
+    ``max_T_observed`` is the peak temperature across every sample of every
+    cycle in the window; ``integral_T_dt`` is the trapezoidal integral of
+    T(t) summed over the same window (proxy for cumulative thermal stress,
+    Severson Table S2 feature 8). Returns ``None`` if any cycle in the
+    window lacks usable T or t data — the model needs a complete window so
+    rows are comparable across cells.
+    """
+    integrate = getattr(np, "trapezoid", np.trapz)
+    max_T = -np.inf
+    total_int = 0.0
+    n_valid = 0
+    for cyc_idx in range(2, 101):
+        try:
+            cyc = cell.cycle(cyc_idx)
+        except IndexError:
+            return None
+        if cyc.T is None or cyc.t is None:
+            return None
+        if cyc.T.size < 5 or cyc.t.size != cyc.T.size:
+            return None
+        finite = np.isfinite(cyc.T) & np.isfinite(cyc.t)
+        if finite.sum() < 5:
+            return None
+        Tf = cyc.T[finite]
+        tf = cyc.t[finite]
+        cycle_max = float(np.max(Tf))
+        if cycle_max > max_T:
+            max_T = cycle_max
+        cycle_int = float(integrate(Tf, tf))
+        if not np.isfinite(cycle_int):
+            return None
+        # abs() guards against rare non-monotonic t segments; Severson is
+        # monotonic in practice but we don't want a sign flip to silently
+        # cancel earlier cycles' contribution.
+        total_int += abs(cycle_int)
+        n_valid += 1
+    if n_valid < 50 or not np.isfinite(max_T) or max_T <= 0:
+        return None
+    return max_T, total_int
+
+
+def _slope_q_91_100(cell: Cell) -> float | None:
+    """Slope of per-cycle peak discharge capacity over cycles 91..100.
+
+    The paper's Full model uses the slope across this narrow late-formation
+    window (Table S2 feature 3) because it captures the local fade rate
+    after initial SEI growth, which is more diagnostic than the broader
+    2..100 slope used in the Discharge model. Returns ``None`` if too few
+    valid cycles to fit a line.
+    """
+    idx: list[int] = []
+    q: list[float] = []
+    for cyc_idx in range(91, 101):
+        try:
+            cyc = cell.cycle(cyc_idx)
+        except IndexError:
+            continue
+        if cyc.Qd is None or cyc.Qd.size == 0:
+            continue
+        finite = cyc.Qd[np.isfinite(cyc.Qd)]
+        if finite.size == 0:
+            continue
+        peak = float(np.max(finite))
+        if peak > 0:
+            idx.append(cyc_idx)
+            q.append(peak)
+    if len(idx) < 5:
+        return None
+    cyc_arr = np.asarray(idx, dtype=np.float64)
+    q_arr = np.asarray(q, dtype=np.float64)
+    slope = float(np.polyfit(cyc_arr, q_arr, 1)[0])
+    return slope
+
+
+def severson_features_extended(cell: Cell) -> dict | None:
+    """Four extra features that extend Discharge (5) → Full (9).
+
+      6. log_max_temp_2_100      — log10(peak T over cycles 2..100)
+      7. log_temp_integral_2_100 — log10(∫ T dt over cycles 2..100)
+      8. log_charge_time_avg_2_6 — log10(mean charge-phase duration, cycles 2..6)
+      9. slope_q_91_100          — slope of per-cycle Qd_max, cycles 91..100
+
+    Maps to Severson 2019 Table S2 Full-model features 7, 8, 6, and 3
+    respectively. The paper's two internal-resistance features are not
+    extractable from our CycleData (IR lives in the .mat ``summary`` field
+    which the v7.3 HDF5 parse path skips); ``slope_q_91_100`` substitutes
+    by also targeting late-formation fade.
+
+    Returns ``None`` if any required field is missing for any cycle in
+    the 2..100 window — completeness is required so the OLS design matrix
+    is comparable across cells.
+    """
+    thermal = _temp_stats_2_100(cell)
+    if thermal is None:
+        return None
+    max_T, temp_int = thermal
+
+    charge_times: list[float] = []
+    for cyc_idx in range(2, 7):  # cycles 2..6 — first 5 reliable cycles
+        try:
+            cyc = cell.cycle(cyc_idx)
+        except IndexError:
+            return None
+        ct = _charge_time(cyc)
+        if ct is None:
+            return None
+        charge_times.append(ct)
+    if len(charge_times) != 5:
+        return None
+    avg_ct = float(np.mean(charge_times))
+    if avg_ct <= 0:
+        return None
+
+    slope_91 = _slope_q_91_100(cell)
+    if slope_91 is None:
+        return None
+
+    return {
+        "log_max_temp_2_100": float(np.log10(max_T + 1e-12)),
+        "log_temp_integral_2_100": float(np.log10(temp_int + 1e-12)),
+        "log_charge_time_avg_2_6": float(np.log10(avg_ct + 1e-12)),
+        "slope_q_91_100": slope_91,
+    }
+
+
+def severson_features_full(cell: Cell) -> dict | None:
+    """Nine-feature 'Full' model from Severson 2019 Table S2.
+
+    Combines the 5-feature Discharge model with 4 thermal/charge/late-fade
+    features. Reproduces the paper's Table S2 progression in test MAPE:
+
+      Variance  (1 feature)  → ~15 %
+      Discharge (5 features) → ~9.1 %
+      Full      (9 features) → ~7.5 %
+
+    Returns ``None`` if any underlying feature window is missing or
+    invalid; the OLS design matrix needs all 9 columns populated for a
+    row to be usable.
+    """
+    five = severson_features_discharge(cell)
+    if five is None:
+        return None
+    extra = severson_features_extended(cell)
+    if extra is None:
+        return None
+    return {**five, **extra}
+
+
+PER_CYCLE_FEATURE_NAMES: tuple[str, ...] = (
+    "cycle_norm",
+    "qd_max",
+    "qd_range",
+    "v_mean",
+    "v_std",
+    "t_max",
+    "duration_s",
+)
+
+
 def per_cycle_summary(cell: Cell, cycles_to_use: range = range(2, 101)) -> np.ndarray | None:
     """Per-cycle scalar summary as a (T, 7) sequence for LSTM input.
 
     For each cycle in `cycles_to_use` we extract:
-      0  cycle_index_norm   = cycle / 100
+      0  cycle_norm         = cycle / 100
       1  qd_max             = peak discharge capacity (Ah)
-      2  qd_min             = min Qd (typically near 0)
+      2  qd_range            = max - min Qd (DoD proxy; replaces near-constant qd_min)
       3  v_mean             = mean V over the cycle
       4  v_std              = std V (proxy for swing magnitude)
       5  t_max              = max temperature (°C)
-      6  cycle_duration_s   = total cycle wall-clock time
+      6  duration_s         = total cycle wall-clock time
 
     Returns None if any expected cycle is missing or all-NaN. Shape (T, 7).
     """
@@ -434,7 +629,7 @@ def per_cycle_summary(cell: Cell, cycles_to_use: range = range(2, 101)) -> np.nd
         rows.append([
             idx / 100.0,
             float(qd.max()),
-            float(qd.min()),
+            float(qd.max() - qd.min()),
             float(v.mean()),
             float(v.std()),
             float(t.max()) if t.size else 0.0,
@@ -443,28 +638,46 @@ def per_cycle_summary(cell: Cell, cycles_to_use: range = range(2, 101)) -> np.nd
     return np.asarray(rows, dtype=np.float64)
 
 
-def features_for_all(cells: Iterable[Cell], full: bool = True) -> list[dict]:
+def features_for_all(
+    cells: Iterable[Cell],
+    *,
+    model: str = "full",
+) -> list[dict]:
     """Bulk feature extraction. Returns rows ready for pandas.DataFrame.
 
-    When `full=True` (default), each row carries the 5-feature Severson
-    Discharge model. When `full=False`, only the headline log_var_delta_q
-    feature is included (used by the simple Variance baseline notebook).
+    Parameters
+    ----------
+    model
+      Which feature set to extract per cell:
+        - ``"variance"``  : 1 feature (log_var_delta_q only)
+        - ``"discharge"`` : 5 features (Severson Table 1 Discharge model)
+        - ``"full"``      : 9 features (Severson Table S2 Full model) — default
+
+    Cells that fail the model's prerequisites (missing cycles, malformed
+    data, etc.) are silently dropped — the caller checks ``len(rows)``
+    against the input cell count to gauge yield.
     """
+
+    def _extract_variance(c: Cell) -> dict | None:
+        v = severson_feature_log_var(c)
+        return None if v is None else {"log_var_delta_q": v}
+
+    extractors = {
+        "variance": _extract_variance,
+        "discharge": severson_features_discharge,
+        "full": severson_features_full,
+    }
+    if model not in extractors:
+        raise ValueError(f"unknown model={model!r}; expected one of {sorted(extractors)}")
+    extract = extractors[model]
+
     rows: list[dict] = []
     for c in cells:
         if c.cycle_life <= 0 or c.n_cycles < 100:
             continue
-
-        if full:
-            feats = severson_features_full(c)
-            if feats is None:
-                continue
-        else:
-            v = severson_feature_log_var(c)
-            if v is None:
-                continue
-            feats = {"log_var_delta_q": v}
-
+        feats = extract(c)
+        if feats is None:
+            continue
         rows.append({
             "cell_id": c.cell_id,
             "batch": c.batch,
