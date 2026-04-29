@@ -35,8 +35,10 @@ export default async function HomePage() {
           </span>
         </h1>
         <p className="mt-5 sm:mt-6 max-w-2xl text-base sm:text-lg text-muted leading-relaxed">
-          Sysblade HyperBuffer combines LFP cells with lithium-ion capacitors and an embedded battery digital twin to absorb the ±30 % power
-          swings GB200/GB300 racks impose on the grid — and turn that data into a SaaS service for the operators who need it.
+          Sysblade HyperBuffer combines <span className="text-foreground font-medium">LFP cells</span> with{" "}
+          <span className="text-foreground font-medium">lithium-ion capacitors</span> and an embedded{" "}
+          <span className="text-foreground font-medium">battery digital twin</span> to absorb the{" "}
+          <span className="text-foreground">±30 % power swings</span> GB200/GB300 racks impose on the grid — and turn that data into a SaaS service for the operators who need it.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -130,13 +132,13 @@ export default async function HomePage() {
             <h2 className="text-3xl font-semibold tracking-tight">The transient gap nobody is filling.</h2>
             <p className="mt-4 text-muted leading-relaxed">
               Microsoft Azure published the underlying problem (arXiv 2508.14318): LLM-training compute&ndash;sync cycles
-              swing rack power &plusmn;30 % over 1&ndash;50 ms. NVIDIA put capacitors inside the GB300 PSU; we put a
-              hybrid LFP+LIC buffer at the rack level so existing ORV3 deployments don&rsquo;t need PSU swaps.
+              swing rack power <span className="text-foreground font-medium">&plusmn;30 % over 1&ndash;50 ms</span>.
+              NVIDIA put capacitors inside the GB300 PSU; we put a{" "}
+              <span className="text-foreground font-medium">hybrid LFP+LIC buffer at the rack level</span> so existing ORV3 deployments don&rsquo;t need PSU swaps.
             </p>
             <p className="mt-4 text-muted leading-relaxed">
-              Schneider &times; NVIDIA chase 800 V hyperscalers. Vertiv chases facility-level UPS. The middle tier &mdash;
-              CoreWeave, Lambda, Equinix, Digital Realty &mdash; is left on hardware that wasn&rsquo;t designed for AI
-              workloads.
+              Schneider &times; NVIDIA chase 800 V hyperscalers. Vertiv chases facility-level UPS.
+              The <span className="text-foreground font-medium">middle tier</span> &mdash; CoreWeave, Lambda, Equinix, Digital Realty &mdash; is left on hardware that wasn&rsquo;t designed for AI workloads.
             </p>
           </div>
           <Card>
