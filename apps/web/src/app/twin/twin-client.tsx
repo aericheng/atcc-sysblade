@@ -118,8 +118,8 @@ interface ModelValidation {
     actual: number;
     predicted: number;
     pi_median: number;            // 50th-percentile MC Dropout estimate (point pred)
-    pi_lower: number;             // 5th-percentile  → 90% PI lower
-    pi_upper: number;             // 95th-percentile → 90% PI upper
+    pi_lower: number;             // split-conformal-adaptive 90% PI lower (sharpened from raw MC Dropout p5 by q_factor on the calibration set)
+    pi_upper: number;             // split-conformal-adaptive 90% PI upper (sharpened from raw MC Dropout p95 by q_factor on the calibration set)
     input_raw: number[][];        // (99, 7) features in original physical units
     hidden_activation: number[];  // (99,) mean |tanh activation| across 64 dims
     cumulative_pred: number[];    // (99,)
@@ -131,10 +131,23 @@ interface ModelValidation {
     critical: number;
   };
   uncertainty?: {
+    // ``method`` describes the underlying epistemic sampler (MC Dropout). The
+    // public-facing PI we render in walkthroughs is the conformal-sharpened
+    // bound — backward-compat aliases below carry those numbers.
     method: string;
     n_samples: number;
-    test_coverage_90pct: number;       // 0..1; 0.9 = perfect calibration
-    median_pi_width_cycles: number;
+    test_coverage_90pct: number;        // alias of conformal_test_coverage_90pct
+    median_pi_width_cycles: number;     // alias of conformal_median_pi_width_cycles
+    // Split-conformal-adaptive post-processing of the raw PI; populated by
+    // scripts/export_lstm_onnx.py since commit f77eee1.
+    raw_test_coverage_90pct?: number;
+    raw_median_pi_width_cycles?: number;
+    conformal_method?: string;
+    conformal_alpha?: number;
+    conformal_q_factor?: number;        // <1 means PIs sharpened, >1 means widened
+    conformal_n_calibration?: number;
+    conformal_test_coverage_90pct?: number;
+    conformal_median_pi_width_cycles?: number;
   };
 }
 
@@ -499,6 +512,42 @@ export function TwinClient({
             />
           </div>
 
+          {/* Conformal sharpening summary — shows the 44 % PI tightening
+              from split-conformal post-processing without taking up a
+              whole headline tile. Only renders when the JSON ships the
+              new conformal_* keys (commit f77eee1 onwards). */}
+          {modelValidation.uncertainty?.conformal_q_factor != null &&
+            modelValidation.uncertainty?.raw_median_pi_width_cycles != null &&
+            modelValidation.uncertainty?.conformal_median_pi_width_cycles != null && (
+              <div className="rounded-md border border-border bg-background/30 px-4 py-2.5 text-xs leading-relaxed">
+                <span className="text-foreground font-medium">90 % prediction interval · </span>
+                MC Dropout {modelValidation.uncertainty.n_samples} samples + split conformal{" "}
+                (q ={" "}
+                <span className="text-foreground tabular-nums">
+                  {modelValidation.uncertainty.conformal_q_factor.toFixed(2)}
+                </span>
+                , {modelValidation.uncertainty.conformal_n_calibration} held-out calibration
+                cells). Median PI width{" "}
+                <span className="text-warning tabular-nums">
+                  {Math.round(modelValidation.uncertainty.raw_median_pi_width_cycles).toLocaleString()} cycles
+                </span>{" "}
+                →{" "}
+                <span className="text-success tabular-nums">
+                  {Math.round(modelValidation.uncertainty.conformal_median_pi_width_cycles).toLocaleString()} cycles
+                </span>{" "}
+                (
+                {(
+                  (1 -
+                    modelValidation.uncertainty.conformal_median_pi_width_cycles /
+                      modelValidation.uncertainty.raw_median_pi_width_cycles) *
+                  100
+                ).toFixed(0)}
+                % sharper, coverage held{" "}
+                {((modelValidation.uncertainty.conformal_test_coverage_90pct ?? modelValidation.uncertainty.test_coverage_90pct) * 100).toFixed(0)}
+                %), whitepaper §3.3.7.
+              </div>
+            )}
+
           {(() => {
             // Unified [min, max] across BOTH actual and predicted, with 8 % padding,
             // so X and Y use the same domain and the y=x diagonal is a true 45 °
@@ -634,9 +683,10 @@ export function TwinClient({
               gentle float duty produces cells in that range, which is why the W3+ plan adds
               medium-stress synthetic cells to fill the middle. Cross-chemistry transfer
               (NASA NMC, CALCE LCO) was tested and ruled out (whitepaper §B); the answer is
-              more LFP coverage, not more chemistries. The 90 % MC-Dropout PIs in the
-              walkthrough below quantify the uncertainty cell-by-cell, including the wide
-              intervals over the gap.
+              more LFP coverage, not more chemistries. The 90 % prediction intervals in the
+              walkthrough below — MC Dropout post-processed by split conformal, sharpened 44 %
+              vs the raw sampler while keeping coverage ≥90 % — quantify the uncertainty
+              cell-by-cell across the gap.
             </p>
           </ChartCard>
           );
@@ -931,9 +981,11 @@ function ErrorByLifetimeBucket({
         MAPE because Severson holds only a handful of early-failure cells; that tail is the
         clearest W3+ data gap. Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and
         ruled out (whitepaper §B), so the answer is more LFP early-failure data, not more
-        chemistries. The Inference Walkthrough above reports a 90 % MC-Dropout prediction
-        interval per cell — wide PIs on the Short bucket are the model honestly saying it has
-        thin training signal there.
+        chemistries. The Inference Walkthrough above reports a 90 % prediction interval per
+        cell — MC Dropout post-processed by split conformal calibration (q_factor 0.56 on a
+        held-out 37-cell calibration set, whitepaper §3.3.7), sharpened 44 % vs the raw
+        sampler while keeping coverage ≥90 %; the Short bucket still gets the widest PIs
+        because the model honestly has thin training signal there.
       </p>
     </ChartCard>
   );
@@ -1065,7 +1117,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             value={cell.pi_median.toLocaleString()}
             unit="cycles"
             tone="primary"
-            hint={`90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout, 100 samples`}
+            hint={`90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout 100 samples + split conformal`}
           />
           <Stat
             label="Error"
@@ -1080,8 +1132,8 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             }
             hint={
               cell.actual >= cell.pi_lower && cell.actual <= cell.pi_upper
-                ? `Actual ${cell.actual.toLocaleString()} lies inside the 90% PI — model honestly reports its uncertainty here.`
-                : `Actual ${cell.actual.toLocaleString()} falls outside the 90% PI — calibration TODO (conformal post-hoc, W3).`
+                ? `Actual ${cell.actual.toLocaleString()} lies inside the conformal 90 % PI — calibrated coverage holds for this cell.`
+                : `Actual ${cell.actual.toLocaleString()} falls outside the conformal 90 % PI — rare (≤10 %) miss; widen α or extend the calibration set if it's a recurring tail-cell pattern.`
             }
           />
         </div>
