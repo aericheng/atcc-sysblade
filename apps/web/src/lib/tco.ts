@@ -96,10 +96,15 @@ export function computeTco(inputs: TcoInputs): TcoResult {
   const sysKwh10y = SYSBLADE_KWH_PER_RACK_YEAR * racks * 10 * inputs.pue;
   const co2 = (tradKwh10y - sysKwh10y) * inputs.gridCarbonKgPerKwh;
 
-  // Simple payback: extra up-front capex / annual operating savings
+  // Simple payback: extra up-front capex / annual operating savings.
+  // Every line in RackCosts is a 10-year total (see file header), so the
+  // numerator is one-time delta capex and the denominator annualises ALL
+  // recurring deltas by /10 — not just replacements.
   const extraCapex = (sys.initial - trad.initial) * racks;
-  const annualOpSaving = ((trad.transient + trad.ops + trad.replacements / 10) -
-    (sys.transient + sys.ops + sys.replacements / 10)) * racks;
+  const tenYearOpDelta =
+    (trad.transient + trad.ops + trad.replacements + trad.hvdc) -
+    (sys.transient + sys.ops + sys.replacements + sys.hvdc);
+  const annualOpSaving = (tenYearOpDelta / 10) * racks;
   const payback = annualOpSaving > 0 ? extraCapex / annualOpSaving : 999;
 
   return {
