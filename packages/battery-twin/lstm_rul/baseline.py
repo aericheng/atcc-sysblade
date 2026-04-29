@@ -156,7 +156,12 @@ DISCHARGE_FEATURES: tuple[str, ...] = (
     "intercept_q_2_100",
     "q_at_cycle_2",
 )
-# Severson 2019 Table S2 'Full' model — 5 Discharge features + 4 thermal/charge/late-fade.
+# Severson 2019 Table S2 'Full' model — 5 Discharge features + 6 paper-aligned
+# thermal / charge / late-fade features. The paper's two IR features are not
+# extractable from our v7.3 .mat parse path; we substitute by KEEPING the
+# 2-100-window slope/intercept/Q-at-2 from Discharge alongside the paper's
+# 91-100-window variants, so the design matrix has 11 columns total. The
+# extra columns help in practice — different fade phases.
 # Reproduced by ``severson_features_full`` in ``data_loaders.severson_parser``;
 # keep the column order in sync between the two so OLS coefficients line up.
 FULL_FEATURES: tuple[str, ...] = DISCHARGE_FEATURES + (
@@ -164,6 +169,8 @@ FULL_FEATURES: tuple[str, ...] = DISCHARGE_FEATURES + (
     "log_temp_integral_2_100",
     "log_charge_time_avg_2_6",
     "slope_q_91_100",
+    "intercept_q_91_100",
+    "q_at_cycle_100",
 )
 
 
