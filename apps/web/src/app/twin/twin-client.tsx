@@ -17,7 +17,18 @@ import {
 } from "recharts";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
-import { Activity, Cpu, FlaskConical } from "lucide-react";
+import { Heatmap } from "@/components/heatmap";
+import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
+
+const PER_CYCLE_FEATURE_NAMES = [
+  "cycle_norm",
+  "qd_max",
+  "qd_min",
+  "v_mean",
+  "v_std",
+  "t_max",
+  "duration_s",
+];
 
 interface Scenario {
   title: string;
@@ -85,6 +96,16 @@ interface ModelValidation {
     actual: number;
     predicted: number;
     split: "train" | "test";
+  }>;
+  walkthroughs?: Array<{
+    cell_id: string;
+    batch: string;
+    label: string;
+    actual: number;
+    predicted: number;
+    input_scaled: number[][];     // (99, 7)
+    hidden_state: number[][];     // (99, 64)
+    cumulative_pred: number[];    // (99,)
   }>;
 }
 
@@ -470,6 +491,11 @@ export function TwinClient({
         </CardBody>
       </Card>
 
+      {/* Inference walkthrough — pick a cell, see exactly what the LSTM did */}
+      {modelValidation.walkthroughs && modelValidation.walkthroughs.length > 0 && (
+        <InferenceWalkthrough walkthroughs={modelValidation.walkthroughs} />
+      )}
+
       {/* Method panel */}
       <Card>
         <CardHeader>
@@ -570,4 +596,218 @@ function Method({ icon, title, body }: { icon: React.ReactNode; title: string; b
       <p className="text-muted">{body}</p>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Inference walkthrough — pick a cell, see the LSTM's input → hidden state →
+// cumulative prediction → final answer. The four "Stage" blocks each cover
+// one part of the inference flow described in the model architecture docs.
+// ---------------------------------------------------------------------------
+type Walkthrough = NonNullable<ModelValidation["walkthroughs"]>[number];
+
+function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] }) {
+  const [pickedId, setPickedId] = useState<string>(walkthroughs[0].cell_id);
+  const cell = walkthroughs.find((w) => w.cell_id === pickedId) ?? walkthroughs[0];
+
+  const errorPct = ((cell.predicted - cell.actual) / cell.actual) * 100;
+
+  // Cumulative prediction series for Stage 3 line chart.
+  const cumulativeData = useMemo(
+    () =>
+      cell.cumulative_pred.map((p, i) => ({
+        cycle: i + 2, // we use cycles 2..100
+        predicted: p,
+        actual: cell.actual,
+      })),
+    [cell],
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Microscope className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle>Inference walkthrough · pick a cell, watch the LSTM think</CardTitle>
+              <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
+                Black-box NN claims are easy to challenge. Pick any of the {walkthroughs.length} cells
+                below — each is curated to expose a different model behaviour — and the four stages
+                show exactly what the LSTM saw, what its internal state did, and how its prediction
+                converged over the 99 observed cycles.
+              </p>
+            </div>
+          </div>
+          <select
+            value={pickedId}
+            onChange={(e) => setPickedId(e.target.value)}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
+          >
+            {walkthroughs.map((w) => (
+              <option key={w.cell_id} value={w.cell_id}>
+                {w.cell_id} · {w.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </CardHeader>
+
+      <CardBody className="space-y-6">
+        {/* Per-cell summary tiles */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Cell ID" value={cell.cell_id} hint={`batch ${cell.batch}`} />
+          <Stat
+            label="Actual cycle life"
+            value={cell.actual.toLocaleString()}
+            unit="cycles"
+            tone="default"
+          />
+          <Stat
+            label="Predicted"
+            value={cell.predicted.toLocaleString()}
+            unit="cycles"
+            tone="primary"
+          />
+          <Stat
+            label="Error"
+            value={`${errorPct >= 0 ? "+" : ""}${errorPct.toFixed(1)}`}
+            unit="%"
+            tone={Math.abs(errorPct) < 10 ? "success" : Math.abs(errorPct) < 25 ? "warning" : "danger"}
+          />
+        </div>
+
+        {/* Stage 1 · INPUT */}
+        <Stage
+          n={1}
+          title="Input · 7 features × 99 cycles (z-scored)"
+          body="What the LSTM literally sees on the wire. Each row is one feature, each column is one cycle (cycle 2 → cycle 100). Red = above the training mean, blue = below."
+        >
+          {/* input_scaled is (99, 7) — transpose to (7, 99) so features are rows */}
+          <Heatmap
+            data={transpose(cell.input_scaled)}
+            rowLabels={PER_CYCLE_FEATURE_NAMES}
+            colAxisLabel="cycle index (2 → 100)"
+            cellWidth={6}
+            cellHeight={18}
+            scale="diverging"
+          />
+        </Stage>
+
+        {/* Stage 2 · HIDDEN STATE */}
+        <Stage
+          n={2}
+          title="LSTM hidden state · 64 dims × 99 timesteps"
+          body="The model's internal opinion at every timestep. Each row is one of the 64 hidden dimensions. Some dimensions stay quiet, others light up only in specific cycle windows — that's the model picking up degradation patterns."
+        >
+          <Heatmap
+            data={transpose(cell.hidden_state)}
+            colAxisLabel="cycle index (2 → 100)"
+            cellWidth={6}
+            cellHeight={6}
+            scale="diverging"
+          />
+        </Stage>
+
+        {/* Stage 3 · CUMULATIVE PREDICTION */}
+        <Stage
+          n={3}
+          title="Cumulative prediction · convergence over the 99 cycles"
+          body="If we'd stopped reading at cycle X, what would the model say? Early-life predictions are poor (the model has barely seen anything); they converge to the final answer as more cycles arrive — exactly the behaviour the proposal claims."
+        >
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={cumulativeData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="cycle" type="number" domain={[2, 100]} stroke="" />
+              <YAxis stroke="" tickFormatter={(v) => `${v}`} />
+              <Tooltip content={<DarkTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+              <Line
+                type="stepAfter"
+                dataKey="actual"
+                stroke="rgba(148,163,184,0.45)"
+                strokeDasharray="4 4"
+                strokeWidth={1.4}
+                dot={false}
+                name={`actual (${cell.actual.toLocaleString()} cycles)`}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="predicted"
+                stroke="var(--primary)"
+                strokeWidth={1.8}
+                dot={false}
+                name="prediction at this cycle"
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Stage>
+
+        {/* Stage 4 · DENSE HEAD */}
+        <Stage
+          n={4}
+          title="Dense head · 64 → 32 → 1"
+          body={`The final hidden state at cycle 100 (64 numbers) goes through a Dense(64→32) + ReLU + Dropout + Linear(32→1) — see the architecture summary above. The single scalar output is log10(cycle_life) = ${(Math.log10(cell.predicted)).toFixed(4)}, which becomes 10^x = ${cell.predicted.toLocaleString()} cycles.`}
+        >
+          <div className="rounded-md border border-border bg-background/30 p-4 font-mono text-xs leading-relaxed text-muted">
+            <div className="text-foreground">final_hidden_64 → Dense(64→32) → ReLU → Dropout → Linear(32→1)</div>
+            <div className="mt-2">
+              <span className="text-muted">log_pred</span> ={" "}
+              <span className="text-primary">{Math.log10(cell.predicted).toFixed(4)}</span>
+            </div>
+            <div>
+              <span className="text-muted">10^log_pred</span> ={" "}
+              <span className="text-primary tabular-nums">{cell.predicted.toLocaleString()}</span> cycles
+            </div>
+            <div>
+              <span className="text-muted">actual</span> ={" "}
+              <span className="tabular-nums">{cell.actual.toLocaleString()}</span> cycles
+            </div>
+            <div>
+              <span className="text-muted">error</span> ={" "}
+              <span className={Math.abs(errorPct) < 10 ? "text-success" : Math.abs(errorPct) < 25 ? "text-warning" : "text-danger"}>
+                {errorPct >= 0 ? "+" : ""}{errorPct.toFixed(1)} %
+              </span>
+            </div>
+          </div>
+        </Stage>
+      </CardBody>
+    </Card>
+  );
+}
+
+function Stage({
+  n,
+  title,
+  body,
+  children,
+}: {
+  n: number;
+  title: string;
+  body: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-background/30 p-5 space-y-3">
+      <div className="flex items-baseline gap-3">
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-semibold">
+          {n}
+        </span>
+        <h4 className="text-sm font-medium">{title}</h4>
+      </div>
+      <p className="text-xs text-muted leading-relaxed">{body}</p>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+/** Transpose a (rows × cols) matrix to (cols × rows). */
+function transpose<T>(m: T[][]): T[][] {
+  if (m.length === 0) return m;
+  const r = m.length;
+  const c = m[0].length;
+  const out: T[][] = Array.from({ length: c }, () => Array(r));
+  for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) out[j][i] = m[i][j];
+  return out;
 }
