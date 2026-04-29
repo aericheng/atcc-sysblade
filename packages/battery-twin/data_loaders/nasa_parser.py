@@ -226,16 +226,44 @@ def parse_nasa_cell(cell_id: str, mat_dict: dict) -> Cell | None:
 # Zip handling — the canonical archive bundles many .mat files together
 # ---------------------------------------------------------------------------
 def _extract_zip(zip_path: Path, dest: Path) -> Path:
-    """Extract zip into ``dest`` (idempotent — skipped if dest already populated)."""
+    """Recursively extract ``zip_path`` into ``dest`` (idempotent).
+
+    The PHM mirror's ``5.+Battery+Data+Set.zip`` is a zip-of-zips: the
+    outer archive contains six inner ``.zip`` files (one per aging batch),
+    and the .mat files only appear inside those inner archives. We extract
+    the outer zip, then iteratively unpack any newly-extracted ``.zip``
+    files in-place until only ``.mat`` (and other leaf) files remain. The
+    same code handles a flat archive too — the inner-zip loop simply runs
+    zero iterations.
+    """
+    dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
-    # Heuristic: if any .mat file is already extracted, treat as done.
+    # Idempotency: if .mat files already exist, treat as done.
     existing = list(dest.rglob("*.mat"))
     if existing:
         logger.info(f"  {len(existing)} .mat files already extracted under {dest}")
         return dest
-    logger.info(f"  extracting {zip_path.name} → {dest}")
+
+    logger.info(f"  extracting {zip_path.name} -> {dest}")
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(dest)
+
+    # Recursively unpack any nested zips, removing each one after extraction
+    # so a re-run sees the already-flat layout. Bound the loop to avoid
+    # pathological archives that recreate zips on extract.
+    for _depth in range(5):
+        nested = [p for p in dest.rglob("*.zip") if p.resolve() != zip_path.resolve()]
+        if not nested:
+            break
+        for inner in nested:
+            try:
+                with zipfile.ZipFile(inner) as zf:
+                    zf.extractall(inner.parent)
+                inner.unlink()
+                logger.info(f"  unpacked nested {inner.name}")
+            except zipfile.BadZipFile as exc:
+                logger.warning(f"  skipping malformed nested zip {inner}: {exc}")
+
     extracted = list(dest.rglob("*.mat"))
     logger.success(f"  extracted {len(extracted)} .mat files")
     return dest
