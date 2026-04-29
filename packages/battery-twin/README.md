@@ -25,7 +25,7 @@ uv pip install -e packages/battery-twin[dev,api]
 | 模組 | 輸入 | 輸出 |
 |---|---|---|
 | `pybamm_sim` | 電流剖面 + cell parameter set | 電壓 / SOC / 溫度時間序列 |
-| `lstm_rul.model` | (N, 99, 7) per-cycle features | log10(cycle_life) 點預測 + MC Dropout PI |
+| `lstm_rul.model` | (N, 99, 7) per-cycle features | log10(cycle_life) 點預測 + MC Dropout PI(post-processed by split conformal in `scripts/export_lstm_onnx.py`,縮窄 44 %)|
 | `lstm_rul.baseline` | (N, k) feature matrix | OLS 線性回歸 + MAPE / RMSE / R² |
 | `data_loaders.severson_parser` | `.mat` v7.3 (HDF5) | `Cell` dataclass list,138 顆 LFP |
 | `data_loaders.nasa_parser` | NASA PCoE TXT/MAT | `Cell` dataclass list(NMC,化學跨界測試用) |
@@ -46,7 +46,7 @@ uv pip install -e packages/battery-twin[dev,api]
 | OLS Discharge | 5-feat | 17.6 % | 19.9 % |
 | OLS Full(無 IR) | 9-feat | 12.6 % | 19.9 % |
 | **OLS Full + IR** | **13-feat** | **14.5 %** | **14.5 %**(R² 由負轉正) |
-| **LSTM augmented** | 188 cells, MC Dropout | 22.5 % | — |
+| **LSTM augmented** | 188 cells, MC Dropout + split conformal(q_factor 0.56)| 22.5 % | — |
 
 **v2.1 §B 承諾**:< 10 % MAPE。OLS 13-feat 14.5 % 跟承諾差約 4–5 pp。**未上實機資料前不承諾 < 5 %。**
 

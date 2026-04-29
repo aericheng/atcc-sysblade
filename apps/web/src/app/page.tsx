@@ -100,7 +100,7 @@ export default async function HomePage() {
             icon={<Cpu className="h-5 w-5" />}
             kicker="01"
             title="Battery Digital Twin"
-            body="PyBaMM DFN physics + LSTM RUL trained on 188 LFP cells (138 Severson 2019 + 50 PyBaMM-calibrated BBU-duty), with 90 % MC-Dropout prediction intervals. Cloud trains, edge (STM32N6) infers, OTA updates weights."
+            body="PyBaMM DFN physics + LSTM RUL trained on 188 LFP cells (138 Severson 2019 + 50 PyBaMM-calibrated BBU-duty), with 90 % prediction intervals from MC Dropout + split conformal (PIs 44 % sharper than the raw sampler, ≥90 % coverage held). Cloud trains, edge (STM32N6) infers, OTA updates weights."
             cta="Run physics simulation"
           />
           <PillarCard

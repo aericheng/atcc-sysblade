@@ -18,7 +18,7 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 | 路由 | 內容 | 突出技術 |
 |---|---|---|
 | `/` | 首頁 — 5 張頭條卡 + 板塊導引 | 從場景 JSON 動態取真實量測值 |
-| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN(Prada2013 LFP)+ LSTM RUL + 90 % MC-Dropout PI + 示波器掃描動畫 |
+| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN(Prada2013 LFP)+ LSTM RUL + 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 |
 | [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10 年 TCO 計算器 | 4 個 slider × 3 個 preset · 純 HTML/Tailwind bar chart(避開 recharts loop) |
 | [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + Tier-1/2/3 服務分層 · 全頁標 SIMULATED DATA 浮水印 |
 
@@ -50,7 +50,7 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 | Test R² | 0.93 | 加入 BBU regime 後從 0.70 跳上來(覆蓋變廣是主要收益) |
 | ONNX 模型大小 | 8.2 KiB | 對齊 STM32N6 Flash 預算 |
 | ONNX 延遲 (laptop CPU p99) | **0.27 ms** | 50 ms 規格達標 ~185×;STM32N6 NPU 推估 ≈5 ms |
-| 不確定性方法 | MC Dropout | 100 forward passes · 90 % PI · test coverage 100 %(over-cover,W3 conformal 校準) |
+| 不確定性方法 | MC Dropout + split conformal | 100 forward passes,共形 q_factor 0.56,**raw 1910 → conformal 1075 cycles 的中位數 PI(縮窄 44 %)**,test coverage 100 % ≥ 90 % 保證 · 校準集 37 cells held-out |
 
 LSTM 是 production 推論用(/twin walkthrough + /dashboard fleet),OLS 13-feat 是
 **「跨 batch 可遷移性」的證據**。MAPE 的 16→22 % 上升是 **regime gap closure trade-off**,
@@ -84,7 +84,7 @@ atcc/
 ├── notebooks/                                    EDA + 訓練 + cross-dataset eval
 ├── scripts/
 │   ├── generate_twin_scenarios.py                4 個 PyBaMM 場景 + 1000-device fleet
-│   ├── export_lstm_onnx.py                       訓練 LSTM + ONNX export + MC Dropout
+│   ├── export_lstm_onnx.py                       訓練 LSTM + ONNX export + MC Dropout + split conformal
 │   ├── run_severson_baselines.py                 OLS 1/5/9-feature 三段比較
 │   └── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試
 ├── data/raw/  data/processed/                    .gitignore(>8 GB)
