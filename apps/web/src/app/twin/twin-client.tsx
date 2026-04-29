@@ -2,7 +2,10 @@
 
 import { Fragment, useMemo, useState } from "react";
 import {
+  Bar,
   CartesianGrid,
+  Cell as RCell,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -490,6 +493,10 @@ export function TwinClient({
             </p>
           </ChartCard>
 
+          {/* Error pattern by cell lifetime — surfaces the systematic
+              regression-to-mean behaviour the scatter only hints at. */}
+          <ErrorByLifetimeBucket data={modelValidation.predicted_vs_actual} />
+
           <div className="rounded-md border border-border bg-background/30 p-4 text-xs text-muted leading-relaxed">
             <span className="text-foreground font-medium">Architecture · </span>
             {modelValidation.model.architecture} · {modelValidation.model.n_parameters.toLocaleString()} parameters ·
@@ -603,6 +610,163 @@ function Method({ icon, title, body }: { icon: React.ReactNode; title: string; b
       </div>
       <p className="text-muted">{body}</p>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Error pattern by cell lifetime
+// ---------------------------------------------------------------------------
+// Bin all 138 cells by actual cycle life, then show:
+//   - a bar (left axis) for cell count per bucket
+//   - a line (right axis) for that bucket's MAPE
+// The pattern surfaces regression-to-mean: typical-lifetime cells (700-1000)
+// land at ~11 % MAPE; the extremes jump to 30 %+ because the model is
+// pulled toward the training median. Without this chart the per-cell
+// scatter plot above hints at the trend but doesn't quantify it.
+
+type Bucket = {
+  label: string;
+  min: number;
+  max: number;
+  count: number;
+  mape: number;
+  meanErr: number;
+  avgActual: number;
+  avgPred: number;
+};
+
+const BUCKET_DEFS: Array<{ label: string; min: number; max: number }> = [
+  { label: "Short\n(<400)",        min: 0,    max: 400 },
+  { label: "Mid-low\n(400-700)",   min: 400,  max: 700 },
+  { label: "Typical\n(700-1000)",  min: 700,  max: 1000 },
+  { label: "Mid-high\n(1000-1300)",min: 1000, max: 1300 },
+  { label: "Long\n(≥1300)",        min: 1300, max: Infinity },
+];
+
+function buildBuckets(
+  rows: ModelValidation["predicted_vs_actual"],
+): Bucket[] {
+  return BUCKET_DEFS.map((b) => {
+    const sub = rows.filter((r) => r.actual >= b.min && r.actual < b.max);
+    const n = sub.length;
+    if (n === 0) {
+      return { label: b.label, min: b.min, max: b.max, count: 0, mape: 0, meanErr: 0, avgActual: 0, avgPred: 0 };
+    }
+    let sumAbs = 0;
+    let sumSign = 0;
+    let sumActual = 0;
+    let sumPred = 0;
+    for (const r of sub) {
+      const e = (r.predicted - r.actual) / r.actual;
+      sumAbs += Math.abs(e);
+      sumSign += e;
+      sumActual += r.actual;
+      sumPred += r.predicted;
+    }
+    return {
+      label: b.label,
+      min: b.min,
+      max: b.max,
+      count: n,
+      mape: (sumAbs / n) * 100,
+      meanErr: (sumSign / n) * 100,
+      avgActual: sumActual / n,
+      avgPred: sumPred / n,
+    };
+  });
+}
+
+function ErrorByLifetimeBucket({
+  data,
+}: {
+  data: ModelValidation["predicted_vs_actual"];
+}) {
+  const buckets = useMemo(() => buildBuckets(data), [data]);
+
+  // Bar tinted darker red as MAPE climbs — gives the eye an immediate
+  // 'this bucket is fine vs this bucket is the problem' read.
+  const barColour = (mape: number): string => {
+    if (mape < 13) return "rgba(99,102,241,0.75)";   // indigo (good)
+    if (mape < 22) return "rgba(34,211,238,0.6)";    // cyan (mid)
+    return "rgba(248,113,113,0.7)";                   // red (bad)
+  };
+
+  return (
+    <ChartCard
+      title="Error pattern by cell lifetime"
+      subtitle="Where the model is good vs where regression-to-mean hurts"
+    >
+      <ResponsiveContainer width="100%" height={280}>
+        <ComposedChart data={buckets} margin={{ top: 8, right: 32, left: 8, bottom: 32 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="label"
+            stroke=""
+            interval={0}
+            tick={{ fontSize: 10 }}
+          />
+          <YAxis yAxisId="count" stroke="" label={{ value: "cells", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 10 }} />
+          <YAxis
+            yAxisId="mape"
+            orientation="right"
+            stroke=""
+            tickFormatter={(v) => `${v.toFixed(0)}%`}
+            label={{ value: "MAPE", angle: 90, position: "insideRight", fill: "var(--muted)", fontSize: 10 }}
+            domain={[0, "auto"]}
+          />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const b = payload[0].payload as Bucket;
+              if (b.count === 0) return null;
+              return (
+                <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5">
+                  <div className="font-medium text-foreground whitespace-pre-line">{b.label}</div>
+                  <div className="grid grid-cols-2 gap-x-3 pt-1.5">
+                    <span className="text-muted">cells</span>
+                    <span className="text-right tabular-nums">{b.count}</span>
+                    <span className="text-muted">avg actual</span>
+                    <span className="text-right tabular-nums">{b.avgActual.toFixed(0)}</span>
+                    <span className="text-muted">avg predicted</span>
+                    <span className="text-right tabular-nums">{b.avgPred.toFixed(0)}</span>
+                    <span className="text-muted">mean signed err</span>
+                    <span className={`text-right tabular-nums ${b.meanErr > 0 ? "text-warning" : "text-accent"}`}>
+                      {b.meanErr >= 0 ? "+" : ""}{b.meanErr.toFixed(1)}%
+                    </span>
+                    <span className="text-muted">MAPE</span>
+                    <span className="text-right tabular-nums font-medium">{b.mape.toFixed(1)}%</span>
+                  </div>
+                </div>
+              );
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+          <Bar yAxisId="count" dataKey="count" name="Cell count" radius={[4, 4, 0, 0]}>
+            {buckets.map((b, i) => (
+              <RCell key={i} fill={barColour(b.mape)} />
+            ))}
+          </Bar>
+          <Line
+            yAxisId="mape"
+            type="monotone"
+            dataKey="mape"
+            name="MAPE %"
+            stroke="var(--warning)"
+            strokeWidth={2}
+            dot={{ fill: "var(--warning)", r: 4 }}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <p className="text-xs text-muted mt-2">
+        Bars (left axis) show how many cells live in each lifetime bucket. The amber line (right
+        axis) is the mean absolute percentage error within that bucket. Typical-lifetime cells
+        (700–1000 cycles, near the training median) land at ~11 % MAPE; the short and long
+        extremes jump to 30 %+ because the model regresses toward the training median when it
+        sees an unusual cell. The W3 plan extends features and adds NASA + CALCE cells to the
+        training set to flatten this curve.
+      </p>
+    </ChartCard>
   );
 }
 
