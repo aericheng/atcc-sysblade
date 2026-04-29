@@ -860,9 +860,9 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 <span className="text-foreground"> warning</span>, Tier-3 replacement queue
                 <span className="text-foreground"> early_aging</span>, and outright failure
                 <span className="text-foreground"> critical</span>. The mix is weighted by
-                the dashboard's actual 1,000-device distribution. Pick any cell to see the
+                the dashboard&rsquo;s actual 1,000-device distribution. Pick any cell to see the
                 per-cycle measurements the LSTM consumed, and how its prediction compared to
-                the cell's real cycle life.
+                the cell&rsquo;s real cycle life.
               </p>
             </div>
           </div>
