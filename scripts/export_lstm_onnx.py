@@ -65,74 +65,176 @@ def _build_predicted_vs_actual(
     ]
 
 
-def _battery_scenario_label(cycle_life: int) -> str:
-    """Describe what kind of battery this cell represents (not the model's
-    accuracy on it). Bands roughly match Severson's distribution: median
-    around 800 cycles, anything < 200 is treated as an outright early
-    failure, anything > 1500 is a 'hero' long-lived cell."""
+# ---------------------------------------------------------------------------
+# Fleet-status-aware walkthrough selection
+#
+# Replaces the older lifetime-quantile picker. The /twin "Inference
+# walkthrough" dropdown now mirrors the battery states a fleet manager
+# actually sees on /dashboard, so a viewer can connect "the LSTM input
+# the model saw for THIS cell" to "what % of my 1000-BBU fleet looks
+# like this right now."
+#
+# Pipeline:
+#   1. Read fleet_devices.json (the same file /dashboard renders).
+#   2. Re-bucket each device into 4 statuses (healthy / warning /
+#      early_aging / critical) using SOH + RUL bands. The raw fleet ships
+#      with 3 statuses (healthy / early_aging / thermal_warn); we
+#      subdivide healthy into healthy + warning so the walkthrough has a
+#      non-degenerate "mostly healthy but watching it" bucket to talk
+#      through. Tier-3 admission rule (SOH<0.85 OR RUL<800, per
+#      proposal §F) is preserved.
+#   3. Map each Severson cell's cycle_life onto the same 4 statuses by
+#      reading cycle_life as "the lifetime this cell exhibited", i.e.
+#      what its dashboard tile would say if observed mid-life.
+#   4. Pick 9 cells weighted by fleet population %, with at least 1 cell
+#      per status so all 4 stories appear in the dropdown.
+# ---------------------------------------------------------------------------
+FLEET_STATUSES: tuple[str, ...] = ("healthy", "warning", "early_aging", "critical")
+
+# Chinese display strings — match the /twin UI's voice. The percentage and
+# cycle count are filled in at render time.
+_STATUS_DISPLAY: dict[str, str] = {
+    "healthy":     "主要族群 healthy",
+    "warning":     "健康但接近替換 warning",
+    "early_aging": "Tier-3 替換隊列 early_aging",
+    "critical":    "故障早夭 critical",
+}
+
+
+def _classify_device_4status(soh: float, rul: int) -> str:
+    """Bucket a device into 1 of 4 statuses.
+
+    Thresholds:
+      critical    : SOH < 0.80 OR RUL < 200    — replace immediately
+      early_aging : SOH < 0.85 OR RUL < 800    — Tier-3 admission rule
+      warning     : SOH < 0.92 OR RUL < 1500   — watch list, schedule swap
+      healthy     : everything else            — main population
+
+    The early_aging band matches the Tier-3 rule defined in
+    scripts/generate_twin_scenarios.py and proposal §F.
+    """
+    if soh < 0.80 or rul < 200:
+        return "critical"
+    if soh < 0.85 or rul < 800:
+        return "early_aging"
+    if soh < 0.92 or rul < 1500:
+        return "warning"
+    return "healthy"
+
+
+def _load_fleet_distribution() -> dict[str, float]:
+    """Read fleet_devices.json and return percentage by 4-status bucket."""
+    fleet_path = REPO / "apps" / "web" / "public" / "scenarios" / "fleet_devices.json"
+    if not fleet_path.exists():
+        # Soft fallback: if the fleet hasn't been generated yet, use the
+        # storyboard distribution from the proposal §F so the UI still
+        # renders. Re-run scripts/generate_twin_scenarios.py to refresh.
+        return {"healthy": 67.0, "warning": 23.0, "early_aging": 6.0, "critical": 4.0}
+    fleet = json.loads(fleet_path.read_text())
+    devices = fleet.get("devices", [])
+    counts = {s: 0 for s in FLEET_STATUSES}
+    for d in devices:
+        soh = min(float(d.get("soh_lfp", 1.0)), float(d.get("soh_lic", 1.0)))
+        rul = int(d.get("rul_cycles", 9999))
+        counts[_classify_device_4status(soh, rul)] += 1
+    total = max(1, sum(counts.values()))
+    return {s: round(100.0 * counts[s] / total, 1) for s in FLEET_STATUSES}
+
+
+def _cycle_life_to_status(cycle_life: int) -> str:
+    """Map a Severson cell's full-life cycle_life onto the 4 fleet buckets.
+
+    Inverse of the fleet bucketing: a cell with high cycle_life corresponds
+    to a 'healthy' device observed mid-life; a low-cycle-life cell would
+    already be in Tier-3 by the same observation point.
+
+    Bands are picked so the Severson population's Q1/median/Q3 land in
+    the 'main' three buckets and only outright early failures hit
+    critical:
+      < 200            → critical    (Severson n ≈ 1)
+      < 600            → early_aging
+      < 1000           → warning
+      ≥ 1000           → healthy     (the bulk of long-lived Severson cells)
+    """
     if cycle_life < 200:
-        return "early failure"
-    if cycle_life < 400:
-        return "short-lived"
-    if cycle_life < 700:
-        return "below-median lifetime"
+        return "critical"
+    if cycle_life < 600:
+        return "early_aging"
     if cycle_life < 1000:
-        return "typical lifetime"
-    if cycle_life < 1300:
-        return "above-median lifetime"
-    if cycle_life < 1600:
-        return "long-lived"
-    return "premium long-lived"
+        return "warning"
+    return "healthy"
+
+
+def _allocate_picks_by_pct(pct_by_status: dict[str, float], n_picks: int) -> dict[str, int]:
+    """Allocate ``n_picks`` slots across statuses weighted by ``pct_by_status``,
+    guaranteeing each status gets at least 1 slot so all 4 stories appear.
+    """
+    base = {s: max(1, round(pct_by_status[s] / 100.0 * n_picks)) for s in FLEET_STATUSES}
+    # Clamp total to exactly n_picks. Trim from the largest bucket; if we
+    # need more, add to the largest bucket.
+    while sum(base.values()) > n_picks:
+        biggest = max(FLEET_STATUSES, key=lambda s: base[s])
+        if base[biggest] <= 1:
+            break  # everyone at floor
+        base[biggest] -= 1
+    while sum(base.values()) < n_picks:
+        biggest = max(FLEET_STATUSES, key=lambda s: base[s])
+        base[biggest] += 1
+    return base
 
 
 def _pick_walkthrough_cells(
     y: np.ndarray, pred: np.ndarray, n_picks: int = 9
-) -> list[tuple[int, str]]:
-    """Pick a curated, evenly-spread set of cells across the cycle-life range.
+) -> list[tuple[int, str, str, float]]:
+    """Pick cells weighted by fleet status distribution.
 
-    Replaces the older 'best / worst / median + random' picker — that one
-    cherry-picked extremes of model accuracy, which framed the demo around
-    the model rather than around the batteries. The new picker spans the
-    cycle-life percentiles so the dropdown reads as 'a representative tour
-    of the battery population' rather than 'the model's hits and misses'.
-
-    Returns (index, label) tuples in display order. The label describes the
-    BATTERY scenario; per-cell error rate is still shown in the UI summary.
+    Returns (index, label, fleet_status, fleet_pct) tuples, sorted from
+    healthy → critical so the dropdown reads as a tour of the fleet from
+    'main population' down to 'imminent failure'.
     """
     n = len(y)
     if n_picks > n:
         n_picks = n
 
-    # Pick at fixed percentiles so the spread is independent of dataset size.
-    # 10/22/35/45/55/65/78/90 % covers the body of the distribution; the two
-    # endpoints are forced to the absolute min and max so the most extreme
-    # battery scenarios (early failure vs hero long-lived) always appear.
-    inner_pcts = [10, 22, 35, 45, 55, 65, 78, 90]
-    inner_pcts = inner_pcts[: max(0, n_picks - 2)]
-    sorted_idx = np.argsort(y)
-    picked: dict[int, None] = {}
+    pct_by_status = _load_fleet_distribution()
+    targets = _allocate_picks_by_pct(pct_by_status, n_picks)
 
-    # Always include the absolute extremes
-    picked[int(sorted_idx[0])] = None
-    picked[int(sorted_idx[-1])] = None
+    # Group Severson cells by the same 4 statuses.
+    sorted_idx = np.argsort(y)  # ascending cycle_life
+    by_status: dict[str, list[int]] = {s: [] for s in FLEET_STATUSES}
+    for idx in sorted_idx:
+        status = _cycle_life_to_status(int(y[int(idx)]))
+        by_status[status].append(int(idx))
 
-    for pct in inner_pcts:
-        rank = int(round((pct / 100.0) * (n - 1)))
-        idx = int(sorted_idx[rank])
-        # If a tie pulls us back onto an already-picked index, walk forward.
-        while idx in picked and rank < n - 1:
-            rank += 1
-            idx = int(sorted_idx[rank])
-        picked[idx] = None
+    picks: list[tuple[int, str, str, float]] = []
+    for status in FLEET_STATUSES:
+        bucket = by_status[status]
+        n_target = targets[status]
+        if n_target <= 0 or not bucket:
+            continue
+        if n_target == 1:
+            chosen = [bucket[len(bucket) // 2]]
+        elif n_target >= len(bucket):
+            chosen = list(bucket)
+        else:
+            # Evenly spaced sample across the bucket so we span the
+            # status-internal range (e.g. healthy bucket stretches from
+            # 1000 to 1934 cycles in Severson — we want the spread).
+            step = (len(bucket) - 1) / (n_target - 1)
+            chosen = [bucket[int(round(i * step))] for i in range(n_target)]
+            # Dedupe if rounding collapsed two indices.
+            chosen = list(dict.fromkeys(chosen))
 
-    # Build descriptive labels and sort by actual cycle life ascending.
-    out: list[tuple[int, str]] = []
-    for idx in picked:
-        scenario = _battery_scenario_label(int(y[idx]))
-        label = f"{scenario} · {int(y[idx])} cycles"
-        out.append((idx, label))
-    out.sort(key=lambda kv: y[kv[0]])
-    return out
+        for idx in chosen:
+            cycle_life = int(y[idx])
+            display = _STATUS_DISPLAY[status]
+            label = f"{display} (~{pct_by_status[status]:.0f}%) · {cycle_life} cycles"
+            picks.append((idx, label, status, pct_by_status[status]))
+
+    # Sort: healthy first (large cycle_life), critical last (small cycle_life).
+    status_rank = {s: i for i, s in enumerate(FLEET_STATUSES)}
+    picks.sort(key=lambda t: (status_rank[t[2]], -y[t[0]]))
+    return picks
 
 
 def extract_walkthroughs(
@@ -143,28 +245,19 @@ def extract_walkthroughs(
     ids: list[str],
     batches: list[str],
     pred_all: np.ndarray,
-    cell_indices: list[tuple[int, str]],
+    cell_indices: list[tuple[int, str, str, float]],
 ) -> list[dict]:
     """Capture (input, hidden state, cumulative prediction) for chosen cells.
 
-    For each picked cell, returns:
-      cell_id / batch / actual / predicted / label
-      input_raw          — (99, 7) features in original physical units
-                           (Ah / V / °C / sec — what the demo actually shows)
-      hidden_activation  — (99,) mean |tanh activation| across the 64 hidden
-                           dims at each timestep ('how active is the model?')
-      cumulative_pred    — (99,) predicted cycle-life if we stopped at each
-                           timestep (what the model would have said with only
-                           that much data)
-
-    Earlier versions also exported the full (99, 7) z-scored input and the
-    full (99, 64) hidden state for a heatmap UI; both were dropped in favour
-    of line charts that read more naturally for non-ML viewers.
+    ``cell_indices`` carries (idx, label, fleet_status, fleet_pct) per cell.
+    Output includes the same four extras alongside the per-cycle tensors so
+    the /twin UI can render the dropdown ("healthy · 67% · 1934 cycles")
+    and a status pill on the cell summary tile.
     """
     model.eval()
     out: list[dict] = []
     with torch.no_grad():
-        for idx, label in cell_indices:
+        for idx, label, fleet_status, fleet_pct in cell_indices:
             x_raw = X[idx]                            # (99, 7) original units
             x_scaled = scaler.transform(X[idx : idx + 1])  # (1, 99, 7)
             x_t = torch.tensor(x_scaled, dtype=torch.float32)
@@ -187,6 +280,8 @@ def extract_walkthroughs(
                 "cell_id": ids[idx],
                 "batch": batches[idx],
                 "label": label,
+                "fleet_status": fleet_status,
+                "fleet_pct": fleet_pct,
                 "actual": int(round(float(y[idx]))),
                 "predicted": int(round(float(pred_all[idx]))),
                 "input_raw": [
@@ -342,14 +437,21 @@ def main() -> None:
     # Walkthroughs — per-cell input + hidden state + cumulative-prediction
     # trajectory for a curated set of cells. Used by the /twin "Inference
     # walkthrough" UI to let the viewer step through one cell at a time.
+    # Cells are picked weighted by the dashboard fleet's 4-status
+    # distribution so the dropdown stays in lockstep with /dashboard.
     print("extracting per-cell walkthrough trajectories...")
+    fleet_dist = _load_fleet_distribution()
+    print("  fleet distribution: " + ", ".join(
+        f"{s} {fleet_dist[s]:.1f}%" for s in FLEET_STATUSES
+    ))
     picks = _pick_walkthrough_cells(y, pred_all, n_picks=9)
     payload["walkthroughs"] = extract_walkthroughs(
         res.model, res.scaler, X, y, ids, batches, pred_all, picks
     )
-    print(f"  captured {len(payload['walkthroughs'])} cells: " + ", ".join(
-        f"{w['cell_id']} ({w['label']})" for w in payload["walkthroughs"]
-    ))
+    payload["fleet_status_distribution_pct"] = fleet_dist
+    print(f"  captured {len(payload['walkthroughs'])} cells:")
+    for w in payload["walkthroughs"]:
+        print(f"    [{w['fleet_status']:11s}] {w['cell_id']:6s} · {w['label']}")
 
     body = json.dumps(payload, separators=(",", ":"), default=float)
     out.write_text(body, encoding="utf-8")
