@@ -403,27 +403,40 @@ export function TwinClient({
             />
           </div>
 
+          {(() => {
+            // Unified [min, max] across BOTH actual and predicted, with 8 % padding,
+            // so X and Y use the same domain and the y=x diagonal is a true 45 °
+            // reference line. Regression-to-mean shows up visually as 'short cells
+            // sit above the diagonal, long cells sit below'.
+            const all = modelValidation.predicted_vs_actual.flatMap((p) => [p.actual, p.predicted]);
+            const lo = Math.min(...all);
+            const hi = Math.max(...all);
+            const pad = (hi - lo) * 0.08;
+            const domain: [number, number] = [Math.max(0, Math.floor(lo - pad)), Math.ceil(hi + pad)];
+          return (
           <ChartCard
             title={`Predicted vs actual cycle life · all ${modelValidation.metrics.n_train + modelValidation.metrics.n_test} cells`}
             subtitle={`Split ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} train · ${modelValidation.metrics.n_test} test`}
           >
-            <ResponsiveContainer width="100%" height={320}>
-              <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+            <ResponsiveContainer width="100%" height={360}>
+              <ScatterChart margin={{ top: 12, right: 16, left: 12, bottom: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   type="number"
                   dataKey="actual"
                   name="actual"
-                  domain={["dataMin - 100", "dataMax + 100"]}
+                  domain={domain}
+                  allowDataOverflow={false}
                   stroke=""
                   tickFormatter={(v) => `${v}`}
-                  label={{ value: "Actual cycle life", position: "insideBottom", offset: -2, fill: "var(--muted)", fontSize: 11 }}
+                  label={{ value: "Actual cycle life", position: "insideBottom", offset: -8, fill: "var(--muted)", fontSize: 11 }}
                 />
                 <YAxis
                   type="number"
                   dataKey="predicted"
                   name="predicted"
-                  domain={["dataMin - 100", "dataMax + 100"]}
+                  domain={domain}
+                  allowDataOverflow={false}
                   stroke=""
                   tickFormatter={(v) => `${v}`}
                   label={{ value: "Predicted cycle life", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
@@ -462,11 +475,10 @@ export function TwinClient({
                 <Line
                   type="linear"
                   dataKey="actual"
-                  data={(() => {
-                    const lo = Math.min(...modelValidation.predicted_vs_actual.map((p) => Math.min(p.actual, p.predicted)));
-                    const hi = Math.max(...modelValidation.predicted_vs_actual.map((p) => Math.max(p.actual, p.predicted)));
-                    return [{ actual: lo, predicted: lo }, { actual: hi, predicted: hi }];
-                  })()}
+                  data={[
+                    { actual: domain[0], predicted: domain[0] },
+                    { actual: domain[1], predicted: domain[1] },
+                  ]}
                   stroke="rgba(148,163,184,0.4)"
                   strokeDasharray="4 4"
                   dot={false}
@@ -486,12 +498,16 @@ export function TwinClient({
               </ScatterChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
-              Dashed diagonal is the perfect-prediction line. Test cells (cyan) are within ±20 % of actual for most
-              cases; the ±20 % band is the Severson 2019 paper&rsquo;s reported variance baseline accuracy. Outliers
-              (mostly batch 2 short-lived cells) are why this first-pass model lands above the &lt;10 % proposal
-              target — the W3 plan extends features and increases training data to close the gap.
+              Dashed 45° line is the perfect-prediction reference. Both axes share the same domain
+              so regression-to-mean reads directly off the chart: short-lived cells sit above the
+              diagonal (model overshoots), long-lived cells sit below (model undershoots). Most of
+              the test set (cyan) lands within ±20 % of actual; outliers at the extremes are why
+              this first-pass model is above the &lt;10 % proposal target — the W3 plan extends
+              features and adds NASA / CALCE cells to flatten this pattern.
             </p>
           </ChartCard>
+          );
+          })()}
 
           {/* Error pattern by cell lifetime — surfaces the systematic
               regression-to-mean behaviour the scatter only hints at. */}
