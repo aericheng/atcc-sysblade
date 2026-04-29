@@ -509,27 +509,55 @@ export function TwinClient({
                   legendType="none"
                   isAnimationActive={false}
                 />
+                {/* Four series: regime (Severson lab fast-charge vs PyBaMM
+                    BBU-duty) × split (train vs held-out test). Colour family
+                    encodes regime, brightness encodes split — so the
+                    "regime gap" between Severson lifetimes (≤2,000) and BBU
+                    lifetimes (≥5,000) reads directly off the chart, while
+                    held-out test points are still visible against train. */}
                 <Scatter
-                  name="train"
-                  data={modelValidation.predicted_vs_actual.filter((p) => p.split === "train")}
-                  fill="rgba(99,102,241,0.55)"
+                  name="Severson · train"
+                  data={modelValidation.predicted_vs_actual.filter(
+                    (p) => p.batch !== "bbu" && p.split === "train",
+                  )}
+                  fill="rgba(99,102,241,0.45)"
                 />
                 <Scatter
-                  name="test (held-out)"
-                  data={modelValidation.predicted_vs_actual.filter((p) => p.split === "test")}
-                  fill="rgba(34,211,238,0.9)"
+                  name="Severson · test"
+                  data={modelValidation.predicted_vs_actual.filter(
+                    (p) => p.batch !== "bbu" && p.split === "test",
+                  )}
+                  fill="rgba(34,211,238,0.95)"
+                />
+                <Scatter
+                  name="PyBaMM BBU · train"
+                  data={modelValidation.predicted_vs_actual.filter(
+                    (p) => p.batch === "bbu" && p.split === "train",
+                  )}
+                  fill="rgba(251,191,36,0.55)"
+                />
+                <Scatter
+                  name="PyBaMM BBU · test"
+                  data={modelValidation.predicted_vs_actual.filter(
+                    (p) => p.batch === "bbu" && p.split === "test",
+                  )}
+                  fill="rgba(249,115,22,0.95)"
                 />
               </ScatterChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
-              Dashed 45° line is the perfect-prediction reference. Both axes share the same domain
-              so regression-to-mean reads directly off the chart: short-lived cells sit above the
-              diagonal (model overshoots), long-lived cells sit below (model undershoots). Most of
-              the test set (cyan) lands within ±20 % of actual; outliers at the extremes are why
-              this first-pass model is above the &lt;10 % proposal target. Cross-chemistry
-              transfer was tested and ruled out (NASA NMC: 5/5 features OOD; CALCE is LCO) —
-              the path forward is more LFP early-failure data plus the 90 % MC-Dropout PIs
-              shown below, where the model honestly widens its interval on tail cells.
+              Dashed 45° line is the perfect-prediction reference. Cool blues are{" "}
+              <span className="text-foreground">Severson 2019 fast-charge cells</span>{" "}
+              (lab-stress lifetimes 100–2,000 cycles); warm ambers are{" "}
+              <span className="text-foreground">PyBaMM-calibrated BBU-duty cells</span>{" "}
+              (5,000–13,000 cycles). The 2,000–4,000 gap between the two clouds is the
+              <span className="text-foreground"> regime gap</span> — neither lab fast-charge nor
+              gentle float duty produces cells in that range, which is why the W3+ plan adds
+              medium-stress synthetic cells to fill the middle. Cross-chemistry transfer
+              (NASA NMC, CALCE LCO) was tested and ruled out (whitepaper §B); the answer is
+              more LFP coverage, not more chemistries. The 90 % MC-Dropout PIs in the
+              walkthrough below quantify the uncertainty cell-by-cell, including the wide
+              intervals over the gap.
             </p>
           </ChartCard>
           );
