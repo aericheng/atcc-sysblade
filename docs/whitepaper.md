@@ -375,6 +375,21 @@ INT8 LSTM 上典型 latency 0.3 ms。實際靜態 trace 透過 X-CUBE-AI 9.x
 **SOH < 0.85 OR RUL < 800 cycles**。此規則定義於
 `scripts/generate_twin_scenarios.py`,**全 UI 只此一處**。
 
+> **RUL → BBU 年數換算(重要)**:模型的 `rul_cycles` 是「Severson 等效循環」
+> 而非「BBU 年數」。BBU duty 平均年循環 ~ 50,因此換算係數約為:
+>
+> $$\text{BBU 年數} \approx \frac{\text{rul\_cycles}}{50}$$
+>
+> 具體閾值:
+> * `RUL < 800` ≈ **未來 16 年內 BBU duty 估計會跨 EOL** → Tier-3 admission
+> * `RUL < 200` ≈ **未來 4 年內** → critical / 立即替換
+> * `RUL ≥ 1500` ≈ **未來 30 年以上** → healthy 主流族群
+>
+> 這個 50 cycles/yr 的換算係數來自 v2.1 §B.2 的 BBU duty 假設(年停電
+> 事件 ~ 30,加上日常 LIC 動作 ~ 20)。客戶現場若 duty 不同,需在
+> commissioning 階段重校準。模型在 dashboard 端顯示「16 年」這類人類
+> 可讀數字、機器內部仍以 cycle 為單位的雙軌設計,避免重訓但保留可解讀性。
+
 商業流程:
 1. RUL 引擎每日 batch 預測 → 推到客戶 ServiceNow ticketing
 2. Sysblade 工程隊 7-day SLA 派工到現場
@@ -455,6 +470,7 @@ $$
 |------|------|------|
 | 重現 Severson Variance baseline | 16.40 % MAPE(paper 15.0 %) | 138 vs 124 cells;feature filter 差異 |
 | 9-feat 改進 28 % | 17.64 % → 12.60 % MAPE 隨機 split | 同 chemistry 同 batch 訓 / 測 |
+| **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365 | LSTM 預測對 BBU duty **偏保守上界**;真實衰減率預計低於 model 預測。沒有公開 LFP-BBU-duty 資料集是業界共同問題;W3+ 計畫用 PyBaMM 生成 BBU duty 模擬 cell 補訓練資料(§3.1 + §8) |
 | **不**承諾 < 5 % MAPE | v2.1 附錄 B 明文 | 即使模型達到也不在白皮書聲明 |
 | **承諾** < 13 % MAPE 達到 | 12.60 % 隨機 split | 跨 batch / 跨化學不適用 |
 | Cross-batch 沒改善 | 19.88 % → 19.93 %,R² 為負 | 已誠實寫入 §3.3.4,protocol-specific 為原因 |

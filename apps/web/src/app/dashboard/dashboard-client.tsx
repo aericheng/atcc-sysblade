@@ -161,11 +161,20 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                   </div>
                 </div>
               ))}
-              <div className="pt-3 mt-3 border-t border-border text-xs text-muted leading-relaxed">
-                Buckets driven by Battery Twin SOH inference. Tier-3 queue admits any device with
-                <span className="text-foreground"> SOH &lt; 85 %</span> <em>or</em>
-                <span className="text-foreground"> RUL &lt; 800 cycles</span> — so a few healthy-SOH
-                devices show up on the queue once their RUL prediction tightens.
+              <div className="pt-3 mt-3 border-t border-border text-xs text-muted leading-relaxed space-y-2">
+                <p>
+                  Buckets driven by Battery Twin SOH inference. Tier-3 queue admits any device with
+                  <span className="text-foreground"> SOH &lt; 85 %</span> <em>or</em>
+                  <span className="text-foreground"> RUL &lt; 800 cycles</span> — so a few healthy-SOH
+                  devices show up on the queue once their RUL prediction tightens.
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">RUL → BBU years:</span>{" "}
+                  BBU duty averages ~50 cycles/yr (v2.1 §B.2), so{" "}
+                  <span className="text-foreground">RUL = 800 cycles</span> ≈ 16 years of BBU
+                  service remaining. The 800-cycle threshold is the &ldquo;needs replacement
+                  within ~16 years&rdquo; gate, not 800 days.
+                </p>
               </div>
             </CardBody>
           </Card>

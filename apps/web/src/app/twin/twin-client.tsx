@@ -905,6 +905,15 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 tail cells like critical are the model honestly reporting it has limited
                 training signal there, narrow PIs for healthy cells reflect actual confidence.
               </p>
+              <p className="text-xs text-warning/90 mt-2 max-w-3xl leading-relaxed">
+                <span className="font-medium">Regime note:</span> these 9 cells come from the
+                Severson 2019 fast-charge benchmark (3.6C–8C, ~365 cycles/yr lab regime).
+                Real BBU duty is much gentler (~0.05C float, ~50 cycles/yr). The LSTM trained
+                here is therefore a <span className="text-foreground">conservative upper
+                bound</span> on degradation — actual BBU cells are expected to fade more
+                slowly. Using PyBaMM-generated BBU-duty cells to retrain is on the W3+ list
+                (whitepaper §6.2 + §8).
+              </p>
             </div>
           </div>
           <select
