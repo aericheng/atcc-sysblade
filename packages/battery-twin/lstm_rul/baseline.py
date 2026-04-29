@@ -119,10 +119,9 @@ def severson_train_test_split(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Whole-batch split: train on batches 1 + 2, hold out batch 3 for test.
 
-    Cross-batch is the hard case (different fast-charge policies across
-    batches), and is what `severson_paper_split` ALSO retains as the
-    secondary-test concept. The paper's 9.1 % headline was a same-batch
-    random split — use `severson_random_split` to reproduce that.
+    Cross-batch is the harder case (different fast-charge policies across
+    batches). The Severson 2019 paper's 9.1 % headline came from a within-
+    batch random split — use `severson_random_split` to reproduce that.
     """
     train = df[df["batch"].isin(train_batches)].reset_index(drop=True)
     test = df[df["batch"].isin(test_batches)].reset_index(drop=True)
@@ -156,6 +155,15 @@ DISCHARGE_FEATURES: tuple[str, ...] = (
     "slope_q_2_100",
     "intercept_q_2_100",
     "q_at_cycle_2",
+)
+# Severson 2019 Table S2 'Full' model — 5 Discharge features + 4 thermal/charge/late-fade.
+# Reproduced by ``severson_features_full`` in ``data_loaders.severson_parser``;
+# keep the column order in sync between the two so OLS coefficients line up.
+FULL_FEATURES: tuple[str, ...] = DISCHARGE_FEATURES + (
+    "log_max_temp_2_100",
+    "log_temp_integral_2_100",
+    "log_charge_time_avg_2_6",
+    "slope_q_91_100",
 )
 
 
