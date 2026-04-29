@@ -35,7 +35,7 @@ const PER_CYCLE_FEATURES: Array<{
 }> = [
   { key: "cycle_norm",  label: "Cycle progress",     unit: "0–1",     color: "#94a3b8" }, // slate
   { key: "qd_max",      label: "Discharge capacity", unit: "Ah",      color: "#6366f1" }, // indigo
-  { key: "qd_min",      label: "Min Qd",             unit: "Ah",      color: "#a78bfa" }, // violet
+  { key: "qd_range",    label: "Qd range",           unit: "Ah",      color: "#a78bfa" }, // violet
   { key: "v_mean",      label: "Mean voltage",       unit: "V",       color: "#22d3ee" }, // cyan
   { key: "v_std",       label: "Voltage swing",      unit: "V (std)", color: "#34d399" }, // emerald
   { key: "t_max",       label: "Peak temperature",   unit: "°C",      color: "#fbbf24" }, // amber
@@ -414,7 +414,7 @@ export function TwinClient({
               value={Math.round((aging.stats["cycle_at_80pct_soh_bbu"] as number) ?? 0)}
               unit="cycles"
               tone="primary"
-              hint="≈ 8–12 year service life under realistic BBU duty"
+              hint="§B.2 50 cycles/yr → ≈ 67 yr cycle life · 10-yr design target met with margin (calendar life binds, not cycle-fade)"
             />
             <Stat
               label="Knee point (full-cycle reference)"
@@ -1003,17 +1003,19 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             <div className="min-w-0">
               <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
-                Nine cells curated to mirror the four fleet states you just saw on
-                <span className="text-foreground"> /dashboard</span> — main population
+                Nine cells span four LSTM prediction states — main population
                 <span className="text-foreground"> healthy</span>, watch list
                 <span className="text-foreground"> warning</span>, Tier-3 replacement queue
                 <span className="text-foreground"> early_aging</span>, and outright failure
-                <span className="text-foreground"> critical</span>. The mix is weighted by
-                the dashboard&rsquo;s actual 1,000-device distribution. Each prediction now
-                carries a <span className="text-foreground">90% prediction interval</span> via
-                Monte Carlo Dropout (100 forward passes with active dropout) — wide PIs for
-                tail cells like critical are the model honestly reporting it has limited
-                training signal there, narrow PIs for healthy cells reflect actual confidence.
+                <span className="text-foreground"> critical</span>. /dashboard groups live
+                devices by current physical state (SOH / RUL / temp) into three buckets;
+                the walkthrough buckets training cells by <em>predicted</em> cycle life —
+                which is why <span className="text-foreground">critical</span> appears here
+                but not on /dashboard. Each prediction carries a{" "}
+                <span className="text-foreground">90% prediction interval</span> via Monte
+                Carlo Dropout (100 forward passes with active dropout) — wide PIs for tail
+                cells like critical are the model honestly reporting it has limited training
+                signal there, narrow PIs for healthy cells reflect actual confidence.
               </p>
               <p className="text-xs text-warning/90 mt-2 max-w-3xl leading-relaxed">
                 <span className="font-medium">Regime note:</span> the dropdown contains both
@@ -1050,7 +1052,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             label="Fleet status"
             value={STATUS_LABEL[cell.fleet_status]}
             tone={STATUS_TONE[cell.fleet_status]}
-            hint={`${cell.fleet_status} · ~${cell.fleet_pct.toFixed(0)}% of /dashboard fleet`}
+            hint={`${cell.fleet_status} · ~${cell.fleet_pct.toFixed(0)}% of LSTM training-cell distribution`}
           />
           <Stat
             label="Actual cycle life"
