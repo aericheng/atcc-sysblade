@@ -101,10 +101,34 @@ function BreakdownBars({ rows, isNarrow }: { rows: BreakdownRow[]; isNarrow: boo
   );
 }
 
+// Float-safe equality for slider-quantised values. All slider steps are
+// powers of 10⁻³ or larger, so a 1e-6 epsilon is way below noise.
+const eq = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+
+function inputsMatchPreset(inputs: TcoInputs, p: TcoInputs): boolean {
+  return (
+    eq(inputs.racks, p.racks) &&
+    eq(inputs.electricityPriceUsdPerKwh, p.electricityPriceUsdPerKwh) &&
+    eq(inputs.pue, p.pue) &&
+    eq(inputs.gridCarbonKgPerKwh, p.gridCarbonKgPerKwh)
+  );
+}
+
 export function TcoClient() {
-  const [presetName, setPresetName] = useState<string>(DEFAULT_PRESET);
   const [inputs, setInputs] = useState<TcoInputs>(() => ({ ...PRESETS[DEFAULT_PRESET] }));
   const result = useMemo(() => computeTco(inputs), [inputs]);
+
+  // Derive the preset selection from the current input values rather than
+  // tracking it as separate state. Dragging a slider away from the named
+  // preset shows "Custom"; dragging back to the preset's exact values
+  // re-selects that preset automatically (the previous imperative
+  // setPresetName('custom') made this a one-way trip).
+  const presetName = useMemo<string>(() => {
+    for (const [name, p] of Object.entries(PRESETS)) {
+      if (inputsMatchPreset(inputs, p)) return name;
+    }
+    return "custom";
+  }, [inputs]);
 
   // Recharts vertical-bar layout reserves a fixed pixel column for category
   // labels — at <640 px we shrink it (and shorten the labels) so the bars
@@ -156,7 +180,9 @@ export function TcoClient() {
               <select
                 value={presetName}
                 onChange={(e) => {
-                  setPresetName(e.target.value);
+                  // Selecting "Custom" is a no-op — the option only appears
+                  // when the user has dragged a slider off-preset.
+                  if (e.target.value === "custom") return;
                   setInputs({ ...PRESETS[e.target.value] });
                 }}
                 className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
@@ -176,10 +202,7 @@ export function TcoClient() {
               min={1}
               max={5000}
               step={1}
-              onChange={(v) => {
-                setPresetName("custom");
-                setInputs((s) => ({ ...s, racks: v }));
-              }}
+              onChange={(v) => setInputs((s) => ({ ...s, racks: v }))}
             />
             <NumberField
               label="Electricity price (USD / kWh)"
@@ -187,10 +210,7 @@ export function TcoClient() {
               min={0.04}
               max={0.25}
               step={0.005}
-              onChange={(v) => {
-                setPresetName("custom");
-                setInputs((s) => ({ ...s, electricityPriceUsdPerKwh: v }));
-              }}
+              onChange={(v) => setInputs((s) => ({ ...s, electricityPriceUsdPerKwh: v }))}
               format={(n) => `$${n.toFixed(3)}`}
             />
             <NumberField
@@ -199,10 +219,7 @@ export function TcoClient() {
               min={1.05}
               max={2.0}
               step={0.05}
-              onChange={(v) => {
-                setPresetName("custom");
-                setInputs((s) => ({ ...s, pue: v }));
-              }}
+              onChange={(v) => setInputs((s) => ({ ...s, pue: v }))}
               format={(n) => n.toFixed(2)}
             />
             <NumberField
@@ -211,10 +228,7 @@ export function TcoClient() {
               min={0.05}
               max={0.8}
               step={0.01}
-              onChange={(v) => {
-                setPresetName("custom");
-                setInputs((s) => ({ ...s, gridCarbonKgPerKwh: v }));
-              }}
+              onChange={(v) => setInputs((s) => ({ ...s, gridCarbonKgPerKwh: v }))}
               format={(n) => n.toFixed(2)}
             />
           </CardBody>
