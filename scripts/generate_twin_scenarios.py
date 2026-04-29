@@ -7,25 +7,24 @@ fast (<200 ms first paint) and avoids deploying a Python runtime to Vercel.
 Scenarios produced (under packages/shared/scenarios/):
 
   1. transient_lfp_only.json
-     A 60-second grid-sag event at the rack level. The full power profile —
-     baseline 4C plus a +30 % square pulse every 100 ms (the GB200 transient
-     pattern from arXiv 2508.14318 cited in the proposal §B.1 (2)) — is fed
-     entirely through the LFP cell. This is the BASELINE: what a traditional
+     A 10-second window of GB200-class operation at the rack level. The full
+     power profile — baseline 80 kW with a ±30 % square pulse every 100 ms
+     (the AI-training pattern from arXiv 2508.14318 cited in proposal §B.1) —
+     is fed entirely through the LFP cell. BASELINE: what a traditional
      pure-battery BBU does. Voltage swings reflect the cell's inability to
      follow ms-scale current changes without sag.
 
   2. transient_hybrid.json
-     Same upstream power profile, but split between LIC and LFP using a
-     first-order high-pass / low-pass filter (proxy for the real DC-DC
-     control law). LIC absorbs the high-frequency component, LFP sees a
-     near-DC current. This demonstrates the proposal's core claim
-     ("LIC handles 1-100 ms, LFP handles 30-90 s").
+     Same upstream power profile, split between LIC and LFP via a first-order
+     low-pass filter (τ=0.5 s, cutoff ≈0.32 Hz — proxy for the DC-DC control
+     law). LIC absorbs the high-frequency residual, LFP sees a near-DC
+     current. Demonstrates the proposal's split ("LIC handles 1-100 ms, LFP
+     handles 30-90 s").
 
   3. aging_lfp.json
-     1000-cycle SOH curve for the LFP pack under the proposal's BBU duty
-     (gentle floating use; rare deep discharges). Capacity-fade model is
-     parameterised to match Severson 2019 LFP behaviour at 1C/1C and
-     low-DoD operation.
+     3000-cycle SOH curve for the LFP pack under BBU duty (gentle float use,
+     rare deep discharges). Capacity-fade model is parameterised to match
+     Severson 2019 LFP mean behaviour at 1C/1C and low-DoD operation.
 
   4. fleet_devices.json
      1000-device synthetic fleet for the /dashboard page. Geographic
@@ -62,17 +61,38 @@ for d in OUT_DIRS:
 # Rack-level constants from v2.1 proposal
 # ---------------------------------------------------------------------------
 RACK_POWER_KW = 120.0           # GB200 NVL72 nominal
+RACK_BASELINE_KW = 80.0         # demo waveform mid-line (sub-peak, leaves ±30 % headroom)
+N_BBU_PER_RACK = 8              # parallel BBUs sharing the rack load
 LFP_PACK_KWH = 2.5              # per BBU (§E.1 Tier-B)
 LFP_PACK_NOMINAL_V = 48.0       # 15S × 3.2 V (§v2.1 修訂 #4)
 LIC_ENERGY_KJ_PER_RACK = 5.0    # 5 kJ transient need (§E.1 Tier-A)
 LIC_OVERPROV_FACTOR = 69.0      # 345/5 from §Q4 答辯
 TRANSIENT_AMPLITUDE = 0.30      # ±30 % swing (§B.1 (2))
 TRANSIENT_PERIOD_S = 0.10       # 100 ms square wave
+SPLIT_FILTER_TAU_S = 0.5        # 1st-order LPF τ → cutoff ≈ 1/(2π·τ) ≈ 0.32 Hz
+TARGET_PEAK_C_RATE = 6.0        # cell C-rate at the rack's peak power (§E.1 Tier-B)
+
+# Pack peak current (per BBU) at the demo waveform's max instantaneous power.
+# Used to map pack current onto a representative cell at TARGET_PEAK_C_RATE.
+I_PEAK_PACK_A = (
+    RACK_BASELINE_KW * (1.0 + TRANSIENT_AMPLITUDE) * 1000.0
+    / N_BBU_PER_RACK
+    / LFP_PACK_NOMINAL_V
+)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def _json_default(obj):
+    """Encoder fallback that turns numpy scalars/arrays into JSON-friendly forms."""
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if hasattr(obj, "__float__"):
+        return float(obj)
+    return str(obj)
+
+
 def _save(name: str, payload: dict) -> list[Path]:
     """Serialize once and write to every sink, sharing one timestamp.
 
@@ -86,7 +106,7 @@ def _save(name: str, payload: dict) -> list[Path]:
         "pybamm_version": pybamm.__version__,
         "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.1.pdf",
     }
-    body = json.dumps(payload, separators=(",", ":"), default=float)
+    body = json.dumps(payload, separators=(",", ":"), default=_json_default)
     paths: list[Path] = []
     for d in OUT_DIRS:
         p = d / name
@@ -100,10 +120,14 @@ def _save(name: str, payload: dict) -> list[Path]:
 
 
 def _decimate(arr: np.ndarray, max_points: int) -> np.ndarray:
-    """Subsample a 1-D array to at most max_points (for client payload size)."""
+    """Subsample a 1-D array to at most max_points (for client payload size).
+
+    Uses np.unique on the rounded indices so the output has no duplicate
+    samples even when max_points is close to len(arr).
+    """
     if len(arr) <= max_points:
         return arr
-    idx = np.linspace(0, len(arr) - 1, max_points).astype(int)
+    idx = np.unique(np.round(np.linspace(0, len(arr) - 1, max_points)).astype(int))
     return arr[idx]
 
 
@@ -111,11 +135,10 @@ def _decimate(arr: np.ndarray, max_points: int) -> np.ndarray:
 # 1 + 2. Transient response — single function, two outputs
 # ---------------------------------------------------------------------------
 def _build_power_profile(duration_s: float, dt: float) -> tuple[np.ndarray, np.ndarray]:
-    """Rack-level power profile: 80 kW baseline + ±30 % square at 100 ms."""
+    """Rack-level power profile: RACK_BASELINE_KW ±30 % square wave at 100 ms."""
     t = np.arange(0.0, duration_s + dt, dt)
-    baseline_kw = 80.0
     pulse = (np.floor(t / TRANSIENT_PERIOD_S).astype(int) % 2) * 2 - 1  # -1 or +1
-    p_kw = baseline_kw * (1.0 + TRANSIENT_AMPLITUDE * pulse)
+    p_kw = RACK_BASELINE_KW * (1.0 + TRANSIENT_AMPLITUDE * pulse)
     return t, p_kw
 
 
@@ -140,36 +163,38 @@ def _simulate_lfp_cell(
 ) -> dict[str, np.ndarray]:
     """Run a single LFP cell through PyBaMM DFN with the given pack-power profile.
 
-    Returns time series of cell voltage, current, and pack-level voltage.
-    The pack is 15S so V_pack = 15 * V_cell. We map pack power → cell current
-    by dividing by the instantaneous pack voltage; for the demo we assume the
-    cell stays in plateau (~3.25 V), giving I_cell = (P_pack / 8 BBUs) / 48 V.
+    Returns time series on the SAME `t` grid the caller passed in (via
+    `t_eval=t`), so `t[i]`, `V_cell[i]`, `I_cell[i]` are sampled at the same
+    instant. We map pack power → cell current via P/V at nominal pack voltage
+    (the cell stays in plateau ~3.25 V × 15S ≈ 48 V over the demo window).
     """
-    bbus_per_rack = 8
-    p_per_bbu_w = power_kw * 1000.0 / bbus_per_rack
+    p_per_bbu_w = power_kw * 1000.0 / N_BBU_PER_RACK
     i_pack = p_per_bbu_w / LFP_PACK_NOMINAL_V  # A through the pack
     i_cell = i_pack  # 15S series → same current
 
     model = pybamm.lithium_ion.DFN()
     params = pybamm.ParameterValues("Prada2013")
     nominal_cap = params["Nominal cell capacity [A.h]"]
-    # Scale current to plausible C-rate for the cell's nominal capacity.
-    # The Prada cell is ~2.3 Ah; our 52 Ah pack would map 1C ≈ 52 A. We
-    # rescale i_cell so that 312 A pack-current maps to 6C (= 6 × 2.3 = 13.8 A
-    # on the simulated cell).
-    scale = (6.0 * nominal_cap) / 312.0
+    # Scale pack current onto a representative cell so that I_PEAK_PACK_A maps
+    # to TARGET_PEAK_C_RATE on the (smaller) Prada cell. This keeps the
+    # simulated current excursion at a physically realistic C-rate without
+    # rebuilding the whole pack-level model.
+    scale = (TARGET_PEAK_C_RATE * float(nominal_cap)) / I_PEAK_PACK_A
     i_sim = i_cell * scale
 
     params["Current function [A]"] = pybamm.Interpolant(
         t, i_sim, pybamm.t, name="profile", interpolator="linear"
     )
     sim = pybamm.Simulation(model, parameter_values=params)
-    sol = sim.solve([float(t[0]), float(t[-1])])
+    # t_eval=t forces the solver to return values at the exact input grid so
+    # caller-side arrays line up by index. Without this, sol["Time [s]"]
+    # follows the adaptive solver and drifts away from `t`.
+    sol = sim.solve(t_eval=t)
 
     return {
-        "t": sol["Time [s]"].entries,
-        "V_cell": sol["Voltage [V]"].entries,
-        "I_cell": sol["Current [A]"].entries,
+        "t": np.asarray(sol["Time [s]"].entries),
+        "V_cell": np.asarray(sol["Voltage [V]"].entries),
+        "I_cell": np.asarray(sol["Current [A]"].entries),
     }
 
 
