@@ -485,14 +485,18 @@ def _temp_stats_2_100(cell: Cell) -> tuple[float, float] | None:
     return max_T, total_int
 
 
-def _slope_q_91_100(cell: Cell) -> float | None:
-    """Slope of per-cycle peak discharge capacity over cycles 91..100.
+def _q_window_91_100(cell: Cell) -> tuple[float, float, float] | None:
+    """``(slope, intercept, q_at_cycle_100)`` from the cycles 91..100 window.
 
-    The paper's Full model uses the slope across this narrow late-formation
-    window (Table S2 feature 3) because it captures the local fade rate
-    after initial SEI growth, which is more diagnostic than the broader
-    2..100 slope used in the Discharge model. Returns ``None`` if too few
-    valid cycles to fit a line.
+    Severson 2019 Table S2 Full-model features 3 / 4 / 5 are all defined
+    on this late-formation window (slope, intercept, and Q at cycle 100
+    respectively). They share the same polyfit so we compute all three in
+    one pass. Returns ``None`` if too few valid cycles to fit a line.
+
+    The intercept is reported at cycle = 0 (standard polyfit convention),
+    which extrapolates back through the early-life rise; ``q_at_cycle_100``
+    is the polyfit value at cycle 100 (more robust than the raw observation
+    at cycle 100 if that cycle is missing or noisy).
     """
     idx: list[int] = []
     q: list[float] = []
@@ -514,23 +518,27 @@ def _slope_q_91_100(cell: Cell) -> float | None:
         return None
     cyc_arr = np.asarray(idx, dtype=np.float64)
     q_arr = np.asarray(q, dtype=np.float64)
-    slope = float(np.polyfit(cyc_arr, q_arr, 1)[0])
-    return slope
+    slope, intercept = np.polyfit(cyc_arr, q_arr, 1)
+    q_at_100 = float(slope * 100.0 + intercept)
+    return float(slope), float(intercept), q_at_100
 
 
 def severson_features_extended(cell: Cell) -> dict | None:
-    """Four extra features that extend Discharge (5) → Full (9).
+    """Six extra features that extend Discharge (5) → Full (11).
 
-      6. log_max_temp_2_100      — log10(peak T over cycles 2..100)
-      7. log_temp_integral_2_100 — log10(∫ T dt over cycles 2..100)
-      8. log_charge_time_avg_2_6 — log10(mean charge-phase duration, cycles 2..6)
-      9. slope_q_91_100          — slope of per-cycle Qd_max, cycles 91..100
+      6.  log_max_temp_2_100      — log10(peak T over cycles 2..100)        [paper Full feat 7]
+      7.  log_temp_integral_2_100 — log10(∫ T dt over cycles 2..100)        [paper Full feat 8]
+      8.  log_charge_time_avg_2_6 — log10(mean charge time, cycles 2..6)    [paper Full feat 6]
+      9.  slope_q_91_100          — slope of Qd_max, cycles 91..100         [paper Full feat 3]
+      10. intercept_q_91_100      — intercept of Qd_max fit, cycles 91..100 [paper Full feat 4]
+      11. q_at_cycle_100          — Q at cycle 100 (extrapolated)           [paper Full feat 5]
 
-    Maps to Severson 2019 Table S2 Full-model features 7, 8, 6, and 3
-    respectively. The paper's two internal-resistance features are not
-    extractable from our CycleData (IR lives in the .mat ``summary`` field
-    which the v7.3 HDF5 parse path skips); ``slope_q_91_100`` substitutes
-    by also targeting late-formation fade.
+    Maps directly to Severson 2019 Table S2 Full-model features 3, 4, 5,
+    6, 7, 8 — the six paper features that don't depend on internal
+    resistance (IR lives in the v7.3 .mat ``summary`` field which our
+    HDF5 parse path skips). The paper's two IR features are still missing
+    (W3+ work would re-parse summary), but with these six the design
+    matrix is much closer to the paper's exact Discharge / Full models.
 
     Returns ``None`` if any required field is missing for any cycle in
     the 2..100 window — completeness is required so the OLS design matrix
@@ -557,15 +565,18 @@ def severson_features_extended(cell: Cell) -> dict | None:
     if avg_ct <= 0:
         return None
 
-    slope_91 = _slope_q_91_100(cell)
-    if slope_91 is None:
+    q91 = _q_window_91_100(cell)
+    if q91 is None:
         return None
+    slope_91, intercept_91, q_at_100 = q91
 
     return {
         "log_max_temp_2_100": float(np.log10(max_T + 1e-12)),
         "log_temp_integral_2_100": float(np.log10(temp_int + 1e-12)),
         "log_charge_time_avg_2_6": float(np.log10(avg_ct + 1e-12)),
         "slope_q_91_100": slope_91,
+        "intercept_q_91_100": intercept_91,
+        "q_at_cycle_100": q_at_100,
     }
 
 
@@ -647,6 +658,7 @@ def features_for_all(
     cells: Iterable[Cell],
     *,
     model: str = "full",
+    min_cycle_life: int = 0,
 ) -> list[dict]:
     """Bulk feature extraction. Returns rows ready for pandas.DataFrame.
 
@@ -656,7 +668,12 @@ def features_for_all(
       Which feature set to extract per cell:
         - ``"variance"``  : 1 feature (log_var_delta_q only)
         - ``"discharge"`` : 5 features (Severson Table 1 Discharge model)
-        - ``"full"``      : 9 features (Severson Table S2 Full model) — default
+        - ``"full"``      : 11 features (Severson Table S2 Full model) — default
+    min_cycle_life
+      Drop cells whose ``cycle_life`` is below this threshold. Severson
+      2019 used 200 to filter the 169-cell raw set down to the 124 cells
+      reported in the paper; pass ``200`` to reproduce the paper's
+      filtering and ``0`` (default) to keep all cells.
 
     Cells that fail the model's prerequisites (missing cycles, malformed
     data, etc.) are silently dropped — the caller checks ``len(rows)``
@@ -679,6 +696,8 @@ def features_for_all(
     rows: list[dict] = []
     for c in cells:
         if c.cycle_life <= 0 or c.n_cycles < 100:
+            continue
+        if c.cycle_life < min_cycle_life:
             continue
         feats = extract(c)
         if feats is None:
