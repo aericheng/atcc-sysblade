@@ -20,6 +20,7 @@ import {
   ZAxis,
 } from "recharts";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Stat } from "@/components/ui/stat";
 import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
 
@@ -253,9 +254,7 @@ function ScopeCharts({
           </LineChart>
         </ResponsiveContainer>
         <p className="text-xs text-muted mt-2">
-          Highlighted band [4 s, 6 s] = steady-state window after transient settles. Headline
-          numbers above come from this region. Hover the chart to pause the sweep and read
-          exact values.
+          Highlighted band [4 s, 6 s] = steady-state window. Hover to pause sweep + read values.
         </p>
       </ChartCard>
 
@@ -380,9 +379,7 @@ export function TwinClient({
         <div className="text-xs uppercase tracking-[0.2em] text-muted">Battery Digital Twin · Live PyBaMM DFN</div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Solving the GB200 millisecond transient.</h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          We simulate one rack&rsquo;s worth of LFP cells under a real-world AI-training power profile — baseline
-          80 kW with a &plusmn;30 % square pulse every 100 ms (the pattern Microsoft Azure documented in
-          arXiv 2508.14318). Toggle below to see what happens when the LIC absorbs the high-frequency component.
+          PyBaMM DFN simulation — one rack, 80 kW baseline, ±30 % square pulses every 100 ms. Toggle below to see the LIC absorb the high-frequency component.
         </p>
       </header>
 
@@ -398,7 +395,9 @@ export function TwinClient({
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <CardTitle>{mode === "hybrid" ? "Hybrid · Power split + cell response" : "Baseline · Pure LFP cell response"}</CardTitle>
-              <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{active.description}</p>
+              <Disclosure summary="What you're seeing" className="mt-2">
+                {active.description}
+              </Disclosure>
             </div>
             <span
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
@@ -456,7 +455,9 @@ export function TwinClient({
       <Card>
         <CardHeader>
           <CardTitle>State-of-Health under BBU duty</CardTitle>
-          <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{aging.description}</p>
+          <Disclosure summary="Why the BBU curve sits above Severson 1C/1C" className="mt-2">
+            {aging.description}
+          </Disclosure>
         </CardHeader>
         <CardBody className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -519,7 +520,9 @@ export function TwinClient({
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <CardTitle>Model validation · LSTM trained on Severson + PyBaMM BBU-duty</CardTitle>
-              <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">{modelValidation.description}</p>
+              <Disclosure summary="About this model" className="mt-2">
+                {modelValidation.description}
+              </Disclosure>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
               W2 reproduction
@@ -565,31 +568,34 @@ export function TwinClient({
             modelValidation.uncertainty?.raw_median_pi_width_cycles != null &&
             modelValidation.uncertainty?.conformal_median_pi_width_cycles != null && (
               <div className="rounded-md border border-border bg-background/30 px-4 py-2.5 text-xs leading-relaxed">
-                <span className="text-foreground font-medium">90 % prediction interval · </span>
-                MC Dropout {modelValidation.uncertainty.n_samples} samples + split conformal{" "}
-                (q ={" "}
-                <span className="text-foreground tabular-nums">
-                  {modelValidation.uncertainty.conformal_q_factor.toFixed(2)}
-                </span>
-                , {modelValidation.uncertainty.conformal_n_calibration} held-out calibration
-                cells). Median PI width{" "}
+                <span className="text-foreground font-medium">90 % PI median width · </span>
                 <span className="text-warning tabular-nums">
-                  {Math.round(modelValidation.uncertainty.raw_median_pi_width_cycles).toLocaleString()} cycles
+                  {Math.round(modelValidation.uncertainty.raw_median_pi_width_cycles).toLocaleString()}
                 </span>{" "}
                 →{" "}
                 <span className="text-success tabular-nums">
                   {Math.round(modelValidation.uncertainty.conformal_median_pi_width_cycles).toLocaleString()} cycles
                 </span>{" "}
-                (
-                {(
-                  (1 -
-                    modelValidation.uncertainty.conformal_median_pi_width_cycles /
-                      modelValidation.uncertainty.raw_median_pi_width_cycles) *
-                  100
-                ).toFixed(0)}
-                % sharper, coverage held{" "}
-                {((modelValidation.uncertainty.conformal_test_coverage_90pct ?? modelValidation.uncertainty.test_coverage_90pct) * 100).toFixed(0)}
-                %), whitepaper §3.3.7.
+                <span className="text-foreground">
+                  ({(
+                    (1 -
+                      modelValidation.uncertainty.conformal_median_pi_width_cycles /
+                        modelValidation.uncertainty.raw_median_pi_width_cycles) *
+                    100
+                  ).toFixed(0)}
+                  % sharper)
+                </span>
+                <Disclosure summary="How (split conformal calibration)" className="mt-1.5">
+                  MC Dropout {modelValidation.uncertainty.n_samples} samples + split conformal,
+                  q ={" "}
+                  <span className="text-foreground tabular-nums">
+                    {modelValidation.uncertainty.conformal_q_factor.toFixed(2)}
+                  </span>
+                  , held-out calibration set ={" "}
+                  {modelValidation.uncertainty.conformal_n_calibration} cells, coverage held{" "}
+                  {((modelValidation.uncertainty.conformal_test_coverage_90pct ?? modelValidation.uncertainty.test_coverage_90pct) * 100).toFixed(0)}
+                  %. Whitepaper §3.3.7.
+                </Disclosure>
               </div>
             )}
 
@@ -719,20 +725,19 @@ export function TwinClient({
               </ScatterChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
-              Dashed 45° line is the perfect-prediction reference. Cool blues are{" "}
-              <span className="text-foreground">Severson 2019 fast-charge cells</span>{" "}
-              (lab-stress lifetimes 100–2,000 cycles); warm ambers are{" "}
-              <span className="text-foreground">PyBaMM-calibrated BBU-duty cells</span>{" "}
-              (5,000–13,000 cycles). The 2,000–4,000 gap between the two clouds is the
-              <span className="text-foreground"> regime gap</span> — neither lab fast-charge nor
-              gentle float duty produces cells in that range, which is why the W3+ plan adds
-              medium-stress synthetic cells to fill the middle. Cross-chemistry transfer
-              (NASA NMC, CALCE LCO) was tested and ruled out (whitepaper §B); the answer is
-              more LFP coverage, not more chemistries. The 90 % prediction intervals in the
-              walkthrough below — MC Dropout post-processed by split conformal, sharpened 44 %
-              vs the raw sampler while keeping coverage ≥90 % — quantify the uncertainty
-              cell-by-cell across the gap.
+              Cool blues = <span className="text-foreground">Severson 2019 cells</span> (100–2,000 cycles);
+              warm ambers = <span className="text-foreground">PyBaMM BBU-duty cells</span> (5,000–13,000 cycles).
+              The 2,000–4,000 gap between them is the <span className="text-foreground">regime gap</span>.
             </p>
+            <Disclosure summary="More on the regime gap and cross-chemistry tests" className="mt-2">
+              Neither lab fast-charge nor gentle float duty produces cells in the 2,000–4,000 range,
+              which is why the W3+ plan adds medium-stress synthetic cells to fill the middle.
+              Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out (whitepaper §B);
+              the answer is more LFP coverage, not more chemistries. The 90 % prediction intervals
+              in the walkthrough below — MC Dropout post-processed by split conformal, sharpened
+              44 % vs the raw sampler while keeping coverage ≥90 % — quantify the uncertainty
+              cell-by-cell across the gap.
+            </Disclosure>
           </ChartCard>
           );
           })()}
@@ -741,11 +746,12 @@ export function TwinClient({
               regression-to-mean behaviour the scatter only hints at. */}
           <ErrorByLifetimeBucket data={modelValidation.predicted_vs_actual} />
 
-          <div className="rounded-md border border-border bg-background/30 p-4 text-xs text-muted leading-relaxed">
-            <span className="text-foreground font-medium">Architecture · </span>
-            {modelValidation.model.architecture} · {modelValidation.model.n_parameters.toLocaleString()} parameters ·
-            input {JSON.stringify(modelValidation.model.input_shape)} (cycles 2–100 × 7 features:{" "}
-            <code className="text-foreground">{modelValidation.model.feature_names.join(", ")}</code>).
+          <div className="rounded-md border border-border bg-background/30 px-4 py-2.5">
+            <Disclosure summary={<>Architecture · <span className="text-foreground">{modelValidation.model.n_parameters.toLocaleString()} parameters</span></>}>
+              {modelValidation.model.architecture} · input {JSON.stringify(modelValidation.model.input_shape)}{" "}
+              (cycles 2–100 × 7 features:{" "}
+              <code className="text-foreground">{modelValidation.model.feature_names.join(", ")}</code>).
+            </Disclosure>
           </div>
         </CardBody>
       </Card>
@@ -755,7 +761,7 @@ export function TwinClient({
         <InferenceWalkthrough walkthroughs={modelValidation.walkthroughs} />
       )}
 
-      {/* Method panel */}
+      {/* Method panel — short tagline visible, full body collapsed */}
       <Card>
         <CardHeader>
           <CardTitle>Method · what you&rsquo;re actually looking at</CardTitle>
@@ -764,17 +770,20 @@ export function TwinClient({
           <Method
             icon={<FlaskConical className="h-4 w-4" />}
             title="Physics"
-            body="Doyle-Fuller-Newman PDE for an LFP cell, solved by PyBaMM 26.4.1 with the Prada 2013 parameter set. Pack-level power is mapped onto a representative cell so the rack-peak current corresponds to ~6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack."
+            tagline="Doyle-Fuller-Newman PDE, PyBaMM 26.4.1, Prada 2013 LFP."
+            details="Pack-level power is mapped onto a representative cell so the rack-peak current corresponds to ~6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack."
           />
           <Method
             icon={<Activity className="h-4 w-4" />}
             title="Hybrid split"
-            body="A first-order low-pass filter (τ = 0.5 s, cutoff ≈ 0.32 Hz) approximates the DC-DC control law. Content above the cutoff goes to the LIC; the slow residual goes to the LFP. The 10 Hz GB200 pulse rate sits well above the cutoff (so it lands on the LIC, which has kHz-class bandwidth), while 30–90 s graceful-shutdown events sit well below the cutoff (so they land on the LFP). The two regimes separate cleanly."
+            tagline="First-order LPF, τ = 0.5 s, cutoff ≈ 0.32 Hz."
+            details="Content above the cutoff goes to the LIC; the slow residual goes to the LFP. The 10 Hz GB200 pulse rate sits well above the cutoff (lands on LIC's kHz-class bandwidth), while 30–90 s graceful-shutdown events sit well below (land on LFP). The two regimes separate cleanly."
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}
             title="Aging"
-            body="The 3,000-cycle SOH curve is a Severson 2019-calibrated analytic fit (running a real DFN over 3,000 cycles is computationally prohibitive). The 0.33 BBU-duty factor reflects float operation with rare deep events — explicit in the proposal §G.3 cost model."
+            tagline="Severson 2019-calibrated analytic SOH fit."
+            details="Running a real DFN over 3,000 cycles is computationally prohibitive, so we use the analytic fit. The 0.33 BBU-duty factor reflects float operation with rare deep events — explicit in proposal §G.3."
           />
         </CardBody>
       </Card>
@@ -817,6 +826,7 @@ function ChartCard({
   );
 }
 
+
 function DarkTooltip({
   active,
   payload,
@@ -845,14 +855,27 @@ function DarkTooltip({
   );
 }
 
-function Method({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+function Method({
+  icon,
+  title,
+  tagline,
+  details,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  tagline: string;
+  details: string;
+}) {
   return (
     <div>
       <div className="flex items-center gap-2 text-foreground mb-2">
         <span className="text-primary">{icon}</span>
         <span className="font-medium">{title}</span>
       </div>
-      <p className="text-muted">{body}</p>
+      <p className="text-sm text-muted leading-relaxed">{tagline}</p>
+      <Disclosure summary="Why" className="mt-2">
+        {details}
+      </Disclosure>
     </div>
   );
 }
@@ -1017,21 +1040,19 @@ function ErrorByLifetimeBucket({
         </ComposedChart>
       </ResponsiveContainer>
       <p className="text-xs text-muted mt-2">
-        Bars (left axis) show how many cells live in each lifetime bucket. The amber line (right
-        axis) is the mean absolute percentage error within that bucket. The Long bucket is now
-        dominated by 50 PyBaMM-calibrated BBU-duty cells with 5,000–13,000 cycle lifetimes —
-        adding them widened the model&rsquo;s regime coverage so it can speak about the actual
-        BBU operating point, but pushed test MAPE up from the Severson-only ~16 % to ~22 %
-        (whitepaper §3.3.5 explains the trade-off). The Short bucket still has the largest
-        MAPE because Severson holds only a handful of early-failure cells; that tail is the
-        clearest W3+ data gap. Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and
-        ruled out (whitepaper §B), so the answer is more LFP early-failure data, not more
-        chemistries. The Inference Walkthrough above reports a 90 % prediction interval per
-        cell — MC Dropout post-processed by split conformal calibration (q_factor 0.56 on a
-        held-out 37-cell calibration set, whitepaper §3.3.7), sharpened 44 % vs the raw
-        sampler while keeping coverage ≥90 %; the Short bucket still gets the widest PIs
-        because the model honestly has thin training signal there.
+        Bars = cell count, amber line = MAPE within each bucket. The <span className="text-foreground">Short bucket</span> has the largest MAPE because Severson holds only a handful of early-failure cells.
       </p>
+      <Disclosure summary="Why MAPE rose 16 → 22 % and how the PIs handle it" className="mt-2">
+        The Long bucket is now dominated by 50 PyBaMM-calibrated BBU-duty cells with 5,000–13,000
+        cycle lifetimes — adding them widened the model&rsquo;s regime coverage so it can speak
+        about the actual BBU operating point, but pushed test MAPE up from the Severson-only
+        ~16 % to ~22 % (whitepaper §3.3.5). The Short bucket is the clearest W3+ data gap.
+        Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out (§B);
+        the answer is more LFP early-failure data, not more chemistries. The walkthrough above
+        reports a 90 % prediction interval per cell — MC Dropout post-processed by split
+        conformal (q_factor 0.56 on a 37-cell calibration set, §3.3.7), sharpened 44 % vs raw
+        while keeping coverage ≥90 %.
+      </Disclosure>
     </ChartCard>
   );
 }
@@ -1100,31 +1121,28 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             <div className="min-w-0">
               <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
-                Nine cells span four LSTM prediction states — main population
-                <span className="text-foreground"> healthy</span>, watch list
-                <span className="text-foreground"> warning</span>, Tier-3 replacement queue
-                <span className="text-foreground"> early_aging</span>, and outright failure
-                <span className="text-foreground"> critical</span>. /dashboard groups live
-                devices by current physical state (SOH / RUL / temp) into three buckets;
-                the walkthrough buckets training cells by <em>predicted</em> cycle life —
-                which is why <span className="text-foreground">critical</span> appears here
-                but not on /dashboard. Each prediction carries a{" "}
-                <span className="text-foreground">90% prediction interval</span> via Monte
-                Carlo Dropout (100 forward passes with active dropout) — wide PIs for tail
-                cells like critical are the model honestly reporting it has limited training
-                signal there, narrow PIs for healthy cells reflect actual confidence.
+                Nine cells across <span className="text-foreground">four prediction states</span> (healthy / warning / early_aging / critical), each with a 90 % conformal-sharpened PI.
               </p>
-              <p className="text-xs text-warning/90 mt-2 max-w-3xl leading-relaxed">
-                <span className="font-medium">Regime note:</span> the dropdown contains both
-                <span className="text-foreground"> Severson fast-charge cells</span> (b1/b2/b3
-                IDs, 3.6C–8C, lab-stress lifetimes 100–2,000 cycles) and{" "}
-                <span className="text-foreground">PyBaMM-calibrated BBU-duty cells</span>
-                {" "}(bbu_* IDs, ~0.05C float, ~50 cycles/yr → 5,000–13,000 cycle lifetimes).
-                The LSTM is now trained on both regimes (188 cells total) so it can speak
-                about the actual BBU operating point — pick a `bbu_*` cell to see what the
-                model predicts on the regime your customer&rsquo;s pack will live in.
-                Whitepaper §3.3.5 covers the calibration of the synthetic BBU cells.
-              </p>
+              <Disclosure summary="How the buckets and PIs work" className="mt-2">
+                /dashboard groups live devices by current physical state (SOH / RUL / temp) into
+                three buckets; the walkthrough buckets training cells by <em>predicted</em> cycle
+                life — which is why <span className="text-foreground">critical</span> appears
+                here but not on /dashboard. Each prediction carries a 90 % prediction interval
+                via Monte Carlo Dropout (100 forward passes with active dropout) post-processed
+                by split conformal — wide PIs for tail cells like <em>critical</em> are the
+                model honestly reporting it has limited training signal there, narrow PIs for
+                healthy cells reflect actual confidence.
+              </Disclosure>
+              <Disclosure summary="Regime mix · Severson b1–3 vs PyBaMM bbu_* cells" className="mt-1">
+                <span className="text-foreground">Severson fast-charge cells</span> (b1/b2/b3 IDs,
+                3.6C–8C, lab-stress lifetimes 100–2,000 cycles) and{" "}
+                <span className="text-foreground">PyBaMM-calibrated BBU-duty cells</span>{" "}
+                (bbu_* IDs, ~0.05C float, ~50 cycles/yr → 5,000–13,000 cycle lifetimes). The
+                LSTM trains on both regimes (188 cells total) so it can speak about the actual
+                BBU operating point — pick a `bbu_*` cell to see what the model predicts on the
+                regime your customer&rsquo;s pack will live in. Whitepaper §3.3.5 covers the
+                calibration of the synthetic BBU cells.
+              </Disclosure>
             </div>
           </div>
           <select
@@ -1188,9 +1206,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <div>
             <h4 className="text-sm font-medium">Per-cycle measurements (cycles 2 → 100)</h4>
             <p className="text-xs text-muted leading-relaxed mt-1">
-              All seven features the LSTM ingests, overlaid on one axis. Each line is normalised to
-              its own min–max so you can compare relative trends; hover any cycle to see the
-              actual physical value (Ah / V / °C / sec) for every feature at that point.
+              All seven LSTM input features, normalised per-line to [0, 1]. Hover for raw values.
             </p>
           </div>
           <CombinedFeatureChart inputRaw={cell.input_raw} />

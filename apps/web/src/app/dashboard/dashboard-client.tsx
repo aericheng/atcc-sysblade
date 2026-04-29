@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Stat } from "@/components/ui/stat";
 import { USFleetMap } from "@/components/us-fleet-map";
 import { type Device, type DeviceStatus, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
@@ -129,10 +130,9 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
             <CardBody>
               <USFleetMap devices={filtered} height={400} />
               <p className="text-xs text-muted mt-3">
-                State outlines from <code className="text-foreground">us-atlas</code> (US Census 2017, 1:10M).
-                Texas + Virginia clusters dominate, matching JLL Year-End 2025 site weighting (§C.1).
-                <span className="text-foreground"> Click any city marker</span> to drill into per-device
-                telemetry; hover for status breakdown.
+                <span className="text-foreground">Click any city marker</span> to drill in;
+                hover for status breakdown. Texas + Virginia clusters dominate per JLL YE-2025
+                §C.1.
               </p>
             </CardBody>
           </Card>
@@ -163,34 +163,28 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
               ))}
               <div className="pt-3 mt-3 border-t border-border text-xs text-muted leading-relaxed space-y-2">
                 <p>
-                  Buckets driven by Battery Twin SOH inference. Tier-3 queue admits any device with
-                  <span className="text-foreground"> SOH &lt; 85 %</span> <em>or</em>
-                  <span className="text-foreground"> RUL &lt; 800 cycles</span> — so a few healthy-SOH
-                  devices show up on the queue once their RUL prediction tightens.
+                  Tier-3 queue rule: <span className="text-foreground">SOH &lt; 85 %</span> <em>or</em>{" "}
+                  <span className="text-foreground">RUL &lt; 800 cycles</span>.
                 </p>
-                <p>
-                  <span className="font-medium text-foreground">RUL → BBU years:</span>{" "}
+                <Disclosure summary="What 800 cycles means in years">
                   BBU duty averages ~50 cycles/yr (v2.1 §B.2), so{" "}
                   <span className="text-foreground">RUL = 800 cycles</span> ≈ 16 years of BBU
                   service remaining. The 800-cycle threshold is the &ldquo;needs replacement
                   within ~16 years&rdquo; gate, not 800 days.
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">SOH + RUL source:</span>{" "}
-                  <span className="text-foreground">rul_cycles</span> per device is computed
-                  by the same LSTM you saw on{" "}
-                  <span className="text-foreground">/twin</span> — each device is matched to a
-                  PyBaMM-calibrated BBU-duty trajectory, the LSTM predicts that trajectory&rsquo;s
-                  total cycle life, and we subtract the device&rsquo;s elapsed cycles
-                  (age × 50 cycles/yr per v2.1 §B.2). One model deployed across the fleet, not
-                  a separate decay heuristic.{" "}
+                </Disclosure>
+                <Disclosure summary="Where rul_cycles, soh_lfp, soh_lic come from">
+                  <span className="text-foreground">rul_cycles</span> per device is computed by
+                  the same LSTM you saw on <span className="text-foreground">/twin</span> — each
+                  device is matched to a PyBaMM-calibrated BBU-duty trajectory, the LSTM
+                  predicts that trajectory&rsquo;s total cycle life, and we subtract the
+                  device&rsquo;s elapsed cycles (age × 50 cycles/yr per v2.1 §B.2). One model
+                  deployed across the fleet, not a separate decay heuristic.{" "}
                   <span className="text-foreground">soh_lfp</span> stays as the per-device
-                  state.{" "}
-                  <span className="text-foreground">soh_lic</span> is datasheet-derived (LIC ≥
-                  100,000 nominal cycles per JM Energy / Eaton XLR specs) — LIC public cycling
-                  data is too scarce to train on, and BBU duty doesn&rsquo;t push LIC near its
-                  limits (whitepaper §6.2).
-                </p>
+                  state. <span className="text-foreground">soh_lic</span> is datasheet-derived
+                  (LIC ≥ 100,000 nominal cycles per JM Energy / Eaton XLR specs) — LIC public
+                  cycling data is too scarce to train on, and BBU duty doesn&rsquo;t push LIC
+                  near its limits (whitepaper §6.2).
+                </Disclosure>
               </div>
             </CardBody>
           </Card>
@@ -271,12 +265,18 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
           <div className="flex items-center gap-2 text-warning font-medium mb-1">
             <Zap className="h-3.5 w-3.5" /> About this dashboard
           </div>
-          {fleet.disclaimer} The 1000 devices are generated with a documented seeded RNG (see{" "}
-          <code className="text-foreground">scripts/generate_twin_scenarios.py</code>) and weighted to Texas + Virginia
-          per JLL YE-2025. Status, temperatures, and aging buckets reflect plausible field distributions but no
-          production deployment exists yet. <span className="text-foreground">RUL per device is computed by the
-          LSTM</span> shown on /twin (run on a per-device PyBaMM-calibrated BBU-duty trajectory) — same model, two
-          views.
+          <p>
+            {fleet.disclaimer}{" "}
+            <span className="text-foreground">RUL per device is computed by the same LSTM</span>{" "}
+            shown on /twin — same model, two views.
+          </p>
+          <Disclosure summary="How the 1000 devices were generated" className="mt-2">
+            Documented seeded RNG (<code className="text-foreground">scripts/generate_twin_scenarios.py</code>),
+            weighted to Texas + Virginia per JLL YE-2025. Status, temperatures, and aging
+            buckets reflect plausible field distributions but no production deployment exists
+            yet. Each device is matched to a per-device PyBaMM-calibrated BBU-duty trajectory
+            and the LSTM predicts its total cycle life.
+          </Disclosure>
         </CardBody>
       </Card>
     </div>
