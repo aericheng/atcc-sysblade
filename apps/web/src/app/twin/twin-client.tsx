@@ -630,10 +630,11 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             <div className="min-w-0">
               <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
-                Pick any of the {walkthroughs.length} cells below — each is curated to expose a
-                different behaviour (longest-lived, early failure, best/worst prediction, etc.) —
-                and the seven small charts show the actual per-cycle measurements the LSTM
-                consumed for that cell over its first 100 cycles.
+                Nine cells spanning the full cycle-life range — from early failures (~150 cycles)
+                through typical mid-life cells (700–900) up to premium long-lived hero cells
+                (1,900+). Pick any one and the chart below shows the actual per-cycle measurements
+                the LSTM consumed for that cell over its first 100 cycles, alongside how many
+                cycles the model predicted vs how many it actually lasted.
               </p>
             </div>
           </div>
