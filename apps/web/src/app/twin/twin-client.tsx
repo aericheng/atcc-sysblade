@@ -548,10 +548,7 @@ export function TwinClient({
 
       {/* Inference walkthrough — pick a cell, see exactly what the LSTM did */}
       {modelValidation.walkthroughs && modelValidation.walkthroughs.length > 0 && (
-        <InferenceWalkthrough
-          walkthroughs={modelValidation.walkthroughs}
-          testMapePct={modelValidation.metrics.test_mape_pct}
-        />
+        <InferenceWalkthrough walkthroughs={modelValidation.walkthroughs} />
       )}
 
       {/* Method panel */}
@@ -879,13 +876,7 @@ const STATUS_LABEL: Record<Walkthrough["fleet_status"], string> = {
   critical: "Premature failure",
 };
 
-function InferenceWalkthrough({
-  walkthroughs,
-  testMapePct,
-}: {
-  walkthroughs: Walkthrough[];
-  testMapePct: number;
-}) {
+function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] }) {
   const [pickedId, setPickedId] = useState<string>(walkthroughs[0].cell_id);
   const cell = walkthroughs.find((w) => w.cell_id === pickedId) ?? walkthroughs[0];
 
