@@ -61,7 +61,7 @@ export default async function HomePage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[
-            { v: "3.1×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
+            { v: "3.5×", label: "Lower cell-voltage swing under GB200 transient", tone: "from-primary to-accent" },
             { v: "5.7×", label: "Lower power-stress to LFP after LIC split", tone: "from-accent to-primary" },
             { v: "10 yr", label: "BBU service life at >80 % SOH (Severson-fit)", tone: "from-primary to-accent" },
             { v: "≈33 %", label: "Reference 10-year TCO reduction · proposal §G.3 baseline", tone: "from-accent to-primary" },

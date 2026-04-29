@@ -13,7 +13,6 @@ interface Fleet {
   n_devices: number;
   geographic_distribution: Record<string, number>;
   status_summary: Record<string, number>;
-  soh_buckets: Record<string, number>;
   replacement_queue_count: number;
   devices: Device[];
 }
@@ -84,7 +83,7 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
             value={fleet.status_summary.healthy.toLocaleString()}
             unit={`/ ${fleet.n_devices}`}
             tone="success"
-            hint={`${((fleet.status_summary.healthy / fleet.n_devices) * 100).toFixed(1)} % uptime`}
+            hint={`${((fleet.status_summary.healthy / fleet.n_devices) * 100).toFixed(1)} % currently nominal`}
           />
           <Stat
             label="Thermal warn"

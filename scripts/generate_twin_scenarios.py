@@ -145,8 +145,10 @@ def _build_power_profile(duration_s: float, dt: float) -> tuple[np.ndarray, np.n
 def _split_with_lic(p_total_kw: np.ndarray, dt: float, tau_s: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
     """Split rack power into (LFP slow, LIC fast) using a first-order LPF.
 
-    LFP follows the running mean (low-pass output); LIC takes the difference.
-    tau_s = 0.5 s is the proposal's design intent: LIC handles <1 s, LFP >30 s.
+    LFP follows the running mean (low-pass output); LIC takes the residual.
+    Cutoff is fc = 1/(2π·τ); with τ = 0.5 s that's ≈0.32 Hz, so content with
+    period shorter than ~3 s lands on the LIC and slower content lands on
+    the LFP — covering the proposal's >30 s graceful-shutdown role for LFP.
     """
     alpha = dt / (tau_s + dt)
     lfp = np.empty_like(p_total_kw)
@@ -247,23 +249,37 @@ def scenario_transient_lfp_only(duration_s: float = 10.0, dt: float = 0.005) -> 
 def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> None:
     logger.info("=== Scenario 2: LFP + LIC hybrid transient ===")
     t, p_kw = _build_power_profile(duration_s, dt)
-    p_lfp, p_lic = _split_with_lic(p_kw, dt, tau_s=0.5)
+    p_lfp, p_lic = _split_with_lic(p_kw, dt, tau_s=SPLIT_FILTER_TAU_S)
     sim = _simulate_lfp_cell(p_lfp, t)
 
     n = 800
     v_cell = np.asarray(sim["V_cell"])
     sim_t = np.asarray(sim["t"])
 
+    # Peak instantaneous LIC state-of-charge excursion (kJ).
+    # ∫ p_lic·dt is the running net energy that has flowed INTO the LIC; its
+    # max magnitude is the peak amount the LIC has to hold at any instant.
+    # NOT to be confused with ∫|p_lic|·dt, which is two-way throughput.
+    # Use a vectorised trapezoidal cumulative integral (O(n) vs O(n²) loop).
+    integrate = getattr(np, "trapezoid", np.trapz)
+    dt_arr = np.diff(t)
+    seg_avg = 0.5 * (p_lic[:-1] + p_lic[1:])
+    lic_soc_kj = np.concatenate(([0.0], np.cumsum(seg_avg * dt_arr)))
+    lic_peak_excursion_kj = float(np.max(np.abs(lic_soc_kj)))
+    lic_throughput_kj = float(integrate(np.abs(p_lic), t))
+    lic_capacity_kj = LIC_ENERGY_KJ_PER_RACK * LIC_OVERPROV_FACTOR
+
     payload = {
         "title": "Hybrid LFP + LIC — flattened transient delivered to LFP",
         "description": (
-            "The DC-DC control law routes the high-frequency component (>2 Hz) "
+            "The DC-DC control law routes content above the LPF cutoff "
+            f"(≈{1.0/(2*np.pi*SPLIT_FILTER_TAU_S):.2f} Hz, τ={SPLIT_FILTER_TAU_S} s) "
             "to the lithium-ion capacitor; the LFP pack sees only the smoothed "
             "average. Cell voltage stays in the plateau, electrode stress drops, "
             "expected cycle life extends ~25 % per the proposal §A."
         ),
         "duration_s": duration_s,
-        "split_filter_tau_s": 0.5,
+        "split_filter_tau_s": SPLIT_FILTER_TAU_S,
         "series": {
             "t": _decimate(t, n).tolist(),
             "p_total_kw": _decimate(p_kw, n).tolist(),
@@ -280,12 +296,15 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             "v_cell_pp_stable": _stable_window_pp(sim_t, v_cell),
             "p_lfp_std_kw": float(np.std(p_lfp)),
             "lic_peak_kw": float(np.max(np.abs(p_lic))),
-            # np.trapz is removed in NumPy 2.0; np.trapezoid is the forward
-            # alias and exists in 1.26+ as well.
-            "lic_energy_kj_used": float(
-                getattr(np, "trapezoid", np.trapz)(np.abs(p_lic), t)
-            ),
-            "lic_energy_kj_capacity": LIC_ENERGY_KJ_PER_RACK * LIC_OVERPROV_FACTOR,
+            # Peak instantaneous storage requirement — what determines whether
+            # the LIC can absorb the worst-case excursion. THIS is what should
+            # be compared against capacity.
+            "lic_peak_excursion_kj": lic_peak_excursion_kj,
+            # Cumulative two-way energy moved through the LIC over the demo
+            # window. Useful as a duty-cycle metric, not as a capacity check.
+            "lic_throughput_kj": lic_throughput_kj,
+            "lic_energy_kj_capacity": lic_capacity_kj,
+            "lic_headroom_ratio": lic_capacity_kj / max(lic_peak_excursion_kj, 1e-6),
         },
     }
     _save("transient_hybrid.json", payload)
@@ -299,23 +318,24 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
 def _soh_full_cycling(cycles: np.ndarray) -> np.ndarray:
     """Severson-calibrated mean LFP fade under 1C/1C cycling.
 
-    Two-regime model: gentle sub-linear early, then accelerating after the
-    'knee' near 800 cycles (where the paper sees ~80 % SOH on average).
-    Floor at 0.30 prevents the curve going negative for far-future
-    extrapolation but is well below all useful operating points.
+    Two-regime model: gentle sub-linear early, then accelerating past the
+    'knee' near cycle 800. The Severson 2019 mean cycle life (to 80 % SOH)
+    sits near 1000-1100, with the knee where fade kinetics change being a
+    couple of hundred cycles earlier. Floor at 0.30 keeps the curve sane
+    under far-future extrapolation but is well below useful operation.
     """
     knee = 800.0
     gentle = 1.0 - 1.5e-5 * cycles - 4e-9 * cycles ** 1.7
-    # Post-knee acceleration: exp(-Δ/1500). Calibrated against Severson 2019
-    # mean curve (Fig 1c) so SOH ≈ 0.80 around cycle 1000 and ≈ 0.50 around
-    # cycle 1800. Denominator 1500 + linear exponent gives a smooth fade
-    # rather than the cliff a higher exponent would produce.
+    # Post-knee acceleration: exp(-Δ/1500). Calibrated so the mean curve
+    # crosses 80 % SOH near cycle 1100 (matching the Severson 2019 mean) and
+    # 50 % around cycle 1800. Denominator 1500 + linear exponent gives a
+    # smooth fade rather than the cliff a higher exponent would produce.
     accel = np.exp(-(np.maximum(cycles - knee, 0) / 1500.0))
     return np.clip(gentle * accel, 0.30, 1.0)
 
 
-def scenario_aging_lfp(n_cycles: int = 4000) -> None:
-    logger.info("=== Scenario 3: LFP capacity fade over 4000 cycles ===")
+def scenario_aging_lfp(n_cycles: int = 3000) -> None:
+    logger.info(f"=== Scenario 3: LFP capacity fade over {n_cycles} cycles ===")
     cycles = np.arange(0, n_cycles + 1)
 
     soh = _soh_full_cycling(cycles)
@@ -327,25 +347,31 @@ def scenario_aging_lfp(n_cycles: int = 4000) -> None:
     bbu_duty_factor = 0.33
     soh_bbu = _soh_full_cycling(cycles * bbu_duty_factor)
 
-    # Down-sample for client payload (3001 points → 600)
+    # Down-sample for client payload
     cycles_ds = _decimate(cycles, 600)
     soh_ds = _decimate(soh, 600)
     soh_bbu_ds = _decimate(soh_bbu, 600)
 
-    # Find cycle where SOH crosses 80% (assumes monotonically decreasing)
+    # Threshold-crossing stats are computed on an extended grid so the BBU
+    # 80 % crossing (~cycle 3360 with 0.33 duty) is captured even when the
+    # plotted horizon is shorter.
+    cycles_ext = np.arange(0, max(n_cycles, 6000) + 1)
+    soh_ext = _soh_full_cycling(cycles_ext)
+    soh_bbu_ext = _soh_full_cycling(cycles_ext * bbu_duty_factor)
+
     def _cycle_at_threshold(soh_arr: np.ndarray, threshold: float) -> float:
         below = np.where(soh_arr < threshold)[0]
-        return float(cycles[below[0]]) if len(below) else float(cycles[-1])
+        return float(cycles_ext[below[0]]) if len(below) else float(cycles_ext[-1])
 
     payload = {
-        "title": "LFP State-of-Health under BBU duty (3000-cycle horizon)",
+        "title": f"LFP State-of-Health under BBU duty ({n_cycles}-cycle horizon)",
         "description": (
             "Capacity-fade curves calibrated to Severson 2019 LFP mean behaviour. "
             "BBU duty uses a 0.33 effective-cycle factor: at calendar cycle N the "
             "pack has accumulated N × 0.33 effective full-cycle equivalents, so "
-            "an 80 % SOH calendar age maps to a much later wall-clock date. "
-            "Per proposal §G.3 this drives USD 9,600 / rack 10-year TCO savings "
-            "via halved replacement frequency."
+            "an 80 % SOH calendar age maps to a much later wall-clock date than "
+            "the equivalent 1C/1C bench test. Halved replacement frequency is one "
+            "of several lines that together produce the §G.3 10-year TCO delta."
         ),
         "series": {
             "cycle": cycles_ds.tolist(),
@@ -355,10 +381,10 @@ def scenario_aging_lfp(n_cycles: int = 4000) -> None:
         "stats": {
             "knee_cycle": 800.0,
             "duty_factor": bbu_duty_factor,
-            "soh_at_2400_bbu_cycles": float(np.interp(2400, cycles, soh_bbu)),
-            "soh_at_3000_bbu_cycles": float(np.interp(3000, cycles, soh_bbu)),
-            "cycle_at_80pct_soh_full": _cycle_at_threshold(soh, 0.80),
-            "cycle_at_80pct_soh_bbu": _cycle_at_threshold(soh_bbu, 0.80),
+            "soh_at_2400_bbu_cycles": float(np.interp(2400, cycles_ext, soh_bbu_ext)),
+            "soh_at_3000_bbu_cycles": float(np.interp(3000, cycles_ext, soh_bbu_ext)),
+            "cycle_at_80pct_soh_full": _cycle_at_threshold(soh_ext, 0.80),
+            "cycle_at_80pct_soh_bbu": _cycle_at_threshold(soh_bbu_ext, 0.80),
         },
     }
     _save("aging_lfp.json", payload)
@@ -380,6 +406,11 @@ SITES = [
     ("AWS-Hilliard-OH",           "Hilliard, OH",       5, 40.03, -83.16),
     ("Google-CouncilBluffs-IA",   "Council Bluffs, IA", 5, 41.26, -95.86),
 ]
+
+
+def _state_code(location: str) -> str:
+    """Pull the 2-letter state code out of a 'City, ST' label."""
+    return location.rsplit(",", 1)[-1].strip()[:2].upper()
 
 
 def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
@@ -413,6 +444,9 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
     # Per-device telemetry snapshot.
     # Status is now DERIVED from SOH / RUL / temperature so it is internally
     # consistent — a device with RUL < 600 will never show "healthy".
+    # Per-state running counters so device IDs encode the state they live in
+    # (SYS-VA-0001 sits in Virginia, etc.) — no more SYS-TX-* in Ashburn.
+    state_counters: dict[str, int] = {}
     devices = []
     for i in range(n):
         s = SITES[site_idx[i]]
@@ -439,8 +473,11 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         else:
             status_i = "healthy"
 
+        state = _state_code(s[1])
+        seq = state_counters.get(state, 0)
+        state_counters[state] = seq + 1
         devices.append({
-            "id": f"SYS-TX-{i:04d}",
+            "id": f"SYS-{state}-{seq:04d}",
             "site": s[0],
             "location": s[1],
             "lat": round(lat, 4),
@@ -459,23 +496,18 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
     status = np.array([d["status"] for d in devices])
 
     payload = {
-        "title": "Synthetic fleet — 1000 Sysblade BBU devices",
+        "title": f"Synthetic fleet — {n} Sysblade BBU devices",
         "disclaimer": "Simulated Data. Not from any production deployment.",
         "n_devices": n,
         "geographic_distribution": {
-            "Texas": sum(1 for d in devices if "TX" in d["location"]),
-            "Virginia": sum(1 for d in devices if "VA" in d["location"]),
-            "Other": sum(1 for d in devices if "TX" not in d["location"] and "VA" not in d["location"]),
+            "Texas":    sum(1 for d in devices if _state_code(d["location"]) == "TX"),
+            "Virginia": sum(1 for d in devices if _state_code(d["location"]) == "VA"),
+            "Other":    sum(1 for d in devices if _state_code(d["location"]) not in ("TX", "VA")),
         },
         "status_summary": {
             "healthy": int(np.sum(status == "healthy")),
             "thermal_warn": int(np.sum(status == "thermal_warn")),
             "early_aging": int(np.sum(status == "early_aging")),
-        },
-        "soh_buckets": {
-            "ge_95": int(np.sum(soh >= 0.95)),
-            "85_to_95": int(np.sum((soh >= 0.85) & (soh < 0.95))),
-            "lt_85": int(np.sum(soh < 0.85)),
         },
         # Devices that should already be on the replacement queue, defined the
         # same way the UI computes Tier-3 candidates: status == early_aging
