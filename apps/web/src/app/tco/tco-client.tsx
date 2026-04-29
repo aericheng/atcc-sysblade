@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
 import { computeTco, formatTons, formatUsd, type TcoInputs } from "@/lib/tco";
@@ -210,8 +210,8 @@ export function TcoClient() {
               min={0.04}
               max={0.25}
               step={0.005}
+              prefix="$"
               onChange={(v) => setInputs((s) => ({ ...s, electricityPriceUsdPerKwh: v }))}
-              format={(n) => `$${n.toFixed(3)}`}
             />
             <NumberField
               label="PUE"
@@ -220,7 +220,6 @@ export function TcoClient() {
               max={2.0}
               step={0.05}
               onChange={(v) => setInputs((s) => ({ ...s, pue: v }))}
-              format={(n) => n.toFixed(2)}
             />
             <NumberField
               label="Grid carbon (kg CO₂ / kWh)"
@@ -229,7 +228,6 @@ export function TcoClient() {
               max={0.8}
               step={0.01}
               onChange={(v) => setInputs((s) => ({ ...s, gridCarbonKgPerKwh: v }))}
-              format={(n) => n.toFixed(2)}
             />
           </CardBody>
         </Card>
@@ -353,7 +351,7 @@ function NumberField({
   max,
   step,
   onChange,
-  format,
+  prefix,
 }: {
   label: string;
   value: number;
@@ -361,13 +359,71 @@ function NumberField({
   max: number;
   step: number;
   onChange: (v: number) => void;
-  format?: (n: number) => string;
+  prefix?: string;
 }) {
+  // Decimal places follow the slider step so the typed input shows the same
+  // resolution as the slider snaps to (step=1 → 0, step=0.005 → 3, etc.).
+  const decimals = step >= 1 ? 0 : Math.max(0, -Math.floor(Math.log10(step)));
+  const formatNum = (n: number) =>
+    decimals === 0 ? String(Math.round(n)) : n.toFixed(decimals);
+
+  // The number input keeps a local string draft so the user can pass through
+  // intermediate states like "" or "0." without us clobbering the parent
+  // state. We only commit on blur or Enter; the slider stays at the
+  // last-committed value while the user is typing.
+  const [draft, setDraft] = useState<string>(() => formatNum(value));
+  const userEditingRef = useRef(false);
+  useEffect(() => {
+    if (userEditingRef.current) return; // don't fight the user mid-type
+    setDraft(formatNum(value));
+    // formatNum closes over `decimals` which is derived from `step`; both
+    // are stable across the input's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const commit = () => {
+    userEditingRef.current = false;
+    const v = Number(draft);
+    if (!Number.isFinite(v)) {
+      setDraft(formatNum(value));
+      return;
+    }
+    const clamped = Math.min(max, Math.max(min, v));
+    if (clamped !== value) onChange(clamped);
+    setDraft(formatNum(clamped));
+  };
+
   return (
     <div>
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-2">
         <label className="text-xs text-muted uppercase tracking-wider">{label}</label>
-        <span className="text-sm font-medium tabular-nums">{format ? format(value) : value}</span>
+        <div className="flex items-center gap-1 text-sm">
+          {prefix && <span className="text-muted">{prefix}</span>}
+          <input
+            type="number"
+            value={draft}
+            min={min}
+            max={max}
+            step={step}
+            onChange={(e) => {
+              userEditingRef.current = true;
+              setDraft(e.target.value);
+            }}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commit();
+                (e.currentTarget as HTMLInputElement).blur();
+              } else if (e.key === "Escape") {
+                userEditingRef.current = false;
+                setDraft(formatNum(value));
+                (e.currentTarget as HTMLInputElement).blur();
+              }
+            }}
+            className="w-20 rounded border border-border bg-background px-2 py-0.5 text-right tabular-nums font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
       </div>
       <input
         type="range"
