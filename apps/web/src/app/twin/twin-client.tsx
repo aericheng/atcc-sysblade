@@ -470,7 +470,14 @@ export function TwinClient({
                     );
                   }}
                 />
-                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                {/* Legend pinned to the top so it can't collide with the
+                    'Actual cycle life' axis label at the bottom. */}
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  height={24}
+                  wrapperStyle={{ fontSize: 11, color: "var(--muted)", paddingRight: 8 }}
+                />
                 {/* y = x diagonal — actual===predicted reference */}
                 <Line
                   type="linear"
