@@ -830,13 +830,13 @@ const STATUS_TONE: Record<Walkthrough["fleet_status"], "success" | "warning" | "
   early_aging: "warning",
   critical: "danger",
 };
-// Chinese phrase only — the underlying status (healthy/warning/...) lives
-// in the Stat tile's `unit` slot for the English-reading viewer.
-const STATUS_LABEL_ZH: Record<Walkthrough["fleet_status"], string> = {
-  healthy: "主要族群",
-  warning: "接近替換",
-  early_aging: "Tier-3 隊列",
-  critical: "故障早夭",
+// Short English phrase for the Stat tile value; the underlying status
+// (healthy / warning / ...) lives in the tile's `unit` slot.
+const STATUS_LABEL: Record<Walkthrough["fleet_status"], string> = {
+  healthy: "Main population",
+  warning: "Watch list",
+  early_aging: "Tier-3 queue",
+  critical: "Premature failure",
 };
 
 function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] }) {
@@ -886,7 +886,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <Stat label="Cell ID" value={cell.cell_id} hint={`batch ${cell.batch}`} />
           <Stat
             label="Fleet status"
-            value={STATUS_LABEL_ZH[cell.fleet_status]}
+            value={STATUS_LABEL[cell.fleet_status]}
             unit={cell.fleet_status}
             tone={STATUS_TONE[cell.fleet_status]}
             hint={`~${cell.fleet_pct.toFixed(0)}% of /dashboard fleet`}

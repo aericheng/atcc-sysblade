@@ -91,13 +91,14 @@ def _build_predicted_vs_actual(
 # ---------------------------------------------------------------------------
 FLEET_STATUSES: tuple[str, ...] = ("healthy", "warning", "early_aging", "critical")
 
-# Chinese display strings — match the /twin UI's voice. The percentage and
-# cycle count are filled in at render time.
+# Display phrases for the /twin dropdown. Kept short so the option text
+# fits on one line on a phone. The underlying status name is appended in
+# parentheses so the bucket key is still readable.
 _STATUS_DISPLAY: dict[str, str] = {
-    "healthy":     "主要族群 healthy",
-    "warning":     "健康但接近替換 warning",
-    "early_aging": "Tier-3 替換隊列 early_aging",
-    "critical":    "故障早夭 critical",
+    "healthy":     "Main population (healthy)",
+    "warning":     "Watch list (warning)",
+    "early_aging": "Tier-3 queue (early_aging)",
+    "critical":    "Premature failure (critical)",
 }
 
 
