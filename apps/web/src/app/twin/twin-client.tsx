@@ -17,17 +17,19 @@ import {
 } from "recharts";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
-import { Heatmap } from "@/components/heatmap";
 import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
 
-const PER_CYCLE_FEATURE_NAMES = [
-  "cycle_norm",
-  "qd_max",
-  "qd_min",
-  "v_mean",
-  "v_std",
-  "t_max",
-  "duration_s",
+// Per-cycle feature definitions for the walkthrough small-multiples chart.
+// These mirror packages/battery-twin/data_loaders/severson_parser.py and
+// must stay in sync with what scripts/export_lstm_onnx.py emits.
+const PER_CYCLE_FEATURES: Array<{ key: string; label: string; unit: string; description: string }> = [
+  { key: "cycle_norm", label: "Cycle progress", unit: "0–1", description: "Linear position in the 100-cycle window" },
+  { key: "qd_max", label: "Discharge capacity", unit: "Ah", description: "Peak discharge capacity in the cycle" },
+  { key: "qd_min", label: "Min Qd", unit: "Ah", description: "Minimum capacity sample (baseline)" },
+  { key: "v_mean", label: "Mean voltage", unit: "V", description: "Average voltage during the cycle" },
+  { key: "v_std", label: "Voltage swing", unit: "V (std)", description: "Std-dev of voltage in the cycle" },
+  { key: "t_max", label: "Peak temperature", unit: "°C", description: "Hottest point in the cycle" },
+  { key: "duration_s", label: "Cycle duration", unit: "s", description: "Total wall-clock time of the cycle" },
 ];
 
 interface Scenario {
@@ -103,8 +105,8 @@ interface ModelValidation {
     label: string;
     actual: number;
     predicted: number;
-    input_scaled: number[][];     // (99, 7)
-    hidden_state: number[][];     // (99, 64)
+    input_raw: number[][];        // (99, 7) features in original physical units
+    hidden_activation: number[];  // (99,) mean |tanh activation| across 64 dims
     cumulative_pred: number[];    // (99,)
   }>;
 }
@@ -679,40 +681,51 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
         {/* Stage 1 · INPUT */}
         <Stage
           n={1}
-          title="Input · 7 features × 99 cycles"
-          body="What the LSTM literally sees on the wire. Each row is one of the 7 per-cycle summary features; each column is one of cycles 2 → 100. Each row is independently colour-scaled to its own min/max so you can see how that feature evolves over the cell's early life — dark = the row's lowest value, bright yellow = the row's highest."
+          title="Input · 7 per-cycle features"
+          body="What the LSTM literally sees on the wire. One small line chart per feature; x-axis is cycle index 2 → 100. Y-axis is the actual physical unit so you can read 'capacity dropped 0.04 Ah' or 'temperature peaked at 38 °C' directly off the chart."
         >
-          {/* input_scaled is (99, 7) — transpose, then per-row normalise so
-              every feature shows its own time-evolution clearly under viridis. */}
-          <Heatmap
-            data={normaliseRowsTo01(transpose(cell.input_scaled))}
-            rowLabels={PER_CYCLE_FEATURE_NAMES}
-            colAxisLabel="cycle index (2 → 100)"
-            cellWidth={6}
-            cellHeight={18}
-            scale="viridis"
-            vmin={0}
-            vmax={1}
-            formatValue={(v) => `${(v * 100).toFixed(0)} %`}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {PER_CYCLE_FEATURES.map((f, fi) => {
+              const series = cell.input_raw.map((row, i) => ({ cycle: i + 2, v: row[fi] }));
+              return (
+                <FeatureSparkline
+                  key={f.key}
+                  label={f.label}
+                  unit={f.unit}
+                  description={f.description}
+                  data={series}
+                />
+              );
+            })}
+          </div>
         </Stage>
 
-        {/* Stage 2 · HIDDEN STATE */}
+        {/* Stage 2 · MODEL ACTIVATION */}
         <Stage
           n={2}
-          title="LSTM hidden state · 64 dims × 99 timesteps"
-          body="The model's internal opinion at every timestep. Each row is one of the 64 hidden dimensions; brightness shows how strongly that dimension is firing (|tanh activation|). Dark = quiet, bright yellow = active. Some dimensions stay dark the whole time, others only light up in specific cycle windows — that's the model picking up degradation patterns."
+          title="Model activation · how strongly the LSTM is firing"
+          body="The 64 hidden dimensions reduced to a single 'how active is the model right now?' line — mean |tanh activation| across all dims at each timestep. Low values mean the model has nothing strong to say (early life, not enough info); the line rising indicates the model has identified a degradation pattern and is committing to a prediction."
         >
-          <Heatmap
-            data={absMatrix(transpose(cell.hidden_state))}
-            colAxisLabel="cycle index (2 → 100)"
-            cellWidth={6}
-            cellHeight={6}
-            scale="viridis"
-            vmin={0}
-            vmax={1}
-            formatValue={(v) => v.toFixed(2)}
-          />
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart
+              data={cell.hidden_activation.map((v, i) => ({ cycle: i + 2, activation: v }))}
+              margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="cycle" type="number" domain={[2, 100]} stroke="" />
+              <YAxis stroke="" domain={[0, "auto"]} tickFormatter={(v) => v.toFixed(2)} />
+              <Tooltip content={<DarkTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="activation"
+                stroke="var(--accent)"
+                strokeWidth={1.8}
+                dot={false}
+                name="mean |activation|"
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </Stage>
 
         {/* Stage 3 · CUMULATIVE PREDICTION */}
@@ -809,40 +822,69 @@ function Stage({
   );
 }
 
-/** Transpose a (rows × cols) matrix to (cols × rows). */
-function transpose<T>(m: T[][]): T[][] {
-  if (m.length === 0) return m;
-  const r = m.length;
-  const c = m[0].length;
-  const out: T[][] = Array.from({ length: c }, () => Array(r));
-  for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) out[j][i] = m[i][j];
-  return out;
-}
-
-/** Normalise each row of a matrix to [0, 1] of its own min/max range.
- *  Lets a viridis colormap make every feature individually readable
- *  ('this row goes from low to high over time') without losing the
- *  pattern to one dominant feature's scale. */
-function normaliseRowsTo01(m: number[][]): number[][] {
-  return m.map((row) => {
-    let mn = Infinity;
-    let mx = -Infinity;
-    for (const v of row) {
-      if (Number.isFinite(v)) {
-        if (v < mn) mn = v;
-        if (v > mx) mx = v;
-      }
+/** Small line chart for one per-cycle feature. Used in Stage 1 of the
+ *  Inference walkthrough: 7 of these tile into a grid so the viewer can
+ *  read the actual physical unit (Ah, V, °C, sec) for each cycle. */
+function FeatureSparkline({
+  label,
+  unit,
+  description,
+  data,
+}: {
+  label: string;
+  unit: string;
+  description: string;
+  data: Array<{ cycle: number; v: number }>;
+}) {
+  // Quick min/max so we can show the actual numeric range under the title
+  // without reading every data point in the user's eyes.
+  let mn = Infinity;
+  let mx = -Infinity;
+  for (const d of data) {
+    if (Number.isFinite(d.v)) {
+      if (d.v < mn) mn = d.v;
+      if (d.v > mx) mx = d.v;
     }
-    const range = mx - mn;
-    if (range === 0) return row.map(() => 0.5);
-    return row.map((v) => (Number.isFinite(v) ? (v - mn) / range : 0));
-  });
-}
+  }
+  const fmt = (n: number) => (Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(3));
 
-/** Element-wise absolute value of a matrix. Used to convert tanh-bounded
- *  hidden activations (range [-1, 1]) into 'magnitude' (range [0, 1])
- *  so a single-direction colormap reads naturally as
- *  'dark = quiet dimension, bright = active dimension'. */
-function absMatrix(m: number[][]): number[][] {
-  return m.map((row) => row.map((v) => (Number.isFinite(v) ? Math.abs(v) : 0)));
+  return (
+    <div className="rounded-md border border-border bg-background/40 p-3">
+      <div className="flex items-baseline justify-between gap-2 mb-1">
+        <div className="text-xs font-medium text-foreground">{label}</div>
+        <div className="text-[10px] text-muted">{unit}</div>
+      </div>
+      <div className="text-[10px] text-muted mb-2 leading-tight">{description}</div>
+      <ResponsiveContainer width="100%" height={80}>
+        <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+          <YAxis hide domain={["auto", "auto"]} />
+          <XAxis dataKey="cycle" hide type="number" domain={[2, 100]} />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const d = payload[0].payload as { cycle: number; v: number };
+              return (
+                <div className="rounded border border-border bg-background/95 backdrop-blur px-2 py-1 text-[11px] shadow-xl">
+                  <div className="text-muted">cycle {d.cycle}</div>
+                  <div className="font-medium tabular-nums">{fmt(d.v)} {unit}</div>
+                </div>
+              );
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="v"
+            stroke="var(--primary)"
+            strokeWidth={1.5}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      <div className="text-[10px] text-muted mt-1 tabular-nums flex justify-between">
+        <span>min {fmt(mn)}</span>
+        <span>max {fmt(mx)}</span>
+      </div>
+    </div>
+  );
 }
