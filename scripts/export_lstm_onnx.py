@@ -360,11 +360,28 @@ def extract_walkthroughs(
 
 
 def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
-    cells_path = REPO / "data" / "processed" / "severson_cells.pkl"
-    cells = pickle.loads(cells_path.read_bytes())
-    ok = [c for c in cells if c.cycle_life > 0 and c.n_cycles >= 100]
-    seqs, labels, ids, batches = [], [], [], []
-    for c in ok:
+    """Concat Severson lab cells with synthetic BBU-duty cells (if present).
+
+    Severson cells come from the standard pickle path; BBU cells from the
+    optional ``bbu_duty_cells.pkl`` produced by
+    ``scripts/generate_bbu_duty_cells.py``. Combining the two closes the
+    regime gap: the LSTM sees both fast-charge stress trajectories and
+    gentle-fade BBU trajectories at training time, so its feature
+    coverage no longer collapses to the Severson distribution.
+
+    BBU cells are skipped silently if the pickle is missing (keeps the
+    Severson-only build path working).
+    """
+    seqs: list[np.ndarray] = []
+    labels: list[float] = []
+    ids: list[str] = []
+    batches: list[str] = []
+
+    sev_path = REPO / "data" / "processed" / "severson_cells.pkl"
+    sev_cells = pickle.loads(sev_path.read_bytes())
+    sev_ok = [c for c in sev_cells if c.cycle_life > 0 and c.n_cycles >= 100]
+    n_sev_kept = 0
+    for c in sev_ok:
         seq = sp.per_cycle_summary(c)
         if seq is None or seq.shape != (99, 7):
             continue
@@ -372,6 +389,27 @@ def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
         labels.append(np.log10(c.cycle_life))
         ids.append(c.cell_id)
         batches.append(c.batch)
+        n_sev_kept += 1
+    print(f"  Severson cells: {n_sev_kept}")
+
+    bbu_path = REPO / "data" / "processed" / "bbu_duty_cells.pkl"
+    n_bbu_kept = 0
+    if bbu_path.exists():
+        bbu_cells = pickle.loads(bbu_path.read_bytes())
+        for c in bbu_cells:
+            seq = c["sequence"]
+            if seq is None or seq.shape != (99, 7):
+                continue
+            seqs.append(seq)
+            labels.append(c["log_cycle_life"])
+            ids.append(c["cell_id"])
+            batches.append(c["batch"])
+            n_bbu_kept += 1
+        print(f"  BBU-duty cells: {n_bbu_kept}  (regime-gap augmentation)")
+    else:
+        print(f"  BBU-duty cells: 0  ({bbu_path.relative_to(REPO)} not found — "
+              f"run scripts/generate_bbu_duty_cells.py first)")
+
     return np.stack(seqs), np.asarray(labels), ids, batches
 
 
