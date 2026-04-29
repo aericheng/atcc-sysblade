@@ -55,15 +55,15 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
   return (
     <div className="space-y-10">
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0">
           <div className="text-xs uppercase tracking-[0.2em] text-muted">Fleet Health Dashboard</div>
-          <h1 className="text-4xl font-semibold tracking-tight">{fleet.n_devices.toLocaleString()} Sysblade BBUs across the fleet</h1>
-          <p className="text-muted max-w-3xl leading-relaxed">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">{fleet.n_devices.toLocaleString()} Sysblade BBUs across the fleet</h1>
+          <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
             Three service tiers visible side-by-side: real-time monitoring, proactive maintenance triggered by Battery
             Twin SOH inference, and predictive ops surfacing replacement candidates before SOH crosses 80 %.
           </p>
         </div>
-        <span className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-warning">
+        <span className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-warning whitespace-normal">
           ⚠ Simulated data · synthetic fleet for demo only
         </span>
       </header>
