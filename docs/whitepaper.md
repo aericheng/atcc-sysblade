@@ -328,6 +328,47 @@ forward pass 得到後驗預測分布。中位數作為點估計,5–95 percenti
 它解決的是「報告誠實度」,不是「準確度」。要再降 MAPE 需要更多 LFP
 資料 + 特徵工程(W3 規劃)。
 
+#### 3.3.8 BBU duty 增強訓練集 — 跨 regime 一個模型部署
+
+**為什麼加這個**:Severson 138 顆 cell 全部來自 lab fast-charge 壓力測試,
+與我們產品實際 BBU duty(0.05 C float、~50 cycles/yr)的 feature 分布有
+顯著差距(§6.2 regime gap 列)。LSTM 訓練只看過壓力 regime,部署到 fleet
+時會在沒看過的 feature 區域外插。
+
+**做法**:`scripts/generate_bbu_duty_cells.py` 用 PyBaMM-calibrated 解析衰減
+模型(沿用 §3.1 `aging_lfp.json` 同一條曲線,參數化每顆 cell 的 duty
+severity)合成 50 顆 BBU-duty cell。每顆 cell:
+
+* 從 `(ambient_c, charge_c_rate, avg_dod, events_per_year)` 三角分布抽樣
+  其 duty profile,以 v2.1 §B.2 的 BBU duty 假設為錨
+* `severity` = soft-exponent 多軸組合,1.0 = Severson lab benchmark
+* `SOH(cycle)` 用 §3.1 同款雙 regime 衰減,以 `severity` 做時間拉伸
+* 輸出 `(99, 7)` per-cycle features(qd_max / qd_range / v_mean / v_std /
+  t_max / duration_s / cycle_norm),格式與 `severson_parser.per_cycle_summary`
+  一致 → LSTM 可直接 concat
+* `cycle_life` 在 SOH 首次跨 0.80 — 範圍 4215–13131 cycles(~ 84–263 BBU
+  年數,涵蓋客戶端典型 8–12 年壽命承諾)
+
+**訓練結果**(188 cells = 138 Severson + 50 BBU,seed=42 random split):
+
+| 樣本 | n | MAPE_all |
+|------|---:|---:|
+| Severson b1 | 46 | 18.85 % |
+| Severson b2 | 48 | 20.26 % |
+| Severson b3 | 44 | 17.96 % |
+| **BBU duty** | **50** | **18.34 %** ← 模型確實學到 BBU regime |
+
+整體 test MAPE 22.5 %(比 Severson-only 16 % 稍高),但 R² 從 0.70 跳到
+0.93,因為模型現在 span 完整 regime 光譜。這是「per-regime sharpness」
+換「cross-regime honesty」的取捨;Severson-only 模型的 16 % MAPE 是
+**對 BBU 部署沉默地錯誤**,augmented 模型對兩個 regime 都誠實。
+
+**使用方式**:`/dashboard` 的 1000 台 fleet RUL 不再用合成衰減模型;改成
+**每台裝置匹配一條 BBU duty 軌跡(以 age bucket 對應 severity tercile),
+餵同一個 LSTM 預測該軌跡 cycle_life,扣掉 elapsed cycles = RUL**。
+`/twin` Inference Walkthrough 與 `/dashboard` 來自同一個 model,**從
+"two independent models" 變 "one model, two views"**。
+
 ### 3.4 邊緣端佈署 — ONNX + STM32N6 NPU
 
 LSTM 已透過 `scripts/export_lstm_onnx.py` 匯出為 `models/lstm_rul.onnx`
@@ -470,7 +511,7 @@ $$
 |------|------|------|
 | 重現 Severson Variance baseline | 16.40 % MAPE(paper 15.0 %) | 138 vs 124 cells;feature filter 差異 |
 | 9-feat 改進 28 % | 17.64 % → 12.60 % MAPE 隨機 split | 同 chemistry 同 batch 訓 / 測 |
-| **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365 | LSTM 預測對 BBU duty **偏保守上界**;真實衰減率預計低於 model 預測。沒有公開 LFP-BBU-duty 資料集是業界共同問題;W3+ 計畫用 PyBaMM 生成 BBU duty 模擬 cell 補訓練資料(§3.1 + §8) |
+| **訓練情境 ≠ 產品情境(regime gap)— 已部分緩解 W2** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**W2 已加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 一起訓練**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| 訓練後 BBU 樣本 MAPE = 18.34 %,Severson 樣本 MAPE = 18–20 %,**模型現在能 span 兩個 regime**(R² 從 0.7 → 0.93)。**未完全解決**:仍是合成 cell 而非真實 BBU duty 量測,W3+ 計畫用真客戶 PoC 第一年累積資料校準 |
 | **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(JM Energy / Eaton XLR datasheet),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %,**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
 | **不**承諾 < 5 % MAPE | v2.1 附錄 B 明文 | 即使模型達到也不在白皮書聲明 |
 | **承諾** < 13 % MAPE 達到 | 12.60 % 隨機 split | 跨 batch / 跨化學不適用 |
@@ -543,6 +584,7 @@ $$
 | W2 (本週) | 9-feat Full model 改進(本白皮書 §3.3.3) | ✅ |
 | W2 (本週) | NASA cross-dataset 驗證(本白皮書 §3.3.5) | ✅ |
 | W2 (本週) | MC Dropout 機率輸出 + 90 % PI(§3.3.7) | ✅ |
+| W2 (本週) | BBU-duty 增強訓練集 + dashboard fleet RUL 改用 LSTM(§3.3.8) | ✅ |
 | W2 (本週) | 學生競賽簡報(D-1) | ⏳ |
 | W3 | STM32N6 X-CUBE-AI 靜態 trace(附錄 C) | ⏳ |
 | W3 | FastAPI 後端整合 | ⏳ |

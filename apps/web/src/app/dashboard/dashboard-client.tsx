@@ -176,14 +176,20 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                   within ~16 years&rdquo; gate, not 800 days.
                 </p>
                 <p>
-                  <span className="font-medium text-foreground">SOH source:</span>{" "}
-                  <span className="text-foreground">soh_lfp</span> is the LSTM&rsquo;s output
-                  on Severson-trained features.{" "}
-                  <span className="text-foreground">soh_lic</span> is a datasheet-derived
-                  estimate (LIC ≥ 100,000 nominal cycles per JM Energy / Eaton XLR specs)
-                  — LIC public cycling data is too scarce to train on, and BBU duty doesn&rsquo;t
-                  push LIC near its limits, so calendar-life lookup is the deliberate scope
-                  for this version (whitepaper §6.2).
+                  <span className="font-medium text-foreground">SOH + RUL source:</span>{" "}
+                  <span className="text-foreground">rul_cycles</span> per device is computed
+                  by the same LSTM you saw on{" "}
+                  <span className="text-foreground">/twin</span> — each device is matched to a
+                  PyBaMM-calibrated BBU-duty trajectory, the LSTM predicts that trajectory&rsquo;s
+                  total cycle life, and we subtract the device&rsquo;s elapsed cycles
+                  (age × 50 cycles/yr per v2.1 §B.2). One model deployed across the fleet, not
+                  a separate decay heuristic.{" "}
+                  <span className="text-foreground">soh_lfp</span> stays as the per-device
+                  state.{" "}
+                  <span className="text-foreground">soh_lic</span> is datasheet-derived (LIC ≥
+                  100,000 nominal cycles per JM Energy / Eaton XLR specs) — LIC public cycling
+                  data is too scarce to train on, and BBU duty doesn&rsquo;t push LIC near its
+                  limits (whitepaper §6.2).
                 </p>
               </div>
             </CardBody>
@@ -268,7 +274,9 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
           {fleet.disclaimer} The 1000 devices are generated with a documented seeded RNG (see{" "}
           <code className="text-foreground">scripts/generate_twin_scenarios.py</code>) and weighted to Texas + Virginia
           per JLL YE-2025. Status, temperatures, and aging buckets reflect plausible field distributions but no
-          production deployment exists yet.
+          production deployment exists yet. <span className="text-foreground">RUL per device is computed by the
+          LSTM</span> shown on /twin (run on a per-device PyBaMM-calibrated BBU-duty trajectory) — same model, two
+          views.
         </CardBody>
       </Card>
     </div>

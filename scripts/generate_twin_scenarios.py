@@ -413,6 +413,41 @@ def _state_code(location: str) -> str:
     return location.rsplit(",", 1)[-1].strip()[:2].upper()
 
 
+def _load_lstm_for_fleet_rul() -> dict | None:
+    """Load the trained LSTM + BBU-duty trajectories for fleet RUL inference.
+
+    Returns ``None`` (and lets the caller fall back to synthetic decay) if
+    either the checkpoint or the BBU pickle is missing — keeps the
+    twin-scenarios pipeline runnable on a fresh clone where the LSTM
+    hasn't been trained yet.
+    """
+    import pickle as _pickle
+
+    ckpt_path = _REPO / "models" / "lstm_rul.pt"
+    bbu_pkl = _REPO / "data" / "processed" / "bbu_duty_cells.pkl"
+    if not ckpt_path.exists() or not bbu_pkl.exists():
+        return None
+
+    try:
+        sys.path.insert(0, str(_REPO / "packages" / "battery-twin"))
+        from lstm_rul.model import load_checkpoint, predict_cycles  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"  LSTM import failed, falling back to synthetic RUL: {exc}")
+        return None
+
+    model, scaler, _meta = load_checkpoint(ckpt_path)
+    bbu_cells = _pickle.loads(bbu_pkl.read_bytes())
+    sequences = np.stack([c["sequence"] for c in bbu_cells])     # (n_bbu, 99, 7)
+    severities = np.array([c["duty"]["severity"] for c in bbu_cells])
+    return {
+        "model": model,
+        "scaler": scaler,
+        "predict_cycles": predict_cycles,
+        "sequences": sequences,
+        "severities": severities,
+    }
+
+
 def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
     logger.info(f"=== Scenario 4: synthetic {n}-device fleet ===")
     rng = np.random.default_rng(seed)
@@ -431,7 +466,7 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         if b == 0:
             soh[i] = rng.uniform(0.95, 1.00)
             age_months[i] = rng.uniform(0, 24)
-            rul[i] = rng.uniform(2400, 3000)
+            rul[i] = rng.uniform(2400, 3000)            # synthetic fallback
         elif b == 1:
             soh[i] = rng.uniform(0.85, 0.95)
             age_months[i] = rng.uniform(24, 72)
@@ -440,6 +475,48 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
             soh[i] = rng.uniform(0.75, 0.88)
             age_months[i] = rng.uniform(72, 108)
             rul[i] = rng.uniform(200, 1200)
+
+    # Override the synthetic RUL with LSTM inference per device when the
+    # trained model + BBU trajectories are available. Each device is
+    # assigned a BBU-duty trajectory whose severity matches the device's
+    # operating-condition bucket (young → gentle, mid → moderate, old →
+    # harsh). Same LSTM that /twin's Inference Walkthrough demonstrates,
+    # so dashboard RUL and walkthrough RUL come from one model.
+    lstm_state = _load_lstm_for_fleet_rul()
+    rul_source = "synthetic_decay"
+    if lstm_state is not None:
+        n_traj = lstm_state["sequences"].shape[0]
+        sev_sorted = np.argsort(lstm_state["severities"])
+        # Three pools by severity tercile — gentle / moderate / harsh.
+        gentle_pool = sev_sorted[: n_traj // 3]
+        moderate_pool = sev_sorted[n_traj // 3 : 2 * n_traj // 3]
+        harsh_pool = sev_sorted[2 * n_traj // 3 :]
+        pools_by_bucket = {0: gentle_pool, 1: moderate_pool, 2: harsh_pool}
+
+        traj_idx = np.empty(n, dtype=np.int64)
+        for i, b in enumerate(age_buckets):
+            traj_idx[i] = rng.choice(pools_by_bucket[int(b)])
+
+        # Single batched LSTM forward pass over all 1000 devices.
+        x_per_device = lstm_state["sequences"][traj_idx]              # (n, 99, 7)
+        pred_cycle_life = lstm_state["predict_cycles"](
+            lstm_state["model"], lstm_state["scaler"], x_per_device
+        )                                                              # (n,)
+
+        # Elapsed cycles per device from age, assuming v2.1 §B.2 BBU duty
+        # of 50 cycles/yr. RUL = max(0, predicted_total_life - elapsed).
+        cycles_per_year = 50.0
+        elapsed_cycles = age_months / 12.0 * cycles_per_year
+        rul_lstm = np.maximum(0.0, pred_cycle_life - elapsed_cycles)
+        rul = rul_lstm
+        rul_source = "lstm_inference_on_bbu_trajectory"
+        logger.info(
+            f"  RUL via LSTM: median={int(np.median(rul))}  "
+            f"min={int(np.min(rul))}  max={int(np.max(rul))}  "
+            f"(n_traj={n_traj} BBU trajectories)"
+        )
+    else:
+        logger.info("  RUL via synthetic decay (LSTM checkpoint or BBU pickle missing)")
 
     # Per-device telemetry snapshot.
     # Status is now DERIVED from SOH / RUL / temperature so it is internally
@@ -499,6 +576,7 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         "title": f"Synthetic fleet — {n} Sysblade BBU devices",
         "disclaimer": "Simulated Data. Not from any production deployment.",
         "n_devices": n,
+        "rul_source": rul_source,                      # "lstm_inference_on_bbu_trajectory" | "synthetic_decay"
         "geographic_distribution": {
             "Texas":    sum(1 for d in devices if _state_code(d["location"]) == "TX"),
             "Virginia": sum(1 for d in devices if _state_code(d["location"]) == "VA"),
