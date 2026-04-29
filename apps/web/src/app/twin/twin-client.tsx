@@ -28,7 +28,19 @@ interface Scenario {
   transient_period_s?: number;
   split_filter_tau_s?: number;
   series: Record<string, number[]>;
-  stats: Record<string, number | null>;
+  stats: {
+    v_cell_min?: number;
+    v_cell_max?: number;
+    v_cell_swing?: number;
+    v_cell_pp_stable?: number;
+    p_lfp_std_kw?: number;
+    lic_peak_kw?: number;
+    lic_peak_excursion_kj?: number;
+    lic_throughput_kj?: number;
+    lic_energy_kj_capacity?: number;
+    lic_headroom_ratio?: number;
+    [k: string]: number | null | undefined;
+  };
   _meta?: Record<string, string>;
 }
 
@@ -174,11 +186,23 @@ export function TwinClient({
               hint={mode === "hybrid" ? `${pReduction.toFixed(1)}× smoother current` : "Full ±30 % swing through cell"}
             />
             <Stat
-              label="LIC energy used / available"
-              value={mode === "hybrid" ? `${(hybrid.stats["lic_energy_kj_used"] as number).toFixed(0)}` : "—"}
-              unit={mode === "hybrid" ? `/ ${(hybrid.stats["lic_energy_kj_capacity"] as number).toFixed(0)} kJ` : ""}
+              label="LIC peak SoC excursion"
+              value={
+                mode === "hybrid"
+                  ? `${(hybrid.stats.lic_peak_excursion_kj ?? 0).toFixed(2)}`
+                  : "—"
+              }
+              unit={
+                mode === "hybrid"
+                  ? `/ ${(hybrid.stats.lic_energy_kj_capacity ?? 0).toFixed(0)} kJ`
+                  : ""
+              }
               tone={mode === "hybrid" ? "primary" : "default"}
-              hint={mode === "hybrid" ? "31 % margin — sized for back-to-back triggers" : "Not engaged in baseline"}
+              hint={
+                mode === "hybrid"
+                  ? `${(hybrid.stats.lic_headroom_ratio ?? 0).toFixed(0)}× headroom on the worst-case instantaneous excursion`
+                  : "Not engaged in baseline"
+              }
             />
           </div>
 
@@ -348,8 +372,8 @@ export function TwinClient({
           </div>
 
           <ChartCard
-            title="Predicted vs actual cycle life · all 138 cells"
-            subtitle={`Random 70 / 30 split · seed 42 · ${modelValidation.metrics.n_train} train · ${modelValidation.metrics.n_test} test`}
+            title={`Predicted vs actual cycle life · all ${modelValidation.metrics.n_train + modelValidation.metrics.n_test} cells`}
+            subtitle={`Split ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} train · ${modelValidation.metrics.n_test} test`}
           >
             <ResponsiveContainer width="100%" height={320}>
               <ScatterChart margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -377,7 +401,11 @@ export function TwinClient({
                   cursor={{ strokeDasharray: "3 3", stroke: "var(--accent)" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
-                    const d = payload[0].payload as ModelValidation["predicted_vs_actual"][number];
+                    const raw = payload[0].payload as Partial<ModelValidation["predicted_vs_actual"][number]>;
+                    // The y=x diagonal line shares this tooltip but only carries
+                    // {actual, predicted}; suppress the tooltip on those points.
+                    if (!raw.cell_id) return null;
+                    const d = raw as ModelValidation["predicted_vs_actual"][number];
                     const err = ((d.predicted - d.actual) / d.actual) * 100;
                     return (
                       <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5">
@@ -451,12 +479,12 @@ export function TwinClient({
           <Method
             icon={<FlaskConical className="h-4 w-4" />}
             title="Physics"
-            body="Doyle-Fuller-Newman PDE for an LFP cell, solved by PyBaMM 26.4.1 with the Prada 2013 parameter set. Pack-level power is mapped to cell-level current via an explicit 6C-at-312A scaling (matches the 2.5 kWh / 48 V / 15S BBU spec)."
+            body="Doyle-Fuller-Newman PDE for an LFP cell, solved by PyBaMM 26.4.1 with the Prada 2013 parameter set. Pack-level power is mapped onto a representative cell so the rack-peak current corresponds to ~6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack."
           />
           <Method
             icon={<Activity className="h-4 w-4" />}
             title="Hybrid split"
-            body="A first-order low-pass filter (τ = 0.5 s, cutoff ≈ 0.32 Hz) approximates the DC-DC control law. Content faster than the cutoff is routed to the LIC; the slow residual goes to the LFP. The boundary is set above the GB200 pulse rate (10 Hz, comfortably faster than LIC) and well below the 30–90 s graceful-shutdown timescale that defines the LFP's role; both regimes are cleanly separated."
+            body="A first-order low-pass filter (τ = 0.5 s, cutoff ≈ 0.32 Hz) approximates the DC-DC control law. Content above the cutoff goes to the LIC; the slow residual goes to the LFP. The 10 Hz GB200 pulse rate sits well above the cutoff (so it lands on the LIC, which has kHz-class bandwidth), while 30–90 s graceful-shutdown events sit well below the cutoff (so they land on the LFP). The two regimes separate cleanly."
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}
