@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -19,17 +19,23 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/stat";
 import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
 
-// Per-cycle feature definitions for the walkthrough small-multiples chart.
-// These mirror packages/battery-twin/data_loaders/severson_parser.py and
-// must stay in sync with what scripts/export_lstm_onnx.py emits.
-const PER_CYCLE_FEATURES: Array<{ key: string; label: string; unit: string; description: string }> = [
-  { key: "cycle_norm", label: "Cycle progress", unit: "0–1", description: "Linear position in the 100-cycle window" },
-  { key: "qd_max", label: "Discharge capacity", unit: "Ah", description: "Peak discharge capacity in the cycle" },
-  { key: "qd_min", label: "Min Qd", unit: "Ah", description: "Minimum capacity sample (baseline)" },
-  { key: "v_mean", label: "Mean voltage", unit: "V", description: "Average voltage during the cycle" },
-  { key: "v_std", label: "Voltage swing", unit: "V (std)", description: "Std-dev of voltage in the cycle" },
-  { key: "t_max", label: "Peak temperature", unit: "°C", description: "Hottest point in the cycle" },
-  { key: "duration_s", label: "Cycle duration", unit: "s", description: "Total wall-clock time of the cycle" },
+// Per-cycle feature definitions for the walkthrough chart. These mirror
+// packages/battery-twin/data_loaders/severson_parser.py and must stay in
+// sync with what scripts/export_lstm_onnx.py emits. `color` is used by the
+// combined-trend chart so each line is identifiable in the legend.
+const PER_CYCLE_FEATURES: Array<{
+  key: string;
+  label: string;
+  unit: string;
+  color: string;
+}> = [
+  { key: "cycle_norm",  label: "Cycle progress",     unit: "0–1",     color: "#94a3b8" }, // slate
+  { key: "qd_max",      label: "Discharge capacity", unit: "Ah",      color: "#6366f1" }, // indigo
+  { key: "qd_min",      label: "Min Qd",             unit: "Ah",      color: "#a78bfa" }, // violet
+  { key: "v_mean",      label: "Mean voltage",       unit: "V",       color: "#22d3ee" }, // cyan
+  { key: "v_std",       label: "Voltage swing",      unit: "V (std)", color: "#34d399" }, // emerald
+  { key: "t_max",       label: "Peak temperature",   unit: "°C",      color: "#fbbf24" }, // amber
+  { key: "duration_s",  label: "Cycle duration",     unit: "s",       color: "#f87171" }, // red
 ];
 
 interface Scenario {
@@ -669,98 +675,120 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           />
         </div>
 
-        {/* INPUT — 7 per-cycle features as small line charts */}
+        {/* INPUT — all 7 per-cycle features overlaid in one chart */}
         <div className="rounded-lg border border-border bg-background/30 p-5 space-y-3">
           <div>
             <h4 className="text-sm font-medium">Per-cycle measurements (cycles 2 → 100)</h4>
             <p className="text-xs text-muted leading-relaxed mt-1">
-              Each chart is one of the seven features the LSTM ingests, in its actual physical
-              unit (Ah / V / °C / sec). Hover any line to see the value at a specific cycle.
+              All seven features the LSTM ingests, overlaid on one axis. Each line is normalised to
+              its own min–max so you can compare relative trends; hover any cycle to see the
+              actual physical value (Ah / V / °C / sec) for every feature at that point.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {PER_CYCLE_FEATURES.map((f, fi) => {
-              const series = cell.input_raw.map((row, i) => ({ cycle: i + 2, v: row[fi] }));
-              return (
-                <FeatureSparkline
-                  key={f.key}
-                  label={f.label}
-                  unit={f.unit}
-                  description={f.description}
-                  data={series}
-                />
-              );
-            })}
-          </div>
+          <CombinedFeatureChart inputRaw={cell.input_raw} />
         </div>
       </CardBody>
     </Card>
   );
 }
 
-/** Small line chart for one per-cycle feature. Used in the inference
- *  walkthrough: 7 of these tile into a grid so the viewer can read the
- *  actual physical unit (Ah, V, °C, sec) for each cycle. */
-function FeatureSparkline({
-  label,
-  unit,
-  description,
-  data,
-}: {
-  label: string;
-  unit: string;
-  description: string;
-  data: Array<{ cycle: number; v: number }>;
-}) {
-  // Quick min/max so we can show the actual numeric range under the title
-  // without reading every data point in the user's eyes.
-  let mn = Infinity;
-  let mx = -Infinity;
-  for (const d of data) {
-    if (Number.isFinite(d.v)) {
-      if (d.v < mn) mn = d.v;
-      if (d.v > mx) mx = d.v;
-    }
-  }
-  const fmt = (n: number) => (Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(3));
+/** All seven per-cycle features overlaid on one chart, normalised to [0, 1]
+ *  so they're visually comparable despite their wildly different units.
+ *  The tooltip restores the raw physical value for every feature. */
+function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
+  // Per-feature min/max across the 99 cycles, used to map raw → [0, 1].
+  const ranges = useMemo(() => {
+    return PER_CYCLE_FEATURES.map((_, fi) => {
+      let mn = Infinity;
+      let mx = -Infinity;
+      for (const row of inputRaw) {
+        const v = row[fi];
+        if (Number.isFinite(v)) {
+          if (v < mn) mn = v;
+          if (v > mx) mx = v;
+        }
+      }
+      return { min: mn, max: mx };
+    });
+  }, [inputRaw]);
+
+  const data = useMemo(() => {
+    return inputRaw.map((row, i) => {
+      const point: Record<string, number> = { cycle: i + 2 };
+      PER_CYCLE_FEATURES.forEach((f, fi) => {
+        const r = ranges[fi];
+        const range = r.max - r.min;
+        point[`${f.key}_norm`] = range === 0 ? 0.5 : (row[fi] - r.min) / range;
+        point[`${f.key}_raw`] = row[fi];
+      });
+      return point;
+    });
+  }, [inputRaw, ranges]);
+
+  const fmt = (v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(3));
 
   return (
-    <div className="rounded-md border border-border bg-background/40 p-3">
-      <div className="flex items-baseline justify-between gap-2 mb-1">
-        <div className="text-xs font-medium text-foreground">{label}</div>
-        <div className="text-[10px] text-muted">{unit}</div>
-      </div>
-      <div className="text-[10px] text-muted mb-2 leading-tight">{description}</div>
-      <ResponsiveContainer width="100%" height={80}>
-        <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-          <YAxis hide domain={["auto", "auto"]} />
-          <XAxis dataKey="cycle" hide type="number" domain={[2, 100]} />
+    <div>
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="cycle" type="number" domain={[2, 100]} stroke="" />
+          <YAxis stroke="" domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)} %`} />
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
-              const d = payload[0].payload as { cycle: number; v: number };
+              const p = payload[0].payload as Record<string, number>;
               return (
-                <div className="rounded border border-border bg-background/95 backdrop-blur px-2 py-1 text-[11px] shadow-xl">
-                  <div className="text-muted">cycle {d.cycle}</div>
-                  <div className="font-medium tabular-nums">{fmt(d.v)} {unit}</div>
+                <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-1">
+                  <div className="text-muted">cycle {p.cycle}</div>
+                  <div className="grid grid-cols-[14px_1fr_auto_auto] gap-x-2 gap-y-0.5 items-center">
+                    {PER_CYCLE_FEATURES.map((f) => (
+                      <Fragment key={f.key}>
+                        <span
+                          className="inline-block h-2 w-2 rounded-full"
+                          style={{ background: f.color }}
+                        />
+                        <span className="text-muted">{f.label}</span>
+                        <span className="tabular-nums text-foreground">{fmt(p[`${f.key}_raw`])}</span>
+                        <span className="text-muted text-[10px]">{f.unit}</span>
+                      </Fragment>
+                    ))}
+                  </div>
                 </div>
               );
             }}
           />
-          <Line
-            type="monotone"
-            dataKey="v"
-            stroke="var(--primary)"
-            strokeWidth={1.5}
-            dot={false}
-            isAnimationActive={false}
-          />
+          {PER_CYCLE_FEATURES.map((f) => (
+            <Line
+              key={f.key}
+              type="monotone"
+              dataKey={`${f.key}_norm`}
+              stroke={f.color}
+              strokeWidth={1.5}
+              dot={false}
+              isAnimationActive={false}
+              name={f.label}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
-      <div className="text-[10px] text-muted mt-1 tabular-nums flex justify-between">
-        <span>min {fmt(mn)}</span>
-        <span>max {fmt(mx)}</span>
+
+      {/* Compact legend with min/max ranges underneath */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1.5 mt-3 text-xs">
+        {PER_CYCLE_FEATURES.map((f, fi) => {
+          const r = ranges[fi];
+          return (
+            <div key={f.key} className="flex items-center gap-2 min-w-0">
+              <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ background: f.color }} />
+              <span className="text-foreground truncate">{f.label}</span>
+              <span className="text-muted text-[10px] tabular-nums ml-auto whitespace-nowrap">
+                {fmt(r.min)}–{fmt(r.max)} {f.unit}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
+
