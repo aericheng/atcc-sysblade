@@ -51,6 +51,10 @@ class Cell:
     summary: dict              # per-cycle aggregate metrics (capacity fade, IR, etc.)
     cycles: list[CycleData] = field(default_factory=list)
     vdlin: np.ndarray | None = None  # batch-level common voltage grid (1000 pts) used by Qdlin
+    # Discharge voltage range used by ``delta_q_100_10``'s manual-interpolation
+    # fallback. ``None`` → use the default (2.0, 3.5) V grid that matches
+    # Severson LFP cells. NASA NMC cells should set this to (2.7, 4.2).
+    voltage_range: tuple[float, float] | None = None
 
     @property
     def n_cycles(self) -> int:
@@ -315,7 +319,8 @@ def delta_q_100_10(cell: Cell, voltage_grid: np.ndarray | None = None) -> np.nda
 
     # Fallback: interpolate the raw discharge V-Qd points to a shared grid.
     if voltage_grid is None:
-        voltage_grid = np.linspace(2.0, 3.5, 1000)
+        v_lo, v_hi = cell.voltage_range if cell.voltage_range is not None else (2.0, 3.5)
+        voltage_grid = np.linspace(v_lo, v_hi, 1000)
     if len(cyc_10.V) < 5 or len(cyc_100.V) < 5:
         return None
     Q10 = np.interp(voltage_grid, cyc_10.V[::-1], cyc_10.Qd[::-1], left=np.nan, right=np.nan)
