@@ -526,8 +526,10 @@ export function TwinClient({
               so regression-to-mean reads directly off the chart: short-lived cells sit above the
               diagonal (model overshoots), long-lived cells sit below (model undershoots). Most of
               the test set (cyan) lands within ±20 % of actual; outliers at the extremes are why
-              this first-pass model is above the &lt;10 % proposal target — the W3 plan extends
-              features and adds NASA / CALCE cells to flatten this pattern.
+              this first-pass model is above the &lt;10 % proposal target. Cross-chemistry
+              transfer was tested and ruled out (NASA NMC: 5/5 features OOD; CALCE is LCO) —
+              the path forward is more LFP early-failure data plus the 90 % MC-Dropout PIs
+              shown below, where the model honestly widens its interval on tail cells.
             </p>
           </ChartCard>
           );
