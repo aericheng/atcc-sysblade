@@ -326,11 +326,11 @@ export function TwinClient({
               hint={`${modelValidation.metrics.n_test} held-out cells · target <10 % per proposal Appendix B`}
             />
             <Stat
-              label="ONNX inference latency"
+              label="ONNX latency · laptop CPU"
               value={modelValidation.latency.p99_ms.toFixed(2)}
               unit="ms (p99)"
               tone="success"
-              hint={`p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms · target ${modelValidation.latency.target_ms} ms · passes by ${(modelValidation.latency.target_ms / modelValidation.latency.p99_ms).toFixed(0)}×`}
+              hint={`p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms on Intel laptop CPU · STM32N6 NPU estimate ≈5 ms (ST X-CUBE-AI specs) · both well under 50 ms target`}
             />
             <Stat
               label="ONNX size"
