@@ -182,16 +182,19 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
             </CardTitle>
           </CardHeader>
           <CardBody>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            {/* min-w forces overflow-x-auto to actually scroll on phone widths
+                instead of letting the table squeeze its columns into illegible
+                multi-line headers and clipped status badges. */}
+            <div className="overflow-x-auto -mx-5 px-5">
+              <table className="w-full text-sm min-w-[680px]">
                 <thead>
-                  <tr className="text-muted text-xs uppercase tracking-wider">
-                    <th className="text-left py-2">Device</th>
-                    <th className="text-left py-2">Site</th>
-                    <th className="text-right py-2">SOH</th>
-                    <th className="text-right py-2">RUL (cycles)</th>
-                    <th className="text-right py-2">Age (mo)</th>
-                    <th className="text-right py-2">Temp LFP</th>
+                  <tr className="text-muted text-xs uppercase tracking-wider whitespace-nowrap">
+                    <th className="text-left py-2 pr-3">Device</th>
+                    <th className="text-left py-2 pr-3">Site</th>
+                    <th className="text-right py-2 pr-3">SOH</th>
+                    <th className="text-right py-2 pr-3">RUL (cycles)</th>
+                    <th className="text-right py-2 pr-3">Age (mo)</th>
+                    <th className="text-right py-2 pr-3">Temp LFP</th>
                     <th className="text-right py-2">Status</th>
                   </tr>
                 </thead>
@@ -205,18 +208,18 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                   )}
                   {replacementCandidates.map((d) => (
                     <tr key={d.id} className="border-t border-border">
-                      <td className="py-2.5 font-mono text-xs">{d.id}</td>
-                      <td className="py-2.5">
-                        <div>{d.site}</div>
-                        <div className="text-xs text-muted">{d.location}</div>
+                      <td className="py-2.5 pr-3 font-mono text-xs whitespace-nowrap">{d.id}</td>
+                      <td className="py-2.5 pr-3">
+                        <div className="whitespace-nowrap">{d.site}</div>
+                        <div className="text-xs text-muted whitespace-nowrap">{d.location}</div>
                       </td>
-                      <td className="py-2.5 text-right tabular-nums">{(d.soh_lfp * 100).toFixed(1)}%</td>
-                      <td className="py-2.5 text-right tabular-nums">{d.rul_cycles}</td>
-                      <td className="py-2.5 text-right tabular-nums">{d.age_months}</td>
-                      <td className="py-2.5 text-right tabular-nums">{d.temp_lfp_c}°C</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{(d.soh_lfp * 100).toFixed(1)}%</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{d.rul_cycles}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{d.age_months}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{d.temp_lfp_c}°C</td>
                       <td className="py-2.5 text-right">
                         <span
-                          className="rounded-full px-2 py-0.5 text-xs font-medium"
+                          className="rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
                           style={{ background: `${STATUS_COLOR[d.status]}20`, color: STATUS_COLOR[d.status] }}
                         >
                           {STATUS_LABEL[d.status]}
