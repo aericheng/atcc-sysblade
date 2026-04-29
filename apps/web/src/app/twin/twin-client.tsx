@@ -254,7 +254,7 @@ function ScopeCharts({
           </LineChart>
         </ResponsiveContainer>
         <p className="text-xs text-muted mt-2">
-          Highlighted band [4 s, 6 s] = steady-state window. Hover to pause sweep + read values.
+          <span className="text-foreground font-medium">Highlighted band [4 s, 6 s]</span> = steady-state window. Hover to pause sweep + read values.
         </p>
       </ChartCard>
 
@@ -379,7 +379,9 @@ export function TwinClient({
         <div className="text-xs uppercase tracking-[0.2em] text-muted">Battery Digital Twin · Live PyBaMM DFN</div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Solving the GB200 millisecond transient.</h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          PyBaMM DFN simulation — one rack, 80 kW baseline, ±30 % square pulses every 100 ms. Toggle below to see the LIC absorb the high-frequency component.
+          PyBaMM DFN simulation — one rack, <span className="text-foreground font-medium">80 kW baseline</span>,{" "}
+          <span className="text-foreground font-medium">±30 % square pulses every 100 ms</span>.
+          Toggle below to see the <span className="text-success font-medium">LIC absorb the high-frequency component</span>.
         </p>
       </header>
 
@@ -725,9 +727,10 @@ export function TwinClient({
               </ScatterChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
-              Cool blues = <span className="text-foreground">Severson 2019 cells</span> (100–2,000 cycles);
-              warm ambers = <span className="text-foreground">PyBaMM BBU-duty cells</span> (5,000–13,000 cycles).
-              The 2,000–4,000 gap between them is the <span className="text-foreground">regime gap</span>.
+              Cool blues = <span className="text-foreground font-medium">Severson 2019 cells</span> (100–2,000 cycles);
+              warm ambers = <span className="text-foreground font-medium">PyBaMM BBU-duty cells</span> (5,000–13,000 cycles).
+              The <span className="text-warning font-medium">2,000–4,000 gap</span> between them is the{" "}
+              <span className="text-warning font-medium">regime gap</span>.
             </p>
             <Disclosure summary="More on the regime gap and cross-chemistry tests" className="mt-2">
               Neither lab fast-charge nor gentle float duty produces cells in the 2,000–4,000 range,
@@ -770,19 +773,33 @@ export function TwinClient({
           <Method
             icon={<FlaskConical className="h-4 w-4" />}
             title="Physics"
-            tagline="Doyle-Fuller-Newman PDE, PyBaMM 26.4.1, Prada 2013 LFP."
+            tagline={
+              <>
+                <span className="text-foreground font-medium">Doyle-Fuller-Newman PDE</span>,{" "}
+                PyBaMM 26.4.1, <span className="text-foreground">Prada 2013 LFP</span>.
+              </>
+            }
             details="Pack-level power is mapped onto a representative cell so the rack-peak current corresponds to ~6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack."
           />
           <Method
             icon={<Activity className="h-4 w-4" />}
             title="Hybrid split"
-            tagline="First-order LPF, τ = 0.5 s, cutoff ≈ 0.32 Hz."
+            tagline={
+              <>
+                First-order LPF,{" "}
+                <span className="text-foreground font-medium">τ = 0.5 s</span>, cutoff ≈ 0.32 Hz.
+              </>
+            }
             details="Content above the cutoff goes to the LIC; the slow residual goes to the LFP. The 10 Hz GB200 pulse rate sits well above the cutoff (lands on LIC's kHz-class bandwidth), while 30–90 s graceful-shutdown events sit well below (land on LFP). The two regimes separate cleanly."
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}
             title="Aging"
-            tagline="Severson 2019-calibrated analytic SOH fit."
+            tagline={
+              <>
+                <span className="text-foreground font-medium">Severson 2019-calibrated</span> analytic SOH fit.
+              </>
+            }
             details="Running a real DFN over 3,000 cycles is computationally prohibitive, so we use the analytic fit. The 0.33 BBU-duty factor reflects float operation with rare deep events — explicit in proposal §G.3."
           />
         </CardBody>
@@ -863,8 +880,8 @@ function Method({
 }: {
   icon: React.ReactNode;
   title: string;
-  tagline: string;
-  details: string;
+  tagline: React.ReactNode;
+  details: React.ReactNode;
 }) {
   return (
     <div>
@@ -1040,7 +1057,10 @@ function ErrorByLifetimeBucket({
         </ComposedChart>
       </ResponsiveContainer>
       <p className="text-xs text-muted mt-2">
-        Bars = cell count, amber line = MAPE within each bucket. The <span className="text-foreground">Short bucket</span> has the largest MAPE because Severson holds only a handful of early-failure cells.
+        Bars = cell count, amber line = MAPE within each bucket. The{" "}
+        <span className="text-warning font-medium">Short bucket</span> has the{" "}
+        <span className="text-warning font-medium">largest MAPE</span> because Severson holds only a handful of{" "}
+        <span className="text-foreground font-medium">early-failure cells</span>.
       </p>
       <Disclosure summary="Why MAPE rose 16 → 22 % and how the PIs handle it" className="mt-2">
         The Long bucket is now dominated by 50 PyBaMM-calibrated BBU-duty cells with 5,000–13,000
@@ -1121,7 +1141,10 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             <div className="min-w-0">
               <CardTitle>Inference walkthrough · what the model saw, cell by cell</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
-                Nine cells across <span className="text-foreground">four prediction states</span> (healthy / warning / early_aging / critical), each with a 90 % conformal-sharpened PI.
+                <span className="text-foreground font-medium">Nine cells</span> across{" "}
+                <span className="text-foreground font-medium">four prediction states</span>{" "}
+                (healthy / warning / early_aging / critical), each with a{" "}
+                <span className="text-success font-medium">90 % conformal-sharpened PI</span>.
               </p>
               <Disclosure summary="How the buckets and PIs work" className="mt-2">
                 /dashboard groups live devices by current physical state (SOH / RUL / temp) into
@@ -1206,7 +1229,8 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <div>
             <h4 className="text-sm font-medium">Per-cycle measurements (cycles 2 → 100)</h4>
             <p className="text-xs text-muted leading-relaxed mt-1">
-              All seven LSTM input features, normalised per-line to [0, 1]. Hover for raw values.
+              <span className="text-foreground font-medium">All seven LSTM input features</span>, normalised per-line to{" "}
+              <span className="text-foreground font-medium">[0, 1]</span>. Hover for raw values.
             </p>
           </div>
           <CombinedFeatureChart inputRaw={cell.input_raw} />
