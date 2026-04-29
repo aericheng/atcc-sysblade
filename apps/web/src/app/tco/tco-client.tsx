@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Legend,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -40,10 +39,43 @@ const PRESETS: Record<string, TcoInputs> = {
 const DEFAULT_PRESET = "Mid-tier (50 racks · Texas)";
 
 // Stable references for Recharts props. Inline functions / new objects on
-// every parent render combine with ResponsiveContainer's ResizeObserver to
-// cause "Maximum update depth exceeded" loops on rapid input changes
-// (e.g. dragging the rack-count slider). Hoisting them out is the fix.
+// every parent render fed back through ResponsiveContainer's ResizeObserver
+// to cause "Maximum update depth exceeded" loops on rapid input changes
+// (e.g. dragging the rack-count slider). Hoisting helps but the underlying
+// loop comes from ResponsiveContainer remeasuring during render — we now
+// measure width ourselves with rAF-debounced ResizeObserver and pass fixed
+// pixel dimensions to <BarChart>, see useChartWidth below.
 const LEGEND_WRAPPER_STYLE = { fontSize: 11, color: "var(--muted)" } as const;
+const CHART_HEIGHT_PX = 300;
+
+/** Track an element's width via a ResizeObserver, but defer the setState to
+ *  the next animation frame so we never call it synchronously inside React's
+ *  render or commit phase. Negative / zero widths reported during DOM
+ *  reflow are ignored. Returns [ref, width] — width is 0 until first
+ *  measurement, so callers should guard rendering on `width > 0`. */
+function useChartWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w <= 0) return;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setWidth((prev) => (Math.abs(prev - w) < 1 ? prev : Math.floor(w)));
+      });
+    });
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, []);
+  return [ref, width] as const;
+}
 
 function BreakdownTooltip({
   active,
@@ -97,6 +129,16 @@ export function TcoClient() {
       { item: "HVDC transition", short: "HVDC", traditional: t.hvdc, sysblade: s.hvdc },
     ];
   }, [result]);
+
+  // Stable margin object — passing a fresh literal on every render fed the
+  // recharts internals' shouldComponentUpdate path and contributed to the
+  // ResizeObserver loop on slider drag.
+  const chartMargin = useMemo(
+    () => ({ top: 8, right: 16, left: isNarrow ? 0 : 80, bottom: 8 }),
+    [isNarrow],
+  );
+
+  const [chartContainerRef, chartWidth] = useChartWidth();
 
   return (
     <div className="space-y-10">
@@ -223,15 +265,23 @@ export function TcoClient() {
               <CardTitle>Cost breakdown · per rack · 10 year horizon</CardTitle>
             </CardHeader>
             <CardBody>
-              {/* Fixed-height wrapper stabilises the ResizeObserver feedback
-                  loop ResponsiveContainer can hit when the parent grid cell
-                  re-flows on every input change. */}
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%" debounce={50}>
+              {/* Width is measured outside React's render cycle (see
+                  useChartWidth) so the BarChart receives stable pixel
+                  dimensions. ResponsiveContainer is intentionally avoided
+                  here — its internal ResizeObserver fed back into recharts'
+                  state and produced 'Maximum update depth' on slider drag. */}
+              <div
+                ref={chartContainerRef}
+                className="w-full overflow-hidden"
+                style={{ height: CHART_HEIGHT_PX }}
+              >
+                {chartWidth > 0 && (
                   <BarChart
+                    width={chartWidth}
+                    height={CHART_HEIGHT_PX}
                     data={breakdown}
                     layout="vertical"
-                    margin={{ top: 8, right: 16, left: isNarrow ? 0 : 80, bottom: 8 }}
+                    margin={chartMargin}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} stroke="" />
@@ -246,7 +296,7 @@ export function TcoClient() {
                     <Bar dataKey="traditional" name="Traditional NMC BBU" fill="rgba(251,191,36,0.8)" radius={[0, 3, 3, 0]} />
                     <Bar dataKey="sysblade" name="Sysblade HyperBuffer" fill="rgba(99,102,241,0.85)" radius={[0, 3, 3, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
+                )}
               </div>
             </CardBody>
           </Card>
