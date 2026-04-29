@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -10,6 +10,7 @@ import {
   Line,
   LineChart,
   ReferenceArea,
+  ReferenceDot,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -137,6 +138,36 @@ interface ModelValidation {
   };
 }
 
+/** Looping left-to-right sweep used by the transient charts to give them
+ *  an oscilloscope-like "wave traveling rightward" feel instead of a static
+ *  snapshot. Returns a fraction in [0, 1]; rises linearly over `sweepMs`,
+ *  holds at 1 for `pauseMs`, then loops. Throttled to ~24 fps so the chart
+ *  re-renders ~24 times/sec instead of every animation frame. Pause via
+ *  `paused` (e.g. on hover) to immediately show the full waveform. */
+function useSweep(sweepMs: number, pauseMs: number, paused: boolean): number {
+  const [progress, setProgress] = useState(0);
+  const startRef = useRef<number>(0);
+  useEffect(() => {
+    if (paused) return; // hold whatever the last value was; caller short-circuits to 1
+    const period = 1000 / 24;
+    const total = sweepMs + pauseMs;
+    let raf = 0;
+    let last = 0;
+    if (startRef.current === 0) startRef.current = performance.now();
+    const tick = (now: number) => {
+      if (now - last >= period) {
+        last = now;
+        const t = (now - startRef.current) % total;
+        setProgress(t < sweepMs ? t / sweepMs : 1);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [sweepMs, pauseMs, paused]);
+  return paused ? 1 : progress;
+}
+
 export function TwinClient({
   lfpOnly,
   hybrid,
@@ -150,6 +181,8 @@ export function TwinClient({
 }) {
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
   const active = mode === "hybrid" ? hybrid : lfpOnly;
+  const [scopePaused, setScopePaused] = useState(false);
+  const sweep = useSweep(4500, 1500, scopePaused);
 
   const chartData = useMemo(() => {
     const t = active.series.t;
@@ -163,6 +196,19 @@ export function TwinClient({
       p_lfp: Number(pLfp[i].toFixed(2)),
     }));
   }, [active, mode]);
+
+  // Slice the data array to whatever proportion the sweep has uncovered so
+  // the line "draws" left-to-right like a scope trace. Always keep at least
+  // 2 points so Recharts has something to render. The XAxis domain below
+  // is pinned to the full duration so the axis doesn't shrink with the data.
+  const sweptChartData = useMemo(() => {
+    const cut = Math.max(2, Math.ceil(chartData.length * sweep));
+    return chartData.slice(0, cut);
+  }, [chartData, sweep]);
+  const xDomain: [number, number] = [0, active.duration_s ?? 10];
+  // Marker that rides the leading edge of the sweep so the eye picks up
+  // where the wavefront is right now.
+  const leadingPoint = sweptChartData[sweptChartData.length - 1];
 
   const agingData = useMemo(
     () =>
@@ -255,12 +301,20 @@ export function TwinClient({
             />
           </div>
 
+          {/* Hover anywhere over the two scope charts to pause the sweep
+              and reveal the full waveform — useful for inspecting the
+              tooltip values; leaving resumes the loop. */}
+          <div
+            className="space-y-6"
+            onPointerEnter={() => setScopePaused(true)}
+            onPointerLeave={() => setScopePaused(false)}
+          >
           <ChartCard title="Cell voltage (V)" subtitle="ms-resolution PyBaMM DFN solve · Prada2013 LFP">
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <LineChart data={sweptChartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <ReferenceArea x1={4} x2={6} fill="rgba(99,102,241,0.06)" stroke="none" />
-                <XAxis dataKey="t" type="number" domain={[0, "auto"]} tickFormatter={(v) => `${v}s`} stroke="" />
+                <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
                 <YAxis domain={[3.05, 3.5]} stroke="" tickFormatter={(v) => v.toFixed(2)} />
                 <Tooltip content={<DarkTooltip />} />
                 <Line
@@ -272,11 +326,25 @@ export function TwinClient({
                   name="V cell"
                   isAnimationActive={false}
                 />
+                {/* Leading-edge marker = wavefront indicator. Hidden once the
+                    sweep is at the right edge / paused on hover. */}
+                {!scopePaused && sweep < 1 && leadingPoint && (
+                  <ReferenceDot
+                    x={leadingPoint.t}
+                    y={leadingPoint.v}
+                    r={4}
+                    fill={mode === "hybrid" ? "var(--success)" : "var(--warning)"}
+                    stroke="white"
+                    strokeOpacity={0.6}
+                    strokeWidth={1}
+                    isFront
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
               Highlighted band [4 s, 6 s] = steady-state window after transient settles. Headline numbers above
-              come from this region.
+              come from this region. Hover the chart to pause the sweep and read exact values.
             </p>
           </ChartCard>
 
@@ -285,9 +353,9 @@ export function TwinClient({
             subtitle={mode === "hybrid" ? "Low-pass filter τ = 0.5 s · cutoff ≈ 0.32 Hz · everything faster goes to LIC" : "No filtering — single-stage path"}
           >
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <LineChart data={sweptChartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, "auto"]} tickFormatter={(v) => `${v}s`} stroke="" />
+                <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
                 <YAxis stroke="" tickFormatter={(v) => `${v}`} />
                 <Tooltip content={<DarkTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
@@ -309,9 +377,22 @@ export function TwinClient({
                   name={mode === "hybrid" ? "→ LFP (smoothed)" : "→ LFP (full)"}
                   isAnimationActive={false}
                 />
+                {!scopePaused && sweep < 1 && leadingPoint && (
+                  <ReferenceDot
+                    x={leadingPoint.t}
+                    y={leadingPoint.p_lfp}
+                    r={4}
+                    fill="var(--primary)"
+                    stroke="white"
+                    strokeOpacity={0.6}
+                    strokeWidth={1}
+                    isFront
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
+          </div>
         </CardBody>
       </Card>
 
