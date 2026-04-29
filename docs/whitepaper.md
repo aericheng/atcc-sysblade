@@ -337,27 +337,32 @@ LSTM 兩處 dropout 開啟(`lstm.train()` + `head.Dropout`),做 100 次
 forward pass 得到後驗預測分布。中位數作為點估計,5–95 percentile
 作為 90 % 預測區間 (PI)。**不需重訓**,套在已 export 的 checkpoint 上。
 
-**結果**(`scripts/export_lstm_onnx.py` `--mc-dropout` 路徑):
+**結果**(`scripts/export_lstm_onnx.py` `--mc-dropout` 路徑,Severson 138 +
+BBU 50 = 188 cells 的最終 LSTM):
 
 | 指標 | 值 | 解讀 |
 |------|---:|------|
-| Test set 90 % PI coverage | **100 %** (42/42 cells in PI) | 過度覆蓋(實際應 ≤ 90 %),代表 PIs 偏寬保守,但**沒有 under-cover 風險** |
-| 中位數 PI 寬度 | ~1660 cycles | 反映訓練資料訊號相對於目標尺度的雜訊 |
-| b2c1 critical 真值 148 | PI [113, 783] ✓ 包含 | 模型誠實說「我不確定,但你的真值在區間裡」 |
-| b3c38 healthy 真值 1934 | PI [370, 2312] ✓ 包含 | 同上,wide PI 反映訓練 healthy 尾部稀疏 |
+| Test set 90 % PI coverage | **100 %** (57/57 cells in PI) | 過度覆蓋(實際應 ≤ 90 %),代表 PIs 偏寬保守,但**沒有 under-cover 風險** |
+| 中位數 PI 寬度 | ~1686 cycles | 反映訓練資料訊號相對於目標尺度的雜訊 |
+| b2c1 critical 真值 148 | PI [136, 577] ✓ 包含 | 模型誠實說「我不確定,但你的真值在區間裡」 |
+| b3c38 healthy 真值 1934 | PI [1636, 25071] ✓ 包含 | wide PI 反映訓練 healthy 尾部稀疏 + BBU 增強後 healthy 上限延伸到 13131 cycles |
 
 **已知限制**:
 * MC Dropout 僅捕捉 **epistemic** uncertainty(模型不確定性),不含
   aleatoric(資料雜訊)。
 * 100 % 覆蓋表示 PIs 比理論值寬;這雖避免 under-cover 但犧牲 sharpness
   (預測區間越寬越沒實際決策價值)。
-* W3 計畫:**conformal calibration** post-hoc 縮窄 PIs,目標把 90 %
-  PI coverage 拉回 ~90 %、median width 縮短 ~ 30 %。
+* **Conformal calibration** post-hoc 縮窄 PIs(W3 計畫,§8 列為待辦),
+  目標把 90 % PI coverage 拉回 ~90 %、median width 縮短 ~ 30 %。
 
-**與 deterministic 點 MAPE 的關係**:點 MAPE(在中位數上算)約 16 %,
-**跟 deterministic 模型差不多** —— Probabilistic 不會自動降低點誤差。
-它解決的是「報告誠實度」,不是「準確度」。要再降 MAPE 需要更多 LFP
-資料 + 特徵工程(W3 規劃)。
+**與 deterministic 點 MAPE 的關係**:LSTM 中位數點預測在
+Severson + BBU 188-cell test 集上 MAPE = **22.5 %**(per-batch 17.96 %
+~ 20.26 % Severson、18.34 % BBU),**比 OLS 13-feat 含 IR 的 14.51 %
+random / 14.54 % cross-batch 高**。原因是 LSTM 訓練集涵蓋兩個 regime
+(壓力測試 + BBU),OLS 只用 Severson 138 → LSTM 的 22.5 % 是
+「跨 regime 誠實 trade-off」,OLS 的 14.51 % 是「single-regime 漂亮
+但對 BBU 沉默外插」。Probabilistic 不會自動降低點誤差,它解決的是
+「報告誠實度」。要再降 MAPE 需要更多真實 LFP-BBU-duty 資料(W3+,§8)。
 
 #### 3.3.8 BBU duty 增強訓練集 — 跨 regime 一個模型部署
 
