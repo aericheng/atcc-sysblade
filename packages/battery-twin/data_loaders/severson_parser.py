@@ -152,6 +152,35 @@ def _h5_string(f, ref) -> str:
         return "unknown"
 
 
+def _h5_summary(f, ref) -> dict:
+    """Read the per-cell summary group via reference into a flat dict.
+
+    Severson v7.3 ``summary`` carries 8 per-cycle scalar arrays
+    (cycle, IR, QCharge, QDischarge, Tavg, Tmax, Tmin, chargetime),
+    each shaped ``(1, n_cycles)`` of float64. We flatten everything to
+    1-D and key the dict on the original sub-field name (case
+    preserved), aligning with what ``_scipy_to_cells`` already returns
+    for v5 .mat files so downstream feature code can be path-agnostic.
+    Returns ``{}`` (not None) on any parse failure so callers can treat
+    an empty summary the same as a missing one.
+    """
+    out: dict[str, np.ndarray] = {}
+    try:
+        grp = f[ref]
+    except Exception:  # noqa: BLE001
+        return out
+    for key in grp.keys():
+        try:
+            arr = np.asarray(grp[key]).flatten().astype(np.float64)
+            if arr.size > 0:
+                out[key] = arr
+        except Exception:  # noqa: BLE001
+            # Skip any sub-field that doesn't deserialise cleanly; the
+            # next downstream feature lookup will treat it as missing.
+            continue
+    return out
+
+
 def _h5py_to_cells(f, batch_label: str) -> list[Cell]:
     """Parse v7.3 MAT (HDF5) layout into Cell objects.
 
@@ -227,13 +256,26 @@ def _h5py_to_cells(f, batch_label: str) -> list[Cell]:
                     )
                 )
 
+            # Extract per-cell summary group (IR, cycle, Tmax, chargetime, …).
+            # Earlier versions skipped this — we now read it because the IR
+            # array is paper Table S2 features 9 + 10 (min IR cycles 2-100,
+            # IR difference cycles 100-2). Empty dict on any failure so
+            # downstream feature code treats this cell as IR-less rather
+            # than crashing.
+            summary_dict: dict[str, np.ndarray] = {}
+            if "summary" in batch:
+                try:
+                    summary_dict = _h5_summary(f, batch["summary"][i, 0])
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug(f"  {cell_id}: summary parse failed: {exc}")
+
             cells.append(
                 Cell(
                     cell_id=cell_id,
                     batch=batch_label,
                     cycle_life=cycle_life,
                     policy=policy,
-                    summary={},  # summary parsing skipped — not used downstream
+                    summary=summary_dict,
                     cycles=parsed_cycles,
                     vdlin=vdlin,
                 )
@@ -485,6 +527,71 @@ def _temp_stats_2_100(cell: Cell) -> tuple[float, float] | None:
     return max_T, total_int
 
 
+def _ir_features(cell: Cell) -> dict | None:
+    """Two paper Table S2 Full-model IR features.
+
+    Reads the per-cycle internal-resistance array from
+    ``cell.summary['IR']`` (paired with ``cell.summary['cycle']``) and
+    computes:
+
+      log_min_ir_2_100   — log10(min IR over cycles 2..100)
+      log_ir_diff_100_2  — log10(|IR(cycle=100) - IR(cycle=2)|)
+
+    These are the two features the paper's 9-feature 'Full' model uses
+    that we hadn't been extracting (the v7.3 ``summary`` group was
+    skipped in earlier parser versions). Lookups are case-insensitive
+    on the summary keys so v5 / v7.3 paths can both feed this code.
+
+    Returns ``None`` if the IR array is missing, the 2..100 window
+    has too few finite positive values, or cycle 2 / cycle 100 are not
+    present (which can happen for cells that died before cycle 100).
+    """
+    if not cell.summary:
+        return None
+
+    ir: np.ndarray | None = None
+    cyc: np.ndarray | None = None
+    for k, v in cell.summary.items():
+        kl = str(k).lower()
+        if kl == "ir":
+            ir = np.asarray(v, dtype=np.float64).flatten()
+        elif kl == "cycle":
+            cyc = np.asarray(v, dtype=np.float64).flatten()
+    if ir is None or cyc is None:
+        return None
+    n = min(ir.size, cyc.size)
+    if n < 50:
+        return None
+    ir = ir[:n]
+    cyc = cyc[:n]
+
+    # Cycles 2..100 inclusive — Severson stores cycle index 1-based, so
+    # we filter on cycle value rather than array position to be robust
+    # against any cells whose summary skips cycle 1 (formation).
+    window_mask = (cyc >= 2) & (cyc <= 100)
+    ir_window = ir[window_mask]
+    valid = ir_window[np.isfinite(ir_window) & (ir_window > 0)]
+    if valid.size < 30:
+        return None
+    min_ir = float(np.min(valid))
+
+    # IR at cycles 2 and 100 — exact-match lookup so a missing cycle
+    # doesn't get silently substituted by a neighbouring value.
+    ir2_match = ir[cyc == 2]
+    ir100_match = ir[cyc == 100]
+    if ir2_match.size == 0 or ir100_match.size == 0:
+        return None
+    ir_2 = float(ir2_match[0])
+    ir_100 = float(ir100_match[0])
+    if not (np.isfinite(ir_2) and np.isfinite(ir_100) and ir_2 > 0 and ir_100 > 0):
+        return None
+
+    return {
+        "log_min_ir_2_100":  float(np.log10(min_ir + 1e-12)),
+        "log_ir_diff_100_2": float(np.log10(abs(ir_100 - ir_2) + 1e-12)),
+    }
+
+
 def _q_window_91_100(cell: Cell) -> tuple[float, float, float] | None:
     """``(slope, intercept, q_at_cycle_100)`` from the cycles 91..100 window.
 
@@ -524,7 +631,7 @@ def _q_window_91_100(cell: Cell) -> tuple[float, float, float] | None:
 
 
 def severson_features_extended(cell: Cell) -> dict | None:
-    """Six extra features that extend Discharge (5) → Full (11).
+    """Eight extra features that extend Discharge (5) → Full (13).
 
       6.  log_max_temp_2_100      — log10(peak T over cycles 2..100)        [paper Full feat 7]
       7.  log_temp_integral_2_100 — log10(∫ T dt over cycles 2..100)        [paper Full feat 8]
@@ -532,13 +639,14 @@ def severson_features_extended(cell: Cell) -> dict | None:
       9.  slope_q_91_100          — slope of Qd_max, cycles 91..100         [paper Full feat 3]
       10. intercept_q_91_100      — intercept of Qd_max fit, cycles 91..100 [paper Full feat 4]
       11. q_at_cycle_100          — Q at cycle 100 (extrapolated)           [paper Full feat 5]
+      12. log_min_ir_2_100        — log10(min IR over cycles 2..100)        [paper Full feat 9]
+      13. log_ir_diff_100_2       — log10(|IR(100) - IR(2)|)                [paper Full feat 10]
 
-    Maps directly to Severson 2019 Table S2 Full-model features 3, 4, 5,
-    6, 7, 8 — the six paper features that don't depend on internal
-    resistance (IR lives in the v7.3 .mat ``summary`` field which our
-    HDF5 parse path skips). The paper's two IR features are still missing
-    (W3+ work would re-parse summary), but with these six the design
-    matrix is much closer to the paper's exact Discharge / Full models.
+    Maps the six discharge / charge / thermal Severson Table S2 Full-model
+    features (3, 4, 5, 6, 7, 8) plus the two IR features (9, 10) that the
+    paper used to hit its 9.1 % MAPE headline. The IR pair was added in
+    Plan C+ (parser ``_h5_summary`` extraction enabled); earlier versions
+    skipped the v7.3 .mat ``summary`` group entirely.
 
     Returns ``None`` if any required field is missing for any cycle in
     the 2..100 window — completeness is required so the OLS design matrix
@@ -570,6 +678,10 @@ def severson_features_extended(cell: Cell) -> dict | None:
         return None
     slope_91, intercept_91, q_at_100 = q91
 
+    ir_feats = _ir_features(cell)
+    if ir_feats is None:
+        return None
+
     return {
         "log_max_temp_2_100": float(np.log10(max_T + 1e-12)),
         "log_temp_integral_2_100": float(np.log10(temp_int + 1e-12)),
@@ -577,6 +689,7 @@ def severson_features_extended(cell: Cell) -> dict | None:
         "slope_q_91_100": slope_91,
         "intercept_q_91_100": intercept_91,
         "q_at_cycle_100": q_at_100,
+        **ir_feats,
     }
 
 
