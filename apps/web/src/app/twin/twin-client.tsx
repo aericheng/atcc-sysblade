@@ -736,14 +736,15 @@ function ErrorByLifetimeBucket({
       title="Error pattern by cell lifetime"
       subtitle="Buckets · <400 / 400–700 / 700–1000 / 1000–1300 / ≥1300 cycles"
     >
-      <ResponsiveContainer width="100%" height={280}>
-        <ComposedChart data={buckets} margin={{ top: 8, right: 32, left: 8, bottom: 32 }}>
+      <ResponsiveContainer width="100%" height={300}>
+        <ComposedChart data={buckets} margin={{ top: 8, right: 32, left: 8, bottom: 48 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="label"
             stroke=""
             interval={0}
-            tick={{ fontSize: 10 }}
+            height={56}
+            tick={<RotatedTick />}
           />
           <YAxis yAxisId="count" stroke="" label={{ value: "cells", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 10 }} />
           <YAxis
@@ -805,10 +806,34 @@ function ErrorByLifetimeBucket({
         axis) is the mean absolute percentage error within that bucket. Typical-lifetime cells
         (700–1000 cycles, near the training median) land at ~11 % MAPE; the short and long
         extremes jump to 30 %+ because the model regresses toward the training median when it
-        sees an unusual cell. The W3 plan extends features and adds NASA + CALCE cells to the
-        training set to flatten this curve.
+        sees an unusual cell. We tried adding NASA NMC cells as out-of-distribution validation
+        and confirmed cross-chemistry transfer fails (5/5 features OOD, z = 5–65 σ, whitepaper
+        §B). The path forward is therefore more diverse LFP early-failure samples (CALCE) plus
+        chemistry-aware features — not more NASA data.
       </p>
     </ChartCard>
+  );
+}
+
+// Recharts can't tilt axis labels via the `tick` prop alone, so we render a
+// rotated <text> ourselves. Used by the lifetime-bucket chart so 5 labels
+// stop overlapping on phone widths.
+function RotatedTick(props: { x?: number; y?: number; payload?: { value: string } }) {
+  const { x = 0, y = 0, payload } = props;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={8}
+        textAnchor="end"
+        transform="rotate(-30)"
+        fill="var(--muted)"
+        fontSize={11}
+      >
+        {payload?.value}
+      </text>
+    </g>
   );
 }
 
@@ -910,7 +935,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             tone={Math.abs(errorPct) < 10 ? "success" : Math.abs(errorPct) < 25 ? "warning" : "danger"}
             hint={
               Math.abs(errorPct) >= 25
-                ? "Cycle-life tail — model under-trained on this distribution edge. W3 plan adds NASA + CALCE cells."
+                ? "Cycle-life tail under-represented in Severson. NASA NMC didn’t transfer (5/5 features OOD, see whitepaper §B); fix needs more LFP early-failure samples."
                 : `vs 16% test-set average MAPE`
             }
           />
