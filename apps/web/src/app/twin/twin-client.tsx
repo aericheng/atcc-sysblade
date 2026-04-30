@@ -115,7 +115,7 @@ interface ModelValidation {
     batch: string;
     label: string;
     fleet_status: "healthy" | "warning" | "early_aging" | "critical";
-    fleet_pct: number;            // % of /dashboard fleet in this status bucket
+    fleet_pct: number;            // % of LSTM training-cell distribution in this status bucket (NOT the live /dashboard fleet, which uses 3 physical-state buckets)
     actual: number;
     predicted: number;
     pi_median: number;            // 50th-percentile MC Dropout estimate (point pred)
@@ -613,8 +613,8 @@ export function TwinClient({
             const domain: [number, number] = [Math.max(0, Math.floor(lo - pad)), Math.ceil(hi + pad)];
           return (
           <ChartCard
-            title={`Predicted vs actual cycle life · all ${modelValidation.metrics.n_train + modelValidation.metrics.n_test} cells`}
-            subtitle={`Split ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} train · ${modelValidation.metrics.n_test} test`}
+            title={`Predicted vs actual cycle life · all ${modelValidation.predicted_vs_actual.length} cells`}
+            subtitle={`Split ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} train · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} calibration · ${modelValidation.metrics.n_test} test`}
           >
             <ResponsiveContainer width="100%" height={360}>
               <ScatterChart margin={{ top: 12, right: 16, left: 12, bottom: 24 }}>
