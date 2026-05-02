@@ -1331,10 +1331,14 @@ def main() -> int:
     print("  附件 E -> 附件 D 技術細節說明 OK")
     precision_fix_NASA_role(doc)
     print("  NASA role precision OK")
-    upgrade_spec_to_15min_outage(doc)
-    print("  spec upgrade 30-90 sec -> 15 min outage (Hyperscale 50-100 kW) OK")
-    append_appendix_D_section_D7(doc)
-    print("  附件 D §D.7 電池容量與配置推導 (新增) OK")
+    # Decision (2026-05-03): keep v2.1's 60-sec graceful-shutdown BBU spec.
+    # 15-min upgrade was rejected after feasibility review:
+    #   * collides with Vertiv Liebert / Schneider Galaxy main turf
+    #   * margin compresses 40.5% -> 31.1%
+    #   * UL 1973 cert risk doubles with 150 Ah cell (3x failure energy)
+    #   * SaaS 故事 niche shrinks ~8x (40% data centers -> ~5%)
+    # See feasibility analysis 2026-05-03. The 60-sec spec is the cleaner
+    # 縫隙 strategy (avoid Schneider/Vertiv 規模戰).
     purge_versioning_language(doc)
     print("  v2.0/v2.1/v2.2 versioning language purged OK")
 
