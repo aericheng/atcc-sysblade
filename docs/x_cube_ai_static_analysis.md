@@ -80,7 +80,7 @@ STM32N6 Neural-ART NPU spec(RM0498):
 | CPU fallback latency | 0.0 µs |
 | **總 latency 估** | **54.7 µs** |
 
-**對比 v2.1 §1.4 承諾**:STM32N6 NPU LSTM 0.3 ms = 300 µs。本估算結果
+**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms = 300 µs**(v2.1 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字):本估算結果
 在 54.7 µs **符合** 此承諾,
 但有 ±2× 不確定區間,**真實數字可能 27–109 µs**。
 
@@ -133,9 +133,9 @@ LSTM 的隱藏維度小(64)且權重分布良好,INT8 cast 沒有觸發災難式
 
 | 量 | FP32 | INT8 | 倍率 |
 |---|---:|---:|---:|
-| p50 (ms) | 0.258 | 0.231 | **1.11×** |
-| p90 (ms) | 0.300 | 0.280 | — |
-| p99 (ms) | 0.441 | 0.399 | **1.11×** |
+| p50 (ms) | 0.267 | 0.241 | **1.11×** |
+| p90 (ms) | 0.310 | 0.298 | — |
+| p99 (ms) | 0.411 | 0.413 | **0.99×** |
 
 **注意**:CPU INT8 vs CPU FP32 加速約 1.1–1.2×,因為筆電 CPU 的 INT8 SIMD 路徑(AVX-512 VNNI / AMX)
 並非 STM32N6 Neural-ART 的 NPU 路徑,**這個倍率不能外推到 NPU**。NPU 真實加速請等 X-CUBE-AI 報告。

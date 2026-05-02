@@ -503,8 +503,11 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
             lstm_state["model"], lstm_state["scaler"], x_per_device
         )                                                              # (n,)
 
-        # Elapsed cycles per device from age, assuming v2.1 §B.2 BBU duty
-        # of 50 cycles/yr. RUL = max(0, predicted_total_life - elapsed).
+        # Elapsed cycles per device from age, assuming this paper's
+        # engineering estimate of 50 cycles/yr BBU duty (anchored to
+        # v2.1 附件 C's "LFP 浮充 8–12 年壽命" + §G.3 "10-year, 1.5 vs 1
+        # replacements"; v2.1 itself does not state a per-year cycle
+        # count). RUL = max(0, predicted_total_life - elapsed).
         cycles_per_year = 50.0
         elapsed_cycles = age_months / 12.0 * cycles_per_year
         rul_lstm = np.maximum(0.0, pred_cycle_life - elapsed_cycles)

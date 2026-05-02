@@ -36,7 +36,7 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 | Variance OLS | 1-feat / unfilt | 17.9 % | 15.8 % | 0.57 | 重現 Severson 2019 paper 頭條 |
 | Discharge OLS | 5-feat / unfilt | 17.5 % | 19.9 % | 0.53 | paper Table 1 5-feat |
 | Full + IR OLS | 13-feat / unfilt | 14.5 % | 14.5 % | +0.08 | 加 internal-resistance,**cross-batch R² 由負轉正** |
-| **Full + IR bagged-GBT (K=24)** | **13-feat / xstrict (≥400, n=134)** | **8.4 %** | 17.9 %(GBT 退化) | **0.89** | **首次達 v2.1 §B 的 < 10 % 承諾**;per-seed [5.93, 12.91],6/10 < 10 % |
+| **Full + IR bagged-GBT (K=24)** | **13-feat / xstrict (≥400, n=134)** | **8.4 %** | 17.9 %(GBT 退化) | **0.89** | **首次達 v2.1 附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 < 10 % |
 | **Full + IR bagged-OLS** | **13-feat / xstrict** | 12.4 % | **13.9 %** | +0.21 | cross-batch generalisation 最佳 |
 
 **達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。
@@ -205,5 +205,5 @@ Severson .mat v7.3 訓練資料(8.3 GB)需要手動下載,流程見 [`docs/sever
 - **Severson, K.A. et al. (2019)** *Nature Energy* 4, 383–391 — 124-cell LFP fast-charge 公開資料集
 - **PyBaMM** — Doyle-Fuller-Newman PDE 求解器
 - **Microsoft Azure (arXiv 2508.14318)** — GB200 ±30 % power transient 量測公開
-- **JLL Year-End 2025** — 北美 colo 機房地理權重(Texas 49 %、Virginia 27 %)
+- **JLL Year-End 2025** — 北美 colo 機房在建容量(v2.1 §C.1 引述 Texas 18.6 % / Virginia 15 %);本 fleet 1000 台模擬以 AI 機房密度加權放大為 Texas 49 % / Virginia 27 %(本文模擬假設,非 JLL 直接數字)
 - 系統電股份有限公司(Sysgration) — ATCC C13 議題出題單位
