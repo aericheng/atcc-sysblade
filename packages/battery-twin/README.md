@@ -49,7 +49,7 @@ uv pip install -e packages/battery-twin[dev,api]
 | **bagged-OLS + xstrict cell filter** | **13-feat,n=134** | 12.4 % | **13.9 %**(R² +0.21)|
 | **LSTM augmented** | 188 cells, MC Dropout + split conformal(q_factor 0.56)| 19.1 %(R² 0.86)| — |
 
-**v2.1 §B 承諾**:< 10 % MAPE。**已達標**:bagged-GBT + xstrict cell filter random split 10-seed median **8.38 %**(per-seed [5.93, 12.91])。Cross-batch 部署用 bagged-OLS(13.87 %)。**未上實機資料前不承諾 < 5 %。**
+**v2.1 附件 B 軟體技術棧承諾**:< 10 % MAPE。**已達標**:bagged-GBT + xstrict cell filter random split 10-seed median **8.38 %**(per-seed [5.93, 12.91])。Cross-batch 部署用 bagged-OLS(13.87 %)。**未上實機資料前不承諾 < 5 %**(同來源明文)。
 
 ## 為什麼有三條管線
 

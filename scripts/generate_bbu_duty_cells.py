@@ -85,9 +85,12 @@ class BbuDutyParams:
     def severity(self) -> float:
         """Dimensionless duty severity (1.0 = Severson lab cell mean).
 
-        Calibrated so the population at v2.1 §B.2's BBU-duty mean lands at
-        severity ≈ 0.15 (i.e. cycle_life ≈ 5000 cycles = 100 BBU-yr at 50
-        cycles/yr) while still spanning a realistic harsh-to-gentle range.
+        Calibrated so the population at our BBU-duty engineering-estimate
+        mean (50 cycles/yr; anchored to v2.1 附件 C "LFP 浮充 8–12 yr life"
+        + §G.3 "10-year 1.5 vs 1 replacements"; v2.1 itself does not state
+        a per-year cycle count) lands at severity ≈ 0.15 (i.e. cycle_life
+        ≈ 5000 cycles = 100 BBU-yr at 50 cycles/yr) while still spanning a
+        realistic harsh-to-gentle range.
         Exponents are soft (0.2–0.7) so individual axis variation maps to
         a narrower severity band than a multiplicative model would imply.
         """
@@ -258,7 +261,8 @@ def _features_9(seq: np.ndarray, cycle_life: int, p: BbuDutyParams) -> dict:
 def _sample_population(n_cells: int, master_seed: int = 7) -> list[BbuDutyParams]:
     """Sample ``n_cells`` BBU cells across a realistic duty envelope.
 
-    Parameter ranges anchor at v2.1 §B.2's BBU duty assumptions and span
+    Parameter ranges anchor at our BBU duty engineering estimate
+    (~50 cycles/yr; v2.1 附件 C 8–12 yr LFP-float life upper bound) and span
     realistic colo-grade variation (mostly mild duty, a long tail of
     harsher cases reflecting hot rack rows and frequent transient events).
     """
