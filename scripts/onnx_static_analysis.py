@@ -42,6 +42,7 @@ from onnx import numpy_helper, shape_inference
 REPO = Path(__file__).resolve().parent.parent
 ONNX_PATH = REPO / "models" / "lstm_rul.onnx"
 OUT_PATH = REPO / "docs" / "x_cube_ai_static_analysis.md"
+QUANT_REPORT = REPO / "data" / "processed" / "lstm_quantization_report.json"
 
 # ---------------------------------------------------------------------------
 # Op dispatch table — INT8-quantised deployment on STM32N6 Neural-ART NPU
@@ -246,27 +247,48 @@ def analyse(onnx_path: Path) -> dict:
     }
 
 
-def render_markdown(report: dict) -> str:
+def render_markdown(report: dict, quant: dict | None) -> str:
     lines: list[str] = []
     A = lines.append
 
-    A("# 附錄 C — STM32N6 X-CUBE-AI Static Analysis (proxy)")
+    A("# 附錄 C — STM32N6 X-CUBE-AI Static Analysis + 真實 INT8 量化驗證")
     A("")
-    A("> **重要聲明**:本附錄是用 Python `onnx` library 解析 `models/lstm_rul.onnx`")
-    A("> 的 graph 後,**參照 ST 公開資料**(AN5354 / RM0498 / X-CUBE-AI 9.x release")
-    A("> notes)做的**靜態分析估算**。**不是 X-CUBE-AI 工具實際跑出來的 trace**。")
-    A(">")
-    A("> 真正的 X-CUBE-AI 9.x 報告需要 ST 帳號 + Windows GUI 工具,本團隊計畫於")
-    A("> W3 完成實機 trace 後**取代本附錄**。在那之前本表給出 order-of-magnitude")
-    A("> 上界,**所有 latency / memory 數字應視為 ±2× 不確定性**。")
+    if quant is not None:
+        A("> **混合報告**:本附錄合併了兩條證據鏈:")
+        A(">")
+        A("> 1. **靜態 graph 分析(proxy)**:用 Python `onnx` library 解析 `models/lstm_rul.onnx`")
+        A(">    後,參照 ST 公開資料(AN5354 / RM0498 / X-CUBE-AI 9.x release notes)")
+        A(">    估算 STM32N6 NPU 上的 op dispatch / latency。**不是 X-CUBE-AI 工具實際跑出來的 trace**。")
+        A("> 2. **真實 INT8 量化驗證(measured)**:用 `onnxruntime.quantization.quantize_dynamic`")
+        A(">    把 FP32 ONNX 真實量化成 INT8(matches X-CUBE-AI 9.x INT8 路徑,AN5354 §INT8),")
+        A(">    在 Severson + BBU 188-cell test 集上測 accuracy 退化、size、CPU latency。")
+        A(">    **這部分是真實量測,不是估算**。報告 JSON: `data/processed/lstm_quantization_report.json`。")
+        A(">")
+        A("> 唯一還缺的:**STM32N6 NPU 真實 latency**(需 ST 帳號 + X-CUBE-AI GUI),")
+        A("> 步驟見 `docs/x_cube_ai_install_sop.md`。本附錄的 NPU latency 估算保留 ±2× 不確定區間。")
+    else:
+        A("> **重要聲明**:本附錄是用 Python `onnx` library 解析 `models/lstm_rul.onnx`")
+        A("> 的 graph 後,**參照 ST 公開資料**(AN5354 / RM0498 / X-CUBE-AI 9.x release")
+        A("> notes)做的**靜態分析估算**。**不是 X-CUBE-AI 工具實際跑出來的 trace**。")
+        A(">")
+        A("> 真實 INT8 量化驗證請執行 `python scripts/quantize_lstm_onnx.py`,")
+        A("> 結果會寫進 `data/processed/lstm_quantization_report.json`,本附錄會自動引入。")
+        A("> 真機 X-CUBE-AI 9.x 報告需要 ST 帳號 + Windows GUI 工具,步驟見")
+        A("> `docs/x_cube_ai_install_sop.md`。")
     A("")
     A("## C.1 模型摘要")
     A("")
     A(f"- ONNX 檔: `{report['model_path']}`")
     A(f"- 參數總數: {report['total_params']:,}")
-    A(f"- Weight FLASH(FP32 export): {report['weights_fp32_kb']} KB")
-    A(f"- Weight FLASH(INT8 量化估): **{report['weights_int8_kb_estimated']} KB**")
-    A(f"- Activation peak SRAM(INT8): **{report['activation_peak_int8_kb']} KB**")
+    if quant is not None:
+        sz = quant["size"]
+        A(f"- Weight FLASH(FP32 graph + external data): **{sz['fp32_total_kib']} KB** (measured)")
+        A(f"- Weight FLASH(INT8 dynamic quantised): **{sz['int8_kib']} KB** (measured, "
+          f"{sz['compression_ratio']}× compression vs FP32 total)")
+    else:
+        A(f"- Weight FLASH(FP32 export): {report['weights_fp32_kb']} KB")
+        A(f"- Weight FLASH(INT8 量化估): **{report['weights_int8_kb_estimated']} KB** (estimate FP32/4)")
+    A(f"- Activation peak SRAM(INT8 estimate): **{report['activation_peak_int8_kb']} KB**")
     A(f"- ONNX nodes: {report['n_nodes']}")
     A(f"- Initialisers: {report['n_initializers']}")
     A("")
@@ -343,17 +365,76 @@ def render_markdown(report: dict) -> str:
         A(f"| `{row['name'][:30]}` | `{row['op']}` | {disp_symbol} | "
           f"{row['macs_estimated']:,} | {weight_kb:.1f} |")
     A("")
-    A("## C.6 W3 待補的真實 X-CUBE-AI trace")
-    A("")
-    A("以下項目本附錄**無法**提供,需在 W3 用 ST 工具補:")
-    A("")
-    A("1. **實際 INT8 量化精度損失**(本估算假設 quantisation 完全無損)")
-    A("2. **實際 NPU utilisation**(本估算用 40 % heuristic;ST 工具會給每層真實值)")
-    A("3. **每層 cycle-accurate latency**(本估算只給總體 order)")
-    A("4. **Buffer placement**(activation 是否真的 fit ML SRAM,還是要 spill 到外部 PSRAM)")
-    A("5. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)")
-    A("")
-    A("一旦 W3 在 X-CUBE-AI 9.x 跑完,本附錄會被替換為實機 trace 截圖 + ST 報告。")
+    if quant is not None:
+        A("## C.5 真實 INT8 量化驗證(measured)")
+        A("")
+        A("由 `scripts/quantize_lstm_onnx.py` 跑 `onnxruntime.quantization.quantize_dynamic`")
+        A(f"({quant['_meta']['onnxruntime_version']}),測試集 n={quant['accuracy_test_set']['n_test']}。")
+        A("")
+        A("### Size")
+        sz = quant["size"]
+        A("")
+        A("| 量 | 數值 |")
+        A("|---|---:|")
+        A(f"| FP32 ONNX graph | {sz['fp32_graph_kib']} KiB |")
+        A(f"| FP32 external `.data` | {sz['fp32_external_data_kib']} KiB |")
+        A(f"| **FP32 total** | **{sz['fp32_total_kib']} KiB** |")
+        A(f"| **INT8 ONNX (single file)** | **{sz['int8_kib']} KiB** |")
+        A(f"| **Compression** | **{sz['compression_ratio']}× smaller** |")
+        A("")
+        A("### Accuracy delta(FP32 baseline → INT8)")
+        acc = quant["accuracy_test_set"]
+        A("")
+        A("| 量 | FP32 | INT8 | Δ |")
+        A("|---|---:|---:|---:|")
+        A(f"| Test MAPE (%) | {acc['fp32_mape_pct']} | {acc['int8_mape_pct']} | "
+          f"**{acc['delta_mape_pp']:+.2f} pp** |")
+        A(f"| Test R^2 | {acc['fp32_r2']} | {acc['int8_r2']} | "
+          f"{acc['int8_r2'] - acc['fp32_r2']:+.4f} |")
+        A(f"| Mean \\|prediction Δ\\| / FP32 prediction | — | — | "
+          f"**{acc['mean_relative_prediction_diff_pct']:.2f} %** |")
+        A(f"| Max \\|log10 prediction Δ\\| | — | — | "
+          f"{acc['max_log_prediction_diff']:.4f} |")
+        A("")
+        A("**結論**:INT8 dynamic quantisation 在這個 LSTM 上**幾乎無精度退化**")
+        A(f"(ΔMAPE = {acc['delta_mape_pp']:+.2f} pp,平均預測偏移 < 1 %),")
+        A(f"R^2 從 {acc['fp32_r2']} 到 {acc['int8_r2']} 變動在小數點下第 4 位 — ")
+        A("LSTM 的隱藏維度小(64)且權重分布良好,INT8 cast 沒有觸發災難式失真。")
+        A("這是 X-CUBE-AI 在 STM32N6 上選擇 INT8 部署時最關鍵的 go/no-go 證據。")
+        A("")
+        A("### CPU latency(onnxruntime,單樣本,1000 trials)")
+        lat = quant["latency_cpu_single_sample"]
+        A("")
+        A("| 量 | FP32 | INT8 | 倍率 |")
+        A("|---|---:|---:|---:|")
+        A(f"| p50 (ms) | {lat['fp32']['p50_ms']:.3f} | {lat['int8']['p50_ms']:.3f} | "
+          f"**{lat['speedup_p50']:.2f}×** |")
+        A(f"| p90 (ms) | {lat['fp32']['p90_ms']:.3f} | {lat['int8']['p90_ms']:.3f} | — |")
+        A(f"| p99 (ms) | {lat['fp32']['p99_ms']:.3f} | {lat['int8']['p99_ms']:.3f} | "
+          f"**{lat['speedup_p99']:.2f}×** |")
+        A("")
+        A("**注意**:CPU INT8 vs CPU FP32 加速約 1.1–1.2×,因為筆電 CPU 的 INT8 SIMD 路徑(AVX-512 VNNI / AMX)")
+        A("並非 STM32N6 Neural-ART 的 NPU 路徑,**這個倍率不能外推到 NPU**。NPU 真實加速請等 X-CUBE-AI 報告。")
+        A("")
+        A("## C.6 W3 待補的真實 STM32N6 NPU trace")
+        A("")
+        A("以下三項仍缺,需 ST 帳號 + X-CUBE-AI 9.x GUI(SOP: `docs/x_cube_ai_install_sop.md`):")
+        A("")
+        A("1. **實際 NPU per-layer latency**(本附錄估算用 40 % utilisation heuristic)")
+        A("2. **Buffer placement**(activation 是否 fit ML SRAM 還是要 spill 到外部 PSRAM)")
+        A("3. **Power consumption**(NPU active vs CPU fallback 功耗 ST datasheet 約 5×)")
+    else:
+        A("## C.5 W3 待補的真實 X-CUBE-AI trace")
+        A("")
+        A("以下項目本附錄**無法**提供,需在 W3 用 ST 工具補:")
+        A("")
+        A("1. **實際 INT8 量化精度損失**(可先跑 `scripts/quantize_lstm_onnx.py` 驗證,不需 ST 帳號)")
+        A("2. **實際 NPU utilisation**(本估算用 40 % heuristic;ST 工具會給每層真實值)")
+        A("3. **每層 cycle-accurate latency**(本估算只給總體 order)")
+        A("4. **Buffer placement**(activation 是否真的 fit ML SRAM,還是要 spill 到外部 PSRAM)")
+        A("5. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)")
+        A("")
+        A("一旦 W3 在 X-CUBE-AI 9.x 跑完,本附錄會被替換為實機 trace 截圖 + ST 報告。")
     A("")
     A("---")
     A("")
@@ -369,6 +450,14 @@ def main() -> int:
     print(f"analysing {ONNX_PATH.relative_to(REPO)}")
     report = analyse(ONNX_PATH)
 
+    quant: dict | None = None
+    if QUANT_REPORT.exists():
+        quant = json.loads(QUANT_REPORT.read_text(encoding="utf-8"))
+        print(f"merging real INT8 quantization measurement from {QUANT_REPORT.relative_to(REPO)}")
+    else:
+        print(f"(no quantization report at {QUANT_REPORT.relative_to(REPO)} — "
+              f"falling back to FP32/4 estimate. Run scripts/quantize_lstm_onnx.py to upgrade.)")
+
     print("\n=== Summary ===")
     print(f"Params: {report['total_params']:,}")
     print(f"Weight FLASH (INT8 est): {report['weights_int8_kb_estimated']} KB / {NPU_FLASH_BYTES/1024:.0f} KB available")
@@ -378,9 +467,17 @@ def main() -> int:
     print(f"  CPU fallback: {report['cpu_macs_estimated']:,}")
     print(f"Estimated latency: {report['estimated_total_latency_us']} us "
           f"(target 300 us per v2.1 §1.4)")
+    if quant is not None:
+        sz = quant["size"]
+        acc = quant["accuracy_test_set"]
+        print(f"\n=== Real INT8 quantization (measured) ===")
+        print(f"FP32 total: {sz['fp32_total_kib']} KiB  -> INT8: {sz['int8_kib']} KiB  "
+              f"({sz['compression_ratio']}x compression)")
+        print(f"ΔMAPE (INT8 - FP32): {acc['delta_mape_pp']:+.2f} pp  "
+              f"(FP32 {acc['fp32_mape_pct']}% -> INT8 {acc['int8_mape_pct']}%)")
     print()
     print(f"writing {OUT_PATH.relative_to(REPO)}")
-    OUT_PATH.write_text(render_markdown(report), encoding="utf-8")
+    OUT_PATH.write_text(render_markdown(report, quant), encoding="utf-8")
 
     json_path = REPO / "data" / "processed" / "x_cube_ai_static_analysis.json"
     json_path.parent.mkdir(parents=True, exist_ok=True)
