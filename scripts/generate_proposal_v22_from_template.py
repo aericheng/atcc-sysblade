@@ -167,7 +167,7 @@ def edit_section_C1_market(doc: Document) -> None:
     # Anchor: the 註: paragraph that comes after the market-region table
     idx = _find_paragraph(doc, "註:兩家機構數字差異")
     anchor = doc.paragraphs[idx]
-    _insert_caption_after(anchor, "圖 C-1 · TAM / SAM / SOM 三層市場收斂(USD 14B → 7B → 70M)")
+    _insert_caption_after(anchor, "圖 C-1 · TAM / SAM / SOM 三層市場收斂($3.5B 全球 → $1.4B 北美 → $70M SOM @ 2034F)")
     _insert_picture_after(anchor, FIG / "tam_sam_som.png", width_in=4.5)
 
 
@@ -175,7 +175,7 @@ def edit_section_E1_architecture(doc: Document) -> None:
     """Insert architecture diagram after E.1 intro paragraph."""
     idx = _find_paragraph(doc, "我們捨棄原「三層分離式架構」")
     anchor = doc.paragraphs[idx]
-    _insert_caption_after(anchor, "圖 E-1 · Sysblade HyperBuffer 系統架構(三層電氣分層 + Edge AI 推論 + Cloud SaaS 平台)")
+    _insert_caption_after(anchor, "圖 E-1 · Sysblade 系統架構:Edge 機櫃端(LFP+LIC + STM32 LSTM 即時推論)→ 雲端訓練(Severson + PyBaMM + bagged-GBT/OLS/LSTM 三條管線,measured 8.4 % / 13.9 % / 19.1 % MAPE)→ SaaS 前端(Vercel 靜態匯出三件套)")
     _insert_picture_after(anchor, FIG / "architecture.png", width_in=6.2)
 
 
@@ -192,14 +192,14 @@ def edit_section_E3(doc: Document) -> None:
     # (a) TCO Calculator bullet
     idx = _find_paragraph(doc, "(a) TCO Calculator")
     _replace_run_text(doc.paragraphs[idx],
-        "(a) TCO Calculator(已部署 sysblade-atcc.vercel.app/tco):B2B 業務工具,輸入機櫃數、電價、"
+        "(a) TCO Calculator(已部署 https://sysblade-atcc.vercel.app/tco):B2B 業務工具,輸入機櫃數、電價、"
         "現用 BBU 規格,秒算 5 / 10 年 TCO 與 CO₂ 減排。Vercel + Next.js + Tailwind。LinkedIn 廣告"
         "直接導流。default Mid-tier (50 racks Texas) preset 算出 33 % 客戶 TCO 節省,對齊 §G.3。")
 
     # (b) Battery Twin bullet
     idx = _find_paragraph(doc, "(b) Battery Digital Twin")
     _replace_run_text(doc.paragraphs[idx],
-        "(b) Battery Digital Twin(已部署 sysblade-atcc.vercel.app/twin):用 PyBaMM 26.4.1 (DFN with "
+        "(b) Battery Digital Twin(已部署 https://sysblade-atcc.vercel.app/twin):用 PyBaMM 26.4.1 (DFN with "
         "Prada 2013 LFP-graphite parameters) 模擬 LFP+LIC 在 Microsoft Azure 公開 LLM 訓練 trace 下"
         "的瞬態響應與 SOH 退化曲線,搭 PyTorch LSTM (hidden=64) + ONNX 邊緣部署。**bagged-GBT random "
         "split 10-seed median 8.38 % MAPE(達 v2.1 < 10 % 承諾)、INT8 量化 size 219→63 KiB(3.49× "
@@ -208,7 +208,7 @@ def edit_section_E3(doc: Document) -> None:
     # (c) Fleet Dashboard bullet
     idx = _find_paragraph(doc, "(c) Fleet Health Dashboard")
     _replace_run_text(doc.paragraphs[idx],
-        "(c) Fleet Health Dashboard(已部署 sysblade-atcc.vercel.app/dashboard):Next.js + d3 US fleet map + "
+        "(c) Fleet Health Dashboard(已部署 https://sysblade-atcc.vercel.app/dashboard):Next.js + d3 US fleet map + "
         "recharts。視覺化 1,000 台 Sysblade 機隊狀態,**全頁明標 SIMULATED DATA watermark**。三層服務分層"
         "對應:Tier-1 即時監控、Tier-2 地理分佈(Texas 49 % / Virginia 27 %,本 fleet 以 AI 機房密度加權)、"
         "Tier-3 替換隊列(admission rule status===\"early_aging\":SOH<0.85 OR RUL<800)。")
@@ -296,8 +296,29 @@ def edit_appendix_B(doc: Document) -> None:
 
 
 def add_revision_row_v22(doc: Document) -> None:
-    """Append v2.2 row to the existing v2.0->v2.1 revision table (附件 D)."""
-    # The revision table is the LAST table (index 8)
+    """Append v2.2 row to existing revision table + relabel section as 修訂說明.
+
+    The table inherited from v2.1 is "v2.0 -> v2.1" only; we add a v2.2 row
+    AND broaden the surrounding section title + intro + conclusion so the
+    section accurately covers v2.0 -> v2.2 instead of staying frozen at v2.1.
+    """
+    # 1. Rename heading "附件 D. v2.1 修訂說明" -> "附件 D. 修訂說明 (v2.0 -> v2.2)"
+    try:
+        idx = _find_paragraph(doc, "附件 D. v2.1 修訂說明")
+        _replace_run_text(doc.paragraphs[idx], "附件 D. 修訂說明 (v2.0 → v2.2)")
+    except KeyError:
+        pass
+
+    # 2. Update intro paragraph to cover both jumps
+    try:
+        idx = _find_paragraph(doc, "本版本相較於 v2.0,經完整技術與邏輯驗證,針對五個技術細節進行修正")
+        _replace_run_text(doc.paragraphs[idx],
+            "v2.1 相較於 v2.0,經完整技術與邏輯驗證,針對五個技術細節進行修正(下表第 1–5 列);"
+            "v2.2 在 v2.1 基礎上加入技術交付物實證、視覺化資產與 §X 引用對齊(下表第 6 列):")
+    except KeyError:
+        pass
+
+    # 3. Append v2.2 row to the revision table
     target = None
     for t in doc.tables:
         first = (t.rows[0].cells[0].text or "").strip()
@@ -310,12 +331,27 @@ def add_revision_row_v22(doc: Document) -> None:
     new_row = target.add_row().cells
     new_row[0].text = "6"
     new_row[1].text = "v2.1(初版)"
-    new_row[2].text = "v2.2 新增:封面 Live demo URL + QR;§E.3 改寫為「已開發並部署」三件套含 Vercel URL;"
-    new_row[3].text = (
-        "§F.4 加 Q6 (MAPE 8.38 % 實證) + Q7 (跨化學限制);附件 B 加 measured 數字;新增附件 E 技術交付物實證 "
-        "(E.1–E.6 共 6 節含 5 表);圖文並茂插入 architecture / TAM-SAM-SOM / persona / TCO / QR 5 張視覺化資產;"
-        "所有 §X 引用對齊 v2.1 PDF 真實章節編號 (7 條原 cross-reference 錯誤更正)"
+    new_row[2].text = (
+        "v2.2 新增:封面 Live demo URL + QR;§C.1 / §E.1 / §E.3 / §G.3 加 5 張視覺化資產 "
+        "(architecture / TAM-SAM-SOM / persona / TCO / QR);§E.3 改寫為「已開發並部署」三件套;"
+        "§F.4 加 Q6 (MAPE 8.38 % 實證) + Q7 (跨化學限制);附件 B 加 measured 數字;新增附件 E "
+        "技術交付物實證 (E.1–E.6 共 6 節 + 5 表)"
     )
+    new_row[3].text = (
+        "v2.1 只承諾「< 10 % MAPE」,本次 v2.2 把實際達成的 8.38 % / 13.87 % / 19.10 % / 3.49× INT8 "
+        "compression 等 measured 結果灌進企劃書,業師讀完即知三件套已交付且數字皆可在 Live demo 驗證;"
+        "原技術白皮書內對本企劃書的章節交叉引用有 7 條因編號筆誤造成不一致(技術選手 5/3 重新對照 v2.1 PDF 後校正),"
+        "v2.2 一併同步,確保白皮書與企劃書的引用鏈零落差。"
+    )
+
+    # 4. Update closing sentence
+    try:
+        idx = _find_paragraph(doc, "修正後本企劃在技術、財務、邏輯三個維度均無瑕疵,可直接進入決賽答辯")
+        _replace_run_text(doc.paragraphs[idx],
+            "v2.2 修正後本企劃在技術、財務、邏輯、實證(measured)四個維度均無瑕疵,可直接進入決賽答辯。"
+            "完整技術交付物實證見附件 E。")
+    except KeyError:
+        pass
 
 
 # ---------------------------------------------------------------------------
