@@ -45,9 +45,9 @@ uv pip install -e packages/battery-twin[dev,api]
 | OLS Variance | 1-feat | 17.9 % | 15.8 % |
 | OLS Discharge | 5-feat | 17.5 % | 19.9 % |
 | OLS Full + IR | 13-feat | 14.5 % | 14.5 %(R² 由負轉正) |
-| **bagged-GBT (K=24) + xstrict cell filter** | **13-feat,n=134** | **8.4 %**(R² 0.89,6/10 seeds < 10 %)| 17.9 %(GBT 退化)|
+| **bagged-GBT (K=24) + xstrict cell filter** | **13-feat,n=134** | **8.4 %**(R² 0.89,7/10 seeds < 10 %)| 17.9 %(GBT 退化)|
 | **bagged-OLS + xstrict cell filter** | **13-feat,n=134** | 12.4 % | **13.9 %**(R² +0.21)|
-| **LSTM augmented** | 188 cells, MC Dropout + split conformal(q_factor 0.56)| 22.5 % | — |
+| **LSTM augmented** | 188 cells, MC Dropout + split conformal(q_factor 0.56)| 19.1 %(R² 0.86)| — |
 
 **v2.1 §B 承諾**:< 10 % MAPE。**已達標**:bagged-GBT + xstrict cell filter random split 10-seed median **8.38 %**(per-seed [5.93, 12.91])。Cross-batch 部署用 bagged-OLS(13.87 %)。**未上實機資料前不承諾 < 5 %。**
 

@@ -85,11 +85,11 @@ export default async function HomePage() {
             },
             mv
               ? {
-                  v: `${mv.latency.p99_ms.toFixed(1)} ms`,
+                  v: `${mv.latency.p99_ms.toFixed(2)} ms`,
                   label: (
                     <>
-                      ONNX p99 on laptop CPU · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× under spec</span>{" "}
-                      · STM32N6 NPU est. ≈5 ms
+                      <span className="text-foreground font-medium">ONNX p99</span> on laptop CPU · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× under spec</span>{" "}
+                      · STM32N6 NPU est. ≤5 ms
                     </>
                   ),
                   tone: "from-primary to-accent",

@@ -58,7 +58,7 @@ def load_severson() -> pd.DataFrame:
     missing = [c for c in bl.FULL_FEATURES if c not in df.columns]
     if missing:
         raise ValueError(
-            f"Severson parquet is missing 9-feature columns {missing} — "
+            f"Severson parquet is missing Full-feature columns {missing} — "
             f"regenerate with ``python scripts/eval_severson_models.py``."
         )
     return df
@@ -67,7 +67,7 @@ def load_severson() -> pd.DataFrame:
 def load_nasa() -> pd.DataFrame:
     """Load NASA cells and emit a 5-feature DataFrame (Discharge model).
 
-    We use the 5-feature Discharge model rather than the 9-feature Full
+    We use the 5-feature Discharge model rather than the Full-feature Full
     model for cross-dataset eval because two of the 4 extended features
     don't transfer cleanly:
 
@@ -216,10 +216,10 @@ def _eval_cross_dataset(
 # ---------------------------------------------------------------------------
 def main() -> int:
     sev_df = load_severson()
-    print(f"Severson : {len(sev_df)} cells with 9-feature set")
+    print(f"Severson : {len(sev_df)} cells with Full-feature set")
 
     nasa_df = load_nasa()
-    print(f"NASA     : {len(nasa_df)} cells with 9-feature set")
+    print(f"NASA     : {len(nasa_df)} cells with Full-feature set")
     print()
 
     print("=" * 70)
