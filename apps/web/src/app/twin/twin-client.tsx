@@ -122,15 +122,7 @@ interface ModelValidation {
     pi_lower: number;             // split-conformal-adaptive 90% PI lower (sharpened from raw MC Dropout p5 by q_factor on the calibration set)
     pi_upper: number;             // split-conformal-adaptive 90% PI upper (sharpened from raw MC Dropout p95 by q_factor on the calibration set)
     input_raw: number[][];        // (99, 7) features in original physical units
-    hidden_activation: number[];  // (99,) mean |tanh activation| across 64 dims
-    cumulative_pred: number[];    // (99,)
   }>;
-  fleet_status_distribution_pct?: {
-    healthy: number;
-    warning: number;
-    early_aging: number;
-    critical: number;
-  };
   uncertainty?: {
     // ``method`` describes the underlying epistemic sampler (MC Dropout). The
     // public-facing PI we render in walkthroughs is the conformal-sharpened
