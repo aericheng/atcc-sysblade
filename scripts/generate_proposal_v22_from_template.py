@@ -162,6 +162,98 @@ def edit_cover(doc: Document) -> None:
     blank_para = _insert_paragraph_after(anchor, "")
 
 
+def edit_section_A_bmc(doc: Document) -> None:
+    """Insert Business Model Canvas figure at end of §A 摘要 (before 一句話總結).
+
+    BMC is a one-page business-logic snapshot — putting it at the close of
+    the abstract gives business judges the whole story at a glance before
+    they dive into B/C/D.
+    """
+    # Anchor: the "商業可行性" Heading 3 already sits before "一句話總結".
+    # We insert BMC AFTER the 商業可行性 paragraph and BEFORE 一句話總結 heading.
+    idx = _find_paragraph(doc, "以系統電 Plano 德州廠 2025 Q4 量產時程")
+    anchor = doc.paragraphs[idx]
+    _insert_caption_after(anchor, "圖 A-1 · 商業模式畫布(BMC)— 客戶 / 通路 / 收入 / 成本 9 格一頁版")
+    _insert_picture_after(anchor, FIG / "business_model_canvas.png", width_in=6.4)
+
+
+def _add_screenshots_table(doc, anchor, png_paths_with_caps):
+    """Insert a 2x2 borderless table containing 4 screenshots after `anchor`.
+
+    `png_paths_with_caps` is [(Path, caption_str), ...] of length 4.
+    Layout: row 0 = 2 images side-by-side, row 1 = their captions,
+            row 2 = next 2 images, row 3 = their captions.
+    """
+    # Build the table by inserting w:tbl after the anchor paragraph.
+    from docx.oxml import OxmlElement
+    new_tbl = OxmlElement("w:tbl")
+    anchor._p.addnext(new_tbl)
+    # Re-acquire as Table object
+    from docx.table import Table
+    table = Table(new_tbl, anchor._parent)
+    # Configure: 4 rows, 2 cols
+    # python-docx Table needs explicit grid and rows
+    tbl_grid = OxmlElement("w:tblGrid")
+    for _ in range(2):
+        gc = OxmlElement("w:gridCol")
+        gc.set(qn("w:w"), "5000")
+        tbl_grid.append(gc)
+    new_tbl.append(tbl_grid)
+    # Helper to add a row with two cells
+    def _add_row(cells_xml_inits):
+        tr = OxmlElement("w:tr")
+        new_tbl.append(tr)
+        for _ in range(2):
+            tc = OxmlElement("w:tc")
+            tc_pr = OxmlElement("w:tcPr")
+            tc_w = OxmlElement("w:tcW")
+            tc_w.set(qn("w:w"), "5000")
+            tc_w.set(qn("w:type"), "dxa")
+            tc_pr.append(tc_w)
+            tc.append(tc_pr)
+            tc_p = OxmlElement("w:p")
+            tc.append(tc_p)
+            tr.append(tc)
+    # Just create rows; we'll fill via Table API
+    for _ in range(4):
+        _add_row(None)
+    # Now use the high-level API to fill cells
+    rows = table.rows
+    # row 0: images 0, 1
+    for col in range(2):
+        cell = rows[0].cells[col]
+        cell.text = ""
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.add_run().add_picture(str(png_paths_with_caps[col][0]), width=Inches(2.95))
+    # row 1: captions
+    for col in range(2):
+        cell = rows[1].cells[col]
+        cell.text = ""
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(png_paths_with_caps[col][1])
+        run.italic = True
+        run.font.size = Pt(9)
+    # row 2: images 2, 3
+    for col in range(2):
+        cell = rows[2].cells[col]
+        cell.text = ""
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.add_run().add_picture(str(png_paths_with_caps[col + 2][0]), width=Inches(2.95))
+    # row 3: captions
+    for col in range(2):
+        cell = rows[3].cells[col]
+        cell.text = ""
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(png_paths_with_caps[col + 2][1])
+        run.italic = True
+        run.font.size = Pt(9)
+    return table
+
+
 def edit_section_C1_market(doc: Document) -> None:
     """Insert TAM/SAM/SOM 同心圓 after C.1 market table description."""
     # Anchor: the 註: paragraph that comes after the market-region table
@@ -216,8 +308,27 @@ def edit_section_E3(doc: Document) -> None:
     # Insert persona journey AFTER the 商業意義 paragraph
     idx = _find_paragraph(doc, "商業意義:硬體毛利")
     anchor = doc.paragraphs[idx]
-    _insert_caption_after(anchor, "圖 E-2 · Tier-2 colo 客戶 Mark Chen Persona + 5 階段採購旅程(對應 §F 18 個月時程與 §G TCO)")
+
+    # === 4 demo screenshots in 2x2 grid ===
+    # Anchor moves forward as we insert; we'll insert in REVERSE order so the
+    # final document order is: 商業意義 → screenshots intro → 2x2 grid → persona caption → persona figure
+    # Insert persona figure FIRST (at original anchor) so it ends up AFTER the screenshots.
+    persona_caption = "圖 E-3 · Tier-2 colo 客戶 Mark Chen Persona + 5 階段採購旅程(對應 §F 18 個月時程與 §G TCO)"
+    _insert_caption_after(anchor, persona_caption)
     _insert_picture_after(anchor, FIG / "persona_journey.png", width_in=6.2)
+
+    # Now insert screenshots block at the SAME anchor — they will appear
+    # before the persona figure in document order.
+    screens_dir = FIG / "screenshots"
+    shots = [
+        (screens_dir / "01_landing.png",  "圖 E-2(a) · 首頁四頭條(3.5× / 5.7× / 10 yr / 33 %)"),
+        (screens_dir / "02_tco.png",      "圖 E-2(b) · TCO Calculator — 即時試算客戶 10 年總持有成本"),
+        (screens_dir / "03_twin.png",     "圖 E-2(c) · Battery Digital Twin — PyBaMM DFN + LSTM RUL 推論"),
+        (screens_dir / "04_dashboard.png","圖 E-2(d) · Fleet Dashboard — 1,000 台 SIMULATED 機隊三層服務"),
+    ]
+    if all(p.exists() for p, _ in shots):
+        _add_screenshots_table(doc, anchor, shots)
+        _insert_caption_after(anchor, "圖 E-2 · 三件套產品截圖(均已部署於 https://sysblade-atcc.vercel.app,業師可掃封面 QR 即時操作)")
 
 
 def edit_section_F4_qa(doc: Document) -> None:
@@ -553,6 +664,8 @@ def main() -> int:
     print("applying surgical edits ...")
     edit_cover(doc)
     print("  cover OK")
+    edit_section_A_bmc(doc)
+    print("  §A BMC OK")
     edit_section_C1_market(doc)
     print("  §C.1 TAM/SAM/SOM OK")
     edit_section_E1_architecture(doc)
