@@ -138,9 +138,9 @@ def _insert_caption_after(paragraph, caption: str):
 # Surgical edits
 # ---------------------------------------------------------------------------
 def edit_cover(doc: Document) -> None:
-    # 1.1 v2.1 -> v2.2 line
+    # 1.1 keep version label minimal — no revision-history wording on cover
     idx = _find_paragraph(doc, "v2.1 修訂版")
-    _replace_run_text(doc.paragraphs[idx], "v2.2 修訂版 (2026-05-03) · 加入技術交付物實證")
+    _replace_run_text(doc.paragraphs[idx], "v2.2 修訂版")
 
     # 1.2 Insert Live demo block + QR code AFTER "繳交日期" line
     idx = _find_paragraph(doc, "繳交日期")
@@ -160,6 +160,298 @@ def edit_cover(doc: Document) -> None:
     qr_run.add_picture(str(FIG / "demo_qr.png"), width=Inches(1.6))
 
     blank_para = _insert_paragraph_after(anchor, "")
+
+
+def _delete_paragraph(p) -> None:
+    """Remove a paragraph from the document."""
+    p._element.getparent().remove(p._element)
+
+
+def _delete_table(t) -> None:
+    """Remove a table from the document."""
+    t._element.getparent().remove(t._element)
+
+
+def _delete_range_until(doc: Document, start_text: str, stop_predicate) -> None:
+    """Delete the paragraph at start_text + every following body element
+    until `stop_predicate(elem)` returns True (the stop element is kept).
+
+    `stop_predicate` is called on each w:p / w:tbl XML element."""
+    body = doc.element.body
+    children = list(body.iterchildren())
+    paras = list(doc.paragraphs)
+
+    # Find start: first paragraph whose text begins with start_text
+    start_idx = None
+    for i, child in enumerate(children):
+        tag = child.tag.split("}")[-1]
+        if tag == "p":
+            text = "".join(t.text or "" for t in child.iter(qn("w:t"))).strip()
+            if text.startswith(start_text):
+                start_idx = i
+                break
+    if start_idx is None:
+        print(f"WARN: didn't find start anchor {start_text!r}")
+        return
+
+    # Walk forward, deleting elements until stop_predicate
+    to_delete = []
+    for i in range(start_idx, len(children)):
+        if stop_predicate(children[i]):
+            break
+        to_delete.append(children[i])
+    for el in to_delete:
+        body.remove(el)
+
+
+def delete_section_F4_qa(doc: Document) -> None:
+    """Delete the entire §F.4 業師質詢預演 section.
+
+    User decision: Q1-Q5 content is duplicated in §C.3 / §E.1 / §E.5 / §G.1
+    already; Q6/Q7 will be folded into §E.1's product overview block.
+    """
+    def stop_at_g(elem):
+        tag = elem.tag.split("}")[-1]
+        if tag != "p":
+            return False
+        text = "".join(t.text or "" for t in elem.iter(qn("w:t"))).strip()
+        return text.startswith("G. 成本與效益評估") or text.startswith("G.1 ")
+    _delete_range_until(doc, "F.4 業師質詢預演", stop_at_g)
+
+
+def delete_appendix_D_revision(doc: Document) -> None:
+    """Delete v2.1's existing 附件 D. v2.1 修訂說明 entirely.
+
+    User wants no version-comparison content in the deliverable.
+    """
+    def stop_at_appendix_E(elem):
+        tag = elem.tag.split("}")[-1]
+        if tag != "p":
+            return False
+        text = "".join(t.text or "" for t in elem.iter(qn("w:t"))).strip()
+        # Stop at the next H1 — could be 附件 E (existing) or end-of-doc
+        return text.startswith("附件 E") or text.startswith("附件 D. 技術細節")
+    _delete_range_until(doc, "附件 D. v2.1 修訂說明", stop_at_appendix_E)
+
+
+def rename_appendix_E_to_D(doc: Document) -> None:
+    """The new 技術交付物實證 appendix was added as 附件 E since v2.1 had
+    a 附件 D revision section. After deleting that section, slot the
+    technical-detail appendix in as 附件 D and renumber its E.1-E.6
+    sub-sections to D.1-D.6.
+
+    Renamed to 「附件 D. 技術細節說明」 per user feedback (was earlier
+    「附件 E. 技術交付物實證 (v2.2 新增, 2026-05-03 measured)」 which
+    leaked versioning language).
+    """
+    rename_map = {
+        "附件 E. 技術交付物實證 (v2.2 新增,2026-05-03 measured)": "附件 D. 技術細節說明",
+        "E.1 RUL 預測管線實測 (對應 §E.1 Tier-C、附件 B (b))": "D.1 RUL 預測管線實測",
+        "E.2 邊緣端 INT8 量化驗證 (對應 §E.1 Tier-C STM32N6 部署)": "D.2 邊緣端 INT8 量化驗證",
+        "E.3 機率輸出 — MC Dropout + Split Conformal PI": "D.3 機率輸出 — MC Dropout + Split Conformal PI",
+        "E.4 跨化學限制 — 跨資料集驗證 (誠實聲明)": "D.4 跨化學限制 — 跨資料集驗證(誠實聲明)",
+        "E.5 Reproducibility CI": "D.5 Reproducibility CI",
+        "E.6 數字溯源 (每一條都可追)": "D.6 數字溯源",
+    }
+    for p in doc.paragraphs:
+        text = (p.text or "").strip()
+        if text in rename_map:
+            _replace_run_text(p, rename_map[text])
+    # Also: any inline reference to "附件 E" must become "附件 D"
+    for p in doc.paragraphs:
+        if "附件 E" in p.text:
+            for run in p.runs:
+                if "附件 E" in run.text:
+                    run.text = run.text.replace("附件 E", "附件 D")
+    for t in doc.tables:
+        for row in t.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    if "附件 E" in p.text:
+                        for run in p.runs:
+                            if "附件 E" in run.text:
+                                run.text = run.text.replace("附件 E", "附件 D")
+                    # Also "§E.4" inside 附件 D should become "§D.4"
+                    if "§E.4" in p.text or "§E.1" in p.text or "§E.2" in p.text or \
+                       "§E.3" in p.text or "§E.5" in p.text or "§E.6" in p.text:
+                        for run in p.runs:
+                            for old, new in [("§E.1", "§D.1"), ("§E.2", "§D.2"),
+                                             ("§E.3", "§D.3"), ("§E.4", "§D.4"),
+                                             ("§E.5", "§D.5"), ("§E.6", "§D.6")]:
+                                if old in run.text:
+                                    run.text = run.text.replace(old, new)
+
+
+def purge_versioning_language(doc: Document) -> None:
+    """Strip every "v2.0/v2.1/v2.2 + delta" reference from prose so the
+    deliverable reads as a single self-contained document, not a diff.
+
+    Cover's "v2.2 修訂版" is intentional and stays (renamed by edit_cover).
+    """
+    replacements = [
+        # 「達 v2.1 附件 B 軟體技術棧 ... 承諾」 → 「達附件 B 軟體技術棧 ... 承諾」
+        ("達 v2.1 附件 B 軟體技術棧", "達附件 B 軟體技術棧"),
+        ("v2.1 附件 B 軟體技術棧", "附件 B 軟體技術棧"),
+        ("v2.1 < 10 % 承諾", "附件 B 軟體技術棧 < 10 % 承諾"),
+        ("v2.1 < 10% 承諾", "附件 B 軟體技術棧 < 10 % 承諾"),
+        # 「未達 v2.1 § ...」 → 「未達 ... 承諾」 (no version)
+        ("v2.1 §B 對齊 paper", "對齊 paper"),
+        # 「對齊 v2.1 §X」 — keep the §X alignment claim but drop "v2.1"
+        # actually these are needed to specify which §, leave them:
+        # but explicit history strings:
+        ("(v2.2 新增,2026-05-03 measured)", ""),
+        ("(v2.2 新增)", ""),
+        ("v2.2 新增", "本文新增"),
+        ("v2.1 原承諾邊界", "原承諾邊界"),
+        ("v2.1 原承諾", "原承諾"),
+        ("v2.1(初版)", "(初版)"),
+        # in tables and prose the standalone "v2.1" mention often also reads
+        # as "this proposal v2.1" — replace careful contexts only
+    ]
+    def _do_replace(text):
+        for old, new in replacements:
+            text = text.replace(old, new)
+        return text
+
+    for p in doc.paragraphs:
+        for run in p.runs:
+            new_text = _do_replace(run.text)
+            if new_text != run.text:
+                run.text = new_text
+    for t in doc.tables:
+        for row in t.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    for run in p.runs:
+                        new_text = _do_replace(run.text)
+                        if new_text != run.text:
+                            run.text = new_text
+
+
+def edit_section_E1_product_overview(doc: Document) -> None:
+    """Insert a "重點與潛力 + 完整產品介紹" block right after E.1 heading,
+    before the existing Tier-A/B/C technical detail.
+
+    Per user request, §E.1 should let judges see WHAT the product is and
+    WHY IT MATTERS at a glance. Tier-A/B/C electrical detail stays, but
+    we add a leading product-overview section + a software-deliverables
+    paragraph at the end of §E.1, so a business judge reading just §E.1
+    has a complete picture of hardware + software + business potential.
+    """
+    # Anchor: the existing E.1 intro paragraph "我們捨棄原「三層分離式架構」"
+    idx = _find_paragraph(doc, "我們捨棄原「三層分離式架構」")
+    anchor = doc.paragraphs[idx]
+    # Insert IN REVERSE ORDER so final document order is:
+    # E.1 heading → 重點與潛力 paragraph → 產品全貌 paragraph → original intro
+    p1 = _insert_paragraph_after(anchor, "")  # blank spacer
+    # Replace anchor text from "我們捨棄..." with reorganized intro:
+    _replace_run_text(anchor,
+        "Sysblade HyperBuffer 是「硬體 × 軟體 × 維運」三位一體的 AI 機房 BBU 整合產品。"
+        "**硬體**:同一個 12U 機箱內以「電氣分層 (Electrical Tiering)」結合三層儲能元件 "
+        "(Tier-A LIC 瞬態緩衝層、Tier-B LFP 短時備援層、Tier-C BMS + Edge AI 智能管理層),"
+        "捨棄原「三層分離式」違反備援可靠度的物理拆解概念。"
+        "**軟體**:三件套(TCO Calculator / Battery Digital Twin / Fleet Health Dashboard)"
+        "已部署於 https://sysblade-atcc.vercel.app,業師可掃封面 QR 即時操作。"
+        "**重點與潛力**:")
+    # Now insert four bullets describing key value + potential
+    bullets = [
+        "**唯一同時解決 ms 級瞬態 + 48V→±400V HVDC 過渡 + 1000 台機隊維運可視化** 的整合方案 — 北美 Tier-2/3 colo 機房的縫隙市場 "
+        "(Schneider × NVIDIA 鎖 hyperscaler、Vertiv 鎖 facility UPS,rack-level BBU 屬於兩巨頭的「補位品」)",
+        "**33 % 客戶 10 年 TCO 節省** + ASP USD 1,080 較行業均 USD 720 溢價 39 %(對齊 §G.3)— "
+        "硬體毛利 40.5 % 疊加 SaaS site license USD 25k/site/yr (75 % 邊際毛利) → 2029 年混合毛利 46 %",
+        "**Battery Digital Twin RUL 預測** Severson random-split 10-seed median MAPE 8.38 %(達 < 10 % 承諾)、"
+        "INT8 量化精度退化僅 +0.10 pp、跨化學部署有 z-distance 量化邊界 — 三件實證在附件 D",
+        "**OCP HVDC Ready** 機構介面預留 ±400 V 直流匯流接點,Diablo 400 標準釋出後 90 天內出新功率模組,"
+        "雙電壓代產品共用機構與軟體層 — 跨代延展 5+ 年估值溢價",
+    ]
+    # Insert bullets in REVERSE order so they appear in the right sequence
+    for bullet_text in reversed(bullets):
+        p = _insert_paragraph_after(anchor, bullet_text, style="List Paragraph")
+    # Spacer + sub-heading explaining the technical detail follows
+    h_intro = _insert_paragraph_after(anchor, "(三層電氣分層的技術細節如下;完整 ML / INT8 / Conformal / 跨化學等實證見附件 D。)")
+    h_intro.paragraph_format.space_before = Pt(6)
+
+
+def edit_section_E3_rename(doc: Document) -> None:
+    """Rename §E.3 heading + first sentence; remove "程式選手協作" wording.
+
+    Team is one team, not "engineering students collaborating with us".
+    """
+    # Heading rename
+    try:
+        idx = _find_paragraph(doc, "E.3 與程式選手協作的軟體生態系")
+        _replace_run_text(doc.paragraphs[idx], "E.3 軟體交付物(三件套已部署)")
+    except KeyError:
+        pass
+
+    # Rewrite first sentence — remove engineering-student framing
+    try:
+        idx = _find_paragraph(doc, "我們的工程選手(具 Python ML")
+        _replace_run_text(doc.paragraphs[idx],
+            "我們已開發並部署三件套至 https://sysblade-atcc.vercel.app(完整方法論、reproducibility "
+            "CI gate 與 1100 行技術白皮書於團隊內部倉庫,複賽前公開);各模組實作細節 + measured 結果"
+            "見附件 B(stack + 實證)與附件 D(技術細節說明):")
+    except KeyError:
+        pass
+
+
+def edit_section_F2_remove_program_player(doc: Document) -> None:
+    """§F.2 組織與分工 has 'Software Lead (程式選手)';附件 B 標題有
+    '(程式選手實作清單)'. Strip both."""
+    try:
+        idx = _find_paragraph(doc, "Software Lead (程式選手)")
+        _replace_run_text(doc.paragraphs[idx],
+            "Software Lead:負責 (a) TCO Calculator (b) Battery Twin Demo (c) Dashboard。"
+            "技術棧:Python (PyBaMM, PyTorch, scikit-learn) + TypeScript (Next.js, recharts, d3)。")
+    except KeyError:
+        pass
+
+    # 附件 B heading
+    try:
+        idx = _find_paragraph(doc, "附件 B. 軟體技術棧 (程式選手實作清單)")
+        _replace_run_text(doc.paragraphs[idx], "附件 B. 軟體技術棧")
+    except KeyError:
+        pass
+
+
+def precision_fix_NASA_role(doc: Document) -> None:
+    """NASA / CALCE are cross-chemistry validation only, not training data.
+    Some passages frame them as training-set augmentation; tighten.
+    """
+    # Whole-paragraph rewrites — find by short trigger inside p.text and
+    # if the trigger is present we substitute the relevant fragment.
+    rewrites = [
+        # §A 摘要 第三點 (List Paragraph) — fragment may differ; do substring
+        # replacement on full paragraph text and re-emit via _replace_run_text.
+        ("NASA Prognostics [15] / CALCE 為輔",
+         "50 顆 PyBaMM-calibrated BBU-duty 合成 cell 補強 regime gap;NASA / CALCE [15] 僅作為跨化學驗證(非訓練,詳附件 D §D.4)"),
+        ("NASA Prognostics [15] / CALCE 為輔)",
+         "50 顆 PyBaMM-calibrated BBU-duty 合成 cell 補強 regime gap;NASA / CALCE [15] 僅作為跨化學驗證(非訓練,詳附件 D §D.4))"),
+        # §E.2 (3) creative point fragment
+        ("NASA Prognostics PCoE [15] / CALCE 為輔",
+         "50 顆 PyBaMM-calibrated BBU-duty 合成 cell 補強 regime gap;NASA / CALCE [15] 跨化學驗證(非訓練)"),
+        # 附件 B (b) full passage
+        ("資料源:Severson 2019 TRI dataset (138 cells parsed, 主訓練) [12] + NASA Prognostics PCoE [15] + 50 PyBaMM-calibrated BBU-duty 合成 cell (regime-gap closure)",
+         "資料源:Severson 2019 TRI dataset 138 cells 為主訓練 [12] + 50 顆 PyBaMM-calibrated BBU-duty 合成 cell 補強 regime gap;NASA PCoE [15] 僅用於跨化學 z-distance 驗證(非訓練,詳附件 D §D.4)"),
+    ]
+    def _do(text):
+        new = text
+        for old, repl in rewrites:
+            if old in new:
+                new = new.replace(old, repl)
+        return new
+
+    for p in doc.paragraphs:
+        new_text = _do(p.text)
+        if new_text != p.text:
+            _replace_run_text(p, new_text)
+    for t in doc.tables:
+        for row in t.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    new_text = _do(p.text)
+                    if new_text != p.text:
+                        _replace_run_text(p, new_text)
 
 
 def edit_section_A_bmc(doc: Document) -> None:
@@ -264,8 +556,17 @@ def edit_section_C1_market(doc: Document) -> None:
 
 
 def edit_section_E1_architecture(doc: Document) -> None:
-    """Insert architecture diagram after E.1 intro paragraph."""
-    idx = _find_paragraph(doc, "我們捨棄原「三層分離式架構」")
+    """Insert architecture diagram after the product-overview block,
+    just before the Tier-A technical-detail heading.
+
+    Anchor must be a paragraph that survives `edit_section_E1_product_overview`
+    — we use the technical-detail intro line we add there.
+    """
+    try:
+        idx = _find_paragraph(doc, "(三層電氣分層的技術細節如下")
+    except KeyError:
+        # fallback if product overview wasn't run
+        idx = _find_paragraph(doc, "我們捨棄原「三層分離式架構」")
     anchor = doc.paragraphs[idx]
     _insert_caption_after(anchor, "圖 E-1 · Sysblade 系統架構:Edge 機櫃端(LFP+LIC + STM32 LSTM 即時推論)→ 雲端訓練(Severson + PyBaMM + bagged-GBT/OLS/LSTM 三條管線,measured 8.4 % / 13.9 % / 19.1 % MAPE)→ SaaS 前端(Vercel 靜態匯出三件套)")
     _insert_picture_after(anchor, FIG / "architecture.png", width_in=6.2)
@@ -668,20 +969,35 @@ def main() -> int:
     print("  §A BMC OK")
     edit_section_C1_market(doc)
     print("  §C.1 TAM/SAM/SOM OK")
+    edit_section_E1_product_overview(doc)
+    print("  §E.1 product overview (重點與潛力 + 軟體三件套) OK")
     edit_section_E1_architecture(doc)
     print("  §E.1 architecture OK")
     edit_section_E3(doc)
     print("  §E.3 + persona journey OK")
-    edit_section_F4_qa(doc)
-    print("  §F.4 Q6 + Q7 OK")
+    edit_section_E3_rename(doc)
+    print("  §E.3 rename (drop 程式選手協作) OK")
+    edit_section_F2_remove_program_player(doc)
+    print("  §F.2 drop 程式選手 wording OK")
+    delete_section_F4_qa(doc)
+    print("  §F.4 業師質詢預演 entire-section delete OK")
     edit_section_G3_tco(doc)
     print("  §G.3 TCO bar chart OK")
     edit_appendix_B(doc)
     print("  附件 B OK")
-    add_revision_row_v22(doc)
-    print("  附件 D revision row OK")
+    # IMPORTANT: append BEFORE deleting old 附件 D, otherwise the sectPr
+    # element at end of body goes with it and add_table dies on missing
+    # block width.
     append_appendix_E(doc)
-    print("  附件 E (NEW, 6 sections) OK")
+    print("  appendix appended (will be renamed to D) OK")
+    delete_appendix_D_revision(doc)
+    print("  原附件 D 修訂說明 deleted OK")
+    rename_appendix_E_to_D(doc)
+    print("  附件 E -> 附件 D 技術細節說明 OK")
+    precision_fix_NASA_role(doc)
+    print("  NASA role precision OK")
+    purge_versioning_language(doc)
+    print("  v2.0/v2.1/v2.2 versioning language purged OK")
 
     try:
         doc.save(str(OUT))
