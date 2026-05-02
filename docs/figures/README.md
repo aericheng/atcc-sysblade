@@ -5,7 +5,9 @@ Visual assets for the 5/5 企劃書 — designed to swap blocks of text for figu
 | File | 用途 | 如何用 |
 |---|---|---|
 | `demo_qr.svg` | 指向 https://sysblade-atcc.vercel.app 的 QR code | 直接放封面 / 結尾頁 |
-| `screenshot_guide.md` | 4 張 demo 截圖 + callout 標註指引 | 照指引截圖,在 Word/PPT 加箭頭 |
+| `capture_screenshots.ps1` | headless Chrome 自動拍 4 頁 demo PNG | `pwsh -File docs/figures/capture_screenshots.ps1` |
+| `screenshots/*.png` | 上述腳本產出的 4 張 1440×2400 base 截圖 | 直接拿去加 callout |
+| `screenshot_guide.md` | 4 張 demo 截圖 + callout 標註指引 | 照指引在 Word/PPT 加箭頭 |
 | `tco_comparison.svg` | TCO 10 年成本對比 stacked bar | 直接內嵌(向量圖,可任意放大) |
 | `architecture.mmd` | 系統架構圖 Mermaid source | 貼到 https://mermaid.live → Export PNG/SVG |
 | `tam_sam_som.svg` | TAM/SAM/SOM 同心圓($3.5B / $1.4B / $70M) | §A 市場規模章節主視覺 |
