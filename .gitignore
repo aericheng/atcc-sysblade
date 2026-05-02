@@ -36,6 +36,13 @@ data/raw/**
 data/processed/**
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+# Whitelist small derived JSON reports that the whitepaper cross-check
+# script (scripts/check_whitepaper_numbers.py + .github/workflows/check.yml)
+# needs to verify numerical claims. Each is < 50 KB; total < 100 KB.
+!data/processed/severson_model_eval.json
+!data/processed/lstm_quantization_report.json
+!data/processed/cross_dataset_mape.json
+!data/processed/x_cube_ai_static_analysis.json
 *.mat
 *.h5
 *.parquet
