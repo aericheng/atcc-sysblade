@@ -61,10 +61,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
       # Only the standard library is needed for the cross-check — no pyarrow,
       # torch, or pybamm. Keeping the deps surface tiny means the gate runs
-      # in <30s on a clean container.
+      # in <30s on a clean container. (cache: pip omitted — no pip install
+      # means the cache dir never exists, which makes setup-python's post-job
+      # step warn "Cache folder path doesn't exist on disk".)
       - name: Run scripts/check_whitepaper_numbers.py
         run: python scripts/check_whitepaper_numbers.py
