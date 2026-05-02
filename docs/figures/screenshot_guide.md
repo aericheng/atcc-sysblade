@@ -1,8 +1,16 @@
 # Demo Screenshot Annotation Guide
 
-For embedding into the proposal PDF. Use Snipping Tool (Win+Shift+S) → annotate in PowerPoint / Word / Figma.
+For embedding into the proposal PDF. **Easier path:** the 4 base screenshots are already captured to `docs/figures/screenshots/` by `capture_screenshots.ps1` (headless Chrome, 1440×2400). Just open them, add callouts in PowerPoint / Word / Figma per the guide below, save as PNG.
 
-**Prerequisite**: `pnpm dev` running on `http://localhost:3000`, or use the live site `https://sysblade-atcc.vercel.app`. Use **1440×900** browser window for consistent framing across all 3 shots.
+To re-capture (e.g. after deploying UI changes):
+
+```powershell
+pwsh -File docs/figures/capture_screenshots.ps1
+# or against local dev:
+pwsh -File docs/figures/capture_screenshots.ps1 -Base "http://localhost:3000"
+```
+
+If you'd rather frame manually, use Snipping Tool (Win+Shift+S) on a **1440×900** browser window for consistent framing.
 
 ---
 
