@@ -72,3 +72,7 @@ desktop.ini
 
 # tooling local settings — never commit
 .claude/
+
+# Proposal docx (business-sensitive, binary, regenerable from template + script)
+docs/proposal_v2.2_additions/*.docx
+_v21_text_cache.json
