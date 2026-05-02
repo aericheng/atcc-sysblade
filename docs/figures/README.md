@@ -10,6 +10,7 @@ Visual assets for the 5/5 企劃書 — designed to swap blocks of text for figu
 | `architecture.mmd` | 系統架構圖 Mermaid source | 貼到 https://mermaid.live → Export PNG/SVG |
 | `tam_sam_som.svg` | TAM/SAM/SOM 同心圓($3.5B / $1.4B / $70M) | §A 市場規模章節主視覺 |
 | `persona_journey.svg` | Tier-2 colo Mark Chen persona + 5 階段旅程 | §C / §F 對應商業面論述 |
+| `business_model_canvas.svg` | 9 格 BMC 一頁版 | §B 商業模式總覽 / 摘要頁 |
 
 ## Architecture diagram 渲染步驟
 
@@ -35,6 +36,7 @@ mmdc -i docs/figures/architecture.mmd -o docs/figures/architecture.png -w 1600 -
 | 圖 | 章節 | 位置理由 |
 |---|---|---|
 | 封面 + QR | 封面頁 | 評審當場可掃,首因效應 |
+| BMC 一頁版 | §B 商業模式總覽 / 摘要頁 | 行銷評審 5 秒掃完整個商業邏輯 |
 | TAM/SAM/SOM 同心圓 | §A 市場規模 | 一頁打包 $3.5B → $1.4B → $70M 的三層收斂 |
 | Persona Journey | §C 客戶分析 / §F 執行時程 | 把抽象的 18 個月里程碑變成「一個人的故事」 |
 | Architecture (Mermaid) | §D 解決方案概觀 | 一頁交代「我們做什麼」 |
