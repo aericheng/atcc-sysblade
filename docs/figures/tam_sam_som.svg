@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" font-family="'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif">
+  <defs>
+    <marker id="leader" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <circle cx="3" cy="3" r="2" fill="#1E3A8A"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="380" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">市場機會 (TAM / SAM / SOM)</text>
+  <text x="380" y="56" text-anchor="middle" font-size="13" fill="#475569">2034 年北美 AI 機房 BBU 市場 · 圓面積比例 = 美元金額比例</text>
+
+  <!-- ============ Concentric circles centered at (270, 290) ============ -->
+  <!-- Areas proportional to 70 : 1400 : 3500 → radii 28 : 125 : 198 -->
+
+  <!-- TAM ring (largest) -->
+  <circle cx="270" cy="290" r="198" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- SAM ring -->
+  <circle cx="270" cy="290" r="125" fill="#BFDBFE" stroke="#1D4ED8" stroke-width="2"/>
+
+  <!-- SOM (filled solid, dark) -->
+  <circle cx="270" cy="290" r="28" fill="#1E3A8A"/>
+
+  <!-- SOM inner label -->
+  <text x="270" y="287" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">SOM</text>
+  <text x="270" y="302" text-anchor="middle" font-size="11" fill="#fff">$70M</text>
+
+  <!-- ============ Side annotations (right column) ============ -->
+
+  <!-- TAM callout -->
+  <g>
+    <line x1="468" y1="120" x2="510" y2="120" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#leader)"/>
+    <text x="520" y="115" font-size="14" font-weight="700" fill="#1E40AF">TAM · 全球 AI BBU 市場</text>
+    <text x="520" y="135" font-size="22" font-weight="700" fill="#0F172A">$3.5B</text>
+    <text x="595" y="135" font-size="12" fill="#64748B">2034F</text>
+    <text x="520" y="155" font-size="11" fill="#475569">Emergen Research [1]</text>
+    <text x="520" y="171" font-size="11" fill="#475569">CAGR ≈ 11.4% (2026–34)</text>
+  </g>
+
+  <!-- SAM callout -->
+  <g>
+    <line x1="395" y1="290" x2="510" y2="240" stroke="#1D4ED8" stroke-width="1.5" marker-end="url(#leader)"/>
+    <text x="520" y="225" font-size="14" font-weight="700" fill="#1E40AF">SAM · 北美 AI BBU (40%)</text>
+    <text x="520" y="245" font-size="22" font-weight="700" fill="#0F172A">$1.4B</text>
+    <text x="595" y="245" font-size="12" fill="#64748B">2034F</text>
+    <text x="520" y="265" font-size="11" fill="#475569">Tier-2/3 colo 為主</text>
+    <text x="520" y="281" font-size="11" fill="#475569">德州 18.6% + 北維 15%(JLL)</text>
+  </g>
+
+  <!-- SOM callout -->
+  <g>
+    <line x1="298" y1="290" x2="510" y2="345" stroke="#1E3A8A" stroke-width="1.5" marker-end="url(#leader)"/>
+    <text x="520" y="335" font-size="14" font-weight="700" fill="#1E40AF">SOM · Sysblade 目標</text>
+    <text x="520" y="355" font-size="22" font-weight="700" fill="#0F172A">$70M</text>
+    <text x="595" y="355" font-size="12" fill="#64748B">5% 市佔 @ 2034</text>
+    <text x="520" y="375" font-size="11" fill="#475569">3 年累積營收 USD 1.32 億</text>
+    <text x="520" y="391" font-size="11" fill="#475569">2029 Q4 現金流轉正</text>
+  </g>
+
+  <!-- ============ Bottom strip — TAM upside vs base case ============ -->
+  <g>
+    <line x1="80" y1="470" x2="680" y2="470" stroke="#E2E8F0" stroke-width="1"/>
+
+    <!-- Base case -->
+    <text x="80" y="495" font-size="11" font-weight="700" fill="#0F172A">保守情境(本提案採用)</text>
+    <text x="80" y="513" font-size="11" fill="#475569">Emergen Research:全球 $3.5B → 北美 $1.4B → SOM $70M</text>
+
+    <!-- Upside -->
+    <text x="400" y="495" font-size="11" font-weight="700" fill="#0F172A">上行情境(若涵蓋廣義機房儲能)</text>
+    <text x="400" y="513" font-size="11" fill="#475569">Intel Market Research:北美 $32.4B (CAGR 74.3%) → SAM 5% = $1.6B</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="80" y="540" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.1 §A & §C.1 · [1] Emergen Research AI BBU Outlook · [2] Intel Market Research · [10] JLL Year-End 2025</text>
+</svg>

@@ -1,0 +1,52 @@
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#EFF6FF','primaryTextColor':'#0F172A','primaryBorderColor':'#1E40AF','lineColor':'#475569','fontFamily':"'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif"}}}%%
+flowchart LR
+
+  %% ============ EDGE LAYER ============
+  subgraph EDGE["🔋 Edge 機櫃端 (W3+ 規劃)"]
+    direction TB
+    BAT["LFP 15S BBU<br/>+ LIC 突波吸收"]
+    SENSOR["感測<br/>V / I / T<br/>取樣 100 ms"]
+    MCU["STM32 + X-CUBE-AI<br/>RUL 即時推論<br/>(本地 LSTM)"]
+    BAT --> SENSOR --> MCU
+  end
+
+  %% ============ CLOUD / SIMULATION LAYER ============
+  subgraph CLOUD["☁️ 雲端模擬 / 訓練層 (Python · 離線)"]
+    direction TB
+    SEV["Severson MIT<br/>Dataset<br/>(124 顆真實 cell)"]
+    PYBAMM["PyBaMM DFN<br/>物理模擬<br/>(1000 cell)"]
+    LSTM["LSTM RUL<br/>訓練<br/>MAPE 9.1%"]
+    GEN["generate_twin_<br/>scenarios.py<br/>(單一產生器)"]
+    SEV -->|校驗| LSTM
+    PYBAMM --> GEN
+    LSTM --> GEN
+  end
+
+  %% ============ FRONTEND / SAAS LAYER ============
+  subgraph FRONT["🖥️ SaaS Demo (Next.js Static Export)"]
+    direction TB
+    JSON["Scenario JSONs<br/>4 組 (LFP-only,<br/>Hybrid, Tier-1/2/3)"]
+    NEXT["Next.js Server<br/>Components<br/>(build-time fs.read)"]
+    CDN["Vercel CDN<br/>(全球邊緣)"]
+    PAGES["3 頁面<br/>/tco · /twin · /dashboard"]
+    JSON --> NEXT --> CDN --> PAGES
+  end
+
+  %% ============ USER ============
+  USER["👤 採購 / 車隊管理員<br/>掃 QR 即玩"]
+
+  %% ============ DATA FLOW ============
+  GEN ==>|build time| JSON
+  PAGES --> USER
+  MCU -.->|"OTA telemetry<br/>(W3+ FastAPI)"| GEN
+
+  %% ============ STYLING ============
+  classDef edgeStyle fill:#FEF3C7,stroke:#D97706,color:#92400E
+  classDef cloudStyle fill:#DBEAFE,stroke:#1E40AF,color:#1E3A8A
+  classDef frontStyle fill:#D1FAE5,stroke:#059669,color:#065F46
+  classDef userStyle fill:#FCE7F3,stroke:#BE185D,color:#831843
+
+  class BAT,SENSOR,MCU edgeStyle
+  class SEV,PYBAMM,LSTM,GEN cloudStyle
+  class JSON,NEXT,CDN,PAGES frontStyle
+  class USER userStyle
