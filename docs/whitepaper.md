@@ -15,7 +15,7 @@ abstract: |
   GradientBoosting ensemble + 嚴格 cell filter(`cycle_life ≥ 400`,134/138 cells),
   在 10-seed 隨機 split 上 median test MAPE = 8.38 %、R² = 0.89,首次低於
   v2.1 §B 對齊 paper 9.1 % 的 < 10 % 承諾**(per-seed range 5.93 – 12.91 %,
-  6/10 seed 低於 10 %)。**Cross-batch(b1+b2→b3)以 bagged-OLS 為最佳
+  7/10 seed 低於 10 %)。**Cross-batch(b1+b2→b3)以 bagged-OLS 為最佳
   generalisation:median MAPE = 13.87 %、R² = +0.21**(boosting tree 反而退化
   到 17–22 %,因 protocol-specific feature 過擬合)— 部署建議:同 protocol
   用 bagged-GBT,新 protocol 用 bagged-OLS,跨化學需 per-chemistry 校準
@@ -44,7 +44,7 @@ abstract: |
 8. [路線圖](#第八章-路線圖)
 9. [參考文獻](#第九章-參考文獻)
 
-附錄 A — 9-feature 工程詳述
+附錄 A — 13-feature 工程詳述
 附錄 B — Cross-dataset z-distance 表
 附錄 C — STM32N6 X-CUBE-AI trace(W3 補)
 附錄 D — Source code repository 結構
@@ -134,7 +134,7 @@ PyBaMM DFN (Python, offline)
 
 1. **物理引擎** — PyBaMM Doyle-Fuller-Newman (DFN) PDE 求解器
 2. **混合控制律** — LFP / LIC 頻譜分頻負載分配
-3. **RUL 預測** — Severson 2019 重現 + 9-feature Full model 改進 + LSTM
+3. **RUL 預測** — Severson 2019 重現 + 13-feature Full model + bagged-GBT ensemble + LSTM
 4. **邊緣端佈署** — ONNX 匯出 + STM32N6 NPU 推論
 
 ### 3.1 物理引擎 — PyBaMM DFN
@@ -266,7 +266,7 @@ extra-strict ≥400 共 134)做完整 sweep,完整表見
 > 結果不依賴單一 hparam 選擇)。Extra-strict 篩掉 4/138 顆 `cycle_life < 400`
 > 的早夭 cell — 仍比 paper 公開的 124 cells 寬鬆 10 顆,**不是 cherry-pick**
 > 而是把離群值的稀疏尾巴對齊 paper 隱含篩選標準。Per-seed 範圍 5.93 – 12.91 %,
-> 6/10 seeds < 10 %。詳見 §6.2 局限討論。
+> 7/10 seeds < 10 %。詳見 §6.2 局限討論。
 
 #### 3.3.4 Severson 跨 batch 結果(誠實討論)
 
@@ -347,9 +347,10 @@ NMC 2.0 Ah 對 LFP 1.1 Ah 的容量 scale 差。
 
 #### 3.3.6 LSTM PyTorch model
 
-5-feature OLS 是線性 baseline。為了捕捉 cycle 序列的非線性 pattern,
-我們訓了一個 2-layer LSTM(hidden = 64,input shape = (99, 7),參考
-proposal §E.1 Tier-C 規格)。輸入是每 cycle 的 7 維摘要向量
+13-feature OLS / bagged-GBT 是 cycle-life 點預測的最佳線性 / 樹型 baseline
+(§3.3.3 / §3.3.4)。為了捕捉 cycle 序列的非線性 pattern 並 span BBU duty
+regime(§3.3.8),我們訓了一個 2-layer LSTM(hidden = 64,input shape =
+(99, 7),參考 proposal §E.1 Tier-C 規格)。輸入是每 cycle 的 7 維摘要向量
 (cycle_norm, qd_max, qd_range, v_mean, v_std, t_max, duration_s),
 輸出是 $\log_{10}$ cycle_life 的純量。
 
@@ -422,16 +423,16 @@ conformal 後的 PI):
   conformal 反而會 widen — 這是**特性不是 bug**(維持 90 % 覆蓋)。
 
 **與 deterministic 點 MAPE 的關係**:LSTM 中位數點預測在
-Severson + BBU 188-cell test 集上 MAPE = **22.5 %**(per-batch 17.96 %
-~ 20.26 % Severson、18.34 % BBU),**比 §3.3.3 的最佳 OLS-stack
-ensemble(xstrict bagged-GBT 8.38 % random / bagged-OLS 13.87 %
-cross-batch)高很多**。原因是 LSTM 訓練集涵蓋兩個 regime(壓力測試 + BBU),
-OLS / GBT ensemble 只用 Severson 138(扣 outlier 134)→ LSTM 的 22.5 % 是
-「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % 是「single-regime 漂亮
-但對 BBU 沉默外插」。**這就是為什麼 fleet 推論用 LSTM、學術 baseline 報
-GBT ensemble**:同一個模型不能既做漂亮的 paper 對齊又做誠實的 BBU 外推。
-Probabilistic 不會自動降低點誤差,它解決的是「報告誠實度」。要再降 LSTM
-MAPE 需要更多真實 LFP-BBU-duty 資料(W3+,§8)。
+Severson + BBU 188-cell test 集上 MAPE = **19.10 %、R² 0.86**(per-batch
+17.96 % ~ 20.26 % Severson、18.34 % BBU,來源 `model_validation.json`),
+**比 §3.3.3 的最佳 OLS / GBT ensemble(xstrict bagged-GBT 8.38 % random /
+bagged-OLS 13.87 % cross-batch)顯著高**。原因是 LSTM 訓練集涵蓋兩個 regime
+(壓力測試 + BBU),OLS / GBT ensemble 只用 Severson 138(扣 outlier 134)→
+LSTM 的 19.10 % 是「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % 是
+「single-regime 漂亮但對 BBU 沉默外插」。**這就是為什麼 fleet 推論用 LSTM、
+學術 baseline 報 GBT ensemble**:同一個模型不能既做漂亮的 paper 對齊又做
+誠實的 BBU 外推。Probabilistic 不會自動降低點誤差,它解決的是「報告誠實度」。
+要再降 LSTM MAPE 需要更多真實 LFP-BBU-duty 資料(W3+,§8)。
 
 #### 3.3.8 BBU duty 增強訓練集 — 跨 regime 一個模型部署
 
@@ -631,13 +632,13 @@ $$
 |------|------|------|
 | 重現 Severson Variance baseline | 17.86 % MAPE 10-seed median(paper 15.0 %,seed 不公開) | 138 vs 124 cells;feature 變體;單一 seed 比較不嚴謹 |
 | 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 已被 bagged-GBT 取代為 baseline,本欄保留為歷史對照 |
-| 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],6/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.1 §B 的 < 10 % 承諾** |
+| 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.1 §B 的 < 10 % 承諾** |
 | 13-feat Full **bagged-OLS + xstrict** / cross-batch | **median 13.87 %** test MAPE,**R² = +0.21** | cross-batch 最佳 generalisation;GBT 在 cross-batch 反而退化到 17–22 %(protocol-specific overfit) |
-| **訓練情境 ≠ 產品情境(regime gap)— 已部分緩解 W2** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**W2 已加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 一起訓練**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| 訓練後 BBU 樣本 MAPE = 18.34 %,Severson 樣本 MAPE = 18–20 %,**模型現在能 span 兩個 regime**(R² 從 0.7 → 0.93)。**未完全解決**:仍是合成 cell 而非真實 BBU duty 量測,W3+ 計畫用真客戶 PoC 第一年累積資料校準 |
+| **訓練情境 ≠ 產品情境(regime gap)— 已部分緩解 W2** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**W2 已加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 一起訓練**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| 訓練後 BBU 樣本 MAPE = 18.34 %,Severson 樣本 MAPE = 18–20 %,整體 test MAPE 19.10 %、R² 0.86,**模型現在能 span 兩個 regime**。**未完全解決**:仍是合成 cell 而非真實 BBU duty 量測,W3+ 計畫用真客戶 PoC 第一年累積資料校準 |
 | **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(JM Energy / Eaton XLR datasheet),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %,**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
 | **不**承諾 < 5 % MAPE | v2.1 附錄 B 明文 | 即使模型達到也不在白皮書聲明 |
-| **達 v2.1 §B「< 10 % MAPE」承諾**(更新自原本「未達」聲明) | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],6/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 11 %、3/10 seeds 在 11–13 %,**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
-| Cross-batch 改善幅度 | 19.88 %(5-feat OLS)→ 14.54 %(13-feat OLS)→ 13.87 %(bagged-OLS xstrict);R² -0.16 → +0.08 → +0.21 | bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化驗證了 protocol-specific overfit 假設 |
+| **達 v2.1 §B「< 10 % MAPE」承諾** | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
+| Cross-batch 改善幅度(paper-style filter,n_test=44)| 19.25 %(5-feat OLS,R² -0.13)→ 14.54 %(13-feat OLS,R² +0.08)→ 13.87 %(bagged-OLS xstrict,R² +0.21)| bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化(17–22 %)驗證了 protocol-specific overfit 假設 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
 | **MC Dropout + Split Conformal 90 % PI 涵蓋率** | 100 % test coverage(≥ 90 % 保證) | Conformal **q_factor = 0.563** 縮窄 PI 44 %;coverage 仍 100 % 是因 test 比 cal 容易 |
 | **PI 中位數寬度** | 1075 cycles(原 1910 cycles,Plan C++ 縮窄 44 %) | b2c1 critical PI [144, 332] / b1c44 warning [506, 1254] — Tier-3 admission 變得 actionable |
@@ -705,12 +706,12 @@ $$
 | W1 | PyBaMM smoke test、商業企劃 v2.1 凍結 | ✅ |
 | W1 | Severson 6 GB 下載、解析、5-feat baseline | ✅ |
 | W2 (本週) | LSTM 訓練、ONNX 匯出、CPU latency benchmark | ✅ |
-| W2 (本週) | 9-feat Full model 改進(本白皮書 §3.3.3) | ✅ |
+| W2 (本週) | 9-feat Full model 初版改進(後續被 Plan C+ 13-feat 取代,§3.3.3) | ✅ |
 | W2 (本週) | NASA cross-dataset 驗證(本白皮書 §3.3.5) | ✅ |
 | W2 (本週) | MC Dropout 機率輸出 + 90 % PI(§3.3.7) | ✅ |
 | W2 (本週) | BBU-duty 增強訓練集 + dashboard fleet RUL 改用 LSTM(§3.3.8) | ✅ |
-| W2 (本週) | 11-feature paper-aligned Full model + 10-seed eval(§3.3.3) | ✅ |
-| W2 (本週) | Plan C+: IR features 從 `summary` 補回(13-feat,cross-batch 19.5 → 14.5 %) | ✅ |
+| W2 (本週) | 13-feature paper-aligned Full model + 10-seed eval(§3.3.3) | ✅ |
+| W2 (本週) | Plan C+: IR features 從 `summary` 補回(13-feat,cross-batch 19.25 → 14.54 %) | ✅ |
 | W3 | 更嚴 cell filter + bagged-GBT(K=24) + extra-strict filter `cycle_life ≥ 400` → median MAPE 14.51 % → **8.38 %**(§3.3.3 / §6.2),首次達 v2.1 §B 的 < 10 % 承諾;cross-batch 由 bagged-OLS 達 13.87 %(R²=+0.21)| ✅ |
 | W2 (本週) | 學生競賽簡報(D-1) | ⏳ |
 | W3 | STM32N6 X-CUBE-AI 靜態 trace + **真實 INT8 量化驗證**(附錄 C / `scripts/quantize_lstm_onnx.py`,size 3.49× / ΔMAPE +0.10 pp / CPU INT8 1.12× 加速,measured)| ✅ |
@@ -896,33 +897,39 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 ---
 
-## 附錄 C — STM32N6 X-CUBE-AI 靜態分析(proxy)
+## 附錄 C — STM32N6 X-CUBE-AI 混合分析(measured size+accuracy + estimated NPU latency)
 
 完整版見獨立文件 [`docs/x_cube_ai_static_analysis.md`](x_cube_ai_static_analysis.md),
 本附錄摘要其重點。
 
-> **重要聲明**:這是用 Python `onnx` library + ST 公開資料(AN5354 /
-> RM0498 / X-CUBE-AI 9.x release notes)做的**靜態分析估算**,**不是
-> ST X-CUBE-AI 工具實際跑出來的 trace**。實機 trace 需 ST 帳號 +
-> Windows GUI,W3 計畫實機跑後**取代本附錄**。所有 latency / memory
-> 數字應視為 **±2× 不確定性**。
+> **混合報告**:本附錄合併兩條證據鏈 ——
+>
+> 1. **靜態 graph 分析(proxy)**:用 Python `onnx` library + ST 公開資料
+>    (AN5354 / RM0498 / X-CUBE-AI 9.x release notes)估算 op dispatch 與
+>    NPU latency。NPU latency 數字仍視為 **±2× 不確定性**,實機 trace 需
+>    ST 帳號 + Windows GUI(SOP: `docs/x_cube_ai_install_sop.md`),W3 計畫補。
+> 2. **真實 INT8 量化驗證(measured)**:`scripts/quantize_lstm_onnx.py` 用
+>    `onnxruntime.quantization.quantize_dynamic` 對 `models/lstm_rul.onnx`
+>    真實量化(matches X-CUBE-AI 9.x INT8 路徑,AN5354 §INT8),在 Severson +
+>    BBU 188-cell test 集上測 size、accuracy、CPU latency。**這部分是真實量測,
+>    不是估算**;報告 JSON: `data/processed/lstm_quantization_report.json`。
 
 ### C.1 模型摘要(`models/lstm_rul.onnx`)
 
-| 項目 | 值 |
-|---|---:|
-| 參數總數 | 54,093 |
-| Weight FLASH (FP32 export) | 211 KB |
-| Weight FLASH (INT8 量化估) | **52.8 KB** |
-| Activation peak SRAM (INT8) | **32.0 KB** |
-| ONNX nodes | 52 |
+| 項目 | 值 | 來源 |
+|---|---:|---|
+| 參數總數 | 54,093 | static graph |
+| Weight FLASH (FP32 graph + external data) | **219.18 KiB** | **measured** |
+| Weight FLASH (INT8 dynamic quantised) | **62.87 KiB** | **measured(3.49× compression)** |
+| Activation peak SRAM (INT8 estimate) | 32.0 KB | static graph |
+| ONNX nodes | 52 | static graph |
 
 ### C.2 STM32N6 配適
 
 | 資源 | 模型需求 | NPU 容量 | 配適? |
 |---|---:|---:|:---:|
-| Weight FLASH | 52.8 KB | 1638.4 KB(1.6 MB) | ✅ 用 3 % |
-| Activation SRAM | 32.0 KB | 1024 KB(1 MB) | ✅ 用 3 % |
+| Weight FLASH(INT8 measured) | 62.9 KB | 1638.4 KB(1.6 MB) | ✅ 用 4 % |
+| Activation SRAM(INT8 estimate) | 32.0 KB | 1024 KB(1 MB) | ✅ 用 3 % |
 
 模型遠小於 NPU 容量上限,**沒有需要外部 PSRAM spillover 的風險**。
 
@@ -956,19 +963,40 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 **對比 v2.1 §1.4 承諾的 0.3 ms = 300 µs**:本估算 54.7 µs **遠低於承諾
 上限**,即使打 ±2× 不確定區間,worst-case 109 µs 仍有 3× margin。
 
-### C.5 W3 待補實機驗證
+### C.5 真實 INT8 量化驗證(measured,2026-05-03)
 
-本附錄無法提供以下,需 W3 用實際 X-CUBE-AI 工具補:
+由 `scripts/quantize_lstm_onnx.py` 用 onnxruntime.quantization.quantize_dynamic
+跑出,完整報告見 `data/processed/lstm_quantization_report.json`。
 
-1. **INT8 量化精度損失**(本估算假設無損,實際可能 +0.1–0.5 % MAPE)
-2. **每層 cycle-accurate latency**(本估算只給總體 order of magnitude)
-3. **實際 NPU utilisation per-layer**(本估算用 40 % 全域 heuristic)
-4. **Buffer placement**(activation 是否真 fit ML SRAM,memory layout)
-5. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)
+| 指標 | FP32 baseline | INT8 quantised | Δ |
+|---|---:|---:|---:|
+| ONNX size(total) | 219.18 KiB | **62.87 KiB** | **3.49× compression** |
+| Test MAPE(188 cells)| 19.10 % | 19.20 % | **+0.10 pp** |
+| Test R² | 0.862 | 0.862 | 不變 |
+| Mean \|prediction Δ\| / FP32 prediction | — | — | **0.57 %** |
+| CPU p50 latency | 0.258 ms | 0.231 ms | **1.12× speedup** |
+| CPU p99 latency | 0.441 ms | 0.399 ms | 1.10× speedup |
+
+**結論**:INT8 dynamic quantisation 在這個 LSTM 上**幾乎無精度退化**,
+是 STM32N6 部署選 INT8 的 go/no-go 證據。**注意**:CPU INT8 vs CPU FP32
+的 1.12× 加速**不能外推到 NPU**,因為 STM32N6 Neural-ART NPU 走的是另一條
+INT8 SIMD 路徑;NPU 真實加速倍率仍待 X-CUBE-AI 實機 trace。
+
+### C.6 W3 待補實機驗證
+
+以下仍需 W3 用實際 X-CUBE-AI 工具補(SOP: `docs/x_cube_ai_install_sop.md`):
+
+1. **NPU per-layer cycle-accurate latency**(本估算只給總體 ±2× order of magnitude)
+2. **實際 NPU utilisation per-layer**(本估算用 40 % 全域 heuristic)
+3. **Buffer placement**(activation 是否真 fit ML SRAM,memory layout)
+4. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)
+5. **STM32N6 上的 INT8 精度**(我們已測 onnxruntime CPU INT8 ΔMAPE +0.10 pp;
+   ST 工具策略可能差 ±0.5 pp,需實機驗證對齊)
 
 > v2.1 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
-> (a) ST datasheet 廠商 spec + (b) 本靜態分析 estimate 共同支持。
-> 實機 trace 完成後本附錄將升級為 first-party 量測證據。
+> (a) ST datasheet 廠商 spec + (b) 本靜態分析 estimate + (c) onnxruntime
+> CPU INT8 measured baseline 共同支持。實機 NPU trace 完成後本附錄將升級為
+> first-party 量測證據。
 
 ---
 
@@ -994,7 +1022,7 @@ atcc-sysblade/
 ├── packages/
 │   ├── battery-twin/                            # Python ML 套件
 │   │   ├── data_loaders/
-│   │   │   ├── severson_parser.py               # §3.3.3 9 個 feature
+│   │   │   ├── severson_parser.py               # §3.3.3 13 個 feature
 │   │   │   ├── nasa_parser.py                   # §3.3.5 NASA 解析
 │   │   │   └── _http.py                         # 共用下載器
 │   │   └── lstm_rul/
@@ -1004,9 +1032,13 @@ atcc-sysblade/
 │
 ├── scripts/
 │   ├── generate_twin_scenarios.py               # PyBaMM 4 個情境離線跑
-│   ├── eval_severson_models.py                  # §3.3.3 OLS 結果 → JSON
+│   ├── generate_bbu_duty_cells.py               # 50 顆 PyBaMM-calibrated BBU duty 合成 cell
+│   ├── eval_severson_models.py                  # §3.3.3 OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack sweep → JSON
 │   ├── eval_cross_dataset.py                    # §3.3.5 + 附錄 B 結果 → JSON
-│   └── export_lstm_onnx.py                      # §3.4 ONNX 匯出
+│   ├── export_lstm_onnx.py                      # §3.4 LSTM 訓練 + ONNX 匯出 + MC Dropout + split conformal
+│   ├── quantize_lstm_onnx.py                    # 附錄 C.5 INT8 動態量化 + accuracy 退化驗證
+│   ├── onnx_static_analysis.py                  # 附錄 C 靜態 graph 分析(自動 merge INT8 量測)
+│   └── check_whitepaper_numbers.py              # CI gate:whitepaper/README/PRESENTATION 數字 cross-check
 │
 ├── models/
 │   ├── lstm_rul.onnx                            # ONNX IR opset 17
@@ -1031,8 +1063,12 @@ atcc-sysblade/
 
 > **文件版本歷史**
 >
-> * v1.0 — 2026-04-29 初版(W2 末)。涵蓋 §1–§9 + 附錄 A/B/D;附錄 C
->   為占位章節,W3 補。
+> * v1.0 — 2026-04-29 初版(W2 末)。涵蓋 §1–§9 + 附錄 A/B/D。
+> * v1.1 — 2026-05-03。附錄 C 從占位升級為混合報告(static graph proxy + 真實 INT8
+>   量測,size 3.49× / ΔMAPE +0.10 pp 為 measured;NPU latency 仍為 ±2× 估算,
+>   W3 待真機 trace);§3.3.3 / §3.3.4 / §6.2 加入 bagged-GBT + xstrict 與 bagged-OLS
+>   結果(median MAPE 14.51 % → 8.38 %,首次達 v2.1 §B < 10 % 承諾);LSTM 整體
+>   test MAPE 從早期數字同步至 `model_validation.json` 真值 19.10 %、R² 0.86。
 > * 後續更新將以 git commit 形式追蹤,每次更動含 changelog。
 
 > **End of document**

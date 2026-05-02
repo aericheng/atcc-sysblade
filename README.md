@@ -86,9 +86,13 @@ atcc/
 ├── notebooks/                                    EDA + 訓練 + cross-dataset eval
 ├── scripts/
 │   ├── generate_twin_scenarios.py                4 個 PyBaMM 場景 + 1000-device fleet
+│   ├── generate_bbu_duty_cells.py                50 顆 PyBaMM-calibrated BBU duty 合成 cell
 │   ├── export_lstm_onnx.py                       訓練 LSTM + ONNX export + MC Dropout + split conformal
-│   ├── run_severson_baselines.py                 OLS 1/5/9-feature 三段比較
-│   └── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試
+│   ├── eval_severson_models.py                   OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack 全 sweep,§3.3.3 結果 → JSON
+│   ├── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試
+│   ├── quantize_lstm_onnx.py                     INT8 動態量化 + accuracy 退化 + CPU latency 量測
+│   ├── onnx_static_analysis.py                   STM32N6 NPU 靜態 graph 分析(自動 merge INT8 量測報告)
+│   └── check_whitepaper_numbers.py               whitepaper / README / PRESENTATION_GUIDE 數字 cross-check gate
 ├── data/raw/  data/processed/                    .gitignore(>8 GB)
 └── project guidance  DEPLOY.md  PRESENTATION_GUIDE.md
 ```
@@ -131,13 +135,20 @@ pnpm scenarios                                # = python scripts/generate_twin_s
 # 3. 重訓 LSTM + 匯出 ONNX(可選;~3 min CPU)
 python scripts/export_lstm_onnx.py            # → apps/web/public/scenarios/model_validation.json
 
-# 4. OLS baselines(可選,跑出 §3.3.3 那張表)
-python scripts/run_severson_baselines.py
+# 4. OLS / GBT 全 sweep(可選,跑出 §3.3.3 那張表)
+python scripts/eval_severson_models.py        # → data/processed/severson_model_eval.json
 
-# 5. Web app
+# 4b. INT8 量化驗證(附錄 C.5 那張表,~ 30 s)
+python scripts/quantize_lstm_onnx.py          # → data/processed/lstm_quantization_report.json
+
+# 5. Whitepaper / docs 數字 cross-check gate
+pnpm check:numbers                            # = python scripts/check_whitepaper_numbers.py
+
+# 6. Web app
 cd apps/web && pnpm install
 pnpm dev                                      # → http://localhost:3000
-pnpm typecheck && pnpm lint && pnpm build     # 推 main 之前先跑這條
+pnpm check                                    # typecheck + lint + check:numbers
+pnpm build                                    # 推 main 之前先跑這條
 ```
 
 Severson .mat v7.3 訓練資料(8.3 GB)需要手動下載,流程見 [`docs/severson_download.md`](docs/severson_download.md)。

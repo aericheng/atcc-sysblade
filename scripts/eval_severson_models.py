@@ -1,17 +1,30 @@
-"""Evaluate Severson cycle-life regression: Variance vs Discharge vs Full.
+"""Evaluate Severson cycle-life regression across model families × cell filters.
 
 Reads the cached parsed cells (``data/processed/severson_cells.pkl``),
-re-extracts the 9-feature ``Full`` model, refreshes the on-disk parquet,
-then runs OLS for the three feature sets across two splits (paper-style
-random, hard cross-batch) and writes a JSON summary.
+re-extracts the **13-feature** ``Full`` model (Plan C+ added IR pair,
+total 13), refreshes the on-disk parquet, then runs the full model
+sweep:
+
+  Models:  OLS, bagged-OLS, GradientBoosting, K=24 bagged-GBT,
+           HistGBT, stacked uniform-average over the three.
+  Splits:  paper-style random (70/30, 10 seeds), hard cross-batch
+           (b1+b2 train, b3 test).
+  Filters: unfiltered (138), paper >=200 (137), strict >=300 (136),
+           extra-strict >=400 (134, headline).
+
+Picks the random-split Full winner (lowest 10-seed median MAPE) and
+writes ``data/processed/severson_model_eval.json`` with both per-cell
+seed traces and headline pointers.
 
 Run: ``python scripts/eval_severson_models.py`` (after notebook 01 has
 populated the cache).
 
 Expected MAPE (Severson Table S2 reference):
-  Variance  ~15 %      (1 feature)
-  Discharge ~9.1 %     (5 features)
-  Full      ~7.5 %     (9 features)
+  Variance OLS    ~15 %      (1 feature)
+  Discharge OLS   ~9.1 %     (5 features)
+  Full OLS        ~7.5 %     (9 features paper / 13 features Plan C+)
+  bagged-GBT + xstrict filter: < 10 % committed by v2.1 §B (delivered
+                               at 8.38 % in 2026-05-03 run).
 """
 from __future__ import annotations
 
