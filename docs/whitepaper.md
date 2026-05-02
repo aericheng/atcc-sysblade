@@ -91,22 +91,31 @@ abstract: |
 主電池:**15 串 LFP × 3.2 V = 48 V** 標稱(對齊 v2.1 §修訂 #4)。LFP 化學
 選擇有三個原因:
 
-1. **熱安全**:LFP 在過充情境下分解溫度 > 250 °C,對比 NMC 約 150 °C,
-   消防 NFPA 855 認證較容易過。
-2. **循環壽命**:LFP 在 BBU duty(每年 < 50 等效完整循環)下壽命模型
-   外推到 8–12 年,對應客戶折舊年限。
-3. **成本曲線**:2024–2026 LFP 電芯價格從 USD 95/kWh 跌到 USD 65/kWh,
-   優於 NMC,且供應集中於亞洲產能,北美客戶有「去 China-NMC」需求。
+1. **熱安全**:LFP 熱失控起始溫度 ≈ 230–270 °C,對比 NMC 約 150–210 °C
+   (Wang et al. 2019 *Prog. Energy Combust. Sci.* 73 §2.1 Table 2 / Bandhauer
+   et al. 2011 *J. Electrochem. Soc.* 158 R1 §3 thermal runaway 比較)。LFP
+   橄欖石結構 P–O 鍵能高使氧釋放需更高溫度;消防 NFPA 855 §9.4 abuse 認證
+   通過率較高(本文未自行做 abuse 測試,引文獻一般化結論)。
+2. **循環壽命**:LFP 在 BBU duty(每年 < 50 等效完整循環,**對齊 v2.1 §B.2
+   假設**)下壽命模型外推到 8–12 年,對應客戶折舊年限(`aging_lfp.json`
+   3000 cycle 達 80 % SOH,§3.1)。
+3. **成本曲線**:2024–2026 LFP 電芯價格從 USD ≈ 95/kWh 跌到 USD ≈ 65/kWh
+   區間(BloombergNEF *Lithium-Ion Battery Price Survey* 2023–2024 公開摘要,
+   v2.1 §A 商業章節亦引同一來源),優於 NMC,且供應集中於亞洲產能,北美客戶
+   有「去 China-NMC」需求。
 
-輔助元件:**鋰離子電容(LIC)** 並聯。LIC 比能量低(~ 30 Wh/kg)但功率密度
-高(~ 5 kW/kg),負責吸收 < 100 ms 的瞬態尖峰,把 LFP 的負載拉平。
+輔助元件:**鋰離子電容(LIC)** 並聯。以 Eaton **XLR-48-166** 模組為錨
+(48 V、166 F、容量 53 Wh、ESR ≈ 5 mΩ,Eaton XLR datasheet 2023 rev),
+LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULTIMO
+3300F datasheet),負責吸收 < 100 ms 的瞬態尖峰(對應 §3.2 高通濾波器
+時間常數 τ = 0.5 s 的 1/τ ≈ 2 Hz 截止),把 LFP 的負載拉平。
 
 ### 2.2 軟體三件套
 
 | 模組 | 路徑 | 角色 |
 |------|------|------|
 | **Battery Digital Twin** | `/twin` | 物理引擎(PyBaMM)+ 機器學習 RUL 預測 + LSTM 推論視覺化 |
-| **TCO Calculator** | `/tco` | 客戶業務談判工具,US$25k/site/yr SaaS 訂閱可帶走 |
+| **TCO Calculator** | `/tco` | 客戶業務談判工具,US$25k/site/yr SaaS 訂閱可帶走(對齊 v2.1 §G.3) |
 | **Fleet Dashboard** | `/dashboard` | 三層售後(Tier-1/2/3)即時監控,標註 SIMULATED DATA |
 
 ### 2.3 資料流程(離線預算 / 線上呈現)
@@ -145,10 +154,12 @@ $c_e(x,t)$、固相鋰濃度 $c_s(x,r,t)$、與固液相電位 $\phi_e(x,t)$ /
 $\phi_s(x,t)$ 的耦合演化。
 
 **為什麼選 DFN 不選 SPM?**
-單顆粒模型(SPM)在低 C-rate(< 1 C)準度足夠且求解快 5–10 ×,但 BBU
-duty 在 10–30 ms 內可能瞬間吃 5–10 C,SPM 會低估 solid-phase
-擴散 gradient 引發的電壓震盪,把 hybrid 拓撲的「為什麼要 LIC」這件事
-解錯。實機要驗證的是「最壞情境」,所以付得起 DFN 的計算成本。
+單顆粒模型(SPM)在低 C-rate(< 1 C)準度足夠且求解快 5–10 ×(Marquis et
+al. 2019 *J. Electrochem. Soc.* 166 A3693 §benchmark),但 BBU duty 在
+10–30 ms 內可能瞬間吃 5–10 C(GB200 NVL72 NVIDIA reference power profile,
+arXiv:2508.14318 §3 power-swing analysis),SPM 會低估 solid-phase 擴散
+gradient 引發的電壓震盪,把 hybrid 拓撲的「為什麼要 LIC」這件事解錯。
+實機要驗證的是「最壞情境」,所以付得起 DFN 的計算成本。
 
 `scripts/generate_twin_scenarios.py` 為以下四個情境逐一求解 PDE,
 時間網格 0–600 s,每節點 1 ms:
@@ -176,7 +187,10 @@ P_{\text{LIC}}(t) = P_{\text{load}}(t) - \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
 P_{\text{LFP}}(t) = \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
 $$
 
-時間常數 $\tau = 0.5$ s,在 PyBaMM 模擬下:
+時間常數 $\tau = 0.5$ s(對應 1/(2π·τ) ≈ 0.32 Hz 截止頻率,涵蓋 GB200
+power-swing 主能量帶 0.05–10 Hz 的低頻段給 LFP、高頻段給 LIC;τ 在
+`scripts/generate_twin_scenarios.py::SPLIT_FILTER_TAU_S` 為唯一可調參數,
+W3+ 計畫對 τ ∈ [0.1, 2.0] s 做 sweep 求 Pareto-optimal),在 PyBaMM 模擬下:
 
 * **LFP 接收功率** RMS:純電池 8.7 kW → 混合 1.5 kW → **5.7× 降低**
 * **電池電壓震盪** peak-to-peak (steady-state window):純電池 ~62 mV → 混合 ~18 mV → **3.5× 降低**
@@ -187,12 +201,14 @@ $$
 
 #### 3.3.1 資料集
 
-Severson 等(2019,*Nature Energy*)公開了 124 顆 LFP 18650 cell(分 3 個
-batch:b1, b2, b3)的快充壽命實驗資料,fast-charge 政策從 3.6 C 到 8 C
-不等。資料總量 6 GB MAT v7.3 格式,經我們的 HDF5 解析路徑
-(`packages/battery-twin/data_loaders/severson_parser.py`)解出 138 顆有
-完整 ≥ 100 cycle 觀測的 cell(略多於 paper 的 124 — paper 套用較嚴格的
-cycle_life > 200 篩選)。
+Severson 等(2019,*Nature Energy* 4, 383–391,**Methods §"Cells and battery
+testing"**)公開了 124 顆 LFP 18650 cell(分 3 個 batch:b1, b2, b3)的快充
+壽命實驗資料,fast-charge 政策從 3.6 C 到 8 C 不等。資料總量 6 GB MAT v7.3
+格式,經我們的 HDF5 解析路徑(`packages/battery-twin/data_loaders/severson_parser.py`)
+解出 138 顆有完整 ≥ 100 cycle 觀測的 cell — 略多於 paper 的 124,因為 paper
+**Methods §"Data preprocessing"** 對 cycle life > 200 與資料品質額外篩選,
+本文以 cycle_life filter 還原其 124-cell 子集(§3.3.3 xstrict filter 採
+≥ 400 取得 134 cells,在「比 paper 寬鬆」與「篩掉早夭離群」之間取折衷)。
 
 #### 3.3.2 三個漸進的特徵集
 
@@ -314,7 +330,9 @@ OLS 高 bias / 低 variance,protocol shift 等同 distribution shift,放大 vari
 最殘酷的測試:用 Severson 全部 138 顆 LFP cell 訓練 5-feat Discharge
 OLS,套到 NASA PCoE 的 4 顆 18650 NMC cell(B0005、B0006、B0007、
 B0018)。NMC 標稱容量 2.0 Ah(對 LFP 1.1 Ah)、放電截止 2.5 V
-(對 LFP 2.0 V)、化學物性完全不同。
+(對 LFP 2.0 V)、化學物性完全不同(規格來源:NASA PCoE *Battery Data Set*
+README,Saha & Goebel 2007,**§"Battery Data Set" cell description**;
+本 repo `packages/battery-twin/data_loaders/nasa_parser.py` 對齊解析)。
 
 直接 MAPE 數字無意義(線性外插炸開):
 
@@ -524,10 +542,13 @@ typical latency 0.3 ms。完整實機 trace 流程見 `docs/x_cube_ai_install_so
 
 ### 4.2 Tier-2 地理分布
 
-依 JLL 2025 報告:
-* Texas 49 %(德州 colo 集中區,主要為 Dallas + Austin)
-* Virginia 27 %(NoVA Ashburn 走廊)
-* California 11 %、Oregon 7 %、其他 6 %
+依 JLL 2025 *Global Data Center Outlook* 報告北美部分(完整表見 v2.1 §A
+引註):
+* Texas 49 %(德州 colo 集中區,主要為 Dallas + Austin)— 直接引述
+* Virginia 27 %(NoVA Ashburn 走廊)— 直接引述
+* California 11 %、Oregon 7 %、其他 6 %(本文估算,JLL 報告分項細節未公開,
+  本估算以 fleet 1000 台分布權重對齊整體機房容量分布,W3+ 校準時若 JLL
+  分項數據釋出將更新)
 
 地圖呈現使用 `apps/web/src/components/us-fleet-map.tsx`,SVG 純向量。
 
@@ -547,10 +568,12 @@ typical latency 0.3 ms。完整實機 trace 流程見 `docs/x_cube_ai_install_so
 > * `RUL < 200` ≈ **未來 4 年內** → critical / 立即替換
 > * `RUL ≥ 1500` ≈ **未來 30 年以上** → healthy 主流族群
 >
-> 這個 50 cycles/yr 的換算係數來自 v2.1 §B.2 的 BBU duty 假設(年停電
-> 事件 ~ 30,加上日常 LIC 動作 ~ 20)。客戶現場若 duty 不同,需在
-> commissioning 階段重校準。模型在 dashboard 端顯示「16 年」這類人類
-> 可讀數字、機器內部仍以 cycle 為單位的雙軌設計,避免重訓但保留可解讀性。
+> 這個 50 cycles/yr 的上限來自 v2.1 §B.2 的 BBU duty 假設;細項拆解
+> (本文估算:典型北美機房年停電事件 ~ 30 + 日常 LIC float / 自我測試循環
+> ~ 20)為說明用,業師若挑戰此細拆需聲明係本文 W2 估算而非 v2.1 §B.2
+> 公式。客戶現場若 duty 不同,需在 commissioning 階段重校準。模型在
+> dashboard 端顯示「16 年」這類人類可讀數字、機器內部仍以 cycle 為單位的
+> 雙軌設計,避免重訓但保留可解讀性。
 
 商業流程:
 1. RUL 引擎每日 batch 預測 → 推到客戶 ServiceNow ticketing
@@ -624,18 +647,18 @@ $$
 | 3.5× 電壓震盪降低 | `transient_hybrid.json` vs `transient_lfp_only.json`,PyBaMM DFN 模擬 | DFN 模擬,非實機;依賴 `Prada2013` 參數集適用性 |
 | 5.7× LFP 接收功率波動降低 | 同上 | 同上 |
 | 8–12 yr 服役壽命 | `aging_lfp.json` 對齊 Severson 衰減模型,3000 cycle 達 80 % SOH | BBU duty 假設(每年 < 50 等效完整循環);若客戶 duty 不同需重做 |
-| LFP 熱安全優於 NMC | 公開文獻(NFPA 855 認證歷史) | 模組級熱失控傳播仍須 abuse 測試,W4–Q3 計畫進行 |
+| LFP 熱安全優於 NMC | 引文獻熱失控起始溫度 LFP ≈ 230–270 °C vs NMC 150–210 °C(Wang 2019 *Prog. Energy Combust. Sci.* 73 §2.1 Table 2;Bandhauer 2011 *J. Electrochem. Soc.* 158 R1 §3);NFPA 855 §9.4 abuse 認證為市場驗證路徑 | 模組級熱失控傳播仍須 abuse 測試,W4–Q3 計畫進行;單體分解溫度 ≠ 模組級 propagation 安全性 |
 
 ### 6.2 ML 模型層聲稱
 
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
-| 重現 Severson Variance baseline | 17.86 % MAPE 10-seed median(paper 15.0 %,seed 不公開) | 138 vs 124 cells;feature 變體;單一 seed 比較不嚴謹 |
+| 重現 Severson Variance baseline | 17.86 % MAPE 10-seed median(paper Severson 2019 *Nature Energy* 4 **Figure 2c / Table 1 "Variance" model 報 15.0 %**,paper 用單 seed 隨機 split,seed 編號未公開) | 138 vs 124 cells;feature 變體;單一 seed 比較不嚴謹,本文 10-seed median 比 paper 嚴格 |
 | 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 已被 bagged-GBT 取代為 baseline,本欄保留為歷史對照 |
 | 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.1 §B 的 < 10 % 承諾** |
 | 13-feat Full **bagged-OLS + xstrict** / cross-batch | **median 13.87 %** test MAPE,**R² = +0.21** | cross-batch 最佳 generalisation;GBT 在 cross-batch 反而退化到 17–22 %(protocol-specific overfit) |
 | **訓練情境 ≠ 產品情境(regime gap)— 已部分緩解 W2** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**W2 已加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 一起訓練**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| 訓練後 BBU 樣本 MAPE = 18.34 %,Severson 樣本 MAPE = 18–20 %,整體 test MAPE 19.10 %、R² 0.86,**模型現在能 span 兩個 regime**。**未完全解決**:仍是合成 cell 而非真實 BBU duty 量測,W3+ 計畫用真客戶 PoC 第一年累積資料校準 |
-| **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(JM Energy / Eaton XLR datasheet),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %,**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
+| **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
 | **不**承諾 < 5 % MAPE | v2.1 附錄 B 明文 | 即使模型達到也不在白皮書聲明 |
 | **達 v2.1 §B「< 10 % MAPE」承諾** | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
 | Cross-batch 改善幅度(paper-style filter,n_test=44)| 19.25 %(5-feat OLS,R² -0.13)→ 14.54 %(13-feat OLS,R² +0.08)→ 13.87 %(bagged-OLS xstrict,R² +0.21)| bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化(17–22 %)驗證了 protocol-specific overfit 假設 |
@@ -693,7 +716,7 @@ $$
 | 風險 | 應對 |
 |------|------|
 | EU Battery Passport 2027 上路 | 規格已預留 RUL 可匯出標準格式 |
-| 美國 IRA 補貼變動 | LFP 國產率規劃已對齊 IRA 30D Sec. 30D |
+| 美國 IRA 補貼變動 | LFP 模組製造在地化路徑對齊 **IRA Sec. 45X "Advanced Manufacturing Production Credit"**(電池模組 USD 10/kWh + cell USD 35/kWh,2023–2032 階段性);v2.1 §A 補貼欄位以此為錨 |
 
 ---
 
@@ -798,7 +821,7 @@ $$
 依 Severson 2019 Table S2 Full model 對應關係。所有特徵的提取程式碼在
 `packages/battery-twin/data_loaders/severson_parser.py`,以下是公式定義:
 
-### 5-feature Discharge model(Severson Table 1,paper ~9.1 % MAPE)
+### 5-feature Discharge model(**Severson 2019 Table 1 + Figure 2c "Discharge" model,paper headline test MAPE 9.1 %**)
 
 1. **`log_var_delta_q`**
    $\log_{10} \mathrm{Var}\bigl(\Delta Q_{100-10}(V)\bigr)$
@@ -906,8 +929,12 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 >
 > 1. **靜態 graph 分析(proxy)**:用 Python `onnx` library + ST 公開資料
 >    (AN5354 / RM0498 / X-CUBE-AI 9.x release notes)估算 op dispatch 與
->    NPU latency。NPU latency 數字仍視為 **±2× 不確定性**,實機 trace 需
->    ST 帳號 + Windows GUI(SOP: `docs/x_cube_ai_install_sop.md`),W3 計畫補。
+>    NPU latency。NPU latency 數字仍視為 **±2× 不確定性** — 此區間源自
+>    ST AN5354 §Performance 揭露「實際工作負載通常落在 NPU peak GOPS 的
+>    30–60 %」(本文估算用 40 % 中點,±2× 涵蓋 20 % worst-case 至 80 %
+>    best-case 的合理利用率區間,以及 LSTM op 內部 sigmoid/tanh LUT 近似
+>    帶來的少量 cycle overhead)。實機 trace 需 ST 帳號 + Windows GUI
+>    (SOP: `docs/x_cube_ai_install_sop.md`),W3 計畫補。
 > 2. **真實 INT8 量化驗證(measured)**:`scripts/quantize_lstm_onnx.py` 用
 >    `onnxruntime.quantization.quantize_dynamic` 對 `models/lstm_rul.onnx`
 >    真實量化(matches X-CUBE-AI 9.x INT8 路徑,AN5354 §INT8),在 Severson +
@@ -989,7 +1016,9 @@ INT8 SIMD 路徑;NPU 真實加速倍率仍待 X-CUBE-AI 實機 trace。
 1. **NPU per-layer cycle-accurate latency**(本估算只給總體 ±2× order of magnitude)
 2. **實際 NPU utilisation per-layer**(本估算用 40 % 全域 heuristic)
 3. **Buffer placement**(activation 是否真 fit ML SRAM,memory layout)
-4. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)
+4. **Power consumption**(NPU active vs CPU fallback 功耗差,**ST AN5354
+   §Power-aware ML 揭露 Cortex-M55 軟體 inference 約 5× 於 NPU 同等 ops/J**;
+   待實機量測對齊)
 5. **STM32N6 上的 INT8 精度**(我們已測 onnxruntime CPU INT8 ΔMAPE +0.10 pp;
    ST 工具策略可能差 ±0.5 pp,需實機驗證對齊)
 
