@@ -15,7 +15,7 @@ flowchart LR
     direction TB
     SEV["Severson MIT<br/>Dataset<br/>(124 顆真實 cell)"]
     PYBAMM["PyBaMM DFN<br/>物理模擬<br/>(1000 cell)"]
-    LSTM["LSTM RUL<br/>訓練<br/>MAPE 9.1%"]
+    LSTM["RUL 模型訓練 · 3 pipelines<br/>bagged-GBT (Severson) 8.4 %<br/>bagged-OLS (cross-batch) 13.9 %<br/>LSTM (production) 19.1 %"]
     GEN["generate_twin_<br/>scenarios.py<br/>(單一產生器)"]
     SEV -->|校驗| LSTM
     PYBAMM --> GEN
