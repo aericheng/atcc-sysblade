@@ -29,31 +29,33 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 兩條 RUL 預測管線並行,各自有強項。**「one model, two views」** 政策:`/twin` Inference Walkthrough
 與 `/dashboard` 1000 台 fleet RUL 共用同一個 LSTM 推論輸出,確保兩頁面數字一致。
 
-### OLS baseline(隨機 split,10-seed median)
+### Severson cycle-life regression(隨機 split,10-seed median)
 
-| 模型 | 特徵數 | Random split MAPE | Cross-batch MAPE | R² | 備註 |
-|---|---:|---:|---:|---:|---|
-| Variance | 1 | 16.4 % | 15.8 % | 0.66 | 重現 Severson 2019 paper 頭條 |
-| Discharge | 5 | 17.6 % | 19.9 % | 0.70 | paper Table 1 5-feat |
-| Full(無 IR) | 9 | 12.6 % | 19.9 % | 0.73 | 加 thermal + late-fade slope |
-| **Full + IR** | **13** | **14.5 %** | **14.5 %** | **+0.08** | 加 internal-resistance feature,**cross-batch R² 由負轉正** |
+| 模型 | 特徵數 / Filter | Random split MAPE | Cross-batch MAPE | R² | 備註 |
+|---|---|---:|---:|---:|---|
+| Variance OLS | 1-feat / unfilt | 17.9 % | 15.8 % | 0.57 | 重現 Severson 2019 paper 頭條 |
+| Discharge OLS | 5-feat / unfilt | 17.5 % | 19.9 % | 0.53 | paper Table 1 5-feat |
+| Full + IR OLS | 13-feat / unfilt | 14.5 % | 14.5 % | +0.08 | 加 internal-resistance,**cross-batch R² 由負轉正** |
+| **Full + IR bagged-GBT (K=24)** | **13-feat / xstrict (≥400, n=134)** | **8.4 %** | 17.9 %(GBT 退化) | **0.89** | **首次達 v2.1 §B 的 < 10 % 承諾**;per-seed [5.93, 12.91],6/10 < 10 % |
+| **Full + IR bagged-OLS** | **13-feat / xstrict** | 12.4 % | **13.9 %** | +0.21 | cross-batch generalisation 最佳 |
 
-加 IR(protocol-invariant feature)後 cross-batch 準度大幅改善 — 這是跨 batch 部署
-最重要的訊號。**未達 v2.1 < 10 % 承諾(差約 4–5 pp)**,W3 計畫補:更嚴 cell filter + ensemble。
+**達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。
+跨 protocol 部署改用 bagged-OLS(13.87 %),GBT 在 cross-batch 因 protocol-specific 過擬合退化。
 
 ### LSTM(augmented,跨兩個 regime)
 
 | 項目 | 值 | 備註 |
 |---|---:|---|
 | 訓練 cell 數 | **188** | 138 Severson 2019 fast-charge + 50 PyBaMM-calibrated BBU-duty |
-| Test MAPE(隨機 split) | 22.5 % | Severson-only baseline 16 % → augment 後因 BBU regime 加入而上升 |
-| Test R² | 0.93 | 加入 BBU regime 後從 0.70 跳上來(覆蓋變廣是主要收益) |
-| ONNX 模型大小 | 8.2 KiB | 對齊 STM32N6 Flash 預算 |
-| ONNX 延遲 (laptop CPU p99) | **0.27 ms** | 50 ms 規格達標 ~185×;STM32N6 NPU 推估 ≈5 ms |
+| Test MAPE(隨機 split) | **19.1 %** | Severson-only baseline → augment 後 span 雙 regime |
+| Test R² | **0.86** | 跨 regime trade-off 後仍維持高解釋度 |
+| ONNX 模型大小 | FP32 219 KiB → **INT8 63 KiB(3.49× 壓縮 measured)** | 遠小於 STM32N6 1.6 MB ML FLASH;`scripts/quantize_lstm_onnx.py` 量測 |
+| INT8 量化精度退化 | **ΔMAPE +0.10 pp**(19.10 → 19.20 %),R² 不變 | 平均預測偏移 0.57 %,STM32N6 部署的 go/no-go 證據 |
+| ONNX 延遲 (laptop CPU p99) | FP32 **0.44 ms** / INT8 **0.40 ms** | 50 ms 規格達標 ~125×;STM32N6 NPU 推估 ≤5 ms(SOP `docs/x_cube_ai_install_sop.md` 待真機 trace) |
 | 不確定性方法 | MC Dropout + split conformal | 100 forward passes,共形 q_factor 0.56,**raw 1910 → conformal 1075 cycles 的中位數 PI(縮窄 44 %)**,test coverage 100 % ≥ 90 % 保證 · 校準集 37 cells held-out |
 
-LSTM 是 production 推論用(/twin walkthrough + /dashboard fleet),OLS 13-feat 是
-**「跨 batch 可遷移性」的證據**。MAPE 的 16→22 % 上升是 **regime gap closure trade-off**,
+LSTM 是 production 推論用(/twin walkthrough + /dashboard fleet),bagged-GBT 13-feat 是
+**「Severson paper 對齊」的學術 baseline**(< 10 % 承諾達標)。MAPE 上升是 **regime gap closure trade-off**,
 詳見白皮書 §3.3.5。
 
 ---

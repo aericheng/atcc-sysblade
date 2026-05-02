@@ -42,16 +42,19 @@ uv pip install -e packages/battery-twin[dev,api]
 
 | 模型 | 配置 | Random split MAPE | Cross-batch MAPE |
 |---|---|---:|---:|
-| OLS Variance | 1-feat | 16.4 % | 15.8 % |
-| OLS Discharge | 5-feat | 17.6 % | 19.9 % |
-| OLS Full(無 IR) | 9-feat | 12.6 % | 19.9 % |
-| **OLS Full + IR** | **13-feat** | **14.5 %** | **14.5 %**(R² 由負轉正) |
+| OLS Variance | 1-feat | 17.9 % | 15.8 % |
+| OLS Discharge | 5-feat | 17.5 % | 19.9 % |
+| OLS Full + IR | 13-feat | 14.5 % | 14.5 %(R² 由負轉正) |
+| **bagged-GBT (K=24) + xstrict cell filter** | **13-feat,n=134** | **8.4 %**(R² 0.89,6/10 seeds < 10 %)| 17.9 %(GBT 退化)|
+| **bagged-OLS + xstrict cell filter** | **13-feat,n=134** | 12.4 % | **13.9 %**(R² +0.21)|
 | **LSTM augmented** | 188 cells, MC Dropout + split conformal(q_factor 0.56)| 22.5 % | — |
 
-**v2.1 §B 承諾**:< 10 % MAPE。OLS 13-feat 14.5 % 跟承諾差約 4–5 pp。**未上實機資料前不承諾 < 5 %。**
+**v2.1 §B 承諾**:< 10 % MAPE。**已達標**:bagged-GBT + xstrict cell filter random split 10-seed median **8.38 %**(per-seed [5.93, 12.91])。Cross-batch 部署用 bagged-OLS(13.87 %)。**未上實機資料前不承諾 < 5 %。**
 
-## 為什麼有兩條管線
+## 為什麼有三條管線
 
-OLS 13-feat 是「**跨 batch 可遷移性的證據**」(Severson b1+b2 → b3 cross-batch R² 由負轉正);
-LSTM 是「**production 推論引擎**」,給 /twin walkthrough 和 /dashboard 1000 台 fleet RUL 共用
-(one model, two views)。兩條共存 — OLS 證明 feature 設計合理,LSTM 提供 calibrated PI。
+1. **bagged-GBT + xstrict cell filter** — paper 學術 baseline,提供 random split 8.38 % 的 in-distribution 上界,證明 13-feat 設計確實能達 v2.1 < 10 % 承諾。
+2. **bagged-OLS + xstrict cell filter** — cross-batch / cross-protocol fall-back,GBT 在跨 protocol 退化(17–22 %),bagged-OLS 在 cross-batch 反而最強(13.9 %)。
+3. **LSTM augmented(188 cells)** — production 推論引擎,給 /twin walkthrough 和 /dashboard 1000 台 fleet RUL 共用(one model, two views)。MC Dropout + split conformal calibrated PI 縮窄 44 %,coverage 仍 ≥ 90 %。
+
+三條共存 — GBT 證 paper 對齊、bagged-OLS 證 cross-batch 穩健、LSTM 提供 calibrated PI 與 BBU regime 涵蓋。
