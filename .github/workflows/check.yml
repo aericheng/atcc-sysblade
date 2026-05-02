@@ -1,0 +1,70 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Repo-level invariants only. CI does NOT have the 8 GB Severson dataset
+# (gitignored), the LSTM .pt checkpoint, or PyBaMM's casadi/jax stack — so
+# we cannot retrain or regenerate scenarios here. We can verify:
+#   1. apps/web typecheck + lint + build all green
+#   2. scenario JSONs in packages/shared/ match apps/web/public/
+#   3. fleet 1000 + Tier-3 admission rule
+#   4. landing/whitepaper headlines (3.5x, 5.7x, 33%, 8.38%, 13.87%, 14.51%,
+#      INT8 3.49x, ΔMAPE +0.10pp, LSTM 19.1%) match the JSON sources of truth
+#
+# Heavier reproducibility (Severson re-eval, LSTM retrain, PyBaMM rerun)
+# stays manual — see scripts/eval_severson_models.py and the W3 SOP at
+# docs/x_cube_ai_install_sop.md.
+
+jobs:
+  web:
+    name: Web typecheck + lint + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Use the same npm + legacy-peer-deps path Vercel uses (see vercel.json).
+      # pnpm 9 + Node 22 in CI hits ERR_INVALID_THIS in URLSearchParams; npm is
+      # the deliberate fallback per project house rules.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install (npm with legacy peer deps, matches Vercel)
+        working-directory: apps/web
+        run: npm install --legacy-peer-deps
+
+      - name: Typecheck
+        working-directory: apps/web
+        run: npx tsc --noEmit
+
+      - name: Lint
+        working-directory: apps/web
+        run: npx next lint
+
+      - name: Build (next + static export)
+        working-directory: apps/web
+        run: npx next build
+
+  numbers:
+    name: Whitepaper number cross-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # Only the standard library is needed for the cross-check — no pyarrow,
+      # torch, or pybamm. Keeping the deps surface tiny means the gate runs
+      # in <30s on a clean container.
+      - name: Run scripts/check_whitepaper_numbers.py
+        run: python scripts/check_whitepaper_numbers.py

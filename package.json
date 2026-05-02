@@ -8,7 +8,9 @@
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "typecheck": "pnpm --filter web exec tsc --noEmit",
-    "scenarios": "python scripts/generate_twin_scenarios.py"
+    "scenarios": "python scripts/generate_twin_scenarios.py",
+    "check:numbers": "python scripts/check_whitepaper_numbers.py",
+    "check": "pnpm typecheck && pnpm lint && pnpm check:numbers"
   },
   "packageManager": "pnpm@9.12.0"
 }

@@ -1,0 +1,175 @@
+{
+  "summary": "Severson cycle-life regression evaluated on three progressively harder regimes. The cross-dataset (Severson -> NASA) result is dominated by feature-distribution shift: every NASA feature lies outside the Severson training range, so the linear OLS extrapolates into a regime where its coefficients have no support and predicted cycle lives diverge by orders of magnitude. The headline finding for the white paper is therefore *distributional* (cannot deploy across chemistries without per-chemistry calibration) rather than a clean MAPE-degradation curve.",
+  "feature_sets": {
+    "discharge": [
+      "log_var_delta_q",
+      "log_min_delta_q",
+      "slope_q_2_100",
+      "intercept_q_2_100",
+      "q_at_cycle_2"
+    ],
+    "full": [
+      "log_var_delta_q",
+      "log_min_delta_q",
+      "slope_q_2_100",
+      "intercept_q_2_100",
+      "q_at_cycle_2",
+      "log_max_temp_2_100",
+      "log_temp_integral_2_100",
+      "log_charge_time_avg_2_6",
+      "slope_q_91_100"
+    ]
+  },
+  "n_train_severson": 138,
+  "n_test_nasa": 4,
+  "regimes": {
+    "severson_random": [
+      {
+        "label": "Discharge",
+        "regime": "severson_random",
+        "n_features": 5,
+        "train_n": 96,
+        "test_n": 42,
+        "train_mape_pct": 13.64,
+        "test_mape_pct": 17.64,
+        "test_rmse_cycles": 188.0,
+        "test_r2": 0.701
+      },
+      {
+        "label": "Full",
+        "regime": "severson_random",
+        "n_features": 9,
+        "train_n": 96,
+        "test_n": 42,
+        "train_mape_pct": 12.67,
+        "test_mape_pct": 12.6,
+        "test_rmse_cycles": 179.0,
+        "test_r2": 0.729
+      }
+    ],
+    "severson_cross_batch": [
+      {
+        "label": "Discharge",
+        "regime": "severson_cross_batch",
+        "n_features": 5,
+        "train_n": 94,
+        "test_n": 44,
+        "train_mape_pct": 14.05,
+        "test_mape_pct": 19.88,
+        "test_rmse_cycles": 335.0,
+        "test_r2": -0.164
+      },
+      {
+        "label": "Full",
+        "regime": "severson_cross_batch",
+        "n_features": 9,
+        "train_n": 94,
+        "test_n": 44,
+        "train_mape_pct": 11.42,
+        "test_mape_pct": 19.93,
+        "test_rmse_cycles": 339.0,
+        "test_r2": -0.191
+      }
+    ],
+    "cross_dataset": [
+      {
+        "label": "Discharge",
+        "regime": "cross_dataset_severson_to_nasa",
+        "n_features": 5,
+        "train_n": 138,
+        "test_n": 4,
+        "test_mape_pct": 16433.86,
+        "test_rmse_cycles": 14098.0,
+        "test_r2": -329236.041,
+        "feature_distribution_check": {
+          "per_feature": [
+            {
+              "feature": "log_var_delta_q",
+              "severson_min": -5.206,
+              "severson_max": -2.7269,
+              "severson_mean": -3.8781,
+              "severson_std": 0.4408,
+              "nasa_min": -2.0655,
+              "nasa_max": -1.5377,
+              "nasa_within_severson_range": false,
+              "worst_z_from_severson_mean": 5.31
+            },
+            {
+              "feature": "log_min_delta_q",
+              "severson_min": -2.3046,
+              "severson_max": -0.86,
+              "severson_mean": -1.4623,
+              "severson_std": 0.238,
+              "nasa_min": -0.5115,
+              "nasa_max": -0.2567,
+              "nasa_within_severson_range": false,
+              "worst_z_from_severson_mean": 5.06
+            },
+            {
+              "feature": "slope_q_2_100",
+              "severson_min": -0.0011,
+              "severson_max": 0.0,
+              "severson_mean": -0.0,
+              "severson_std": 0.0001,
+              "nasa_min": -0.0063,
+              "nasa_max": -0.0036,
+              "nasa_within_severson_range": false,
+              "worst_z_from_severson_mean": 54.0
+            },
+            {
+              "feature": "intercept_q_2_100",
+              "severson_min": 0.9696,
+              "severson_max": 1.1015,
+              "severson_mean": 1.0733,
+              "severson_std": 0.0158,
+              "nasa_min": 1.8572,
+              "nasa_max": 2.0422,
+              "nasa_within_severson_range": false,
+              "worst_z_from_severson_mean": 61.41
+            },
+            {
+              "feature": "q_at_cycle_2",
+              "severson_min": 0.9717,
+              "severson_max": 1.0946,
+              "severson_mean": 1.069,
+              "severson_std": 0.015,
+              "nasa_min": 1.852,
+              "nasa_max": 2.0366,
+              "nasa_within_severson_range": false,
+              "worst_z_from_severson_mean": 64.55
+            }
+          ],
+          "n_features_outside_training_range": 5,
+          "n_features_total": 5
+        },
+        "test_predictions": [
+          {
+            "cell_id": "nasa_B0005",
+            "actual_cycle_life": 106,
+            "predicted_cycle_life": 8589.473788938585,
+            "abs_pct_error": 8003.277159376023
+          },
+          {
+            "cell_id": "nasa_B0006",
+            "actual_cycle_life": 62,
+            "predicted_cycle_life": 22540.728875023568,
+            "abs_pct_error": 36256.014314554144
+          },
+          {
+            "cell_id": "nasa_B0007",
+            "actual_cycle_life": 126,
+            "predicted_cycle_life": 10589.40045079466,
+            "abs_pct_error": 8304.286072059253
+          },
+          {
+            "cell_id": "nasa_B0018",
+            "actual_cycle_life": 79,
+            "predicted_cycle_life": 10484.758794393376,
+            "abs_pct_error": 13171.846575181487
+          }
+        ]
+      }
+    ]
+  },
+  "generated_at_utc": "2026-04-29T02:47:53.356250+00:00"
+}
