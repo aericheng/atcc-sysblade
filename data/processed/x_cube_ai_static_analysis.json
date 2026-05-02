@@ -1,0 +1,457 @@
+{
+  "model_path": "models\\lstm_rul.onnx",
+  "total_params": 54093,
+  "weights_fp32_kb": 211.3,
+  "weights_int8_kb_estimated": 52.8,
+  "activation_peak_int8_kb": 32.0,
+  "n_nodes": 52,
+  "n_initializers": 22,
+  "by_op_count": {
+    "Shape": 3,
+    "Concat": 6,
+    "Expand": 1,
+    "Transpose": 4,
+    "Slice": 22,
+    "Unsqueeze": 3,
+    "LSTM": 2,
+    "Mul": 2,
+    "Reshape": 4,
+    "Gather": 1,
+    "Gemm": 2,
+    "Relu": 1,
+    "Squeeze": 1
+  },
+  "by_dispatch_count": {
+    "npu": 45,
+    "partial": 3,
+    "cpu": 4,
+    "removed": 0
+  },
+  "total_macs_estimated": 3281954,
+  "npu_macs_estimated": 3281954,
+  "cpu_macs_estimated": 0,
+  "npu_utilisation_assumed_pct": 40,
+  "estimated_npu_latency_us": 54.7,
+  "estimated_cpu_fallback_latency_us": 0.0,
+  "estimated_total_latency_us": 54.7,
+  "fits_npu_sram": true,
+  "fits_npu_flash": true,
+  "per_node": [
+    {
+      "name": "node_Shape_0",
+      "op": "Shape",
+      "dispatch": "cpu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Concat_7",
+      "op": "Concat",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_zeros",
+      "op": "Expand",
+      "dispatch": "cpu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 4,
+      "weights_int8_bytes": 1
+    },
+    {
+      "name": "node_Transpose_14",
+      "op": "Transpose",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Slice_18",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 24,
+      "weights_int8_bytes": 6
+    },
+    {
+      "name": "node_Slice_32",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_34",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_37",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_40",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Concat_42",
+      "op": "Concat",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Unsqueeze_44",
+      "op": "Unsqueeze",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    },
+    {
+      "name": "node_LSTM_67",
+      "op": "LSTM",
+      "dispatch": "partial",
+      "macs_estimated": 3244032,
+      "weights_fp32_bytes": 9216,
+      "weights_int8_bytes": 2304
+    },
+    {
+      "name": "node_Transpose_68",
+      "op": "Transpose",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Shape_69",
+      "op": "Shape",
+      "dispatch": "cpu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Slice_70",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Slice_72",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Slice_74",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Slice_76",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Mul_77",
+      "op": "Mul",
+      "dispatch": "npu",
+      "macs_estimated": 1,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Reshape_79",
+      "op": "Reshape",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    },
+    {
+      "name": "node_Concat_80",
+      "op": "Concat",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Reshape_81",
+      "op": "Reshape",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Slice_82",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 24,
+      "weights_int8_bytes": 6
+    },
+    {
+      "name": "node_Slice_84",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_86",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_89",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_92",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_93",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_95",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_98",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Slice_101",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 65560,
+      "weights_int8_bytes": 16390
+    },
+    {
+      "name": "node_Concat_102",
+      "op": "Concat",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Concat_103",
+      "op": "Concat",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Unsqueeze_104",
+      "op": "Unsqueeze",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    },
+    {
+      "name": "node_Unsqueeze_105",
+      "op": "Unsqueeze",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    },
+    {
+      "name": "node_LSTM_128",
+      "op": "LSTM",
+      "dispatch": "partial",
+      "macs_estimated": 32768,
+      "weights_fp32_bytes": 2048,
+      "weights_int8_bytes": 512
+    },
+    {
+      "name": "node_Transpose_129",
+      "op": "Transpose",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Shape_130",
+      "op": "Shape",
+      "dispatch": "cpu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Slice_131",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Slice_132",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Slice_133",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Slice_134",
+      "op": "Slice",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 16,
+      "weights_int8_bytes": 4
+    },
+    {
+      "name": "node_Mul_135",
+      "op": "Mul",
+      "dispatch": "npu",
+      "macs_estimated": 1,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Reshape_137",
+      "op": "Reshape",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    },
+    {
+      "name": "node_Concat_138",
+      "op": "Concat",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_Reshape_139",
+      "op": "Reshape",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_lstm__0",
+      "op": "Transpose",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_select",
+      "op": "Gather",
+      "dispatch": "partial",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    },
+    {
+      "name": "node_linear",
+      "op": "Gemm",
+      "dispatch": "npu",
+      "macs_estimated": 4096,
+      "weights_fp32_bytes": 8320,
+      "weights_int8_bytes": 2080
+    },
+    {
+      "name": "node_relu",
+      "op": "Relu",
+      "dispatch": "npu",
+      "macs_estimated": 32,
+      "weights_fp32_bytes": 0,
+      "weights_int8_bytes": 0
+    },
+    {
+      "name": "node_linear_1",
+      "op": "Gemm",
+      "dispatch": "npu",
+      "macs_estimated": 1024,
+      "weights_fp32_bytes": 132,
+      "weights_int8_bytes": 33
+    },
+    {
+      "name": "node_squeeze",
+      "op": "Squeeze",
+      "dispatch": "npu",
+      "macs_estimated": 0,
+      "weights_fp32_bytes": 8,
+      "weights_int8_bytes": 2
+    }
+  ]
+}

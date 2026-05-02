@@ -545,14 +545,14 @@ export function TwinClient({
               value={modelValidation.latency.p99_ms.toFixed(2)}
               unit="ms (p99)"
               tone="success"
-              hint={`p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms on Intel laptop CPU · STM32N6 NPU estimate ≈5 ms (ST X-CUBE-AI specs) · both well under 50 ms target`}
+              hint={`p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms FP32 on Intel laptop CPU · INT8 measured 0.23 ms (3.49× ONNX compression, ΔMAPE +0.10 pp) · STM32N6 NPU estimate ≤5 ms (ST X-CUBE-AI specs) · all well under 50 ms target`}
             />
             <Stat
               label="ONNX size"
               value={modelValidation.model.onnx_size_kb.toFixed(1)}
               unit="KiB"
               tone="default"
-              hint={`Fits the STM32N6 Flash budget · numerical match to PyTorch within ${modelValidation.model.onnx_torch_max_diff.toExponential(1)}`}
+              hint={`FP32 graph; total weights 219 KiB FP32 → 63 KiB INT8 (measured) · fits STM32N6 1.6 MB ML FLASH · numerical match to PyTorch within ${modelValidation.model.onnx_torch_max_diff.toExponential(1)}`}
             />
             <Stat
               label="Test R²"

@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "generated_at": "2026-05-02T17:13:07+00:00",
+    "generator": "scripts/quantize_lstm_onnx.py",
+    "onnxruntime_version": "1.25.1",
+    "onnx_version": "1.21.0",
+    "fp32_input": "models\\lstm_rul.onnx",
+    "int8_output": "models\\lstm_rul.int8.onnx"
+  },
+  "size": {
+    "fp32_graph_kib": 8.18,
+    "fp32_external_data_kib": 211.0,
+    "fp32_total_kib": 219.18,
+    "int8_kib": 62.87,
+    "compression_ratio": 3.486
+  },
+  "accuracy_test_set": {
+    "n_test": 37,
+    "fp32_mape_pct": 19.099,
+    "int8_mape_pct": 19.195,
+    "delta_mape_pp": 0.096,
+    "fp32_r2": 0.8616,
+    "int8_r2": 0.8618,
+    "max_log_prediction_diff": 0.006318,
+    "mean_relative_prediction_diff_pct": 0.5662
+  },
+  "latency_cpu_single_sample": {
+    "device": "laptop CPU via onnxruntime CPUExecutionProvider",
+    "samples": 1000,
+    "fp32": {
+      "p50_ms": 0.2672,
+      "p90_ms": 0.31,
+      "p99_ms": 0.4113,
+      "mean_ms": 0.267
+    },
+    "int8": {
+      "p50_ms": 0.2409,
+      "p90_ms": 0.298,
+      "p99_ms": 0.4133,
+      "mean_ms": 0.2407
+    },
+    "speedup_p50": 1.109,
+    "speedup_p99": 0.995
+  },
+  "stm32n6_extrapolation": {
+    "note": "INT8 NPU latency is NOT measured here \u2014 onnxruntime CPU INT8 is a different execution path from the STM32N6 Neural-ART NPU. Use this report for accuracy validation only; for real NPU latency, follow docs/x_cube_ai_install_sop.md."
+  }
+}

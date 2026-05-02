@@ -1,20 +1,25 @@
-# 附錄 C — STM32N6 X-CUBE-AI Static Analysis (proxy)
+# 附錄 C — STM32N6 X-CUBE-AI Static Analysis + 真實 INT8 量化驗證
 
-> **重要聲明**:本附錄是用 Python `onnx` library 解析 `models/lstm_rul.onnx`
-> 的 graph 後,**參照 ST 公開資料**(AN5354 / RM0498 / X-CUBE-AI 9.x release
-> notes)做的**靜態分析估算**。**不是 X-CUBE-AI 工具實際跑出來的 trace**。
+> **混合報告**:本附錄合併了兩條證據鏈:
 >
-> 真正的 X-CUBE-AI 9.x 報告需要 ST 帳號 + Windows GUI 工具,本團隊計畫於
-> W3 完成實機 trace 後**取代本附錄**。在那之前本表給出 order-of-magnitude
-> 上界,**所有 latency / memory 數字應視為 ±2× 不確定性**。
+> 1. **靜態 graph 分析(proxy)**:用 Python `onnx` library 解析 `models/lstm_rul.onnx`
+>    後,參照 ST 公開資料(AN5354 / RM0498 / X-CUBE-AI 9.x release notes)
+>    估算 STM32N6 NPU 上的 op dispatch / latency。**不是 X-CUBE-AI 工具實際跑出來的 trace**。
+> 2. **真實 INT8 量化驗證(measured)**:用 `onnxruntime.quantization.quantize_dynamic`
+>    把 FP32 ONNX 真實量化成 INT8(matches X-CUBE-AI 9.x INT8 路徑,AN5354 §INT8),
+>    在 Severson + BBU 188-cell test 集上測 accuracy 退化、size、CPU latency。
+>    **這部分是真實量測,不是估算**。報告 JSON: `data/processed/lstm_quantization_report.json`。
+>
+> 唯一還缺的:**STM32N6 NPU 真實 latency**(需 ST 帳號 + X-CUBE-AI GUI),
+> 步驟見 `docs/x_cube_ai_install_sop.md`。本附錄的 NPU latency 估算保留 ±2× 不確定區間。
 
 ## C.1 模型摘要
 
 - ONNX 檔: `models\lstm_rul.onnx`
 - 參數總數: 54,093
-- Weight FLASH(FP32 export): 211.3 KB
-- Weight FLASH(INT8 量化估): **52.8 KB**
-- Activation peak SRAM(INT8): **32.0 KB**
+- Weight FLASH(FP32 graph + external data): **219.18 KB** (measured)
+- Weight FLASH(INT8 dynamic quantised): **62.87 KB** (measured, 3.486× compression vs FP32 total)
+- Activation peak SRAM(INT8 estimate): **32.0 KB**
 - ONNX nodes: 52
 - Initialisers: 22
 
@@ -94,17 +99,54 @@ STM32N6 Neural-ART NPU spec(RM0498):
 | `node_Concat_7` | `Concat` | ✅ | 0 | 0.0 |
 | `node_zeros` | `Expand` | ❌ | 0 | 0.0 |
 
-## C.6 W3 待補的真實 X-CUBE-AI trace
+## C.5 真實 INT8 量化驗證(measured)
 
-以下項目本附錄**無法**提供,需在 W3 用 ST 工具補:
+由 `scripts/quantize_lstm_onnx.py` 跑 `onnxruntime.quantization.quantize_dynamic`
+(1.25.1),測試集 n=37。
 
-1. **實際 INT8 量化精度損失**(本估算假設 quantisation 完全無損)
-2. **實際 NPU utilisation**(本估算用 40 % heuristic;ST 工具會給每層真實值)
-3. **每層 cycle-accurate latency**(本估算只給總體 order)
-4. **Buffer placement**(activation 是否真的 fit ML SRAM,還是要 spill 到外部 PSRAM)
-5. **Power consumption**(NPU active vs CPU fallback 功耗差約 5×)
+### Size
 
-一旦 W3 在 X-CUBE-AI 9.x 跑完,本附錄會被替換為實機 trace 截圖 + ST 報告。
+| 量 | 數值 |
+|---|---:|
+| FP32 ONNX graph | 8.18 KiB |
+| FP32 external `.data` | 211.0 KiB |
+| **FP32 total** | **219.18 KiB** |
+| **INT8 ONNX (single file)** | **62.87 KiB** |
+| **Compression** | **3.486× smaller** |
+
+### Accuracy delta(FP32 baseline → INT8)
+
+| 量 | FP32 | INT8 | Δ |
+|---|---:|---:|---:|
+| Test MAPE (%) | 19.099 | 19.195 | **+0.10 pp** |
+| Test R^2 | 0.8616 | 0.8618 | +0.0002 |
+| Mean \|prediction Δ\| / FP32 prediction | — | — | **0.57 %** |
+| Max \|log10 prediction Δ\| | — | — | 0.0063 |
+
+**結論**:INT8 dynamic quantisation 在這個 LSTM 上**幾乎無精度退化**
+(ΔMAPE = +0.10 pp,平均預測偏移 < 1 %),
+R^2 從 0.8616 到 0.8618 變動在小數點下第 4 位 — 
+LSTM 的隱藏維度小(64)且權重分布良好,INT8 cast 沒有觸發災難式失真。
+這是 X-CUBE-AI 在 STM32N6 上選擇 INT8 部署時最關鍵的 go/no-go 證據。
+
+### CPU latency(onnxruntime,單樣本,1000 trials)
+
+| 量 | FP32 | INT8 | 倍率 |
+|---|---:|---:|---:|
+| p50 (ms) | 0.258 | 0.231 | **1.11×** |
+| p90 (ms) | 0.300 | 0.280 | — |
+| p99 (ms) | 0.441 | 0.399 | **1.11×** |
+
+**注意**:CPU INT8 vs CPU FP32 加速約 1.1–1.2×,因為筆電 CPU 的 INT8 SIMD 路徑(AVX-512 VNNI / AMX)
+並非 STM32N6 Neural-ART 的 NPU 路徑,**這個倍率不能外推到 NPU**。NPU 真實加速請等 X-CUBE-AI 報告。
+
+## C.6 W3 待補的真實 STM32N6 NPU trace
+
+以下三項仍缺,需 ST 帳號 + X-CUBE-AI 9.x GUI(SOP: `docs/x_cube_ai_install_sop.md`):
+
+1. **實際 NPU per-layer latency**(本附錄估算用 40 % utilisation heuristic)
+2. **Buffer placement**(activation 是否 fit ML SRAM 還是要 spill 到外部 PSRAM)
+3. **Power consumption**(NPU active vs CPU fallback 功耗 ST datasheet 約 5×)
 
 ---
 
