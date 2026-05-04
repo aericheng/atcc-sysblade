@@ -61,7 +61,7 @@ export default async function HomePage() {
         <div className="text-xs uppercase tracking-[0.2em] text-muted mb-4">
           Headline results · PyBaMM DFN simulation
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {([
             {
               v: "3.5×",
@@ -72,6 +72,11 @@ export default async function HomePage() {
               v: "5.7×",
               label: (<>Lower <span className="text-foreground font-medium">power-stress to LFP</span> after LIC split</>),
               tone: "from-accent to-primary",
+            },
+            {
+              v: "~25 %",
+              label: (<><span className="text-foreground font-medium">LFP cycle-life extension</span> · Attia 2020 + Severson decay model · 10-yr replacements 1.5 → 1</>),
+              tone: "from-success to-accent",
             },
             {
               v: "10 yr",
