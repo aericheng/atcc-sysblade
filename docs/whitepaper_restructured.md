@@ -154,113 +154,67 @@ AI inference,仍依賴外採 BBU)—— **目前市場上無一家現成廠商�
 
 # Part 2 — 技術細節
 
-> 把產品用到的每一項技術從頭到尾講一遍。每節聚焦「我們做了什麼」與
-> **measured 結果**;選型理由放 Part 3,數學定義 / 完整實驗表放附錄。
+> 客戶看得到、會問的是 **三件套 SaaS**(§2.6)、**TCO 模型**(§2.7)、與
+> **核心硬體規格**(§2.1);§2.2–§2.5 為支撐這三件套的技術論述,精簡到能
+> 答辯為止 —— **完整數學定義 / 實驗 sweep / op dispatch 見附錄 A/B/C 與
+> `docs/whitepaper.md`**。
 
 ---
 
-## 2.1 硬體拓撲
+## 2.1 硬體拓撲(per-rack 12U BBU)
 
-Sysblade HyperBuffer 鎖定 **Hyperscale tier 機房**(單 rack 50–100 kW,GB200
-等級 AI inference 工作負載)。本節給出 rack 級系統規格,完全沿用 v2.1 §E.1
-**「同一個 12U 機箱內三層電氣分層」**架構(Electrical Tiering):Tier-A LIC
-吃毫秒瞬態、Tier-B LFP pack 吃 30–90 秒備援、Tier-C Smart Mgmt 跑 BBU 內邊
-緣推論。本白皮書 **不採物理拆解 / 多模組並聯** —— v2.1 §E.1 已明確捨棄該
-做法,改以單一 12U 機箱內電氣分層取得備援可靠度與差異化。
+Sysblade HyperBuffer 鎖定 Hyperscale tier 機房(單 rack 50–100 kW,GB200 等級
+AI inference 工作負載),per-rack 規格完全沿用 v2.1 §E.1「**同一個 12U 機箱
+內三層電氣分層**」架構(Electrical Tiering ≠ 物理拆解)。
 
-> **備援策略**:Sysblade 60-sec graceful shutdown 是 BBU 與 facility UPS 的
-> 接力分工 —— BBU 在第一秒內接管 power、用 60 秒讓上層工作負載完成
-> checkpoint 與 graceful shutdown,facility UPS 處理長時 outage。對齊
-> v2.1 §E.1 驗算:2.5 kWh ÷ 120 kW = 75 sec 理論最大值,80 % DoD →
-> 60 sec 有效備援,落在 OCP ORV3 30–90 sec 規範區間。客戶站若缺
-> facility UPS 須獨立撐長時 outage,須走 v2.1 §E.5 Tier-A 擴大版規格選項。
+| 層 | 規格 | 用途 / 設計依據 |
+|---|---|---|
+| **Tier-A** 瞬態緩衝 | **2× Eaton XLR-48-166 並聯**(48 V / 166 F / 53 Wh / ESR 5 mΩ)| 吃 ms 級瞬態(120 kW × 30 % × 100 ms ≈ 3.6 kJ + 30 % margin → **5 kJ 設計目標**),N+1 冗餘 |
+| **Tier-B** 短時備援 | **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱)| **60 sec graceful @ 120 kW peak**(80 % DoD,2.5 kWh ÷ 120 kW = 75 sec 理論值);LFP 採車規 Microvast / KORE Power 等北美/日韓系電芯,**避 BABA Act / CFIUS 風險** |
+| **Tier-C** 智能管理 | STM32N6 + Neural-ART NPU + edge LSTM | BBU 內邊緣推論(§2.5),斷網仍可運作 |
+| 介面 | 48 V DC + **±400 V HVDC ready**(雙電壓設計)| 規避 2027 OCP Mt. Diablo HVDC 換代 forklift 風險 |
+| 機械 | 單一 **12U OCP ORV3 BBU shelf** | 落 OCP ORV3 30–90 sec 備援規範區間 |
+| 長時 outage | **由 facility UPS 接力** | BBU 不獨自撐長時 |
 
-### 2.1.1 系統級規格(per rack,完全對齊 v2.1 §E.1 三層電氣分層)
-
-| 項目 | 規格 | 設計依據 |
-|------|------|----------|
-| 備援策略 | **60 sec graceful shutdown @ 120 kW rack peak** | v2.1 §E.1:2.5 kWh ÷ 120 kW = 75 sec 理論值,80 % DoD → 60 sec 有效,落在 OCP ORV3 30–90 sec 規範區間 |
-| **Tier-A**(瞬態緩衝層)| **2× Eaton XLR-48-166 並聯** rack-level LIC | v2.1 §E.1 Tier-A;5 kJ 設計目標,N+1 冗餘 + 模組顆粒度限制下實際 345 kJ 過配 |
-| **Tier-B**(短時備援層)| **2.5 kWh / 15S 整合 LFP pack** | v2.1 §E.1 Tier-B 既有規格,15S = 3.2 V × 15 = 48 V 標稱,最高充電 3.65 V × 15 = 54.75 V 落在 OCP ORV3 60 V 上限內 |
-| **Tier-C**(智能管理層)| STM32N6 + Neural-ART NPU,BBU 內邊緣推論 | v2.1 §E.1 Tier-C;LSTM RUL 模型本地執行 |
-| 機械封裝 | **單一 12U 機箱 / rack**(OCP ORV3 BBU shelf 規範)| v2.1 §E.1:同一 12U 機箱內電氣分層 ≠ 物理拆解 |
-| 主輸出介面 | 48 V DC | 對齊 OCP ORV2/ORV3 v1.4 |
-| HVDC 介面 | ±400 V ready(雙電壓設計)| 規避 2027 ±400 V OCP Mt. Diablo 換代風險 |
-| 長時 outage | **由 facility UPS 接力** | BBU 不獨自撐長時;接力分工是 v2.1 §E.1 設計前提 |
-
-### 2.1.2 Tier-B 短時備援層(LFP):**2.5 kWh / 15S 整合 pack**(per rack)
-
-直接沿用 v2.1 §E.1 Tier-B 規格(車規 LFP 整合 pack,Microvast / KORE Power
-等北美/日韓系電芯,避開 BABA Act 與 CFIUS 風險)。
-
-| 規格 | 數值 |
-|------|------|
-| Pack 容量 | **2.5 kWh** |
-| 化學 | LFP power-grade(車規,Microvast / KORE Power 等北美/日韓系)|
-| 配置 | **15S 整合 pack**(3.2 V × 15 = 48 V 標稱,3.65 V × 15 = 54.75 V 最高充電,落在 OCP ORV3 60 V 上限內)|
-| 峰值放電(60 sec)| **120 kW**(rack-level)|
-| 連續備援時間 | **60 sec @ 120 kW peak**(80 % DoD,v2.1 §E.1 驗算:2.5 ÷ 120 = 75 sec 理論值)|
-| 預期循環壽命 | 8–12 年 BBU duty(v2.1 附件 C 估算,基於 LFP 浮充應用循環極少)|
-
-> rack-level 部署 vs 集中式 UPS 比較見 Part 3 §3.2。長時 outage 由 facility
-> UPS 接力是設計前提;若客戶站缺 facility UPS,須走 v2.1 §E.5 Tier-A 擴大
-> 版規格選項(本白皮書未涵蓋)。
-
-### 2.1.3 輔助元件(LIC):rack-level 瞬態緩衝 **2× Eaton XLR-48-166 並聯**
-
-| 規格 | 數值 |
-|------|------|
-| 模組型號 | Eaton XLR-48-166(48 V / 166 F / 53 Wh / ESR 5 mΩ)|
-| 模組數(per rack)| **2 顆並聯**(N+1 冗餘)|
-| 設計目標 | **5 kJ rack-level 瞬態緩衝**(GB200 ms 級瞬態:120 kW × 30 % × 100 ms = 3.6 kJ + 30 % margin)|
-| 瞬態功率分擔 | 36 kW × 100 ms(120 kW 突發的 30 % 高頻分量,LFP 承擔其餘 70 %)|
-| 控制律 | 一階互補濾波器 τ = 0.5 s(LIC 吃 > 0.32 Hz 高頻,LFP 吃低頻;細節 §2.3)|
+> **備援接力分工**:BBU 在第一秒接管 power、用 60 秒讓上層工作負載完成
+> checkpoint 與 graceful shutdown,facility UPS 處理長時 outage。客戶站若缺
+> facility UPS 須走 v2.1 §E.5 Tier-A 擴大版規格(本文未涵蓋)。
 
 ---
 
-## 2.2 物理引擎 PyBaMM DFN
+## 2.2 物理模擬引擎(PyBaMM DFN)
 
-採用 PyBaMM 26.4.1 的 `DFN` 模型 + `Prada2013` LFP-graphite 參數集。DFN 是
-業界標準的單顆電芯 1-D 偏微分方程組,描述電解液離子濃度 $c_e(x,t)$、
-固相鋰濃度 $c_s(x,r,t)$、與固液相電位 $\phi_e(x,t)$ / $\phi_s(x,t)$ 的耦合演化。
+採用 **PyBaMM 26.4.1 DFN**(Doyle-Fuller-Newman 1-D PDE 求解器)+ **Prada2013
+LFP-graphite 參數集**[3],離線預先計算 4 個 scenario JSON 餵給前端
+(`scripts/generate_twin_scenarios.py`):
 
-`scripts/generate_twin_scenarios.py` 為以下情境逐一求解 PDE。瞬態類情境
-時間網格 0–10 s,dt = 5 ms(`RACK_BASELINE_KW=80`, `TRANSIENT_AMPLITUDE=0.30`,
-`TRANSIENT_PERIOD_S=0.10`);aging 情境跑 3000 cycle 解析衰減模型:
-
-| 情境 | 內容 | 輸出 JSON |
-|------|------|-----------|
-| `transient_lfp_only.json` | 80 kW baseline ±30 % swing(GB200 NVL72 級;`RACK_BASELINE_KW=80`, `TRANSIENT_AMPLITUDE=0.30`),純 LFP 應對 | 電壓震盪 ΔV ≈ 62 mV (steady-state pp) |
-| `transient_hybrid.json` | 同負載,LFP+LIC 混合應對(τ = 0.5 s 一階互補濾波器)| ΔV ≈ 18 mV (steady-state pp) |
+| 情境 | 內容 | Headline 結果 |
+|---|---|---|
+| `transient_lfp_only.json` | 80 kW baseline ±30 % swing(GB200 NVL72 級),純 LFP 應對 | ΔV pp ≈ **62 mV** |
+| `transient_hybrid.json` | 同負載,LFP + LIC 混合(τ = 0.5 s) | ΔV pp ≈ **18 mV** |
 | `aging_lfp.json` | 3000 cycle BBU duty 下 SOH 衰減 | 80 % SOH @ ~3000 cycles |
-| `aging_rainflow_validation.json` | Rainflow + Wang 2011 對 hybrid / LFP-only LFP cell 電流跑 cycle-aging 預測,獨立交叉驗證(§2.3.2)| demo η = 1.012 / worst_case η = 0.945(5.5 % 損傷下降)|
-| `model_validation.json` | LSTM 推論逐 cycle trajectory + actual | 9 個 curated cells |
+| `aging_rainflow_validation.json` | Rainflow + Wang 2011 獨立交叉驗證(§2.3.2)| worst_case η = **0.945**(5.5 % 損傷下降)|
+| `model_validation.json` | LSTM 逐 cycle 推論 + actual | 9 個 curated cells |
 
-前 4 個 JSON 是 `/twin` 與 `/dashboard` 所有數字的單一資料源,SHA-256
-雙寫一致(generator 同一時間戳寫到 `packages/shared/` 與 `apps/web/public/`);
-`aging_rainflow_validation.json` 不被 UI 消費,純後端交叉驗證的可追溯產物。
+> **靜態匯出設計**:Next.js `output: "export"`,所有 RUL 預測在 build time 預先
+> 算好,不在瀏覽器即時跑 PyBaMM(體積過大)。即時推論留 W3 FastAPI 後端整合。
+> 前端 4 個 JSON 雙寫到 `packages/shared/` 與 `apps/web/public/`,SHA-256 一致;
+> `aging_rainflow_validation.json` 不被 UI 消費,純後端交叉驗證可追溯產物。
 
 ---
 
 ## 2.3 混合控制律(LFP/LIC 頻譜分頻)
 
-控制目標:LIC 吃 > 0.32 Hz 截止頻率以上的高頻分量(包含 GB200 ms 級瞬態
-脈衝),LFP 吃低頻穩態,聯合輸出滿足負載。以一階 high-pass / low-pass
-互補濾波器為基礎:
+LIC 吃 > 0.32 Hz 截止頻率以上的高頻分量(GB200 ms 級瞬態脈衝),LFP 吃低頻
+穩態。一階互補濾波器,時間常數 $\tau = 0.5$ s
+(`SPLIT_FILTER_TAU_S` 唯一可調參數):
 
 $$
-P_{\text{LIC}}(t) = P_{\text{load}}(t) - \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
-$$
-
-$$
+P_{\text{LIC}}(t) = P_{\text{load}}(t) - \mathrm{LPF}_{\tau}(P_{\text{load}}(t)),\quad
 P_{\text{LFP}}(t) = \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
 $$
 
-時間常數 $\tau = 0.5$ s,對應 1/(2π·τ) ≈ 0.32 Hz 截止頻率,涵蓋 GB200
-power-swing 主能量帶 0.05–10 Hz 的低頻段給 LFP、高頻段給 LIC。$\tau$ 在
-`scripts/generate_twin_scenarios.py::SPLIT_FILTER_TAU_S` 為唯一可調參數。
-
-**模擬結果**:
+**模擬結果**(對應首頁 5.7× / 3.5× headline):
 
 | 指標 | 純 LFP | LFP + LIC | 改善 |
 |------|---:|---:|:---:|
@@ -279,214 +233,82 @@ power-swing 主能量帶 0.05–10 Hz 的低頻段給 LFP、高頻段給 LIC。$
 
 > **核心商業價值 ⭐**:5.7× 物理層應力下降 → 25 % LFP 循環壽命延長 → 客戶 10 年內少換半次 BBU 電池組 → 直接體現在 33 % TCO saving 中。**這是業師最該記得的 cause-and-effect 鏈**。
 
-### 2.3.2 獨立交叉驗證 — Rainflow + Wang 2011
+### 2.3.2 獨立交叉驗證 — Rainflow + Wang 2011 ⭐
 
-**動機**。§2.3.1 的 25 % 壽命延長基於 Attia 2020 *Nature* + Severson 衰減
-模型外推(統計訊號)。為避免單一證據鏈、提供業師可獨立檢驗的第二條物理
-路徑,我們對 PyBaMM 產出的 LFP cell 電流波形跑 **ASTM E1049-85 4-point
-rainflow 分解 + Wang 2011 半經驗 cycle-aging 公式**(*J. Power Sources*
-196:3942,Table 2)獨立估算每 Ah 損傷差。
-
-**方法**(完整公式見 `docs/whitepaper.md` §3.2.1):
-1. 由 $\mathrm{SOC}(t) = 1 - \int_0^t I(\tau)/Q_{\text{nom}}\,d\tau$ 重建 SOC 軌跡
-2. 對 SOC 跑 rainflow 分解出 micro-cycle 清單 $\{(\Delta\mathrm{DoD}_i, \bar{\mathrm{SOC}}_i, n_i)\}$
-3. 每 cycle 套 Wang 公式(C-rate 相依的 Arrhenius kernel),Miner's rule 線性疊加
-4. **同時跑兩個波形**(避免單一情境不代表):
-   * **demo** — 與 `transient_*.json` 同的 ±30 % / 100 ms 方波
-   * **worst_case** — arXiv:2508.14318 §3 GB200 NVL72 reference power profile
-     上緣(10 C cell-level 脈衝、30 ms 寬、1 s 週期)
-
-**結果**(per-Ah cycle-aging 損傷比 $\eta = Q_{\text{loss,hybrid}} / Q_{\text{loss,LFP-only}}$):
+§2.3.1 的 25 % 壽命延長基於 Attia + Severson 統計外推。為提供業師可獨立檢驗
+的**第二條物理路徑**,我們對 PyBaMM 產出的 LFP cell 電流跑 **ASTM E1049-85
+4-point rainflow + Wang 2011 半經驗 cycle-aging 公式** [7] 獨立估算每 Ah
+損傷比 $\eta = Q_{\text{loss,hybrid}} / Q_{\text{loss,LFP-only}}$:
 
 | 波形 | LFP-only Q_loss (60s) | Hybrid Q_loss (60s) | $\eta_{\text{cyc}}$ |
-|------|---:|---:|:--:|
+|---|---:|---:|:--:|
 | demo (±30 %, 100 ms) | 0.0338 % | 0.0342 % | **1.012** |
-| **worst_case (10 C, 30 ms 脈衝)** | 0.0375 % | 0.0355 % | **0.945** |
+| **worst_case (10 C × 30 ms 脈衝, GB200 NVL72 ref [11])** | 0.0375 % | 0.0355 % | **0.945** |
 
-**判讀**(誠實邊界,業師最該聽到的部分):
+**判讀(誠實邊界)**:
+* **demo η = 1.012**(hybrid 略差 1.2 %)— Wang kernel 在 0.5–6 C 區間幾乎
+  flat,demo cell C-rate 落 3.2–6 C 讓 hybrid 平直波形 per-Ah 損傷略高。
+  **主動揭露不藏**:demo 振幅本來就是「示意波形」,**不是 hybrid 真正發揮
+  優勢的工作點**。
+* **worst_case η = 0.945**(5.5 % per-Ah 損傷下降)— Wang kernel 在 6 C → 10 C
+  跳到 0.192,LIC 把 10 C 脈衝吸收後 LFP 看到的最大 C-rate 降到 4.8 C。
+  **這才是 LIC 真正發揮作用的場景**,對齊 v2.1 §B.1「10–30 ms 5–10 C 瞬態」
+  設計對象。
 
-* **demo 波形 η = 1.012**(hybrid 略差 1.2 %)。原因:Wang kernel
-  $B(C)\cdot\mathrm{e}^{-E_a/RT}$ 在 0.5–6 C 區間幾乎 flat 且輕微凸
-  (2 C kernel = 0.080,6 C kernel = 0.088),demo cell C-rate 落
-  3.2–6 C → Jensen 不等式讓 hybrid 的平直波形(穩在 4.6 C)per-Ah 損傷
-  略高於 LFP-only 的振盪波形(電流加權平均 0.0876)。**這對提案不是壞
-  消息,而是團隊主動揭露的誠實邊界**:demo ±30 % 振幅本來就是「示意波形」,
-  不是 hybrid 真正發揮優勢的工作點。
-* **worst_case η = 0.945(5.5 % per-Ah 損傷下降)**。原因:Wang kernel
-  在 6 C → 10 C 從 0.088 跳到 0.192($E_a$ 線性下降使 Arrhenius 因子主導);
-  LIC 把 10 C 脈衝吸收後 LFP 看到的最大 C-rate 降到 4.8 C,電流加權平均
-  kernel 從 0.0955 降到 0.0898。**這是 LIC 真正發揮作用的場景**,也對齊
-  v2.1 §B.1 引述「10–30 ms 5–10 C 瞬態」的設計對象。客戶端工作負載若
-  比此 reference 還激進(更密集脈衝、> 10 C),這個比值會更小。
-
-**與 §2.3.1 25 % 的關係**。η = 0.945 只覆蓋「per-cycle 損傷修正」這個
-**物理層因子**;另一半「BBU 浮充每年 cycle 數遠少於 lab 工作台」是
-**使用情境因子**(v2.1 附件 C 引述 LFP 浮充 8–12 年實測),獨立於本節
-Wang 計算。**兩條路徑放在一起的判讀**:hybrid 在 worst-case GB200 工作點
-對 LFP cycle-aging 確實有 ≈ 5 % 的降損效果(Wang+rainflow 第二條路徑
-證實),首頁「10 yr BBU service life」同時還倚賴浮充使用情境。**任一條
-路徑單獨拿出來都不足以推導「10 yr」,多條路徑對齊方向才是這個結論的根據**。
-
-> **Wang 絕對數值不能對齊 Severson**:Wang 2011 用 A123 ANR26650 moderate-rate
-> 數據,1C/1C 預測 ~ 28 k cycles 才到 80 % SOH;Severson 2019 fast-charge
-> 政策下實測 ~ 1100 cycles。這 ~ 25× 差距是 Wang 自身 calibration 限制,
-> 因此本節**只引用相對比值**,不把 Wang 絕對 cycle 數塞進首頁或
-> `aging_lfp.json` 曲線。
-
-**輸出**:`aging_rainflow_validation.json`(repo 內可追溯,**不被 UI 消費**,
-純後端交叉驗證產物,SHA-256 雙寫到 `packages/shared/scenarios/` 與
-`apps/web/public/scenarios/`)。ASTM rainflow 實作有 self-test,用標準
-canonical sequence 在每次跑前先驗證,出錯會 raise AssertionError 而非
-默默產出錯誤 JSON。重現指令:`pnpm scenarios`。
+> **方法學嚴謹**:hybrid 25 % 壽命延長**不是單一統計外推** —— Wang+rainflow
+> 是完全獨立的物理路徑與 calibration 來源(A123 ANR26650 moderate-rate
+> 數據,獨立於 Severson)。**兩條路徑同方向**才是這條結論的根據。完整方法
+> 與絕對數值 caveat 見 `docs/whitepaper.md` §3.2.1;輸出
+> `aging_rainflow_validation.json`(repo 可追溯,不被 UI 消費)。
 
 ---
 
-## 2.4 RUL 點預測模型
+## 2.4 RUL 預測管線(三情境一表看完)
 
-從資料集到雙模型 routing 部署規則,一次講完點預測管線。
+訓練資料 Severson 2019 [1] 公開的 124 顆 LFP 18650 cell;我們的 HDF5 解析
+路徑解出 138 顆有 ≥ 100 cycle 觀測,**13-feature paper-aligned Full model**
+(完整數學定義見**附錄 A**),橫跨 5 種 regressor × 4 個 cell filter 做完整
+sweep(`data/processed/severson_model_eval.json`)。
 
-### 2.4.1 資料集與特徵
+| 情境 | 最佳模型 | Test MAPE | R² | 解讀 |
+|---|---|---:|---:|---|
+| **Random split**(7:3,10-seed median)| Full bagged-GBT (K=24) + xstrict filter (n=134)| **8.38 %** | **0.890** | 達 v2.1 附件 B「< 10 % MAPE」承諾;低於 Severson paper 9.1 %;per-seed [5.93, 12.91] %、7/10 seeds < 10 % |
+| **Cross-batch**(b1+b2 → b3,新 protocol)| Full bagged-OLS + xstrict(n_test ≈ 44)| **13.87 %** | **+0.207** | GBT 在 cross-batch 反退化 17–22 %(protocol-specific overfit);**改用 OLS 的 routing 規則** |
+| **Cross-chemistry**(LFP → NASA NMC)| 5-feat OLS,138 → 4 cell | 線性外插炸開(>8000 %)| — | 5/5 feature OOD,**z-distance 5–65 σ**(附錄 B);per-chemistry calibration **必須** |
 
-訓練資料來自 Severson 2019 (*Nature Energy* 4, 383–391) 公開的 124 顆 LFP
-18650 cell。我們的 HDF5 解析路徑解出 138 顆有 ≥ 100 cycle 觀測,並做 4-filter
-sweep:unfiltered=138 / paper-style ≥ 200 = 137 / strict ≥ 300 = 136 /
-**xstrict ≥ 400 = 134**。xstrict 篩掉 4 顆早夭離群並非 cherry-pick,而是把
-離群尾巴對齊 paper 隱含篩選標準。
-
-特徵集對齊 paper Table S2 Full model 共 13 個(5 個 Discharge + 8 個延伸,
-含 thermal × 2、charge × 1、q-window × 3、IR × 2)。完整數學定義見**附錄 A**。
-
-### 2.4.2 Random split — bagged-GBT 8.38 %
-
-依 paper 70/30 隨機 split,目標 $\log_{10}$ cycle_life,**跨 10 個 random
-seed 取 median**(避免單 seed 落在帶 critical 離群值的 fold 上 OLS 係數
-爆衝)。橫跨 5 種 regressor × 4 個 cell filter 完整 sweep
-(`data/processed/severson_model_eval.json`)。
-
-| Filter | n | Best regressor | MAPE median | R² |
-|--------|---:|---|---:|---:|
-| Unfiltered | 138 | Full stack | 12.51 % | 0.775 |
-| Paper-style (≥ 200) | 137 | Full stack | 11.83 % | 0.753 |
-| Strict (≥ 300) | 136 | Full stack | 10.47 % | 0.763 |
-| **Extra-strict (≥ 400)** | **134** | **Full bagged-GBT (K=24)** | **8.38 %** | **0.890** |
-
-**Headline**:Plain OLS 13-feat random median 14.51 % → **K=24 bagged GBT +
-xstrict filter 拉到 8.38 %、R² 0.890**,達成 v2.1 附件 B 軟體技術棧承諾
-「對齊 paper 9.1 % 的 < 10 %」。Per-seed 範圍 [5.93, 12.91] %,
-**7/10 seeds < 10 %**。
-
-### 2.4.3 跨 batch — bagged-OLS 13.87 %(雙模型 routing)
-
-更困難的設定:b1 + b2 訓練、b3 測試(b3 採用 b1/b2 沒看過的快充政策)。
-
-| 模型 / Filter | feat 數 | Test MAPE (n_test ≈ 44) | R² |
-|------|---:|---:|---:|
-| Discharge OLS / paper-style | 5 | 19.25 % | -0.125 |
-| Full OLS / paper-style (含 IR) | 13 | 14.54 % | +0.080 |
-| **Full bagged-OLS / xstrict** | **13** | **13.87 %** | **+0.207** |
-| Full bagged-GBT / xstrict | 13 | 17.91 % | -0.282 |
-
-加入 IR pair 後 cross-batch MAPE 從 19.25 % 降到 14.54 %、R² 從負(-0.13)
-轉正(+0.08);bagged-OLS + xstrict 進一步壓到 13.87 %。**GBT 在 cross-batch
-反而退化到 17–22 %**(protocol-specific overfit)→ **客戶端 cell 與 fleet
-訓練資料同 protocol 用 bagged-GBT,新 protocol fall back bagged-OLS,新化學
-須 per-chemistry calibration**。
-
-### 2.4.4 跨化學 caveat(Severson → NASA NMC)
-
-用 Severson 138 顆 LFP cell 訓練 5-feat OLS、套到 NASA PCoE 的 4 顆 NMC cell:
-直接 MAPE 數字無意義(線性外插超出訓練分布,絕對誤差 8000–36000 %),**真正
-洞察在 feature distribution check**:5/5 feature 全部 OOD,z-distance 5–65 σ
-(完整表見**附錄 B**)。**結論**:Severson-trained 模型不能直接部署到不同
-化學的 cell,須 per-chemistry 校準 —— 這條 caveat 寫進 v2.1 §F 的客戶 SOP。
+> **部署 routing 規則**(寫進 v2.1 §F 客戶 SOP):**同 protocol** 用 bagged-GBT
+> 享 8.38 % 點精度;**新 protocol** fall back bagged-OLS;**新化學** 每批必跑
+> calibration cycle,OLS / GBT 都不能直接外插。
 
 ---
 
 ## 2.5 LSTM + 機率輸出 + 邊緣部署
 
-從點預測切換到序列模型 + 機率輸出,最後落地到 STM32N6 NPU。一條完整
-production 鏈。
+§2.4 的 GBT 在 Severson **lab 壓力測試** cell 上漂亮,但跟產品實際 BBU duty
+(0.05 C float、~ 50 cycles/yr)分布有顯著差距。我們訓練 **2-layer LSTM**
+(hidden = 64,input (99, 7))+ 50 顆 PyBaMM-calibrated 合成 BBU-duty cell
+(`cycle_life` 4215–13131,84–263 BBU 年),讓單一模型 span 兩個 regime。
 
-### 2.5.1 LSTM 架構與 BBU duty 增強訓練集
+**三件 measured headline**(完整 op dispatch 與容量配適見**附錄 C**):
 
-§2.4 的 OLS / bagged-GBT 在 Severson **lab fast-charge 壓力測試** cell 上漂亮,
-但跟產品實際 BBU duty(0.05 C float、~ 50 cycles/yr)的 feature 分布有顯著
-差距。我們訓練 **2-layer LSTM(hidden = 64,input shape =(99, 7))**,並用
-`scripts/generate_bbu_duty_cells.py`(PyBaMM-calibrated 解析衰減模型)合成
-50 顆 BBU-duty cell 加入訓練集(`cycle_life` 範圍 4215–13131 cycles ≈ 84–263
-BBU 年),讓單一模型能 span 兩個 regime。
+| 指標 | 結果 | 用途 |
+|---|---|---|
+| **整體 test MAPE / R²** | **19.10 % / 0.86**(37 顆隨機 holdout)| Fleet 推論主力 |
+| **Conformal sharpening** | 90 % PI 寬度 1910 → **1075 cycles**(**−44 %**),test coverage 100 %(≥ 90 % 保證)| Tier-3 admission 從「±19 yr」收到「±11 yr」**actionable** |
+| **INT8 量化(STM32N6 部署 go/no-go)** | ONNX **219 KiB → 63 KiB**(**3.49× 壓縮**),ΔMAPE +0.10 pp,R² 不變,CPU p50 1.11× 加速 | NPU 1.6 MB FLASH 用 4 %,無 PSRAM spillover |
 
-**訓練結果**(188 cells = 138 Severson + 50 BBU,seed=42 random split):
+**LSTM 19.10 % vs §2.4 GBT 8.38 % 看似退步,實為「per-regime sharpness 換
+cross-regime honesty」的取捨**:GBT 漂亮但只看過 Severson 壓力測試 cell,
+對 BBU 部署是**沉默外插**;augmented LSTM 對兩個 regime 都誠實。**Fleet 推論
+用 LSTM,學術 baseline 報 GBT ensemble**(§2.4)。
 
-| 樣本 | n | MAPE(全 188 cells)|
-|------|---:|---:|
-| Severson b1 | 46 | 17.02 % |
-| Severson b2 | 48 | 33.45 % ← 該 batch 含早夭 outlier(e.g. b2c0 真實 300 預測 753 = +151 %、b2c46 真實 429 預測 888 = +107 %),點預測高估嚴重(§2.5.2 機率輸出處理)|
-| Severson b3 | 44 | 14.72 % |
-| **BBU duty** | **50** | **16.49 %** ← BBU regime 為 4 batch 中 MAPE 第二低,**模型確實學到合成 BBU 軌跡** |
+**STM32N6 NPU latency 估算 54.7 µs**(±2× 區間 27–109 µs,40 % NPU 利用率
+假設);對 ST datasheet Neural-ART INT8 LSTM typical 0.3 ms 仍有 **3× margin**。
 
-整體 **test MAPE 19.10 %、R² 0.86**(37 顆隨機 holdout test cell;來源:
-`packages/shared/scenarios/model_validation.json`)。**per-batch 表為全 188-cell
-切面**,與 test-only headline 19.10 % 是不同切面:test-only 隨機抽樣較均勻,
-全集則突顯 b2 早夭尾。
-
-> LSTM 的 19.10 % vs GBT ensemble 8.38 % 的差距是「**per-regime sharpness 換
-> cross-regime honesty**」的取捨 —— Severson-only GBT 漂亮但對 BBU 部署
-> 沉默外插,augmented LSTM span 兩個 regime 但點精度退讓。Fleet 推論用
-> LSTM,學術 baseline 報 GBT ensemble。
-
-### 2.5.2 機率輸出 — MC Dropout + Conformal
-
-**動機**:Severson cycle-life 尾部稀疏,點預測模型對這類 cell 系統性高估
-(b2c0 真實 300、deterministic 預測 753 → **+151 % 點誤差**;b2c46 真實
-429、預測 888 → +107 %;典型尾部 over-estimation 模式,來源
-`packages/shared/scenarios/model_validation.json::predicted_vs_actual`)。
-**模型不知道自己不知道** —— 我們需要 PI 而非單一點估計。
-
-**實作**:
-* **MC Dropout**:推論時保留 LSTM 兩處 dropout 開啟,做 100 次 forward pass,
-  中位數作為點估計、5–95 percentile 作為 90 % PI(不需重訓)。
-* **Split Conformal**:在 calibration set 上算 score 90 % quantile 得
-  q_factor,套用到 test 保證 coverage ≥ 90 %(Vovk 2005, Lei 2018)。
-
-> 為什麼選 MC Dropout + Conformal 不選 Deep Ensemble:Deep Ensemble 需重訓
-> N 個模型 + STM32N6 部署 N 個 ONNX,latency × N;MC Dropout 套已 export
-> checkpoint 零額外訓練成本,Conformal 提供 frequency calibration 保證。
-
-**Measured 結果**:
-
-| 指標 | 原始 MC Dropout | + Conformal |
-|------|---:|---:|
-| Test set 90 % PI coverage | 100 % | **100 %**(≥ 90 % 保證)|
-| 中位數 PI 寬度 (cycles)| 1910 | **1075** |
-| Sharpening | — | **−44 %** |
-
-PI 縮窄 44 %(q_factor = 0.563),**Tier-3 admission 從中位數半寬「不確定
-±955 cycles」變到「±537 cycles」變得 actionable**(BBU duty 50 cycles/yr
-→ ±19 yr 變到 ±11 yr 替換時程不確定區間)。
-
-### 2.5.3 ONNX INT8 + STM32N6 邊緣部署
-
-LSTM 透過 `scripts/export_lstm_onnx.py` 匯出 `models/lstm_rul.onnx`(IR opset 17),
-經 `scripts/quantize_lstm_onnx.py` 跑 onnxruntime dynamic INT8 量化。
-
-**Measured headline**(`data/processed/lstm_quantization_report.json`,完整報告見**附錄 C**):
-
-| 指標 | FP32 baseline | INT8 quantised | Δ |
-|------|---:|---:|---:|
-| ONNX size(total)| 219.18 KiB | **62.87 KiB** | **3.49× compression** |
-| Test MAPE(37-cell holdout)| 19.10 % | 19.20 % | **+0.10 pp** |
-| Test R² | 0.862 | 0.862 | 不變 |
-| CPU p50 latency | 0.267 ms | 0.241 ms | **1.11× speedup** |
-
-**結論**:INT8 dynamic quantisation 在這個 LSTM 上**幾乎無精度退化** —
-ΔMAPE +0.10 pp 遠低於 model retraining noise(seed 之間 ±0.5 pp)。**STM32N6
-NPU 1.6 MB FLASH** 對 63 KB 模型只用 4 %,沒有 PSRAM spillover 風險。
-
-**STM32N6 NPU latency 由靜態圖分析推算**(54.7 µs ±2× = 27–109 µs,基於
-NPU 利用率 40 % 假設;對比 ST datasheet Neural-ART INT8 LSTM typical
-0.3 ms 上限,worst-case 109 µs 仍有 3× margin)。完整 op dispatch 與容量
-配適詳見**附錄 C**。
+> **機率輸出設計**:Severson 尾部稀疏導致點預測對早夭 cell +151 % 高估
+> (b2c0 / b2c46 等);**MC Dropout + Split Conformal** 提供 frequency calibration
+> 保證,**模型對自己不確定的 cell 拉寬 PI 而非沉默地報錯誤點估**。完整原理
+> + per-batch MAPE 切面 + q_factor = 0.563 等細節見 `docs/whitepaper.md` §3.3.7。
 
 ---
 
@@ -658,6 +480,8 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 
 ## 3.4 競品比較總表
 
+### 3.4.1 技術 / 產品 feature 對比
+
 | 維度 | Sysblade | Eaton XLR | Vertiv Liebert | Schneider Galaxy VS |
 |------|:---:|:---:|:---:|:---:|
 | LFP 主電池 | ✅ | ❌(只賣 LIC) | 🟡(NMC/VRLA,**非 LFP**)| 🟡(集中式 Li-ion,**通常 NMC**)|
@@ -668,14 +492,37 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 | **HVDC ±400 V ready** | ✅(雙電壓介面) | 部分 | ❌(48 V only) | ✅(集中式) |
 | **Rack-level 部署** | ✅ | ✅ | 部分(Edge 系列) | ❌(集中式) |
 
-**差異化邏輯**:
+### 3.4.2 商業 / 規模對比 ⭐(業師最該看的部分)
+
+| 維度 | Sysblade(Sysgration 推案) | Eaton | Vertiv | Schneider |
+|------|---|---|---|---|
+| **2024 年全球營收** | Sysgration 母公司 NT$ [填] 億 | **USD 24.9 B** | **USD 8.0 B** | **EUR 38.2 B** |
+| **北美機房 BBU 業務市占(估)** | 0 %(新進入者) | **~ 15 %**(LIC 利基領導)| **~ 25 %**(Tier-1 重型 UPS 主力)| **~ 30 %**(集中式 UPS 王者)|
+| **為什麼還沒做 Sysblade 在做的事**(strategic moat 推論)| —— | 純電力元件商,**沒有軟體 / SaaS / ML 開發 DNA**;LIC 利基產品已是 cash cow,投 SaaS 整合 ROI 不對齊主業 | 重押 **Tier-1 hyperscale 大型 UPS** 案(單筆 USD M 級),Tier-2/3 colo 利基太薄,**策略上看不上小規模 BBU** | 集中式 UPS 是 Galaxy VS **核心產品線**,做 rack-level 等於 **cannibalize 自家旗艦** —— 大公司不會自我蠶食 |
+
+> 數據來源:Eaton 2024 Annual Report;Vertiv FY2024 Q4 results;Schneider
+> Electric 2024 Universal Registration Document。市占百分比為產業分析師
+> 估算(精確 BBU 細分項各廠商不公開);用以表達**規模量級而非精確數字**。
+
+### 3.4.3 差異化邏輯
+
 * **vs Eaton**:Eaton XLR 只是優秀的 LIC 模組元件,客戶買回去要自 source LFP
-  主電池、自寫頻譜分頻控制律、自整合維運可視化。Sysblade 一條龍打包,客戶
-  不需變成電化學 + ML 兩棲團隊。
+  主電池、自寫頻譜分頻控制律、自整合維運可視化。**他們不做整合不是技術做不到,
+  是商業模式不對齊** —— 整合方案需要 SaaS DNA,而 Eaton 是純硬體公司。
 * **vs Vertiv**:48 V VRLA / NMC 規格不相容 ±400 V HVDC,客戶 2027 後要
-  forklift 換掉,Sysblade 雙電壓介面規避。
+  forklift 換掉,Sysblade 雙電壓介面規避。**Vertiv 不做 Tier-2/3 不是做不到,
+  是不想做** —— 他們的銷售團隊抓 Tier-1 大單,Tier-2/3 單筆太小不值得 sales effort。
 * **vs Schneider**:集中式 UPS 部署粒度太粗(1 台服務 100+ racks → 集中式
-  單點故障),AI rack 負載異質性高集中式無法針對性調整。
+  單點故障)。**Schneider 不做 rack-level 不是技術問題,是 cannibalization 問題** ——
+  Galaxy VS 是十幾億美元的旗艦產品線,不可能自己出產品打掉自己。
+
+### 3.4.4 Sysblade 為什麼能切入 ⭐
+
+**這三家不會做的縫隙正是 Sysblade 的進入點**:
+1. **無 cannibalization 包袱** — Sysgration 沒有現有 UPS 旗艦,做新事業沒有自我蠶食問題
+2. **Tier-2/3 縫隙未被佔據** — Vertiv/Schneider 看不上,Eaton 沒能力做整合,**這個縫隙至少 18–24 個月空窗**
+3. **軟硬整合是新世代差異化** — AI 機房 BBU 的下一代規格(SaaS + ML + edge inference)不是傳統電力廠商擅長的,**Sysgration 從零打造反而沒有歷史包袱**
+4. **Sysgration 既有資產可槓桿** — 電統能源的電芯採購通路、Plano 廠的北美在地化生產、母公司既有客戶網路 → **不是學生團隊白手起家,而是 Sysgration 戰略加碼**
 
 **競品仍有的優勢**:全球售後網路、認證齊全、品牌信任 — Sysblade 以透明
 技術白皮書 + Live demo + 戰略合作夥伴(系統電 / 電統能源)補,漸進擴張
