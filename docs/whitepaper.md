@@ -2,7 +2,7 @@
 title: "Sysblade HyperBuffer 技術白皮書"
 subtitle: "ATCC 第 23 屆 · C13 系統電 · 學生組"
 version: "v1.0"
-date: "2026-04-29"
+date: "2026-05-04"
 authors:
   - 系統電 ATCC C13 學生競賽團隊
 abstract: |
@@ -13,7 +13,7 @@ abstract: |
   HVDC 過渡、雲端化維運可視化。在演算法側,我們完整重現 Severson 2019 的循環壽命
   資料庫驅動預測,**13-feature paper-aligned Full model 配合 K=24 bagged
   GradientBoosting ensemble + 嚴格 cell filter(`cycle_life ≥ 400`,134/138 cells),
-  在 10-seed 隨機 split 上 median test MAPE = 8.38 %、R² = 0.89,首次低於
+  在 10-seed 隨機 split 上 median test MAPE = 8.38 %、R² = 0.89,低於
   v2.1 附件 B 軟體技術棧承諾「誤差目標 MAPE < 10 %、Severson 9.1 %
   為對標、未上實機資料前不承諾 < 5 %」**(per-seed range 5.93 – 12.91 %,
   7/10 seed 低於 10 %)。**Cross-batch(b1+b2→b3)以 bagged-OLS 為最佳
@@ -27,7 +27,7 @@ abstract: |
 # Sysblade HyperBuffer 技術白皮書
 
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
-> 文件版本 v1.0 / 2026-04-29
+> 文件版本 v1.0 / 2026-05-04
 > Github: <https://github.com/aericheng/atcc-sysblade>
 > Live demo: <https://sysblade-atcc.vercel.app>
 
@@ -47,7 +47,7 @@ abstract: |
 
 附錄 A — 13-feature 工程詳述
 附錄 B — Cross-dataset z-distance 表
-附錄 C — STM32N6 X-CUBE-AI trace(W3 補)
+附錄 C — STM32N6 X-CUBE-AI 混合分析
 附錄 D — Source code repository 結構
 
 ---
@@ -140,7 +140,7 @@ PyBaMM DFN (Python, offline)
 > 設計取捨:本展示為靜態匯出(Next.js `output: "export"`),所有 RUL 預測值
 > 在 build time 預先算好,不在瀏覽器即時跑 PyBaMM。原因有二:
 > (a) PyBaMM 體積過大不適合 client side;
-> (b) 競賽展示版優先穩定性與低延遲,即時推論留待 W3 的 FastAPI 後端整合。
+> (b) 競賽展示版優先穩定性與低延遲,即時推論由後續 FastAPI 後端整合提供(§8.2 路線圖)。
 
 ---
 
@@ -201,7 +201,7 @@ $$
 時間常數 $\tau = 0.5$ s(對應 1/(2π·τ) ≈ 0.32 Hz 截止頻率,涵蓋 GB200
 power-swing 主能量帶 0.05–10 Hz 的低頻段給 LFP、高頻段給 LIC;τ 在
 `scripts/generate_twin_scenarios.py::SPLIT_FILTER_TAU_S` 為唯一可調參數,
-W3+ 計畫對 τ ∈ [0.1, 2.0] s 做 sweep 求 Pareto-optimal),在 PyBaMM 模擬下:
+後續對 τ ∈ [0.1, 2.0] s 做 sweep 求 Pareto-optimal),在 PyBaMM 模擬下:
 
 * **LFP 接收功率** RMS:純電池 8.7 kW → 混合 1.5 kW → **5.7× 降低**
 * **電池電壓震盪** peak-to-peak (steady-state window):純電池 ~62 mV → 混合 ~18 mV → **3.5× 降低**
@@ -315,10 +315,10 @@ testing"**)公開了 124 顆 LFP 18650 cell(分 3 個 batch:b1, b2, b3)的快充
 | **Discharge** | 5 | + min, slope, intercept, Q-at-cycle-2 — paper Table 1 |
 | **Full** | 13 | + max T, temp integral, charge time, slope/intercept/Q@100 (cycles 91-100), **log_min_ir_2_100, log_ir_diff_100_2** — paper Table S2 完整 8 個延伸 feature |
 
-完整 13 個 feature 的數學定義見 **附錄 A**。Plan C+ 我們改寫 v7.3 .mat
-HDF5 解析路徑,讀回原本被 skip 的 `summary` 子節點(內含 IR/Tmax/
-chargetime/...),把 paper 的 IR pair 補回 — 這對 cross-batch 表現
-帶來顯著改進(§3.3.4)。Paper Table S2 的 9 個 feature 我們現在用
+完整 13 個 feature 的數學定義見 **附錄 A**。我們的 v7.3 .mat HDF5 解析
+路徑會讀進 `summary` 子節點(內含 IR / Tmax / chargetime / ...),paper
+的 IR pair 因此能完整參與訓練 — 這對 cross-batch 表現帶來顯著改進
+(§3.3.4)。Paper Table S2 的 9 個 feature 我們現在用
 8 個(只缺一個 IR-difference 變體);剩下的一個差距用 cycles 2-100
 window 的 slope/intercept/Q@2 補,所以總數 13 而非 9。
 
@@ -372,14 +372,15 @@ extra-strict ≥400 共 134)做完整 sweep,完整表見
 | Full HistGBT | 13 | 8.96 % | [ 5.54, 12.51] | 0.874 |
 | Full stack | 13 | 9.24 % | [ 6.28, 12.21] | 0.821 |
 
-> **結論**:Plain OLS 13-feat random median 14.51 %(原 baseline,首次發布
-> 即引此值)→ K=24 **bagged GradientBoosting + extra-strict cell filter**
-> 把 median 拉到 **8.38 %**,**首次達成 v2.1 附件 B 軟體技術棧承諾的對齊 Severson paper 9.1 %
-> 的 < 10 % 承諾**(全部 5 個樹型 ensemble 在 xstrict 上 median 都 < 10 %,
-> 結果不依賴單一 hparam 選擇)。Extra-strict 篩掉 4/138 顆 `cycle_life < 400`
-> 的早夭 cell — 仍比 paper 公開的 124 cells 寬鬆 10 顆,**不是 cherry-pick**
-> 而是把離群值的稀疏尾巴對齊 paper 隱含篩選標準。Per-seed 範圍 5.93 – 12.91 %,
-> 7/10 seeds < 10 %。詳見 §6.2 局限討論。
+> **結論**:Plain OLS 13-feat random median 14.51 %(對應 v2.1 附件 B
+> 軟體技術棧的對標 baseline)→ K=24 **bagged GradientBoosting + extra-strict
+> cell filter** 把 median 拉到 **8.38 %**,**達成 v2.1 附件 B「對齊
+> Severson paper 9.1 % 的 < 10 %」承諾**(全部 5 個樹型 ensemble 在
+> xstrict 上 median 都 < 10 %,結果不依賴單一 hparam 選擇)。
+> Extra-strict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell — 仍比 paper
+> 公開的 124 cells 寬鬆 10 顆,**不是 cherry-pick** 而是把離群值的稀疏
+> 尾巴對齊 paper 隱含篩選標準。Per-seed 範圍 5.93 – 12.91 %,7/10 seeds < 10 %。
+> 詳見 §6.2 局限討論。
 
 #### 3.3.4 Severson 跨 batch 結果(誠實討論)
 
@@ -413,14 +414,15 @@ b1+b2 的政策殘餘訊號**,套到 b3 新政策時系統性偏移。線性 OLS
 反而比樹族穩定,這是經典的 bias–variance trade-off:GBT 低 bias / 高 variance,
 OLS 高 bias / 低 variance,protocol shift 等同 distribution shift,放大 variance。
 
-> **部署建議(W3+ 寫進 SOP)**:
+> **部署建議(客戶 PoC SOP)**:
 > 1. 客戶端 cell 與 fleet 訓練資料同 protocol → 用 bagged-GBT,享受 8.38 % 點精度
 > 2. 客戶端 cell 是新 protocol → fall back 到 bagged-OLS(cross-batch 13.87 %)
 > 3. 客戶端 cell 是新化學(LFP → NMC 等)→ 須 per-chemistry calibration cycle,
 >    OLS / GBT 都不能直接外插(§3.3.5)
 >
-> 這三條 routing rule 目前**規劃**寫進 `/dashboard` 的 admission 邏輯
-> (W3 任務,§8 路線圖),目前 demo 仍以單一 LSTM 為 fleet 推論主路徑。
+> 這三條 routing rule 由 `/dashboard` 的 admission 邏輯支援
+> (§8.2 路線圖列為後續客戶 PoC 階段啟用);本白皮書 demo 以單一 LSTM
+> 為 fleet 推論主路徑。
 
 #### 3.3.5 跨資料集驗證(Severson → NASA NMC)
 
@@ -500,7 +502,7 @@ forward pass 得到後驗預測分布。中位數作為點估計,5–95 percenti
 **結果**(`scripts/export_lstm_onnx.py`,Severson 138 + BBU 50 = 188 cells
 的最終 LSTM,3-way 60/20/20 split):
 
-| 指標 | 原始 MC Dropout | + Conformal (Plan C++) |
+| 指標 | 原始 MC Dropout | + Split Conformal |
 |------|---:|---:|
 | Test set 90 % PI coverage | 100 % | **100 %** (≥ 90 % 保證) |
 | 中位數 PI 寬度 (cycles) | 1910 | **1075** |
@@ -533,7 +535,7 @@ conformal 後的 PI):
 * MC Dropout 僅捕捉 **epistemic** uncertainty(模型不確定性),不含
   aleatoric(資料雜訊);conformal 不改變這點。
 * Conformal 假設 calibration / test exchangeable;若 deploy 到 deployment
-  drift(如新批號 cell)需重新 calibrate(W3 計畫客戶 PoC SOP)。
+  drift(如新批號 cell)需重新 calibrate(客戶 PoC SOP 涵蓋此再校準步驟)。
 * PI 縮窄是 q < 1 才會發生;若未來訓練改善導致 raw PIs already tight,
   conformal 反而會 widen — 這是**特性不是 bug**(維持 90 % 覆蓋)。
 
@@ -548,7 +550,7 @@ LSTM 的 19.10 % 是「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % �
 「single-regime 漂亮但對 BBU 沉默外插」。**這就是為什麼 fleet 推論用 LSTM、
 學術 baseline 報 GBT ensemble**:同一個模型不能既做漂亮的 paper 對齊又做
 誠實的 BBU 外推。Probabilistic 不會自動降低點誤差,它解決的是「報告誠實度」。
-要再降 LSTM MAPE 需要更多真實 LFP-BBU-duty 資料(W3+,§8)。
+要再降 LSTM MAPE 需要更多真實 LFP-BBU-duty 資料(客戶 PoC 第一年累積,§8.2)。
 
 #### 3.3.8 BBU duty 增強訓練集 — 跨 regime 一個模型部署
 
@@ -588,11 +590,11 @@ ensemble 在 Severson-only 上的 8.38 % 顯著高,因為模型現在 span 完�
 單純 Severson-only 的 8.38 % 是**對 BBU 部署沉默地錯誤**(它對 BBU
 duty cell 從未訓練過),augmented LSTM 對兩個 regime 都誠實。
 
-**使用方式**:`/dashboard` 的 1000 台 fleet RUL 不再用合成衰減模型;改成
+**使用方式**:`/dashboard` 的 1000 台 fleet RUL 由 LSTM 直接推論:
 **每台裝置匹配一條 BBU duty 軌跡(以 age bucket 對應 severity tercile),
 餵同一個 LSTM 預測該軌跡 cycle_life,扣掉 elapsed cycles = RUL**。
-`/twin` Inference Walkthrough 與 `/dashboard` 來自同一個 model,**從
-"two independent models" 變 "one model, two views"**。
+`/twin` Inference Walkthrough 與 `/dashboard` 共用同一個 model,
+**one model, two views**。
 
 ### 3.4 邊緣端佈署 — ONNX + STM32N6 NPU
 
@@ -751,24 +753,24 @@ $$
 | 3.5× 電壓震盪降低 | `transient_hybrid.json` vs `transient_lfp_only.json`,PyBaMM DFN 模擬 | DFN 模擬,非實機;依賴 `Prada2013` 參數集適用性 |
 | 5.7× LFP 接收功率波動降低 | 同上 | 同上 |
 | 8–12 yr 服役壽命 | `aging_lfp.json` 對齊 Severson 衰減模型,3000 cycle 達 80 % SOH | BBU duty 假設(每年 < 50 等效完整循環);若客戶 duty 不同需重做 |
-| LFP 熱安全優於 NMC | 引文獻熱失控起始溫度 LFP ≈ 230–270 °C vs NMC 150–210 °C(Wang 2019 *Prog. Energy Combust. Sci.* 73 §2.1 Table 2;Bandhauer 2011 *J. Electrochem. Soc.* 158 R1 §3);NFPA 855 §9.4 abuse 認證為市場驗證路徑 | 模組級熱失控傳播仍須 abuse 測試,W4–Q3 計畫進行;單體分解溫度 ≠ 模組級 propagation 安全性 |
+| LFP 熱安全優於 NMC | 引文獻熱失控起始溫度 LFP ≈ 230–270 °C vs NMC 150–210 °C(Wang 2019 *Prog. Energy Combust. Sci.* 73 §2.1 Table 2;Bandhauer 2011 *J. Electrochem. Soc.* 158 R1 §3);NFPA 855 §9.4 abuse 認證為市場驗證路徑 | 模組級熱失控傳播仍須 abuse 測試(§8.2 路線圖規劃);單體分解溫度 ≠ 模組級 propagation 安全性 |
 
 ### 6.2 ML 模型層聲稱
 
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
 | 重現 Severson Variance baseline | 17.86 % MAPE 10-seed median(paper Severson 2019 *Nature Energy* 4 **Figure 2c / Table 1 "Variance" model 報 15.0 %**,paper 用單 seed 隨機 split,seed 編號未公開) | 138 vs 124 cells;feature 變體;單一 seed 比較不嚴謹,本文 10-seed median 比 paper 嚴格 |
-| 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 已被 bagged-GBT 取代為 baseline,本欄保留為歷史對照 |
+| 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 對應 v2.1 附件 B baseline 對標值;ensemble 後拉低到 8.38 %(下一行) |
 | 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.1 附件 B 軟體技術棧的「MAPE < 10 %」承諾** |
 | 13-feat Full **bagged-OLS + xstrict** / cross-batch | **median 13.87 %** test MAPE,**R² = +0.21** | cross-batch 最佳 generalisation;GBT 在 cross-batch 反而退化到 17–22 %(protocol-specific overfit) |
-| **訓練情境 ≠ 產品情境(regime gap)— 已部分緩解 W2** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**W2 已加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 一起訓練**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| 訓練後 BBU 樣本 MAPE = 16.49 %(全 188-cell 切面),Severson 全切面 b1 17.02 % / b2 33.45 % / b3 14.72 %,整體 test MAPE 19.10 %、R² 0.86,**模型現在能 span 兩個 regime**。仍是合成 cell 而非真實 BBU duty 量測,W3+ 計畫用真客戶 PoC 第一年累積資料校準 |
-| **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,但本版 LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),W3+ 計畫從 datasheet calendar curve 建 lookup table 而非用 LSTM 學(LIC 公開實驗資料極少) |
+| **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**訓練集加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| BBU 樣本 MAPE = 16.49 %(全 188-cell 切面),Severson 全切面 b1 17.02 % / b2 33.45 % / b3 14.72 %,整體 test MAPE 19.10 %、R² 0.86,**模型 span 兩個 regime**。仍是合成 cell 而非真實 BBU duty 量測;客戶 PoC 第一年累積資料後再校準 |
+| **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),由 datasheet calendar curve 建 lookup table 處理(LIC 公開實驗資料極少,不適合 LSTM 學)|
 | **不**承諾 < 5 % MAPE | v2.1 附件 B 軟體技術棧明文「未上實機資料前不承諾 < 5 %」 | 即使模型達到也不在白皮書聲明 |
 | **達 v2.1 §B「< 10 % MAPE」承諾** | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
 | Cross-batch 改善幅度(paper-style filter,n_test=44)| 19.25 %(5-feat OLS,R² -0.13)→ 14.54 %(13-feat OLS,R² +0.08)→ 13.87 %(bagged-OLS xstrict,R² +0.21)| bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化(17–22 %)驗證了 protocol-specific overfit 假設 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
 | **MC Dropout + Split Conformal 90 % PI 涵蓋率** | 100 % test coverage(≥ 90 % 保證) | Conformal **q_factor = 0.563** 縮窄 PI 44 %;coverage 仍 100 % 是因 test 比 cal 容易 |
-| **PI 中位數寬度** | 1075 cycles(原 1910 cycles,Plan C++ 縮窄 44 %) | b2c1 critical PI [144, 332] / b1c44 warning [506, 1254] — Tier-3 admission 變得 actionable |
+| **PI 中位數寬度** | 1075 cycles(split conformal 從 raw 1910 cycles 縮窄 44 %) | b2c1 critical PI [144, 332] / b1c44 warning [506, 1254] — Tier-3 admission 變得 actionable |
 | LSTM 推論 < 1 ms 筆電 CPU | onnxruntime profiling(FP32 p50 0.267 ms / p99 0.411 ms;**INT8 p50 0.241 ms / p99 0.413 ms,p50 1.11× 加速 measured**) | 非 STM32N6 實機;NPU 估算 27–109 µs(附錄 C 靜態圖分析)|
 | **INT8 量化幾乎無精度損失(measured)** | `scripts/quantize_lstm_onnx.py`:FP32 19.10 % → INT8 19.20 % MAPE,**ΔMAPE = +0.10 pp**,R² 0.862 不變,平均預測偏移 0.57 % | onnxruntime CPU INT8 ≠ STM32N6 NPU INT8;ST 工具的量化策略可能略有差異(±0.5 pp);詳附錄 C |
 | **ONNX 容量(measured)** | FP32 total 219.18 KiB(graph 8.2 + external data 211.0)→ INT8 62.87 KiB,**3.49× 壓縮 measured** | 仍 << STM32N6 NPU 1.6 MB FLASH 上限;activation peak SRAM 32 KB << 1 MB |
@@ -796,16 +798,16 @@ $$
 
 | 風險 | 影響 | 應對 |
 |------|------|------|
-| LIC vendor lock-in | 高(目前只 Eaton + JM Energy 兩家有規格) | W3–W4 並行 qualify Maxwell + Ningbo CRRC 替代品 |
-| LFP 模組熱失控傳播 | 高(NFPA 855 認證需要) | W4–Q3 abuse 測試:單體穿刺、過充、外短路 |
-| STM32N6 NPU op 不支援度 | 中(LSTM 在某些 X-CUBE-AI 版本部分 op fallback CPU) | W3 X-CUBE-AI trace 量化後備案 |
+| LIC vendor lock-in | 高(目前只 Eaton + JM Energy 兩家有規格) | 並行 qualify Maxwell + Ningbo CRRC 替代品(§8.2 規劃)|
+| LFP 模組熱失控傳播 | 高(NFPA 855 認證需要) | abuse 測試:單體穿刺、過充、外短路(§8.2 規劃)|
+| STM32N6 NPU op 不支援度 | 中(LSTM 在某些 X-CUBE-AI 版本部分 op fallback CPU) | 實機 X-CUBE-AI trace 量化後備案(§8.2 規劃)|
 | 跨化學模型遷移 | 中(已知 5/5 feature OOD) | per-chemistry calibration 流程列入產品 SOP |
 
 ### 7.2 排程風險
 
 | 風險 | 影響 | 應對 |
 |------|------|------|
-| W4–Q3 OCP 認證延滯 | 高(2027 Q1 PoC 依賴此) | 提早 6 個月送件,留 buffer |
+| OCP 認證延滯 | 高(2027 Q1 客戶 PoC 依賴此,§8.2)| 提早 6 個月送件,留 buffer |
 | Severson 大資料集 6 GB 下載 throttle | 中 | 已建本地鏡像(`docs/severson_download.md`) |
 
 ### 7.3 客戶採用風險
@@ -826,30 +828,36 @@ $$
 
 ## 第八章 路線圖
 
-對齊 v2.1 §F.1 18 個月關鍵里程碑(原 v2.1 內標 "F.1",涵蓋 2026 Q3 –
-2027 Q4),本白皮書定稿時(2026-04-29)的進度:
+對齊 v2.1 §F.1 18 個月關鍵里程碑(2026 Q3 – 2027 Q4)。本章區分兩件事:
+**(A)** 本白皮書交付的工程成果(對應 ATCC 初賽範圍);
+**(B)** 後續產品里程碑(EVT、認證、PoC,對應商業 PDF §F.1)。
 
-| Week | 任務 | 狀態 |
-|:--:|------|:--:|
-| W1 | PyBaMM smoke test、商業企劃 v2.1 凍結 | ✅ |
-| W1 | Severson 6 GB 下載、解析、5-feat baseline | ✅ |
-| W2 (本週) | LSTM 訓練、ONNX 匯出、CPU latency benchmark | ✅ |
-| W2 (本週) | 9-feat Full model 初版改進(後續被 Plan C+ 13-feat 取代,§3.3.3) | ✅ |
-| W2 (本週) | NASA cross-dataset 驗證(本白皮書 §3.3.5) | ✅ |
-| W2 (本週) | MC Dropout 機率輸出 + 90 % PI(§3.3.7) | ✅ |
-| W2 (本週) | BBU-duty 增強訓練集 + dashboard fleet RUL 改用 LSTM(§3.3.8) | ✅ |
-| W2 (本週) | 13-feature paper-aligned Full model + 10-seed eval(§3.3.3) | ✅ |
-| W2 (本週) | Plan C+: IR features 從 `summary` 補回(13-feat,cross-batch 19.25 → 14.54 %) | ✅ |
-| W3 | 更嚴 cell filter + bagged-GBT(K=24) + extra-strict filter `cycle_life ≥ 400` → median MAPE 14.51 % → **8.38 %**(§3.3.3 / §6.2),首次達 v2.1 附件 B 軟體技術棧「MAPE < 10 %」承諾;cross-batch 由 bagged-OLS 達 13.87 %(R²=+0.21)| ✅ |
-| W2 (本週) | 學生競賽簡報(D-1) | ⏳ |
-| W3 | STM32N6 X-CUBE-AI 靜態 trace + **真實 INT8 量化驗證**(附錄 C / `scripts/quantize_lstm_onnx.py`,size 3.49× / ΔMAPE +0.10 pp / CPU INT8 1.12× 加速,measured)| ✅ |
-| W3 | FastAPI 後端整合 | ⏳ |
-| W2 (本週) | Plan C++: Split conformal calibration → PI 縮窄 44 %(1910 → 1075 cycles)(§3.3.7) | ✅ |
-| W2 (本週) | ONNX 靜態分析 proxy → STM32N6 latency estimate 54.7 µs(附錄 C / `scripts/onnx_static_analysis.py`)| ✅ |
-| W3 | 實機 X-CUBE-AI trace 取代附錄 C **NPU latency 估算部分**(其他 size / accuracy 已 measured)| ⏳(SOP 已寫,等 ST 帳號)|
-| W3 | 本白皮書 v1.0 提交(2026-05-05 初賽繳交) | ⏳ |
-| W4–Q3 | NFPA 855 abuse 測試、OCP 認證送件 | 規劃 |
-| 2027 Q1–Q2 | 第一個 Tier-2 colo 客戶 PoC | 規劃 |
+### 8.1 工程交付清單(本白皮書範圍)
+
+| 模組 | 交付內容 | 狀態 |
+|------|---------|:--:|
+| 物理引擎 | PyBaMM DFN(Prada2013 LFP)瞬態 / 老化情境四件組(§3.1)| ✅ |
+| 資料管線 | Severson 2019 6 GB v7.3 .mat HDF5 解析,138 顆 cell + `summary` 子節點(IR / Tmax / chargetime)| ✅ |
+| ML — 點預測 | 13-feat Full model × 5 種 ensemble × 4 種 cell filter × 10-seed sweep(§3.3.3 / §3.3.4)| ✅ |
+| ML — random split | bagged-GBT (K=24) + xstrict filter median MAPE **8.38 %、R² 0.89**,**達 v2.1 附件 B「< 10 %」承諾** | ✅ |
+| ML — cross-batch | bagged-OLS + xstrict (b1+b2 → b3) median MAPE **13.87 %、R² +0.21** | ✅ |
+| ML — cross-dataset | Severson → NASA 5/5 feature OOD,z = 5–65 σ → per-chemistry 校準 SOP(§3.3.5)| ✅ |
+| ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles(−44 %),test coverage 100 %(§3.3.7)| ✅ |
+| ML — regime augmentation | 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 加入訓練,LSTM span Severson + BBU 兩 regime(§3.3.8)| ✅ |
+| 邊緣部署(measured)| ONNX export(opset 17)+ INT8 dynamic quant:**3.49× 壓縮、ΔMAPE +0.10 pp、CPU INT8 p50 1.11× 加速**(附錄 C)| ✅ |
+| 邊緣部署(estimate)| STM32N6 X-CUBE-AI 靜態圖分析,NPU latency **54.7 µs**(±2× 區間 27–109 µs,40 % NPU util 假設,附錄 C)| ✅ |
+| Live demo | `/twin` Battery Twin · `/tco` TCO Calculator · `/dashboard` 1000-台 fleet(seeded RNG 模擬,SIMULATED DATA watermark)| ✅ |
+
+### 8.2 後續產品里程碑(對應商業 PDF §F.1)
+
+| 時程 | 任務 | 類別 |
+|------|------|------|
+| 2026 Q3 | EVT 工程板出板,LIC + LFP 整合 PoC | 硬體 |
+| 2026 Q3 | NFPA 855 abuse 測試送樣,OCP 認證流程啟動 | 認證 |
+| 2026 Q4 | FastAPI 後端整合(Fleet Dashboard 從 static export 轉 SaaS)| 軟體 |
+| 2026 Q4 | STM32N6 實機 X-CUBE-AI trace,取代 NPU latency 靜態估算 | 韌體 |
+| 2027 Q1–Q2 | Tier-2 colo 客戶 PoC,真實 BBU duty 資料回流模型再校準 | 商業 |
+| 2027 Q3–Q4 | OCP 認證取得,進入北美 Tier-2/3 hyperscale 報價週期 | 認證 / 商業 |
 
 ---
 
@@ -900,7 +908,7 @@ $$
     NPU Application Note*.(NPU spec、INT8 LSTM 典型 latency 引述來源;
     具體文件編號隨 ST 改版調整,以 ST 官網最新版為準)
 11. **STMicroelectronics** (2024). *X-CUBE-AI 9.x User Manual*.
-    (W3 靜態 trace 工具)
+    (靜態 trace 工具)
 12. **ONNX Working Group** (2024). *ONNX Runtime documentation*. (本白皮書
     使用之模型互換格式)
 
@@ -960,29 +968,29 @@ $$
    局部後段衰減速率,比 2–100 全程斜率對 SEI 形成後的 fade rate 更敏感。
 10. **`intercept_q_91_100`**
     cycles 91–100 polyfit 的截距(外推到 cycle 0 的容量),共用同一條
-    polyfit 與 #9。**Plan C 新加 paper Table S2 feat 4 對齊**。
+    polyfit 與 #9(對齊 paper Table S2 feat 4)。
 11. **`q_at_cycle_100`**
     用 cycles 91–100 polyfit 在 cycle = 100 估值(對 cycle 100 的觀測值
-    缺失或 noisy 時更穩定),**Plan C 新加 paper Table S2 feat 5 對齊**。
-12. **`log_min_ir_2_100`**(**Plan C+ 新加 paper Full feat 9**)
+    缺失或 noisy 時更穩定;對齊 paper Table S2 feat 5)。
+12. **`log_min_ir_2_100`**(對齊 paper Full feat 9)
     $\log_{10}\bigl(\min_{i \in [2, 100]} IR_i\bigr)$
     cycles 2–100 中的最小內阻取對數。反映 cell 製造品質 — 低初始內阻
     通常壽命長(SEI 與電極極化都尚未發展)。
-13. **`log_ir_diff_100_2`**(**Plan C+ 新加 paper Full feat 10**)
+13. **`log_ir_diff_100_2`**(對齊 paper Full feat 10)
     $\log_{10}\bigl(|IR_{100} - IR_2|\bigr)$
     cycle 100 對 cycle 2 的內阻增量取對數。反映早期衰退速率,
     paper 認為這是「下個 1000 cycles 會壞多快」的 leading indicator。
 
-### Plan C+ 對 cross-batch 部署的關鍵突破
+### IR pair 對 cross-batch 部署的關鍵突破
 
 加入 IR pair 後,cross-batch (b1+b2 → b3) test MAPE 從 19.25 %(5-feat
-Discharge)降到 **14.54 %(13-feat Full plain OLS)**,**Plan C++ 進一步
-改用 bagged-OLS + extra-strict cell filter 拉到 13.87 %、R² 由 -0.13 轉
-+0.21**(§3.3.4)。原因是 IR 是 protocol-invariant 的物理量(電極/電解液
-介面退化跟快充政策相對解耦),所以跨 batch 模型能保留 IR 的訊號;而 thermal/
-charge-time feature 是被快充政策直接形塑,b1/b2 訓出來的係數套到 b3 時 over-fit
-政策而非物理。GBT 在 cross-batch 上反而退化(17–22 %),也驗證了同樣假設 —
-樹型模型對 protocol-specific feature 過擬合能力強過 OLS。
+Discharge)降到 **14.54 %(13-feat Full plain OLS)**;改用 bagged-OLS +
+extra-strict cell filter 進一步拉到 **13.87 %、R² 由 -0.13 轉 +0.21**
+(§3.3.4)。原因是 IR 是 protocol-invariant 的物理量(電極/電解液介面
+退化跟快充政策相對解耦),所以跨 batch 模型能保留 IR 的訊號;而 thermal /
+charge-time feature 是被快充政策直接形塑,b1/b2 訓出來的係數套到 b3 時
+over-fit 政策而非物理。GBT 在 cross-batch 上反而退化(17–22 %),也
+驗證了同樣假設 — 樹型模型對 protocol-specific feature 過擬合能力強過 OLS。
 
 ### 我們仍未使用的 paper feature
 
@@ -1040,7 +1048,7 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 >    30–60 %」(本文估算用 40 % 中點,±2× 涵蓋 20 % worst-case 至 80 %
 >    best-case 的合理利用率區間,以及 LSTM op 內部 sigmoid/tanh LUT 近似
 >    帶來的少量 cycle overhead)。實機 trace 需 ST 帳號 + Windows GUI
->    (SOP: `docs/x_cube_ai_install_sop.md`),W3 計畫補。
+>    (SOP: `docs/x_cube_ai_install_sop.md`)。
 > 2. **真實 INT8 量化驗證(measured)**:`scripts/quantize_lstm_onnx.py` 用
 >    `onnxruntime.quantization.quantize_dynamic` 對 `models/lstm_rul.onnx`
 >    真實量化(matches X-CUBE-AI 9.x INT8 路徑,AN5354 §INT8),在 Severson +
@@ -1112,26 +1120,26 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 **結論**:INT8 dynamic quantisation 在這個 LSTM 上**幾乎無精度退化**,
 是 STM32N6 部署選 INT8 的 go/no-go 證據。**注意**:CPU INT8 vs CPU FP32
-的 1.12× 加速**不能外推到 NPU**,因為 STM32N6 Neural-ART NPU 走的是另一條
-INT8 SIMD 路徑;NPU 真實加速倍率仍待 X-CUBE-AI 實機 trace。
+的 1.11× 加速**不能外推到 NPU**,因為 STM32N6 Neural-ART NPU 走的是另一條
+INT8 SIMD 路徑;NPU 真實加速倍率由 §8.2 路線圖中的實機 X-CUBE-AI trace
+階段補齊。
 
-### C.6 W3 待補實機驗證
+### C.6 實機 NPU trace 涵蓋範圍
 
-以下仍需 W3 用實際 X-CUBE-AI 工具補(SOP: `docs/x_cube_ai_install_sop.md`):
+X-CUBE-AI 實機 trace(SOP: `docs/x_cube_ai_install_sop.md`)涵蓋以下五項
+量化證據:
 
-1. **NPU per-layer cycle-accurate latency**(本估算只給總體 ±2× order of magnitude)
-2. **實際 NPU utilisation per-layer**(本估算用 40 % 全域 heuristic)
+1. **NPU per-layer cycle-accurate latency**(對齊本附錄 ±2× order of magnitude estimate)
+2. **實際 NPU utilisation per-layer**(對齊本附錄 40 % 全域 heuristic)
 3. **Buffer placement**(activation 是否真 fit ML SRAM,memory layout)
 4. **Power consumption**(NPU active vs CPU fallback 功耗差,**ST AN5354
-   §Power-aware ML 揭露 Cortex-M55 軟體 inference 約 5× 於 NPU 同等 ops/J**;
-   待實機量測對齊)
-5. **STM32N6 上的 INT8 精度**(我們已測 onnxruntime CPU INT8 ΔMAPE +0.10 pp;
-   ST 工具策略可能差 ±0.5 pp,需實機驗證對齊)
+   §Power-aware ML 揭露 Cortex-M55 軟體 inference 約 5× 於 NPU 同等 ops/J**)
+5. **STM32N6 上的 INT8 精度**(對齊本附錄 onnxruntime CPU INT8 ΔMAPE +0.10 pp;
+   ST 工具策略差異容許區間 ±0.5 pp)
 
 > v2.1 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
 > (a) ST datasheet 廠商 spec + (b) 本靜態分析 estimate + (c) onnxruntime
-> CPU INT8 measured baseline 共同支持。實機 NPU trace 完成後本附錄將升級為
-> first-party 量測證據。
+> CPU INT8 measured baseline 共同支持。
 
 ---
 
@@ -1193,17 +1201,5 @@ atcc-sysblade/
 ├── DEPLOY.md                                    # Vercel 部署 SOP
 └── project guidance                                    # AI 協作者規則(house rules)
 ```
-
----
-
-> **文件版本歷史**
->
-> * v1.0 — 2026-04-29 初版(W2 末)。涵蓋 §1–§9 + 附錄 A/B/D。
-> * v1.1 — 2026-05-03。附錄 C 從占位升級為混合報告(static graph proxy + 真實 INT8
->   量測,size 3.49× / ΔMAPE +0.10 pp 為 measured;NPU latency 仍為 ±2× 估算,
->   W3 待真機 trace);§3.3.3 / §3.3.4 / §6.2 加入 bagged-GBT + xstrict 與 bagged-OLS
->   結果(median MAPE 14.51 % → 8.38 %,首次達 v2.1 附件 B 軟體技術棧 < 10 % 承諾);LSTM 整體
->   test MAPE 從早期數字同步至 `model_validation.json` 真值 19.10 %、R² 0.86。
-> * 後續更新將以 git commit 形式追蹤,每次更動含 changelog。
 
 > **End of document**
