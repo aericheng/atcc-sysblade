@@ -188,6 +188,49 @@ def check_tco_savings_pct(report: Report) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Check group 3b — Wang+rainflow validation ratios match whitepaper §3.2.1
+# ---------------------------------------------------------------------------
+def check_rainflow_validation_ratios(report: Report) -> None:
+    """Whitepaper §3.2.1 quotes two damage ratios (demo 1.012, worst-case
+    0.907). These come from aging_rainflow_validation.json so any future
+    re-tuning of Wang's parameters or the worst-case waveform must update
+    the whitepaper text in lockstep — this check is the gate."""
+    path = SCENARIOS_PUB / "aging_rainflow_validation.json"
+    if not path.exists():
+        report.add(
+            name="aging_rainflow_validation.json present",
+            passed=False,
+            detail=f"missing {path.relative_to(REPO)} — run pnpm scenarios",
+            target_loc=str(path.relative_to(REPO)),
+        )
+        return
+    data = json.loads(_read(path))
+    wp = _read(WHITEPAPER)
+
+    for label, expect_str in [
+        ("demo", "1.012"),
+        ("worst_case", "0.945"),
+    ]:
+        ratio = data["waveforms"][label]["damage_ratio_hybrid_over_lfp_only"]["integrated"]
+        # JSON is the source of truth; whitepaper must round to 3 decimals.
+        rounded = round(ratio, 3)
+        report.add(
+            name=f"§3.2.1 {label} ratio matches JSON within ±0.005",
+            passed=_approx(rounded, float(expect_str), 0.005),
+            detail=f"json={ratio:.4f} → rounded {rounded:.3f}, whitepaper says {expect_str}",
+            target_loc="docs/whitepaper.md §3.2.1 ↔ aging_rainflow_validation.json",
+        )
+        # And cross-check the literal substring is in the whitepaper, so a
+        # silent edit that drops the number from the doc is also caught.
+        report.add(
+            name=f"§3.2.1 {label} ratio literal '{expect_str}' present in whitepaper",
+            passed=expect_str in wp,
+            detail=f"searched docs/whitepaper.md for '{expect_str}'",
+            target_loc="docs/whitepaper.md",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Check group 4 — whitepaper / presentation OLS+ensemble headline numbers
 # ---------------------------------------------------------------------------
 def _find_severson_result(eval_data: dict, kind: str, split: str, filt: str) -> dict | None:
@@ -419,6 +462,7 @@ def main() -> int:
     check_fleet_invariants(report)
     check_landing_headlines(report)
     check_tco_savings_pct(report)
+    check_rainflow_validation_ratios(report)
     check_severson_eval_numbers(report)
     check_int8_numbers(report)
     check_lstm_validation_numbers(report)

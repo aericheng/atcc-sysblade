@@ -176,11 +176,13 @@ gradient 引發的電壓震盪,把 hybrid 拓撲的「為什麼要 LIC」這件�
 | `transient_lfp_only.json` | 50 kW 突發負載,純 LFP 應對 | 電壓震盪 ΔV ≈ 62 mV (steady-state pp) |
 | `transient_hybrid.json` | 同負載,LFP+LIC 混合應對 | ΔV ≈ 18 mV (steady-state pp,3.5× 改善) |
 | `aging_lfp.json` | 3000 cycle BBU duty 下 SOH 衰減 | 80 % SOH @ ~3000 cycles |
+| `aging_rainflow_validation.json` | Rainflow + Wang 2011 對 hybrid 與 LFP-only 各自的 LFP cell 電流跑 cycle-aging 預測,獨立交叉驗證 `aging_lfp.json` 的 hybrid-vs-solo 排序(見 §3.2.1) | demo 波形 hybrid/LFP-only damage ratio = 1.012,worst-case (10C peaks) ratio = 0.945 |
 | `model_validation.json` | LSTM 推論逐 cycle trajectory + actual | 9 個 curated cells |
 
-> 這四個 JSON 是 `/twin` 與 `/dashboard` 所有數字的單一資料源,SHA-256
+> 上述 JSON 是 `/twin` 與 `/dashboard` 所有數字的單一資料源,SHA-256
 > 雙寫一致(generator 同一時間戳寫到 `packages/shared/` 與
-> `apps/web/public/`)。
+> `apps/web/public/`)。`aging_rainflow_validation.json` 不被 UI 消費,
+> 純粹是後端交叉驗證的可追溯產物。
 
 ### 3.2 混合控制律 — LFP / LIC 頻譜分頻
 
@@ -202,7 +204,93 @@ W3+ 計畫對 τ ∈ [0.1, 2.0] s 做 sweep 求 Pareto-optimal),在 PyBaMM 模�
 * **LFP 接收功率** RMS:純電池 8.7 kW → 混合 1.5 kW → **5.7× 降低**
 * **電池電壓震盪** peak-to-peak (steady-state window):純電池 ~62 mV → 混合 ~18 mV → **3.5× 降低**
 
-兩個數字直接對應首頁的 `5.7×` 與 `3.5×` 頭條。
+兩個數字直接對應首頁的 `5.7×` 與 `3.5×` 頭條。注意:這兩個數字描述的是
+LFP 看到的**訊號乾淨度**,不是壽命延長倍數。壽命層面的獨立交叉驗證
+見 §3.2.1。
+
+#### 3.2.1 獨立交叉驗證 — Rainflow + Wang 2011
+
+**動機**。`aging_lfp.json` 用單一 `duty_factor = 0.33` scalar 把 BBU duty
+相對於 1C/1C 工作台循環的兩件事打包:**(a)** 每個 cycle 的 per-Ah 損傷
+被 hybrid 拓撲降低多少(物理問題,屬於電芯層次)、**(b)** BBU 浮充服務
+裡每年的 cycle 次數比工作台少多少(使用情境問題,屬於排程層次)。
+0.33 落在 v2.1 附件 C 引用的「LFP 浮充 8–12 年壽命」合理區間,但這個
+scalar 本身是**經驗校準**而非從第一性原理推導。本節用一條完全獨立的
+路徑只驗證 (a)。
+
+**方法**。對 `transient_lfp_only.json` 與 `transient_hybrid.json` 兩個
+情境的 LFP cell 電流波形:
+
+1. 由 $\mathrm{SOC}(t) = 1 - \int_0^t I(\tau)/Q_{\text{nom}}\,\mathrm{d}\tau$
+   重建 SOC 軌跡(`Q_{\text{nom}} = 2.3` Ah,Prada2013)。
+2. 對 SOC 軌跡跑 **ASTM E1049-85 4-point rainflow** 分解出 micro-cycle
+   清單 $\{(\Delta\mathrm{DoD}_i, \bar{\mathrm{SOC}}_i, n_i)\}$。
+3. 每個 cycle 套 **Wang 2011 半經驗 cycle-aging 公式**(Wang et al.,
+   *J. Power Sources* 196:3942,Table 2):
+$$
+Q_{\text{loss},i} = B(C_i)\,\exp\!\Bigl(-\tfrac{E_a(C_i)}{R\,T}\Bigr)\,
+                    (\Delta\mathrm{DoD}_i \cdot Q_{\text{nom}})^{0.55}
+$$
+   其中 $B$ 由 Wang Table 2 在 0.5/2/6/10 C 採樣值線性內插,
+   $E_a(C) = 31700 - 370.3\,C$ J/mol,$T = 298.15$ K。Miner's rule
+   線性疊加。同時用「電流加權平均 kernel × Ah\_total$^{0.55}$」
+   的積分形式做交叉檢驗,兩條路徑數值一致。
+4. 為了避免單一波形不代表性,**同時跑兩個波形**:
+   * **demo** — 與 `transient_*.json` 完全相同的 ±30 % / 100 ms 方波
+   * **worst_case** — 依 §3.1 引用的 GB200 power-swing 文獻
+     (arXiv:2508.14318 §3,引述「5–10 C 脈衝、寬度 10–30 ms」)合成:
+     `RACK_BASELINE_KW` 基線 + 30 ms 寬、1 s 週期的 10 C cell-level 脈衝
+     (採用引用區間的上緣以呈現設計餘裕)
+5. 回報 hybrid 與 LFP-only 的 **per-Ah cycle-aging 損傷比**
+   $\eta_{\text{cyc}} = Q_{\text{loss,hybrid}}\,/\,Q_{\text{loss,LFP-only}}$。
+
+**結果**。
+
+| 波形 | LFP-only Q\_loss (60s) | Hybrid Q\_loss (60s) | $\eta_{\text{cyc}}$ |
+|------|---:|---:|:--:|
+| demo (±30 %, 100 ms) | 0.0338 % | 0.0342 % | **1.012** |
+| worst_case (10 C, 30 ms 脈衝) | 0.0375 % | 0.0355 % | **0.945** |
+
+**判讀**。
+
+* **demo 波形上 Wang 看不出 hybrid 的 cycle-aging 好處**(甚至略差
+  1.2 %)。原因是 Wang 的 kernel $B(C)\cdot\mathrm{e}^{-E_a/RT}$ 在
+  0.5–6 C 區間幾乎 flat、且輕微凸(2 C 為極小 0.080、6 C 為 0.088);
+  demo 波形的 cell C-rate 落在 3.2–6 C,LFP-only 的電流加權平均
+  kernel ≈ 0.0876、hybrid 平直在 4.6 C 對應 kernel ≈ 0.0888 — Jensen
+  不等式讓 hybrid 的 per-Ah 損傷略高。**這對提案不是壞消息,而是誠實
+  邊界**:demo 用的 ±30 % 振幅本來就是「示意波形」(用最簡單的方波
+  證明 LIC 能濾掉 AC),不是 hybrid 真正發揮優勢的工作點。
+* **worst_case 波形上 Wang 給出 5.5 % per-Ah 的 cycle-aging 改善**。
+  原因是 Wang kernel 在 6 C → 10 C 區間從 0.088 跳到 0.192(因為 $B$
+  停止下降而 $E_a$ 繼續線性下降,導致 Arrhenius 因子主導);LIC 把
+  10 C 脈衝吸收掉後 LFP 看到的最大 C-rate 降到 4.8 C,電流加權平均
+  kernel 從 0.0955 降到 0.0898 → **5.5 % 損傷下降**。這是 LIC 真正
+  發揮作用的場景,也是 v2.1 §B.1 引述「10–30 ms 5–10 C 瞬態」要對抗
+  的對象。如果客戶端工作負載比 §B.1 引用的 reference 還激進(更密集
+  的脈衝、或 > 10 C),這個比值會更小。
+* **與 `aging_lfp.json` 的關係**。$\eta_{\text{cyc}} = 0.945$
+  (worst_case)只覆蓋 0.33 duty\_factor 裡的「per-cycle 損傷修正」
+  那一半;另一半「BBU 浮充每年 cycle 數遠少於工作台」係 v2.1 附件 C
+  引述「LFP 浮充應用實測 8–12 年壽命」的使用情境假設,獨立於本節
+  的 Wang 計算。**兩條路徑放在一起的判讀**:hybrid 在 worst-case GB200
+  工作點下對 LFP cycle-aging 確實有 ≈ 5 % 的降損效果(Wang+rainflow
+  第二條路徑證實),首頁 `10 yr` BBU service life 同時還倚賴 BBU
+  浮充使用情境(aging\_lfp 的 0.33 折算 + 附件 C 的 8–12 年浮充壽命
+  區間)。任一條路徑單獨拿出來都不足以推導「10 yr」這個數字,**多條
+  路徑對齊方向才是這個結論的根據**。
+
+**Wang 絕對數值不能對齊 Severson**。Wang 2011 用的是 A123 ANR26650
+moderate-rate 數據,在 1C/1C 預測 ~28 k cycles 才到 80 % SOH;Severson
+2019 在 fast-charge 政策下實測 ~1100 cycles。這個 ~25× 差距是
+Wang 本身的 calibration 限制,不是本節的 bug — 因此本節**只引用相對
+比值**,不把 Wang 的絕對 cycle 數塞進首頁或 `aging_lfp.json` 的曲線。
+
+**重現指令**:`pnpm scenarios` → 自動跑 `scenario_aging_rainflow_validation`
+→ 雙寫到 `apps/web/public/scenarios/` 與 `packages/shared/scenarios/`。
+ASTM rainflow 實作有 self-test(`_rainflow_self_test`)用 §5.4.4
+canonical sequence 在每次跑前先驗證,出錯會 raise AssertionError
+而不會默默產出錯誤的 JSON。
 
 ### 3.3 RUL 預測 — Severson 重現 + Full model 改進
 
