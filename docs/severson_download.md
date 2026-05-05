@@ -93,7 +93,7 @@ If neither Path A nor Path B works tonight:
   LFP advantage — NASA has only 4 LCO cells — but we can still demonstrate
   RUL prediction as a competence proof.
 
-This is **plan C** because it weakens the v2.1 proposal&rsquo;s explicit
+This is **plan C** because it weakens the v2.2 proposal&rsquo;s explicit
 "Severson 2019 main training set" claim. Use only if A and B fail.
 
 ---

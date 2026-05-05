@@ -596,7 +596,7 @@ def main() -> None:
             "generator": "scripts/export_lstm_onnx.py",
             "torch_version": torch.__version__,
             "onnxruntime_version": ort.__version__,
-            "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.1.pdf",
+            "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.2.pdf",
         },
         "title": "LSTM RUL — Severson 2019 + PyBaMM BBU-duty + ONNX edge inference",
         "description": (

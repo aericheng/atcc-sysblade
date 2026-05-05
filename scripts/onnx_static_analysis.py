@@ -1,7 +1,7 @@
 """ONNX static analysis — estimate STM32N6 NPU footprint without an ST tool.
 
 Why this script exists. ST datasheet Neural-ART NPU INT8 LSTM typical
-latency is 0.3 ms (v2.1 §E.1 Tier-C "ms 級 SOH 推論" requirement; v2.1
+latency is 0.3 ms (v2.2 §E.1 Tier-C "ms 級 SOH 推論" requirement; v2.2
 does not commit to a specific µs figure). The proper validation path is
 ST's X-CUBE-AI 9.x toolchain,
 which is a Windows GUI application requiring an ST account. We can't
@@ -350,7 +350,7 @@ def render_markdown(report: dict, quant: dict | None) -> str:
     A(f"| CPU fallback latency | {report['estimated_cpu_fallback_latency_us']} µs |")
     A(f"| **總 latency 估** | **{report['estimated_total_latency_us']} µs** |")
     A("")
-    A("**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms = 300 µs**(v2.1 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字):本估算結果")
+    A("**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms = 300 µs**(v2.2 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字):本估算結果")
     A(f"在 {report['estimated_total_latency_us']} µs **{'符合' if report['estimated_total_latency_us'] <= 500 else '超過'}** 此承諾,")
     A(f"但有 ±2× 不確定區間,**真實數字可能 {report['estimated_total_latency_us'] / 2:.0f}–{report['estimated_total_latency_us'] * 2:.0f} µs**。")
     A("")

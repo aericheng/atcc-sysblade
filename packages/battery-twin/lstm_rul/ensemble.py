@@ -1,6 +1,6 @@
 """Bagging-OLS and gradient-boosting variants of the Severson RUL regressor.
 
-Why this exists: the v2.1 §B commitment is < 10 % MAPE aligned with the
+Why this exists: the v2.2 §B commitment is < 10 % MAPE aligned with the
 Severson paper's 9.1 % baseline. The plain 13-feature OLS in
 ``baseline.py`` lands at median 14.5 % across 10 seeds. Two routes close
 the gap without changing the feature set:

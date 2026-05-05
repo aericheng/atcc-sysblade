@@ -6,7 +6,7 @@ date: "2026-05-06"
 authors:
   - 系統電 ATCC C13 學生競賽團隊
 abstract: |
-  本白皮書是商業企劃書 v2.1 的技術版伴讀文件。商業 PDF 回答「為什麼客戶會買」,
+  本白皮書是商業企劃書 v2.2 的技術版伴讀文件。商業 PDF 回答「為什麼客戶會買」,
   本文回答「為什麼技術做得到」。Sysblade HyperBuffer 鎖定北美 Tier-2/3 AI 機房
   BBU(電池備援單元)市場,以 LFP 15S × 3.2 V 主電 + 鋰離子電容(LIC)輔助的
   混合拓撲解決三個目前市場上沒有整合方案的痛點:毫秒級電壓瞬態、48 V → ±400 V
@@ -14,7 +14,7 @@ abstract: |
   資料庫驅動預測,**13-feature paper-aligned Full model 配合 K=24 bagged
   GradientBoosting ensemble + 嚴格 cell filter(`cycle_life ≥ 400`,134/138 cells),
   在 10-seed 隨機 split 上 median test MAPE = 8.38 %、R² = 0.89,低於
-  v2.1 附件 B 軟體技術棧承諾「誤差目標 MAPE < 10 %、Severson 9.1 %
+  v2.2 附件 B 軟體技術棧承諾「誤差目標 MAPE < 10 %、Severson 9.1 %
   為對標、未上實機資料前不承諾 < 5 %」**(per-seed range 5.93 – 12.91 %,
   7/10 seed 低於 10 %)。**Cross-batch(b1+b2→b3)以 bagged-OLS 為最佳
   generalisation:median MAPE = 13.87 %、R² = +0.21**(boosting tree 反而退化
@@ -56,7 +56,7 @@ abstract: |
 
 ### 1.1 北美 Tier-2/3 AI 機房 BBU 市場規模
 
-依 JLL Year-End 2025 Report(v2.1 §C.1 引述)全美在建資料中心容量達
+依 JLL Year-End 2025 Report(v2.2 §C.1 引述)全美在建資料中心容量達
 35 GW,**德州 6.5 GW(18.6 %)+ 北維吉尼亞 ~5.3 GW(15 %),兩地合計
 ~33 % 為第一級戰場**。Texas 已超車 Virginia 成為全美興建中專案數最多的
 州(140 案 vs 136 案,2026 Q1 數據)。**本文 `dashboard` 頁面 1000 台
@@ -69,7 +69,7 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 客戶議價力有限;且目前市場上**無一家現成廠商提供「軟體 + 硬體 + 維運」
 整合方案** —— 這是我們鎖定的市場縫隙。
 
-> 完整市場數字(年增容量 GW、年 BBU 出貨量、ASP)詳商業企劃書 v2.1 §A 摘要
+> 完整市場數字(年增容量 GW、年 BBU 出貨量、ASP)詳商業企劃書 v2.2 §A 摘要
 > + §C.1 市場規模與地理集中度,本白皮書不重複論證商業面。
 
 ### 1.2 三個目前市場上沒有整合方案的 gap
@@ -94,7 +94,7 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 
 ### 2.1 硬體拓撲
 
-主電池:**15 串 LFP × 3.2 V = 48 V** 標稱(對齊 v2.1 §修訂 #4)。LFP 化學
+主電池:**15 串 LFP × 3.2 V = 48 V** 標稱(對齊 v2.2 §修訂 #4)。LFP 化學
 選擇有三個原因:
 
 1. **熱安全**:LFP 熱失控起始溫度 ≈ 230–270 °C,對比 NMC 約 150–210 °C
@@ -103,12 +103,12 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
    橄欖石結構 P–O 鍵能高使氧釋放需更高溫度;消防 NFPA 855 §9.4 abuse 認證
    通過率較高(本文未自行做 abuse 測試,引文獻一般化結論)。
 2. **循環壽命**:LFP 在 BBU duty(每年 < 50 等效完整循環,**本文工程估算**)
-   下壽命模型外推到 **8–12 年**(此 8–12 yr 來自 v2.1 **附件 C 計算假設**:
+   下壽命模型外推到 **8–12 年**(此 8–12 yr 來自 v2.2 **附件 C 計算假設**:
    「『電池更換次數 1.5 vs 1』係依 LFP 在 BBU 浮充應用實測 8–12 年壽命
    估算」),對應客戶折舊年限(`aging_lfp.json` 3000 cycle 達 80 % SOH,§3.1)。
 3. **成本曲線**:LFP 沿學習曲線持續下行,**BloombergNEF Lithium-Ion Battery
    Price Survey** 公開摘要顯示 2024 年電芯均價約 USD 78/kWh、2025 年最低 LFP
-   電芯落到 USD 36/kWh(全球 EV 級規模採購基準),v2.1 §A / §C.1 引述此趨勢
+   電芯落到 USD 36/kWh(全球 EV 級規模採購基準),v2.2 §A / §C.1 引述此趨勢
    說明 LFP 對 NMC 的成本優勢與 BBU 採購可承受度。供應集中亞洲產能但已有
    北美在地化擴產,北美客戶需求亦為「去 China-NMC」。
 
@@ -123,7 +123,7 @@ LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULT
 | 模組 | 路徑 | 角色 |
 |------|------|------|
 | **Battery Digital Twin** | `/twin` | 物理引擎(PyBaMM)+ 機器學習 RUL 預測 + LSTM 推論視覺化 |
-| **TCO Calculator** | `/tco` | 客戶業務談判工具,US$25k/site/yr SaaS 訂閱可帶走(對齊 v2.1 §G.3) |
+| **TCO Calculator** | `/tco` | 客戶業務談判工具,US$25k/site/yr SaaS 訂閱可帶走(對齊 v2.2 §G.3) |
 | **Fleet Dashboard** | `/dashboard` | 三層售後(Tier-1/2/3)即時監控,標註 SIMULATED DATA |
 
 ### 2.3 資料流程(離線預算 / 線上呈現)
@@ -219,7 +219,7 @@ LFP 看到的**訊號乾淨度**,不是壽命延長倍數。壽命層面的獨�
 相對於 1C/1C 工作台循環的兩件事打包:**(a)** 每個 cycle 的 per-Ah 損傷
 被 hybrid 拓撲降低多少(物理問題,屬於電芯層次)、**(b)** BBU 浮充服務
 裡每年的 cycle 次數比工作台少多少(使用情境問題,屬於排程層次)。
-0.33 落在 v2.1 附件 C 引用的「LFP 浮充 8–12 年壽命」合理區間,但這個
+0.33 落在 v2.2 附件 C 引用的「LFP 浮充 8–12 年壽命」合理區間,但這個
 scalar 本身是**經驗校準**而非從第一性原理推導。本節用一條完全獨立的
 路徑只驗證 (a)。
 
@@ -273,12 +273,12 @@ $$
   停止下降而 $E_a$ 繼續線性下降,導致 Arrhenius 因子主導);LIC 把
   10 C 脈衝吸收掉後 LFP 看到的最大 C-rate 降到 4.8 C,電流加權平均
   kernel 從 0.0955 降到 0.0898 → **5.5 % 損傷下降**。這是 LIC 真正
-  發揮作用的場景,也是 v2.1 §B.1 引述「10–30 ms 5–10 C 瞬態」要對抗
+  發揮作用的場景,也是 v2.2 §B.1 引述「10–30 ms 5–10 C 瞬態」要對抗
   的對象。如果客戶端工作負載比 §B.1 引用的 reference 還激進(更密集
   的脈衝、或 > 10 C),這個比值會更小。
 * **與 `aging_lfp.json` 的關係**。$\eta_{\text{cyc}} = 0.945$
   (worst_case)只覆蓋 0.33 duty\_factor 裡的「per-cycle 損傷修正」
-  那一半;另一半「BBU 浮充每年 cycle 數遠少於工作台」係 v2.1 附件 C
+  那一半;另一半「BBU 浮充每年 cycle 數遠少於工作台」係 v2.2 附件 C
   引述「LFP 浮充應用實測 8–12 年壽命」的使用情境假設,獨立於本節
   的 Wang 計算。**兩條路徑放在一起的判讀**:hybrid 在 worst-case GB200
   工作點下對 LFP cycle-aging 確實有 ≈ 5 % 的降損效果(Wang+rainflow
@@ -377,9 +377,9 @@ extra-strict ≥400 共 134)做完整 sweep,完整表見
 | Full HistGBT | 13 | 8.96 % | [ 5.54, 12.51] | 0.874 |
 | Full stack | 13 | 9.24 % | [ 6.28, 12.21] | 0.821 |
 
-> **結論**:Plain OLS 13-feat random median 14.51 %(對應 v2.1 附件 B
+> **結論**:Plain OLS 13-feat random median 14.51 %(對應 v2.2 附件 B
 > 軟體技術棧的對標 baseline)→ K=24 **bagged GradientBoosting + extra-strict
-> cell filter** 把 median 拉到 **8.38 %**,**達成 v2.1 附件 B「對齊
+> cell filter** 把 median 拉到 **8.38 %**,**達成 v2.2 附件 B「對齊
 > Severson paper 9.1 % 的 < 10 %」承諾**(全部 5 個樹型 ensemble 在
 > xstrict 上 median 都 < 10 %,結果不依賴單一 hparam 選擇)。
 > Extra-strict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell — 仍比 paper
@@ -570,7 +570,7 @@ severity)合成 50 顆 BBU-duty cell。每顆 cell:
 
 * 從 `(ambient_c, charge_c_rate, avg_dod, events_per_year)` 三角分布抽樣
   其 duty profile,以本文工程估算(年 ~50 等效循環)為錨,壽命終值對齊
-  v2.1 附件 C 的 LFP 浮充 8–12 年實測估算
+  v2.2 附件 C 的 LFP 浮充 8–12 年實測估算
 * `severity` = soft-exponent 多軸組合,1.0 = Severson lab benchmark
 * `SOH(cycle)` 用 §3.1 同款雙 regime 衰減,以 `severity` 做時間拉伸
 * 輸出 `(99, 7)` per-cycle features(qd_max / qd_range / v_mean / v_std /
@@ -633,11 +633,11 @@ test 集上,FP32 MAPE 19.10 % → INT8 MAPE 19.20 %,**ΔMAPE = +0.10 pp,
 
 ## 第四章 Fleet 售後管理
 
-對應 v2.1 §E.3 軟體生態系中 Fleet Dashboard 的「即時監控 / 主動維修 /
+對應 v2.2 §E.3 軟體生態系中 Fleet Dashboard 的「即時監控 / 主動維修 /
 預測維運」三層服務承諾,本 `/dashboard` 是把該節變成可看可點的儀表板。
 1000 台機台是 seeded RNG 模擬,所有 panel 明標 **SIMULATED DATA** watermark
 (`apps/web/src/app/globals.css` `.simulated-watermark`),**這是業界標準
-作法,不可移除**(對齊 v2.1 附件 B 軟體技術棧 (c)「標註 Simulated Data」明文)。
+作法,不可移除**(對齊 v2.2 附件 B 軟體技術棧 (c)「標註 Simulated Data」明文)。
 
 ### 4.1 Tier-1 即時監控
 
@@ -647,7 +647,7 @@ test 集上,FP32 MAPE 19.10 % → INT8 MAPE 19.20 %,**ΔMAPE = +0.10 pp,
 
 ### 4.2 Tier-2 地理分布
 
-依 v2.1 §C.1 引述 JLL Year-End 2025 Report,**全美在建容量 35 GW 中
+依 v2.2 §C.1 引述 JLL Year-End 2025 Report,**全美在建容量 35 GW 中
 Texas 6.5 GW(18.6 %)+ 北維吉尼亞 5.3 GW(15 %),兩地合計 ~33 %**;
 本 fleet 1000 台模擬以 AI 機房密度權重放大為:
 * **Texas 49 %**(本文模擬,Dallas + Austin AI cluster 集中度高於整體 colo)
@@ -678,7 +678,7 @@ Texas 6.5 GW(18.6 %)+ 北維吉尼亞 5.3 GW(15 %),兩地合計 ~33 %**;
 > * `RUL ≥ 1500` ≈ **未來 30 年以上** → healthy 主流族群
 >
 > 這個 50 cycles/yr 是**本文工程估算**(典型北美機房年停電事件 ~ 30 +
-> 日常 LIC float / 自我測試循環 ~ 20);v2.1 沒有提供此具體拆解,但給出
+> 日常 LIC float / 自我測試循環 ~ 20);v2.2 沒有提供此具體拆解,但給出
 > LFP 浮充壽命 8–12 年實測值(附件 C)、`電池更換次數 10 年內 1.5 vs 1`
 > 假設(§G.3),兩者交叉支持「年循環約 50 量級」的數量級。客戶現場若
 > duty 不同,需在 commissioning 階段重校準。模型在 dashboard 端顯示
@@ -700,7 +700,7 @@ PyBaMM trajectory 可校準 PI)。實作 `apps/web/src/components/device-drilldo
 
 ## 第五章 TCO 模型
 
-`apps/web/src/lib/tco.ts` 把 v2.1 §G.3 的成本表寫成 elasticity model,
+`apps/web/src/lib/tco.ts` 把 v2.2 §G.3 的成本表寫成 elasticity model,
 讓客戶能拉動 rack 數量、電價、PUE、carbon intensity 即時看 10 年成本差。
 
 ### 5.1 變數定義
@@ -714,7 +714,7 @@ PyBaMM trajectory 可校準 PI)。實作 `apps/web/src/components/device-drilldo
 
 ### 5.2 33 % 節省的推導
 
-每 rack 10 年成本(USD,對齊 v2.1 §G.3):
+每 rack 10 年成本(USD,對齊 v2.2 §G.3):
 
 | 項目 | Traditional NMC | Sysblade LFP+LIC | 差距 |
 |------|---:|---:|---:|
@@ -733,7 +733,7 @@ $$
 
 > **LFP 單位成本對稱性說明(誠實邊界)**:細心讀者會留意「LFP+LIC 初次採購
 > 8,640」與「10 年內替換 5,760」表面上不能用同一個 single-unit price 推出。
-> 此 row 對齊 v2.1 §G.3 BOM 模型,反映兩條假設。第一,**NMC 屬成熟化學體系**,
+> 此 row 對齊 v2.2 §G.3 BOM 模型,反映兩條假設。第一,**NMC 屬成熟化學體系**,
 > 單位成本在 10 年模型中假設 flat($5,760 維持);**LFP+LIC 仍在學習曲線陡降
 > 段**,Sysgration 內部估 6–8 年內 single-cell ASP 下降約 30 %,**服役期到時
 > LFP+LIC 單位成本已接近 NMC 同價**。第二,Sysblade 採「refurbish 而非整套
@@ -782,13 +782,13 @@ $$
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
 | 重現 Severson Variance baseline | 17.86 % MAPE 10-seed median(paper Severson 2019 *Nature Energy* 4 **Figure 2c / Table 1 "Variance" model 報 15.0 %**,paper 用單 seed 隨機 split,seed 編號未公開) | 138 vs 124 cells;feature 變體;單一 seed 比較不嚴謹,本文 10-seed median 比 paper 嚴格 |
-| 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 對應 v2.1 附件 B baseline 對標值;ensemble 後拉低到 8.38 %(下一行) |
-| 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.1 附件 B 軟體技術棧的「MAPE < 10 %」承諾** |
+| 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 對應 v2.2 附件 B baseline 對標值;ensemble 後拉低到 8.38 %(下一行) |
+| 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.2 附件 B 軟體技術棧的「MAPE < 10 %」承諾** |
 | 13-feat Full **bagged-OLS + xstrict** / cross-batch | **median 13.87 %** test MAPE,**R² = +0.21** | cross-batch 最佳 generalisation;GBT 在 cross-batch 反而退化到 17–22 %(protocol-specific overfit) |
 | **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**訓練集加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| BBU 樣本 MAPE = 16.49 %(全 188-cell 切面),Severson 全切面 b1 17.02 % / b2 33.45 % / b3 14.72 %,整體 test MAPE 19.10 %、R² 0.86,**模型 span 兩個 regime**。仍是合成 cell 而非真實 BBU duty 量測;客戶 PoC 第一年累積資料後再校準 |
 | **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),由 datasheet calendar curve 建 lookup table 處理(LIC 公開實驗資料極少,不適合 LSTM 學)|
-| **不**承諾 < 5 % MAPE | v2.1 附件 B 軟體技術棧明文「未上實機資料前不承諾 < 5 %」 | 即使模型達到也不在白皮書聲明 |
-| **達 v2.1 §B「< 10 % MAPE」承諾** | v2.1 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
+| **不**承諾 < 5 % MAPE | v2.2 附件 B 軟體技術棧明文「未上實機資料前不承諾 < 5 %」 | 即使模型達到也不在白皮書聲明 |
+| **達 v2.2 §B「< 10 % MAPE」承諾** | v2.2 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
 | Cross-batch 改善幅度(paper-style filter,n_test=44)| 19.25 %(5-feat OLS,R² -0.13)→ 14.54 %(13-feat OLS,R² +0.08)→ 13.87 %(bagged-OLS xstrict,R² +0.21)| bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化(17–22 %)驗證了 protocol-specific overfit 假設 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
 | **MC Dropout + Split Conformal 90 % PI 涵蓋率** | 100 % test coverage(≥ 90 % 保證) | Conformal **q_factor = 0.563** 縮窄 PI 44 %;coverage 仍 100 % 是因 test 比 cal 容易 |
@@ -802,14 +802,14 @@ $$
 
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
-| 33 % TCO 節省 | `tco.ts` 公式對齊 v2.1 §G.3 | 默認 mid-tier preset;rack 數 / 電價變化會偏移 |
+| 33 % TCO 節省 | `tco.ts` 公式對齊 v2.2 §G.3 | 默認 mid-tier preset;rack 數 / 電價變化會偏移 |
 | 1000 台 fleet | seeded RNG 模擬 | **明標 SIMULATED DATA**,絕非真客戶資料 |
-| Texas 49 % / Virginia 27 % fleet 模擬權重 | **本文模擬假設**(AI 機房密度加權);v2.1 §C.1 引 JLL 2025 全美在建容量為 18.6 % / 15 % | 放大係模擬,非 JLL 直接引用,業師若挑戰須聲明此差異 |
-| **未** 部署到 OCP | v2.1 §F.1 18 個月里程碑 | 2027 Q3 才送認證 |
-| **未** 簽約 Tier-1 客戶 | v2.1 §F.1 18 個月里程碑 | 2027 Q1–Q2 才開始 PoC |
+| Texas 49 % / Virginia 27 % fleet 模擬權重 | **本文模擬假設**(AI 機房密度加權);v2.2 §C.1 引 JLL 2025 全美在建容量為 18.6 % / 15 % | 放大係模擬,非 JLL 直接引用,業師若挑戰須聲明此差異 |
+| **未** 部署到 OCP | v2.2 §F.1 18 個月里程碑 | 2027 Q3 才送認證 |
+| **未** 簽約 Tier-1 客戶 | v2.2 §F.1 18 個月里程碑 | 2027 Q1–Q2 才開始 PoC |
 
 > **這張表的存在本身就是答辯彈藥**。業師問哪一行,我們都有答案,且
-> 答案不會與 v2.1 PDF 衝突。每一行如果業師深挖 → repo 對應檔案路徑
+> 答案不會與 v2.2 PDF 衝突。每一行如果業師深挖 → repo 對應檔案路徑
 > 都查得到。
 
 ---
@@ -844,13 +844,13 @@ $$
 | 風險 | 應對 |
 |------|------|
 | EU Battery Passport 2027 上路 | 規格已預留 RUL 可匯出標準格式 |
-| 美國 IRA 補貼變動 | LFP 模組製造在地化路徑對齊 **IRA Sec. 45X "Advanced Manufacturing Production Credit"**(電池模組 USD 10/kWh + cell USD 35/kWh,2023–2032 階段性);v2.1 §B.3「德州 Plano 廠符合美國優先採購法與關稅豁免政策」之戰略對應 |
+| 美國 IRA 補貼變動 | LFP 模組製造在地化路徑對齊 **IRA Sec. 45X "Advanced Manufacturing Production Credit"**(電池模組 USD 10/kWh + cell USD 35/kWh,2023–2032 階段性);v2.2 §B.3「德州 Plano 廠符合美國優先採購法與關稅豁免政策」之戰略對應 |
 
 ---
 
 ## 第八章 路線圖
 
-對齊 v2.1 §F.1 18 個月關鍵里程碑(2026 Q3 – 2027 Q4)。本章區分兩件事:
+對齊 v2.2 §F.1 18 個月關鍵里程碑(2026 Q3 – 2027 Q4)。本章區分兩件事:
 **(A)** 本白皮書交付的工程成果(對應 ATCC 初賽範圍);
 **(B)** 後續產品里程碑(EVT、認證、PoC,對應商業 PDF §F.1)。
 
@@ -861,7 +861,7 @@ $$
 | 物理引擎 | PyBaMM DFN(Prada2013 LFP)瞬態 / 老化情境四件組(§3.1)| ✅ |
 | 資料管線 | Severson 2019 6 GB v7.3 .mat HDF5 解析,138 顆 cell + `summary` 子節點(IR / Tmax / chargetime)| ✅ |
 | ML — 點預測 | 13-feat Full model × 5 種 ensemble × 4 種 cell filter × 10-seed sweep(§3.3.3 / §3.3.4)| ✅ |
-| ML — random split | bagged-GBT (K=24) + xstrict filter median MAPE **8.38 %、R² 0.89**,**達 v2.1 附件 B「< 10 %」承諾** | ✅ |
+| ML — random split | bagged-GBT (K=24) + xstrict filter median MAPE **8.38 %、R² 0.89**,**達 v2.2 附件 B「< 10 %」承諾** | ✅ |
 | ML — cross-batch | bagged-OLS + xstrict (b1+b2 → b3) median MAPE **13.87 %、R² +0.21** | ✅ |
 | ML — cross-dataset | Severson → NASA 5/5 feature OOD,z = 5–65 σ → per-chemistry 校準 SOP(§3.3.5)| ✅ |
 | ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles(−44 %),test coverage 100 %(§3.3.7)| ✅ |
@@ -919,7 +919,7 @@ $$
    熱安全認證標準)
 8. **Open Compute Project (OCP) ORV3 Specification** v0.92 (2024).
    (機房級 BBU rack 機械 / 電氣介面)
-9. **JLL Research** (2025). *Year-End 2025 Report* (v2.1 §C.1 引述為 [10]):
+9. **JLL Research** (2025). *Year-End 2025 Report* (v2.2 §C.1 引述為 [10]):
    全美在建資料中心容量 35 GW,德州 6.5 GW (18.6 %) + 北維吉尼亞 5.3 GW (15 %),
    合計 ~33 %。本文 §1.1 / §4.2 fleet 模擬權重 49 % / 27 % 為 AI 機房密度
    加權後的本文假設,**非 JLL 直接數字**。
@@ -944,7 +944,7 @@ $$
 ### 企劃書與專案
 
 14. 系統電 ATCC C13 學生競賽團隊 (2026).
-    *Sysblade HyperBuffer Proposal v2.1*. 商業企劃書,本白皮書之上游文件。
+    *Sysblade HyperBuffer Proposal v2.2*. 商業企劃書,本白皮書之上游文件。
 15. 系統電 ATCC C13 學生競賽團隊 (2026).
     *atcc-sysblade* GitHub repository.
     <https://github.com/aericheng/atcc-sysblade>
@@ -1127,7 +1127,7 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 | **估算 NPU latency** | **54.7 µs** |
 | **估算 ±2× 區間** | **27–109 µs** |
 
-**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms ≈ 300 µs(本文 §3.4 引述,v2.1 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字)**:本估算 54.7 µs **遠低於 ST datasheet typical 上限
+**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms ≈ 300 µs(本文 §3.4 引述,v2.2 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字)**:本估算 54.7 µs **遠低於 ST datasheet typical 上限
 上限**,即使打 ±2× 不確定區間,worst-case 109 µs 仍有 3× margin。
 
 ### C.5 真實 INT8 量化驗證(measured,2026-05-03)
@@ -1163,7 +1163,7 @@ X-CUBE-AI 實機 trace(SOP: `docs/x_cube_ai_install_sop.md`)涵蓋以下五項
 5. **STM32N6 上的 INT8 精度**(對齊本附錄 onnxruntime CPU INT8 ΔMAPE +0.10 pp;
    ST 工具策略差異容許區間 ±0.5 pp)
 
-> v2.1 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
+> v2.2 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
 > (a) ST datasheet 廠商 spec + (b) 本靜態分析 estimate + (c) onnxruntime
 > CPU INT8 measured baseline 共同支持。
 
@@ -1176,7 +1176,7 @@ GitHub: <https://github.com/aericheng/atcc-sysblade>
 ```
 atcc-sysblade/
 ├── docs/
-│   ├── Sysblade_HyperBuffer_Proposal_v2.1.pdf  # 商業企劃,規格凍結
+│   ├── Sysblade_HyperBuffer_Proposal_v2.2.pdf  # 商業企劃,規格凍結
 │   ├── whitepaper.md                            # 本文件
 │   └── severson_download.md                     # 6 GB 資料集下載 SOP
 │

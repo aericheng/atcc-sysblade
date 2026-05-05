@@ -11,7 +11,7 @@
 
   <!-- Title -->
   <text x="380" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#111">每機櫃 10 年總持有成本 (TCO)</text>
-  <text x="380" y="56" text-anchor="middle" font-size="13" fill="#555">100 kW-class rack · 8× BBU · USD · 來源:Sysblade v2.1 §G.3</text>
+  <text x="380" y="56" text-anchor="middle" font-size="13" fill="#555">100 kW-class rack · 8× BBU · USD · 來源:Sysblade v2.2 §G.3</text>
 
   <!-- Y axis -->
   <line x1="80" y1="80" x2="80" y2="420" stroke="#999" stroke-width="1"/>
@@ -145,5 +145,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="80" y="498" font-size="10" fill="#9CA3AF">資料來源:apps/web/src/lib/tco.ts (v2.1 §G.3 表) · 假設 $0.10/kWh, PUE 1.4</text>
+  <text x="80" y="498" font-size="10" fill="#9CA3AF">資料來源:apps/web/src/lib/tco.ts (v2.2 §G.3 表) · 假設 $0.10/kWh, PUE 1.4</text>
 </svg>

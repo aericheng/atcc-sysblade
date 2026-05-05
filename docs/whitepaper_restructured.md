@@ -20,7 +20,7 @@ abstract: |
   **3.49×** ONNX INT8 量化壓縮(LSTM 從 219 KB 壓到 63 KB,ΔMAPE 僅
   +0.10 pp,部署於 STM32N6 Neural-ART NPU)。
 
-  商業模式 = **硬體一次性採購 + SaaS USD 25 k / site / yr**(對齊 v2.1
+  商業模式 = **硬體一次性採購 + SaaS USD 25 k / site / yr**(對齊 v2.2
   §G.3,可隨時取消);Live demo:<https://sysblade-atcc.vercel.app>。
 ---
 
@@ -29,7 +29,7 @@ abstract: |
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
 > 文件版本 v1.1 / 2026-05-06(citation 校正、TCO 對稱性 footnote、persona 數字對齊 scenario JSON、`/dashboard` drilldown 揭露)
 > Live demo: <https://sysblade-atcc.vercel.app>
-> 上游文件:商業企劃書 v2.1 · 完整技術白皮書 `docs/whitepaper.md`
+> 上游文件:商業企劃書 v2.2 · 完整技術白皮書 `docs/whitepaper.md`
 
 ---
 
@@ -45,7 +45,7 @@ abstract: |
 > **Sysblade HyperBuffer** = 北美 AI 機房用的
 > **LFP + LIC 混合 BBU + AI 維運 SaaS**,
 > 一次解掉 GB200 毫秒瞬態、±400 V HVDC 換代、與 1000+ 節 fleet 維運可視化三大痛點。
-> 商業模式 = **硬體一次性採購 + SaaS USD 25k / site / yr**(對齊 v2.1 §G.3)。
+> 商業模式 = **硬體一次性採購 + SaaS USD 25k / site / yr**(對齊 v2.2 §G.3)。
 
 ---
 
@@ -63,7 +63,7 @@ peak-to-peak 也同步從 62 mV 收斂到 18 mV(**3.5× 改善**)。
 *Nature* [6] 與 Severson 衰減模型外推 [1];我們再以 Rainflow + Wang 2011
 作為第二條獨立物理路徑,在 worst-case GB200 工作點 cross-validate 出
 **5.5 % per-Ah 損傷下降**(完整方法見 §2.3.2)。BBU 浮充 duty 下 LFP 服役壽命
-因此達 **8–12 年**(NMC BBU 基準 6–8 年,v2.1 附件 C),客戶 10 年內替換次數
+因此達 **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),客戶 10 年內替換次數
 從 1.5 次降為 1 次。capex 溢價與替換節省如何在 §2.7.1 TCO 表中互抵的完整
 邏輯詳見 §2.3.1 最後一段。
 
@@ -81,7 +81,7 @@ Hyperscale 500r·VA **年省 $482.9k**(payback 2.3 y);三 preset 29.9–33.2 %
 
 ### ⚡ 60 sec graceful @ 120 kW peak — 對齊 OCP ORV3
 
-2.5 kWh / 15S 整合 LFP pack(v2.1 §E.1 Tier-B),理論值 2.5 kWh ÷ 120 kW =
+2.5 kWh / 15S 整合 LFP pack(v2.2 §E.1 Tier-B),理論值 2.5 kWh ÷ 120 kW =
 75 sec,於 80 % DoD 下得到 **60 sec 有效備援**,落在 OCP ORV3 30–90 sec 規範
 區間;長時 outage 則由 facility UPS 接力(詳見 §2.1)。
 
@@ -122,7 +122,7 @@ LSTM 從 **219 KB FP32 壓縮到 63 KB INT8**(measured,ΔMAPE +0.10 pp)。模型
 **🤖 邊緣層 — STM32N6 + Neural-ART NPU**
 LSTM 2-layer hidden=64 · INT8 63 KB · BBU 內本地推論
 
-**🔋 硬體層 — Per-rack 12U 機箱(對齊 v2.1 §E.1 三層電氣分層)**
+**🔋 硬體層 — Per-rack 12U 機箱(對齊 v2.2 §E.1 三層電氣分層)**
 
 - **Tier-A**(瞬態)— 2× Eaton XLR-48-166 rack-level LIC 並聯,5 kJ 設計目標
 - **Tier-B**(備援)— 2.5 kWh / 15S 整合 LFP pack,**60 sec graceful @ 120 kW peak**
@@ -156,7 +156,7 @@ hyperscale 多以自研消化內需,Sysblade 不與其正面競爭,而是聚焦 
 ## 2.1 硬體拓撲(per-rack 12U BBU)
 
 Sysblade HyperBuffer 鎖定 Hyperscale tier 機房(單 rack 50–100 kW,GB200 等級
-AI inference 工作負載),per-rack 規格完全沿用 v2.1 §E.1「**同一個 12U 機箱
+AI inference 工作負載),per-rack 規格完全沿用 v2.2 §E.1「**同一個 12U 機箱
 內三層電氣分層**」架構(Electrical Tiering ≠ 物理拆解)。
 
 | 層 | 規格 | 用途 / 設計依據 |
@@ -170,7 +170,7 @@ AI inference 工作負載),per-rack 規格完全沿用 v2.1 §E.1「**同一個 
 
 > **備援接力分工**:BBU 在第一秒接管 power、用 60 秒讓上層工作負載完成
 > checkpoint 與 graceful shutdown,facility UPS 處理長時 outage。客戶站若缺
-> facility UPS 須走 v2.1 §E.5 Tier-A 擴大版規格(本文未涵蓋)。
+> facility UPS 須走 v2.2 §E.5 Tier-A 擴大版規格(本文未涵蓋)。
 
 ---
 
@@ -218,10 +218,10 @@ $$
 5.7× 功率波動下降不只是「電壓好看」,而是直接對應 LFP 主電池壽命延長:
 
 * **電化學機制**:LFP 衰減主導因子是高 C-rate 引發的 lithium plating、SEI 增厚與顆粒裂解(Severson 2019 §3 衰減模型)。RMS 應力從 8.7 kW 壓到 1.5 kW,等於把有效 C-rate 從約 6 C peak 拉回約 1 C 連續,**完全落在 LFP 安全工作區**。
-* **量化估算**:依據 Attia 2020 *Nature* [6] 的 closed-loop fast-charge 結果,LIC 削峰可延長 LFP 主電池循環壽命約 25 %(v2.1 §D.1 的永續承諾保守估為 30 %)。
-* **產品層轉換**:BBU 浮充 duty 大約是每年 50 個循環,屬循環極少場景。將 25 % 壽命延長映射到產品層,LFP 服役壽命可達 **8–12 年**(NMC BBU 基準 6–8 年,v2.1 附件 C),客戶 10 年內替換次數從 **1.5 次降到 1 次**。
+* **量化估算**:依據 Attia 2020 *Nature* [6] 的 closed-loop fast-charge 結果,LIC 削峰可延長 LFP 主電池循環壽命約 25 %(v2.2 §D.1 的永續承諾保守估為 30 %)。
+* **產品層轉換**:BBU 浮充 duty 大約是每年 50 個循環,屬循環極少場景。將 25 % 壽命延長映射到產品層,LFP 服役壽命可達 **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),客戶 10 年內替換次數從 **1.5 次降到 1 次**。
 
-**TCO 角色(誠實邊界)**:在 §2.7.1 TCO 表中,LFP+LIC 「初次採購 +$2,880 / rack」與「替換節省 −$2,880 / rack」剛好互抵,**壽命延長對 TCO bottom-line 的淨貢獻趨近於零**;33 % saving 主要是由瞬態損失(−3,600)、維運人力(−3,000)、HVDC 過渡(−3,000)三條 row 撐起(§2.7.1)。換句話說,壽命延長的角色是讓 Sysblade 能收下這筆 capex 溢價而不增加客戶 TCO,客戶實質拿到的是 +25 % 服役年限、Hyperscale 500 racks 規模 250 次現場派工避免,以及可列入 ESG 碳排報告的減量(對齊 v2.1 §D.1)。
+**TCO 角色(誠實邊界)**:在 §2.7.1 TCO 表中,LFP+LIC 「初次採購 +$2,880 / rack」與「替換節省 −$2,880 / rack」剛好互抵,**壽命延長對 TCO bottom-line 的淨貢獻趨近於零**;33 % saving 主要是由瞬態損失(−3,600)、維運人力(−3,000)、HVDC 過渡(−3,000)三條 row 撐起(§2.7.1)。換句話說,壽命延長的角色是讓 Sysblade 能收下這筆 capex 溢價而不增加客戶 TCO,客戶實質拿到的是 +25 % 服役年限、Hyperscale 500 racks 規模 250 次現場派工避免,以及可列入 ESG 碳排報告的減量(對齊 v2.2 §D.1)。
 
 ### 2.3.2 獨立交叉驗證 — Rainflow + Wang 2011 ⭐
 
@@ -242,7 +242,7 @@ $$
   優勢的工作點**。
 * **worst_case η = 0.945**(5.5 % per-Ah 損傷下降):Wang kernel 在 6 C 至 10 C
   區間躍升到 0.192,LIC 將 10 C 脈衝吸收掉之後,LFP 看到的最大 C-rate 降回
-  4.8 C。**這才是 LIC 真正發揮作用的場景**,對應 v2.1 §B.1 描述的「10–30 ms
+  4.8 C。**這才是 LIC 真正發揮作用的場景**,對應 v2.2 §B.1 描述的「10–30 ms
   5–10 C 瞬態」設計對象。
 
 > **方法學嚴謹**:hybrid 25 % 壽命延長**不是單一統計外推** —— Wang+rainflow
@@ -262,7 +262,7 @@ $$
 | **Severson 同 batch random split MAPE** | **8.38 %**(R² 0.890) | **比 Severson paper benchmark 9.1 % 還準**,代表客戶用同款 LFP 電芯時模型可信度 |
 | **跨 batch / 新 protocol fall-back MAPE** | **13.87 %**(R² +0.207) | 客戶換新快充協議或新批次電芯時,模型仍可用、誤差受控 |
 
-> **部署 routing 規則**(寫進 v2.1 §F 客戶 SOP):**同 protocol** 用 bagged-GBT
+> **部署 routing 規則**(寫進 v2.2 §F 客戶 SOP):**同 protocol** 用 bagged-GBT
 > 享 8.38 % 點精度;**新 protocol** fall back bagged-OLS;**新化學**(LFP → NMC
 > 等)每批必跑 calibration cycle,**5/5 feature OOD、z-distance 5–65 σ 證實
 > 線性外插無意義**。完整 5 regressor × 4 filter sweep + 13-feature 工程詳述 +
@@ -336,9 +336,9 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 
 > **Admission 分支揭露**:本案模擬 fleet 中 77 台 early_aging 全由 `SOH < 0.85`
 > 觸發,`RUL < 800` 分支零觸發(fleet RUL 分布 4389–7130 cycles)。完整 admission
-> rule 仍是 `SOH < 0.85 OR RUL < 800`(對齊 v2.1 §F)。
+> rule 仍是 `SOH < 0.85 OR RUL < 800`(對齊 v2.2 §F)。
 
-**產品內容**(對齊 v2.1 §E.3 三層服務承諾):
+**產品內容**(對齊 v2.2 §E.3 三層服務承諾):
 * **Tier-1 即時監控**:1000 台 fleet 的 SOH / RUL / status 即時表
 * **Tier-2 地理分布**:AI 機房密度加權地圖(Texas 49 % / Virginia 27 %,本文模擬權重)
 * **Tier-3 替換隊列**:`status === "early_aging"`(SOH < 0.85 或 RUL < 800 cycles),觸發 7-day SLA 派工;**支援 row click drilldown**,點擊任一替換 row 開出 panel 顯示該 device 的 SOH (LFP/LIC) / RUL 與 BBU 年數估算 / 熱與操作層 metrics,fleet-level conformal PI 仍須點到 /twin 看 9 顆 walkthrough cell
@@ -351,7 +351,7 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 
 ## 2.7 TCO 模型
 
-### 2.7.1 33 % 節省的推導(對齊 v2.1 §G.3)
+### 2.7.1 33 % 節省的推導(對齊 v2.2 §G.3)
 
 每 rack 10 年成本(USD):
 
@@ -370,7 +370,7 @@ $$
 
 > **LFP 單位成本對稱性說明(誠實邊界)**:細心讀者會留意「LFP+LIC 初次採購
 > 8,640」與「10 年內替換 5,760」表面上不能用同一個 single-unit price 推出。
-> 對齊 v2.1 §G.3 BOM 模型,此 row 反映兩條假設。第一,**NMC 屬成熟化學體系**,
+> 對齊 v2.2 §G.3 BOM 模型,此 row 反映兩條假設。第一,**NMC 屬成熟化學體系**,
 > 單位成本在 10 年模型中假設 flat($5,760 維持);**LFP+LIC 仍在學習曲線陡降
 > 段**,Sysgration 內部估 6–8 年內 single-cell ASP 下降約 30 %,**服役期到時
 > LFP+LIC 單位成本已接近 NMC 同價**。第二,Sysblade 採「refurbish 而非整套
@@ -448,12 +448,12 @@ Payback 對 rack 數量不敏感(extra capex 與 saving 都隨 racks 線性 scal
 4. **故障 blast radius 大**:集中式失效會牽動整片 racks,replace 需要排程 datacenter downtime;per-rack BBU 維修不影響其餘 racks
 
 OCP ORV3 規範趨勢即往 rack-level 移動,2020 後 Meta、Google 已全面 rack-level
-BBU shelf 部署。Sysblade 走 v2.1 §E.1 「**同一個 12U 機箱內三層電氣分層**」做法
+BBU shelf 部署。Sysblade 走 v2.2 §E.1 「**同一個 12U 機箱內三層電氣分層**」做法
 (電氣分層 ≠ 物理拆解,維持備援設備可靠度原則)。
 
 **Trade-off**:從 1 台 UPS 變 100 台 BBU,系統複雜度確實上升,但 Cloud Fleet
 Dashboard 將管理介面收斂回單一儀表板。1000 台透過軟體管理,反而比集中式
-UPS 更省人力(v2.1 §G.3 維運成本差 −3,000 USD/rack/10y)。
+UPS 更省人力(v2.2 §G.3 維運成本差 −3,000 USD/rack/10y)。
 
 ---
 
@@ -674,7 +674,7 @@ worst-case 109 µs 仍有 3× margin。
    Aykol, M., Harris, S.J., Braatz, R.D., Ermon, S., Chueh, W.C.** (2020).
    "Closed-loop optimization of fast-charging protocols for batteries with
    machine learning." *Nature* **578**, 397-402. (本白皮書 §2.3.1 / §3.1
-   引述「LIC 削峰延長 LFP 循環壽命 ~25 %」之主要文獻依據;對應 v2.1 §B.1
+   引述「LIC 削峰延長 LFP 循環壽命 ~25 %」之主要文獻依據;對應 v2.2 §B.1
    的 [13])
 7. **Wang, J., Liu, P., Hicks-Garner, J., Sherman, E., Soukiazian, S.,
    Verbrugge, M., Tataria, H., Musser, J., Finamore, P.** (2011).
@@ -704,7 +704,7 @@ worst-case 109 µs 仍有 3× margin。
 12. **NFPA 855: Standard for the Installation of Stationary Energy Storage
     Systems** (2023 ed.). National Fire Protection Association.
 13. **Open Compute Project (OCP) ORV3 Specification** v0.92 (2024).
-14. **JLL Research** (2025). *Year-End 2025 Report*. (v2.1 §C.1 引述
+14. **JLL Research** (2025). *Year-End 2025 Report*. (v2.2 §C.1 引述
     全美在建容量數據)
 
 ## 工具鏈
@@ -726,7 +726,7 @@ worst-case 109 µs 仍有 3× margin。
 ## 企劃書與專案
 
 22. 系統電 ATCC C13 學生競賽團隊 (2026).
-    *Sysblade HyperBuffer Proposal v2.1*. 商業企劃書,本白皮書之上游文件。
+    *Sysblade HyperBuffer Proposal v2.2*. 商業企劃書,本白皮書之上游文件。
 23. 系統電 ATCC C13 學生競賽團隊 (2026).
     *Sysblade ATCC live demo*. <https://sysblade-atcc.vercel.app>
 

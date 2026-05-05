@@ -1,5 +1,5 @@
 /**
- * TCO model from Sysblade HyperBuffer Proposal v2.1 §G.3.
+ * TCO model from Sysblade HyperBuffer Proposal v2.2 §G.3.
  *
  * Per-rack 10-year cost (USD) for a 100 kW-class rack with 8 BBUs.
  *
