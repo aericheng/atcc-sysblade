@@ -1,8 +1,8 @@
 ---
 title: "Sysblade HyperBuffer 技術白皮書"
 subtitle: "ATCC 第 23 屆 · C13 系統電 · 學生組"
-version: "v1.0"
-date: "2026-05-04"
+version: "v1.1"
+date: "2026-05-06"
 authors:
   - 系統電 ATCC C13 學生競賽團隊
 abstract: |
