@@ -9,7 +9,6 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 **Live demo**: <https://sysblade-atcc.vercel.app>
 **企劃書**: [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf)
 **技術白皮書**: [`docs/whitepaper.md`](docs/whitepaper.md) · [精煉版](docs/whitepaper_restructured.md)
-**簡報導覽**: [`PRESENTATION_GUIDE.md`](PRESENTATION_GUIDE.md)
 
 > **Status**:ATCC 2026 初賽提交版(2026-05-04 階段)。本 repo 公開展示僅供
 > 競賽評審與學術透明使用,授權詳見 [`LICENSE`](LICENSE);citation finalisation
@@ -97,9 +96,9 @@ atcc/
 │   ├── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試
 │   ├── quantize_lstm_onnx.py                     INT8 動態量化 + accuracy 退化 + CPU latency 量測
 │   ├── onnx_static_analysis.py                   STM32N6 NPU 靜態 graph 分析(自動 merge INT8 量測報告)
-│   └── check_whitepaper_numbers.py               whitepaper / README / PRESENTATION_GUIDE 數字 cross-check gate
+│   └── check_whitepaper_numbers.py               whitepaper / README 數字 cross-check gate
 ├── data/raw/  data/processed/                    .gitignore(>8 GB)
-└── DEPLOY.md  PRESENTATION_GUIDE.md
+└── DEPLOY.md
 ```
 
 ---
@@ -191,7 +190,6 @@ Severson .mat v7.3 訓練資料(8.3 GB)需要手動下載,流程見 [`docs/sever
 | [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) | **競賽繳交版本(spec)**,所有 demo 的數字必須對齊 |
 | [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 v1.0 — 完整證據 + 局限討論 |
 | [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 技術白皮書精煉版(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
-| [`PRESENTATION_GUIDE.md`](PRESENTATION_GUIDE.md) | 5 分鐘 demo 腳本 + 業師可能問的問題 |
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
 

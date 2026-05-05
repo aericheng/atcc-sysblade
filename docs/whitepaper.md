@@ -1217,7 +1217,6 @@ atcc-sysblade/
 │   ├── 00_pybamm_smoke_test.ipynb
 │   └── 01_severson_eda.ipynb
 │
-├── PRESENTATION_GUIDE.md                        # 5 分鐘 demo 腳本
 └── DEPLOY.md                                    # Vercel 部署 SOP
 ```
 
