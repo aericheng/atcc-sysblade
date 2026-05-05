@@ -163,9 +163,11 @@ $\phi_s(x,t)$ 的耦合演化。
 **為什麼選 DFN 不選 SPM?**
 單顆粒模型(SPM)在低 C-rate(< 1 C)準度足夠且求解快 5–10 ×(Marquis et
 al. 2019 *J. Electrochem. Soc.* 166 A3693 §benchmark),但 BBU duty 在
-10–30 ms 內可能瞬間吃 5–10 C(GB200 NVL72 NVIDIA reference power profile,
-arXiv:2508.14318 §3 power-swing analysis),SPM 會低估 solid-phase 擴散
-gradient 引發的電壓震盪,把 hybrid 拓撲的「為什麼要 LIC」這件事解錯。
+10–30 ms 內可能瞬間吃 5–10 C(GB200 power-swing context per Choukse 2025
+[10];**5–10 C / 10–30 ms 為團隊依該 paper §IV-B GB200 GPU-level
+power-smoothing 分析自行 per-cell BBU 下尺度推導,原 paper §III 為系統
+MW/s ramp + 頻域規範,未直接給 cell-level 數值**),SPM 會低估 solid-phase
+擴散 gradient 引發的電壓震盪,把 hybrid 拓撲的「為什麼要 LIC」這件事解錯。
 實機要驗證的是「最壞情境」,所以付得起 DFN 的計算成本。
 
 `scripts/generate_twin_scenarios.py` 為以下四個情境逐一求解 PDE。瞬態類
@@ -239,10 +241,12 @@ $$
    的積分形式做交叉檢驗,兩條路徑數值一致。
 4. 為了避免單一波形不代表性,**同時跑兩個波形**:
    * **demo** — 與 `transient_*.json` 完全相同的 ±30 % / 100 ms 方波
-   * **worst_case** — 依 §3.1 引用的 GB200 power-swing 文獻
-     (arXiv:2508.14318 §3,引述「5–10 C 脈衝、寬度 10–30 ms」)合成:
-     `RACK_BASELINE_KW` 基線 + 30 ms 寬、1 s 週期的 10 C cell-level 脈衝
-     (採用引用區間的上緣以呈現設計餘裕)
+   * **worst_case** — 依 §3.1 引用的 GB200 power-swing context(Choukse
+     2025 [10] §IV-B GB200 GPU-level power smoothing)**團隊 per-cell
+     BBU 下尺度推導**為「5–10 C 脈衝、寬度 10–30 ms」(注意:此 cell-level
+     C-rate / ms 數值非 paper §III 直接給出,§III 為系統 MW/s ramp +
+     0.1–200 Hz 頻域規範)合成:`RACK_BASELINE_KW` 基線 + 30 ms 寬、
+     1 s 週期的 10 C cell-level 脈衝(採用引用區間的上緣以呈現設計餘裕)
 5. 回報 hybrid 與 LFP-only 的 **per-Ah cycle-aging 損傷比**
    $\eta_{\text{cyc}} = Q_{\text{loss,hybrid}}\,/\,Q_{\text{loss,LFP-only}}$。
 
@@ -901,32 +905,39 @@ $$
    全美在建資料中心容量 35 GW,德州 6.5 GW (18.6 %) + 北維吉尼亞 5.3 GW (15 %),
    合計 ~33 %。本文 §1.1 / §4.2 fleet 模擬權重 49 % / 27 % 為 AI 機房密度
    加權後的本文假設,**非 JLL 直接數字**。
+10. **Choukse, E., Buck, I., Alben, J., et al.** (Microsoft + NVIDIA, 2025).
+    "Power Stabilization for AI Training Datacenters." arXiv:2508.14318.
+    (§III utility-level MW/s ramp + 0.1–200 Hz 頻域規範,§IV-B 提及 GB200
+    GPU-level power smoothing。**本文 §3.1 SPM justification + §3.2.1
+    worst-case 10 C × 30 ms 脈衝為團隊依本 paper GB200 power-swing 分析
+    自行 per-cell BBU 下尺度推導,原 paper §III 為系統 MW/s ramp,未直接
+    給出 cell-level 5–10 C / 10–30 ms 數值**)
 
 ### 工具鏈
 
-10. **STMicroelectronics** (2024). *STM32N6 Series Reference Manual + Neural-ART
+11. **STMicroelectronics** (2024). *STM32N6 Series Reference Manual + Neural-ART
     NPU Application Note*.(NPU spec、INT8 LSTM 典型 latency 引述來源;
     具體文件編號隨 ST 改版調整,以 ST 官網最新版為準)
-11. **STMicroelectronics** (2024). *X-CUBE-AI 9.x User Manual*.
+12. **STMicroelectronics** (2024). *X-CUBE-AI 9.x User Manual*.
     (靜態 trace 工具)
-12. **ONNX Working Group** (2024). *ONNX Runtime documentation*. (本白皮書
+13. **ONNX Working Group** (2024). *ONNX Runtime documentation*. (本白皮書
     使用之模型互換格式)
 
 ### 企劃書與專案
 
-13. 系統電 ATCC C13 學生競賽團隊 (2026).
-    *Sysblade HyperBuffer Proposal v2.1*. 商業企劃書,本白皮書之上游文件。
 14. 系統電 ATCC C13 學生競賽團隊 (2026).
+    *Sysblade HyperBuffer Proposal v2.1*. 商業企劃書,本白皮書之上游文件。
+15. 系統電 ATCC C13 學生競賽團隊 (2026).
     *atcc-sysblade* GitHub repository.
     <https://github.com/aericheng/atcc-sysblade>
-15. 系統電 ATCC C13 學生競賽團隊 (2026).
+16. 系統電 ATCC C13 學生競賽團隊 (2026).
     *Sysblade ATCC live demo*. <https://sysblade-atcc.vercel.app>
 
 ### 相關產品 / 競品(資料來源)
 
-16. **Eaton Corporation** (2024). *XLR Supercapacitor Module datasheet*.
-17. **Vertiv Group** (2024). *Liebert Edge Lithium-Ion UPS product brief*.
-18. **Schneider Electric** (2024). *Galaxy VS three-phase UPS specification*.
+17. **Eaton Corporation** (2024). *XLR Supercapacitor Module datasheet*.
+18. **Vertiv Group** (2024). *Liebert Edge Lithium-Ion UPS product brief*.
+19. **Schneider Electric** (2024). *Galaxy VS three-phase UPS specification*.
 
 ---
 
