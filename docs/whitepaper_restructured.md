@@ -162,7 +162,7 @@ AI inference 工作負載),per-rack 規格完全沿用 v2.1 §E.1「**同一個 
 
 | 層 | 規格 | 用途 / 設計依據 |
 |---|---|---|
-| **Tier-A** 瞬態緩衝 | **2× Eaton XLR-48-166 並聯**(48 V / 166 F / 53 Wh / ESR 5 mΩ)| 吃 ms 級瞬態。能量需求估算 120 kW × 30 % × 100 ms ≈ 3.6 kJ,加 30 % margin 後取 **5 kJ 為設計目標**;N+1 冗餘 |
+| **Tier-A** 瞬態緩衝 | **2× Eaton XLR-48-166 並聯**(48.6 V / 166 F / 54 Wh / ESR 5 mΩ,per Eaton XLR-48R6167-R datasheet)| 吃 ms 級瞬態。能量需求估算 120 kW × 30 % × 100 ms ≈ 3.6 kJ,加 30 % margin 後取 **5 kJ 為設計目標**;N+1 冗餘 |
 | **Tier-B** 短時備援 | **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱)| **60 sec graceful @ 120 kW peak**(80 % DoD,2.5 kWh ÷ 120 kW = 75 sec 理論值);LFP 採車規 LG Energy Solution / Samsung SDI / KORE Power 等日韓系或北美自有 cell line 電芯,**避 BABA Act / CFIUS 風險** |
 | **Tier-C** 智能管理 | STM32N6 + Neural-ART NPU + edge LSTM | BBU 內邊緣推論(§2.5),斷網仍可運作 |
 | 介面 | 48 V DC + **±400 V HVDC ready**(雙電壓設計)| 規避 2027 OCP Mt. Diablo HVDC 換代 forklift 風險 |
@@ -369,6 +369,17 @@ $$
 \text{Saving} = \frac{29{,}000 - 19{,}400}{29{,}000} = 33.1\,\%
 $$
 
+> **LFP 單位成本對稱性說明(誠實邊界)**:細心讀者會留意「LFP+LIC 初次採購
+> 8,640」與「10 年內替換 5,760」表面上不能用同一個 single-unit price 推出。
+> 對齊 v2.1 §G.3 BOM 模型,此 row 反映兩條假設。第一,**NMC 屬成熟化學體系**,
+> 單位成本在 10 年模型中假設 flat($5,760 維持);**LFP+LIC 仍在學習曲線陡降
+> 段**,Sysgration 內部估 6–8 年內 single-cell ASP 下降約 30 %,**服役期到時
+> LFP+LIC 單位成本已接近 NMC 同價**。第二,Sysblade 採「refurbish 而非整套
+> 換」策略,替換時僅更換衰退電芯而保留 BMC、機箱與電氣分層介面,壓低替換
+> BOM。若改用較激進「LFP+LIC initial 也採 5,760」假設,壽命延長將額外貢獻
+> USD 2,880 / rack / 10y 替換節省,**33 % saving 會推升到 43 %**。本案
+> §2.7.1 採保守版本,**33.1 % 是 lower bound**。
+
 ### 2.7.2 三個 preset 敏感度(數值對齊 live demo `apps/web/src/app/tco/tco-client.tsx`)
 
 | Preset | racks | 電價 | PUE | per-rack saving | 整 fleet 年節省 | Payback |
@@ -492,7 +503,7 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 | **2024 年全球營收** | Sysgration 母公司(TWSE 6312)營收量級**遠小於三家競品** —— 正是 Tier-2/3 縫隙合理的新進入者身分 | **USD 24.9 B** | **USD 8.0 B** | **EUR 38.2 B** |
 | **北美機房 BBU 業務市占(估)** | 0 %(新進入者) | **~ 15 %**(LIC 利基領導)| **~ 25 %**(Tier-1 重型 UPS 主力)| **~ 30 %**(集中式 UPS 王者)|
 | **為什麼還沒做 Sysblade 在做的事**(strategic moat 推論)| —— | 純電力元件商,**沒有軟體 / SaaS / ML DNA**;LIC 利基已是 cash cow,投 SaaS 整合 ROI 不對齊主業 | 重押 **Tier-1 hyperscale 大型 UPS**(單筆 USD M 級),Tier-2/3 colo 利基太薄,**策略上看不上小規模 BBU** | 集中式 UPS Galaxy VS 是**核心產品線**,做 rack-level 等於 **cannibalize 自家旗艦** —— 大公司不會自我蠶食 |
-| **Sysblade 切入點** | 無 cannibalization 包袱(無現有旗艦)+ Sysgration 既有資產(電統能源電芯通路、Plano 廠北美在地化、母公司客戶網)+ 軟硬整合是新世代差異化 | — | — | — |
+| **Sysblade 切入點** | 無 cannibalization 包袱(無現有旗艦)+ Sysgration 既有資產(電芯採購通路、Plano 廠北美在地化、母公司客戶網)+ 軟硬整合是新世代差異化 | — | — | — |
 
 > 數據來源:Eaton 2024 Annual Report、Vertiv FY2024 Q4 results、Schneider
 > Electric 2024 Universal Registration Document(全部公開財報實證,2026-05-04)。
@@ -500,7 +511,7 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 > 而非精確數字**。Sysblade 縫隙至少 18–24 個月空窗。
 
 > **競品仍有優勢**:全球售後網路、認證齊全、品牌信任 — Sysblade 以透明
-> 技術白皮書 + Live demo + 戰略合作夥伴(系統電 / 電統能源)漸進取得客戶信任。
+> 技術白皮書 + Live demo + 戰略合作夥伴(Sysgration)漸進取得客戶信任。
 
 ---
 

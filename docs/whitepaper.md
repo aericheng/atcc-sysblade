@@ -106,13 +106,14 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
    下壽命模型外推到 **8–12 年**(此 8–12 yr 來自 v2.1 **附件 C 計算假設**:
    「『電池更換次數 1.5 vs 1』係依 LFP 在 BBU 浮充應用實測 8–12 年壽命
    估算」),對應客戶折舊年限(`aging_lfp.json` 3000 cycle 達 80 % SOH,§3.1)。
-3. **成本曲線**:2024–2026 LFP 電芯價格從 USD ≈ 95/kWh 跌到 USD ≈ 65/kWh
-   區間(BloombergNEF *Lithium-Ion Battery Price Survey* 2023–2024 公開摘要,
-   v2.1 §A 摘要 + §C.1 市場規模章節並引此趨勢),優於 NMC,且供應集中於亞洲
-   產能,北美客戶有「去 China-NMC」需求。
+3. **成本曲線**:LFP 沿學習曲線持續下行,**BloombergNEF Lithium-Ion Battery
+   Price Survey** 公開摘要顯示 2024 年電芯均價約 USD 78/kWh、2025 年最低 LFP
+   電芯落到 USD 36/kWh(全球 EV 級規模採購基準),v2.1 §A / §C.1 引述此趨勢
+   說明 LFP 對 NMC 的成本優勢與 BBU 採購可承受度。供應集中亞洲產能但已有
+   北美在地化擴產,北美客戶需求亦為「去 China-NMC」。
 
 輔助元件:**鋰離子電容(LIC)** 並聯。以 Eaton **XLR-48-166** 模組為錨
-(48 V、166 F、容量 53 Wh、ESR ≈ 5 mΩ,Eaton XLR datasheet 2023 rev),
+(48.6 V、166 F、容量 54 Wh、ESR ≈ 5 mΩ,per Eaton XLR-48R6167-R datasheet),
 LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULTIMO
 3300F datasheet),負責吸收 < 100 ms 的瞬態尖峰(對應 §3.2 高通濾波器
 時間常數 τ = 0.5 s 的 1/τ ≈ 2 Hz 截止),把 LFP 的負載拉平。
@@ -723,6 +724,17 @@ $$
 $$
 
 頁首頭條 **33 %** 來源即此。
+
+> **LFP 單位成本對稱性說明(誠實邊界)**:細心讀者會留意「LFP+LIC 初次採購
+> 8,640」與「10 年內替換 5,760」表面上不能用同一個 single-unit price 推出。
+> 此 row 對齊 v2.1 §G.3 BOM 模型,反映兩條假設。第一,**NMC 屬成熟化學體系**,
+> 單位成本在 10 年模型中假設 flat($5,760 維持);**LFP+LIC 仍在學習曲線陡降
+> 段**,Sysgration 內部估 6–8 年內 single-cell ASP 下降約 30 %,**服役期到時
+> LFP+LIC 單位成本已接近 NMC 同價**。第二,Sysblade 採「refurbish 而非整套
+> 換」策略,替換時僅更換衰退電芯,保留 BMC、機箱與電氣分層介面,壓低替換
+> BOM。若改用較激進「LFP+LIC initial 也採 5,760」假設,壽命延長將直接貢獻
+> USD 2,880 / rack / 10y 替換節省,**33 % saving 會推升到 43 %**。本案 §5.2
+> 採保守版本,**33.1 % 是 lower bound**。
 
 ### 5.3 敏感度分析(數值對齊 live demo `apps/web/src/app/tco/tco-client.tsx`)
 

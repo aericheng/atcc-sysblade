@@ -1,6 +1,6 @@
 # Sysblade HyperBuffer — AI 機房混合 BBU + 數位孿生 SaaS
 
-> ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 / 電統能源)
+> ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
 LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數位孿生 + 邊緣 RUL 推論,
 鎖定北美 Tier-2/3 AI 機房面臨的**毫秒級電壓瞬態 + 48 V→±400 V HVDC 過渡 + 維運可視化**
