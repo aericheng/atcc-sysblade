@@ -2,7 +2,7 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
-[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📄 企劃書 v2.1 (PDF)**](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) · [**📑 v2.2 修訂版 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.1**](docs/whitepaper.md) · [**📕 精煉版 v1.1**](docs/whitepaper_restructured.md)
+[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📑 企劃書 v2.2 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.1**](docs/whitepaper.md) · [**📕 精煉版 v1.1**](docs/whitepaper_restructured.md)
 
 ---
 
@@ -17,10 +17,10 @@
 
 **6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 壽命延長 · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW peak · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
 
-> **Status**:ATCC 2026 初賽提交版,**最新更新 2026-05-06**(企劃書 v2.2
-> 修訂版 + 技術白皮書 v1.1 + `/dashboard` per-device drilldown 已 ship)。本
-> repo 公開展示供競賽評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀
-> 表板與孿生情境中的客戶 / 機房名稱**全為示意 persona**,非實際部署資料
+> **Status**:ATCC 2026 提交版本 — **企劃書 v2.2 修訂版**(2026-05-06)+
+> **技術白皮書 v1.1** + `/dashboard` per-device drilldown 已 ship。本 repo
+> 公開展示供競賽評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀表板
+> 與孿生情境中的客戶 / 機房名稱**全為示意 persona**,非實際部署資料
 > (`fleet_devices.json` 的 disclaimer 欄位 + UI 上 SIMULATED DATA 浮水印
 > 雙重標註)。
 
@@ -119,7 +119,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 | Variance OLS(1-feat / unfilt) | 17.9 % | 15.8 % | 0.57 | 重現 Severson 2019 paper 頭條 |
 | Discharge OLS(5-feat) | 17.5 % | 19.9 % | 0.53 | paper Table 1 5-feat |
 | Full + IR OLS(13-feat) | 14.5 % | 14.5 % | +0.08 | 加 internal-resistance,**cross-batch R² 由負轉正** |
-| **Full + IR bagged-GBT(K=24, xstrict ≥400, n=134)** | **8.38 %** | 17.9 %(GBT 退化) | **0.89** | **首次達 v2.1 附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 seeds < 10 % |
+| **Full + IR bagged-GBT(K=24, xstrict ≥400, n=134)** | **8.38 %** | 17.9 %(GBT 退化) | **0.89** | **首次達企劃書附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 seeds < 10 % |
 | **Full + IR bagged-OLS(13-feat / xstrict)** | 12.4 % | **13.9 %** | +0.21 | cross-batch generalisation 最佳 |
 
 **達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。
@@ -150,9 +150,8 @@ LSTM 為 production 推論主力;bagged-GBT 13-feat 為「Severson paper 對齊�
 ```
 atcc/
 ├── docs/
-│   ├── Sysblade_HyperBuffer_Proposal_v2.1.pdf   競賽繳交文件 v2.1 (spec)
 │   ├── proposal_v2.2_additions/
-│   │   └── Sysblade_HyperBuffer_Proposal_v2.2.docx  v2.2 修訂版(2026-05-06)
+│   │   └── Sysblade_HyperBuffer_Proposal_v2.2.docx  企劃書 v2.2(2026-05-06,主要繳交版本)
 │   ├── whitepaper.md                            技術白皮書 v1.1(完整版)
 │   ├── whitepaper_restructured.md               精煉版 v1.1(三段式)
 │   ├── severson_download.md                     Severson 2019 .mat v7.3 下載 SOP
@@ -206,24 +205,12 @@ atcc/
 
 | 文件 | 用途 |
 |---|---|
-| [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) | **競賽企劃書 v2.1** — 所有 demo 數字必須對齊的 spec(初賽提交基準)|
-| [`docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx`](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) | **企劃書 v2.2 修訂版**(2026-05-06)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
+| [`docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx`](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) | **競賽企劃書 v2.2 修訂版**(2026-05-06,主要繳交版本)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
 | [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.1** — 完整證據 + 局限討論(2026-05-06 加 citation 校正、TCO 對稱性 footnote、`/dashboard` drilldown 揭露)|
 | [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.1**(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
 | [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP |
-
----
-
-## 競賽硬規定(v2.1 企劃書承諾,不可違反)
-
-- ✅ Battery Twin MAPE 目標 < 10 %,**未上實機資料前不承諾 < 5 %**(v2.1 附件 B 明文)
-- ✅ Dashboard 必標 **SIMULATED DATA** 浮水印(`globals.css` `.simulated-watermark`)
-- ✅ LFP 配置 **15S**(3.2 V × 15 = 48 V),非 13S
-- ✅ LIC 配置 **2× Eaton XLR-48-166 並聯**(48.6 V / 166 F / 54 Wh / ESR 5 mΩ,per Eaton XLR-48R6167-R datasheet)
-- ✅ Tier-3 入隊規則:`status === "early_aging"`(`SOH < 0.85` OR `RUL < 800`)— UI / fleet generator 共用同一條規則
-- ✅ 雲端訓練、邊緣推論(STM32N6 ONNX 路徑)、OTA 權重更新
 
 ---
 
@@ -233,5 +220,5 @@ atcc/
 - **Sulzer, V. et al. (2021)** *Journal of Open Research Software* **9**, 14 — PyBaMM(Doyle-Fuller-Newman PDE 求解器)
 - **Prada, E. et al. (2013)** *J. Electrochem. Soc.* **160**, A616–A628 — 本案採用之 LFP-graphite DFN 參數集
 - **Choukse, E., Buck, I., Alben, J. et al.** (Microsoft + NVIDIA, 2025), arXiv:2508.14318 — Power Stabilization for AI Training Datacenters(GB200 power-swing context;§2.3.2 worst-case 10 C × 30 ms 脈衝為團隊依本文 per-cell 下尺度推導)
-- **JLL Research, Year-End 2025 Report** — 北美 colo 機房在建容量基準(v2.1 §C.1 引述 Texas 18.6 % / Virginia 15 %;本 fleet 1000 台模擬以 AI 機房密度加權放大為 Texas 49 % / Virginia 27 %,**模擬假設,非 JLL 直接數字**)
+- **JLL Research, Year-End 2025 Report** — 北美 colo 機房在建容量基準(企劃書 §C.1 引述 Texas 18.6 % / Virginia 15 %;本 fleet 1000 台模擬以 AI 機房密度加權放大為 Texas 49 % / Virginia 27 %,**模擬假設,非 JLL 直接數字**)
 - **系統電股份有限公司(Sysgration TWSE 6312)** — ATCC C13 議題出題單位
