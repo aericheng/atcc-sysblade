@@ -1,5 +1,5 @@
-"""Cross-check every numerical claim in whitepaper.md, PRESENTATION_GUIDE.md,
-and apps/web against the JSON / TS source-of-truth files.
+"""Cross-check every numerical claim in whitepaper.md and apps/web against
+the JSON / TS source-of-truth files.
 
 This is the gate that prevents the kind of stale-number drift that
 plagued earlier weeks ("the doc says 14.51 %, but the latest eval says
@@ -36,7 +36,6 @@ REPO = Path(__file__).resolve().parent.parent
 
 # Files we cross-check
 WHITEPAPER = REPO / "docs" / "whitepaper.md"
-PRESENTATION = REPO / "PRESENTATION_GUIDE.md"
 README = REPO / "README.md"
 TWIN_README = REPO / "packages" / "battery-twin" / "README.md"
 LANDING = REPO / "apps" / "web" / "src" / "app" / "page.tsx"
@@ -44,7 +43,7 @@ TWIN_CLIENT = REPO / "apps" / "web" / "src" / "app" / "twin" / "twin-client.tsx"
 TCO_LIB = REPO / "apps" / "web" / "src" / "lib" / "tco.ts"
 
 # Every doc that surfaces headline ML numbers — keep in lockstep
-DOCS_WITH_ML_HEADLINES = [WHITEPAPER, PRESENTATION, README, TWIN_README]
+DOCS_WITH_ML_HEADLINES = [WHITEPAPER, README, TWIN_README]
 
 # Source-of-truth JSON
 SCENARIOS_PUB = REPO / "apps" / "web" / "public" / "scenarios"
@@ -287,7 +286,7 @@ def check_severson_eval_numbers(report: Report) -> None:
             name="headline 8.38% (bagged-GBT + xstrict + random) matches eval JSON across all docs",
             passed=passed,
             detail=f"json median={median:.2f}% · '8.38%' in: {', '.join(hits) if hits else 'NONE'}",
-            target_loc="docs/whitepaper.md, README.md, PRESENTATION_GUIDE.md, packages/battery-twin/README.md",
+            target_loc="docs/whitepaper.md, README.md, packages/battery-twin/README.md",
         )
 
     # Cross-batch · bagged-OLS + xstrict
@@ -306,7 +305,7 @@ def check_severson_eval_numbers(report: Report) -> None:
             name="cross-batch 13.87% (bagged-OLS + xstrict) matches eval JSON across all docs",
             passed=passed,
             detail=f"json median={cb_median:.2f}% · '13.87%' or '13.9%' in: {', '.join(hits) if hits else 'NONE'}",
-            target_loc="docs/whitepaper.md, README.md, PRESENTATION_GUIDE.md",
+            target_loc="docs/whitepaper.md, README.md",
         )
 
     # Plain-OLS Full random (historical 14.51% baseline) — still cited as

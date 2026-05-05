@@ -73,6 +73,7 @@ desktop.ini
 # Local notes / personal config — never commit
 .claude/
 CLAUDE.md
+PRESENTATION_GUIDE.md
 *.local.md
 
 # Proposal docx (business-sensitive, binary, regenerable from template + script)
