@@ -32,7 +32,7 @@
 | [`/`](https://sysblade-atcc.vercel.app/) | 首頁 — 5 張頭條卡 + 板塊導引 | 從 scenario JSON 動態取真實量測值 |
 | [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN(Prada2013 LFP)+ LSTM RUL + 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 |
 | [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10 年 TCO 計算器 | 4 個 slider × 3 個 preset · 純 HTML/Tailwind bar chart |
-| [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + 三層服務分層 · 全頁 SIMULATED DATA 浮水印 |
+| [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + 三層服務分層 + per-device drilldown(SOH / RUL / 熱 / 操作層 metrics)· 全頁 SIMULATED DATA 浮水印 |
 
 ![Sysblade architecture](docs/figures/architecture.png)
 

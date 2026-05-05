@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Stat } from "@/components/ui/stat";
 import { USFleetMap } from "@/components/us-fleet-map";
+import { DeviceDrilldown } from "@/components/device-drilldown";
 import { type Device, type DeviceStatus, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
 import { Activity, AlertTriangle, MapPin, Shield, Zap } from "lucide-react";
 
@@ -20,6 +21,7 @@ interface Fleet {
 
 export function DashboardClient({ fleet }: { fleet: Fleet }) {
   const [filter, setFilter] = useState<"all" | DeviceStatus>("all");
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   const filtered = useMemo(
     () => (filter === "all" ? fleet.devices : fleet.devices.filter((d) => d.status === filter)),
@@ -222,6 +224,9 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
             <CardTitle className="flex items-center gap-2">
               Most urgent 8 · sorted by lowest RUL first
             </CardTitle>
+            <p className="text-[11px] text-muted mt-1.5">
+              Click any row for SOH / RUL / thermal drilldown.
+            </p>
           </CardHeader>
           <CardBody>
             {/* min-w forces overflow-x-auto to actually scroll on phone widths
@@ -249,7 +254,20 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                     </tr>
                   )}
                   {replacementCandidates.map((d) => (
-                    <tr key={d.id} className="border-t border-border">
+                    <tr
+                      key={d.id}
+                      onClick={() => setSelectedDevice(d)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedDevice(d);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Open drilldown for ${d.id} (${d.site})`}
+                      className="cursor-pointer border-t border-border transition-colors hover:bg-surface/60 focus:bg-surface/60 focus:outline-none"
+                    >
                       <td className="py-2.5 pr-3 font-mono text-xs whitespace-nowrap">{d.id}</td>
                       <td className="py-2.5 pr-3">
                         <div className="whitespace-nowrap">{d.site}</div>
@@ -302,6 +320,14 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
           </Disclosure>
         </CardBody>
       </Card>
+
+      {/* Per-device drilldown — renders only when a Tier-3 row is clicked. */}
+      {selectedDevice && (
+        <DeviceDrilldown
+          device={selectedDevice}
+          onClose={() => setSelectedDevice(null)}
+        />
+      )}
     </div>
   );
 }
