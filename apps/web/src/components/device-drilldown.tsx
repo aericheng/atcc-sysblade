@@ -176,8 +176,8 @@ export function DeviceDrilldown({ device, onClose }: Props) {
           <p className="text-[11px] leading-relaxed text-muted">
             Point estimate from the same LSTM deployed on /twin (one model, two views;
             ΔMAPE +0.10 pp INT8). 90 % conformal PI bands are calibrated only on the 9
-            walkthrough cells in /twin — fleet-level PI bands require per-device PyBaMM
-            trajectories, not yet shipped (W3+ roadmap).
+            walkthrough cells in /twin; per-device fleet PI bands would require
+            per-device PyBaMM trajectories.
           </p>
         </section>
 

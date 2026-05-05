@@ -89,8 +89,7 @@ Hyperscale 500r·VA **年省 $482.9k**(payback 2.3 y);三 preset 29.9–33.2 %
 
 LSTM 從 **219 KB FP32 壓縮到 63 KB INT8**(measured,ΔMAPE +0.10 pp)。模型
 僅占 STM32N6 Neural-ART NPU 1.6 MB FLASH 的 4 %,單樣本 NPU latency 估算為
-**27–109 µs**(靜態 graph + ±2× 區間,實機 boot-up 為 W3+ 工作項;
-詳見 §2.5 與附錄 C.4)。
+**27–109 µs**(靜態 graph + ±2× 區間;詳見 §2.5 與附錄 C.4)。
 
 ### 客戶 ROI 一頁看完
 
@@ -278,7 +277,7 @@ $$
 | 客戶問 | 我們答 | 客戶意義 |
 |---|---|---|
 | **「模型準不準?」** | **19.10 % MAPE / R² 0.86**(2-layer LSTM,Severson 138 + 合成 BBU duty 50 = 188 cells)| Fleet 推論可用,跨 lab 壓力測試與 BBU 浮充兩個 regime 都涵蓋 |
-| **「部署到 BBU 上跑得動嗎?」** | **STM32N6 NPU 27–109 µs 單樣本估算**(靜態 graph + ±2× 區間,附錄 C.4;模型 63 KB 占 NPU FLASH 4 %;**實機 boot-up 為 W3+ 工作項**)| 對比 ST datasheet typical 0.3 ms 即使 worst-case 109 µs 仍 ~3× margin;**斷網本地推論 + 不被 cloud per-inference billing 綁** |
+| **「部署到 BBU 上跑得動嗎?」** | **STM32N6 NPU 27–109 µs 單樣本估算**(靜態 graph + ±2× 區間,附錄 C.4;模型 63 KB 占 NPU FLASH 4 %)| 對比 ST datasheet typical 0.3 ms 即使 worst-case 109 µs 仍 ~3× margin;**斷網本地推論 + 不被 cloud per-inference billing 綁** |
 
 > **為什麼 LSTM 19.10 % > GBT 8.38 %?**這不是退步,是「per-regime sharpness
 > 換 cross-regime honesty」的取捨:GBT 只看過 Severson 壓力測試 cell,對 BBU
@@ -342,7 +341,7 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 **產品內容**(對齊 v2.1 §E.3 三層服務承諾):
 * **Tier-1 即時監控**:1000 台 fleet 的 SOH / RUL / status 即時表
 * **Tier-2 地理分布**:AI 機房密度加權地圖(Texas 49 % / Virginia 27 %,本文模擬權重)
-* **Tier-3 替換隊列**:`status === "early_aging"`(SOH < 0.85 或 RUL < 800 cycles),觸發 7-day SLA 派工;**支援 row click drilldown**,點擊任一替換 row 開出 panel 顯示該 device 的 SOH (LFP/LIC) / RUL 與 BBU 年數估算 / 熱與操作層 metrics,fleet-level conformal PI 仍須點到 /twin 看 9 顆 walkthrough cell(W3+ roadmap)
+* **Tier-3 替換隊列**:`status === "early_aging"`(SOH < 0.85 或 RUL < 800 cycles),觸發 7-day SLA 派工;**支援 row click drilldown**,點擊任一替換 row 開出 panel 顯示該 device 的 SOH (LFP/LIC) / RUL 與 BBU 年數估算 / 熱與操作層 metrics,fleet-level conformal PI 仍須點到 /twin 看 9 顆 walkthrough cell
 
 > 1000 台機台是 **seeded RNG 模擬**,所有 panel 明標 **SIMULATED DATA**
 > watermark。RUL 到 BBU 年數的換算:BBU duty 平均年循環約 50,BBU 年數

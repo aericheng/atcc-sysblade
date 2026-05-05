@@ -17,11 +17,10 @@
 
 **6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 壽命延長 · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW peak · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
 
-> **Status**:ATCC 2026 初賽提交版(2026-05-04 階段)。本 repo 公開展示供
-> 競賽評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀表板與孿生情境中
-> 的客戶 / 機房名稱**全為示意 persona**,非實際部署資料(`fleet_devices.json`
-> 的 disclaimer 欄位 + UI 上 SIMULATED DATA 浮水印雙重標註);citation
-> finalisation 與 TCO 模型細修在複賽前完成。
+> **Status**:ATCC 2026 初賽提交版。本 repo 公開展示供競賽評審與學術透明
+> 使用,授權詳見 [LICENSE](LICENSE)。儀表板與孿生情境中的客戶 / 機房名稱
+> **全為示意 persona**,非實際部署資料(`fleet_devices.json` 的 disclaimer
+> 欄位 + UI 上 SIMULATED DATA 浮水印雙重標註)。
 
 ---
 
@@ -41,7 +40,6 @@
 ## 架構(關鍵設計決策)
 
 **Python 物理引擎離線預跑 → JSON → Next.js build-time `fs.readFile` → static export → Vercel CDN**。
-不是 live SaaS,是 ATCC 競賽 demo 的最佳化路徑;**W3+ 路線圖**(白皮書 §8)會把 FastAPI 接回來做即時推論。
 
 ```
 PyBaMM DFN simulation (Python)            scenario JSONs in two sinks:
@@ -54,8 +52,6 @@ scripts/export_lstm_onnx.py               └ apps/web/public/scenarios/
                                             → next build (static export)
                                               → out/ → Vercel CDN
 ```
-
-**為什麼不放 FastAPI 後端**?競賽 demo 優先穩定 + 低延遲;PyBaMM 體積大不適合 client-side。
 
 ---
 
@@ -136,7 +132,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 | Test R² | **0.86** | 跨 regime trade-off 後仍維持高解釋度 |
 | ONNX size | FP32 219 KiB → **INT8 63 KiB(3.49× 壓縮 measured)** | 遠小於 STM32N6 1.6 MB ML FLASH;`scripts/quantize_lstm_onnx.py` 量測 |
 | INT8 精度退化 | **ΔMAPE +0.10 pp**(19.10 → 19.20 %),R² 不變 | 平均預測偏移 0.57 %,STM32N6 部署的 go/no-go 證據 |
-| ONNX 延遲(laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | 50 ms 規格達標 ~125×;STM32N6 NPU 推估 27–109 µs(SOP `docs/x_cube_ai_install_sop.md` 待真機 trace) |
+| ONNX 延遲(laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | 50 ms 規格達標 ~125×;STM32N6 NPU 推估 27–109 µs(靜態 graph 分析,`scripts/onnx_static_analysis.py`)|
 | 不確定性方法 | MC Dropout + split conformal | 100 forward passes,**raw 1910 → conformal 1075 cycles**(縮窄 44 %),test coverage 100 %、≥ 90 % 保證,校準集 37 cells held-out |
 
 LSTM 為 production 推論主力;bagged-GBT 13-feat 為「Severson paper 對齊」的學術 baseline(< 10 % 承諾達標)。
@@ -156,7 +152,7 @@ atcc/
 │   ├── whitepaper.md                            技術白皮書 v1.0(完整版)
 │   ├── whitepaper_restructured.md               精煉版(三段式)
 │   ├── severson_download.md                     Severson 2019 .mat v7.3 下載 SOP
-│   ├── x_cube_ai_install_sop.md                 STM32N6 NPU trace SOP
+│   ├── x_cube_ai_install_sop.md                 STM32N6 X-CUBE-AI 安裝 SOP
 │   └── figures/                                 架構圖 + 截圖 + 業務模型 canvas
 ├── apps/
 │   └── web/                                     Next.js 14 三件套(static export)
@@ -211,7 +207,7 @@ atcc/
 | [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
-| [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 + NPU trace SOP |
+| [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP |
 
 ---
 

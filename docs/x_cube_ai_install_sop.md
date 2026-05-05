@@ -33,9 +33,8 @@ repo 已交付:
 ### 路線 B:獨立 stedgeai-core CLI(進階)
 
 ST 從 X-CUBE-AI 9.x 起把核心 toolchain 拆出 `stedgeai-core` CLI。**目前
-仍須登入 ST 後從 X-CUBE-AI 套件解出**(PyPI 沒有;這是 W3+ 任務,等 ST
-在 2026 後半年公開 PyPI distribution 後就能 `pip install stedgeai-core`)。
-2026-05 時點本團隊**未驗證**獨立 CLI 流程,首推路線 A。
+仍須登入 ST 後從 X-CUBE-AI 套件解出**(PyPI 無獨立發行)。本團隊**未驗證**
+獨立 CLI 流程,首推路線 A。
 
 ## 3. 跑 X-CUBE-AI analyse(15 分鐘)
 

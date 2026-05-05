@@ -2,7 +2,7 @@
 flowchart LR
 
   %% ============ EDGE LAYER ============
-  subgraph EDGE["🔋 Edge 機櫃端 (W3+ 規劃)"]
+  subgraph EDGE["🔋 Edge 機櫃端"]
     direction TB
     BAT["LFP 15S BBU<br/>+ LIC 突波吸收"]
     SENSOR["感測<br/>V / I / T<br/>取樣 100 ms"]
@@ -38,7 +38,6 @@ flowchart LR
   %% ============ DATA FLOW ============
   GEN ==>|build time| JSON
   PAGES --> USER
-  MCU -.->|"OTA telemetry<br/>(W3+ FastAPI)"| GEN
 
   %% ============ STYLING ============
   classDef edgeStyle fill:#FEF3C7,stroke:#D97706,color:#92400E

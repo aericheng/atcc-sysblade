@@ -726,7 +726,7 @@ export function TwinClient({
             </p>
             <Disclosure summary="More on the regime gap and cross-chemistry tests" className="mt-2">
               Neither lab fast-charge nor gentle float duty produces cells in the 2,000–4,000 range,
-              which is why the W3+ plan adds medium-stress synthetic cells to fill the middle.
+              so closing the middle would require medium-stress synthetic cells.
               Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out (whitepaper §B);
               the answer is more LFP coverage, not more chemistries. The 90 % prediction intervals
               in the walkthrough below — MC Dropout post-processed by split conformal, sharpened
@@ -905,8 +905,7 @@ function Method({
 // Severson long cells, so adding BBU cells widened the model's regime
 // coverage at the cost of nudging overall test MAPE up to ~19 % from the
 // Severson-only ~16 % baseline. The Short bucket (n≈4 cells) still shows
-// the model's worst miss because Severson early failures are sparse —
-// that tail is W3+ work.
+// the model's worst miss because Severson early failures are sparse.
 
 type Bucket = {
   label: string;
@@ -1071,9 +1070,9 @@ function ErrorByLifetimeBucket({
         cycle lifetimes — adding them widened the model&rsquo;s regime coverage so it can speak
         about the actual BBU operating point, but lifted overall test MAPE from the Severson-only
         ~16 % to {overallMapePct.toFixed(1)} % (whitepaper §3.3.7 / §3.3.8).
-        The Short bucket is the clearest W3+ data gap. Cross-chemistry transfer (NASA NMC, CALCE LCO)
-        was tested and ruled out (§3.3.5 / 附錄 B); the answer is more LFP early-failure data,
-        not more chemistries. The walkthrough above reports a 90 % prediction interval per cell —
+        The Short bucket is the clearest data gap (Severson early failures are sparse).
+        Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out
+        (§3.3.5 / 附錄 B); the answer is more LFP early-failure data, not more chemistries. The walkthrough above reports a 90 % prediction interval per cell —
         MC Dropout post-processed by split conformal (q_factor{" "}
         {conformalQFactor != null ? conformalQFactor.toFixed(2) : "0.56"}{" "}
         on a {conformalNCalibration ?? 37}-cell calibration set, §3.3.7), sharpened 44 % vs raw
