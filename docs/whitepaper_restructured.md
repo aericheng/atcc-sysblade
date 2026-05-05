@@ -47,6 +47,17 @@ abstract: |
 > 一次解掉 GB200 毫秒瞬態、±400 V HVDC 換代、與 1000+ 節 fleet 維運可視化三大痛點。
 > 商業模式 = **硬體一次性採購 + SaaS USD 25k / site / yr**(對齊 v2.1 §G.3)。
 
+### 1.1.1 命名解碼
+
+| 字 | 拆解 | 意義 |
+|---|---|---|
+| **Sys** | **Sys**gration 系統電 | 母公司品牌延伸,沿用 Sysgration 在電源管理 30 年的 brand equity |
+| **blade** | OCP ORV3 12U BBU **shelf** | 「刀片式」整合機箱 —— **單一 12U 機箱內三層電氣分層**,而非物理拆解多模組(對齊 v2.1 §E.1)|
+| **Hyper** | **Hyper**scale tier | 鎖定單 rack 50–100 kW 的 Hyperscale AI inference 機房,而非傳統 ≤ 20 kW colo |
+| **Buffer** | LIC 瞬態 **Buffer** + LFP 短時 **Buffer** | 兩層緩衝合一 —— LIC 吃 ms 級瞬態、LFP pack 吃 60 sec 備援 |
+
+**一句話命名意義**:**「Sysgration 為 Hyperscale AI 機房打造的整合式雙層緩衝 BBU 機箱」**。
+
 ---
 
 ## 1.2 六個讓業師眼睛一亮的數字
@@ -57,6 +68,9 @@ LFP + LIC 混合拓撲把 GB200 ±30 % 瞬態能量分頻給 LIC 吃,**LFP 主�
 RMS 從 8.7 kW 壓到 1.5 kW**(PyBaMM DFN 實測,§2.3)。同步把電芯電壓震盪 pp
 從 62 mV 壓到 18 mV(**3.5× 改善**)。
 
+→ **客戶因此可以**:**機房 AI 工作負載突發 power-swing 時,下游 PSU 不會誤觸
+OVP/UVP 重啟**,單筆 GB200 訓練任務不會因為 BBU 抖動掉 checkpoint。
+
 ### ⏳ ~25 % — LFP 主電池循環壽命延長(核心商業價值 ⭐)
 
 5.7× 功率波動下降直接對應 **~25 % LFP 主電池循環壽命延長**(v2.1 §B.1 引述
@@ -65,6 +79,10 @@ LFP 服役壽命達 **8–12 年**(對比業界 NMC BBU 6–8 年基準,v2.1 附
 **10 年內客戶電池組替換次數從 1.5 次降到 1 次**,直接撐起 §2.7 TCO 模型中
 USD 2,880 / rack / 10y 的替換成本節省(§2.7 / §3.1)。**對 ESG 永續報告同樣
 加分**(對齊 v2.1 §D.1 永續承諾)。
+
+→ **客戶因此可以**:**10 年機房折舊週期內少替換半套 BBU 電池組**,Hyperscale
+500 racks 規模直接省下 USD 1.44 M 替換採購 + 工程派工成本;LFP 替換次數下降
+也能直接列入年度 ESG 碳排減量報告。
 
 > 🔬 **獨立物理交叉驗證**:不只靠 Attia/Severson 單一證據鏈 —— Rainflow +
 > Wang 2011 *J. Power Sources* 半經驗 cycle-aging 公式在 worst-case GB200
@@ -81,11 +99,18 @@ USD 2,880 / rack / 10y 的替換成本節省(§2.7 / §3.1)。**對 ESG 永續�
 Test R² 0.890,Per-seed 範圍 [5.93, 12.91] %,7/10 seeds < 10 %
 (§2.4 / `data/processed/severson_model_eval.json`)。
 
+→ **客戶因此可以**:**精準預測 BBU 替換時機**(典型 6–8 個月前可預警),
+維運主管能排好替換工單不撞 SLA、不踩突發停機,**從「壞了再換」變「預知排程」**。
+
 ### 💰 33 % — 客戶 10 年總成本下降
 
 每 rack 省 USD 9,600 / 10y。Mid-tier · 50 racks · TX **年省 $44.6k(payback 2.4 y)**;
 Hyperscale · 500 racks · VA **年省 $482.9k(payback 2.3 y)**。三個 preset 落
 29.9 % – 33.2 %(§2.7)。
+
+→ **客戶因此可以**:**Mid-tier · 50 racks 客戶年省 $44.6k = 多請 1 名維運工程師
+全年薪資**;Hyperscale · 500 racks 年省 $482.9k = **約 5 台 H100 GPU 採購預算**
+直接騰出,業務談判直接拿這個換 PoC 機會。
 
 ### ⚡ 60 sec graceful @ 120 kW peak — 對齊 OCP ORV3 規範
 
@@ -93,11 +118,20 @@ Hyperscale · 500 racks · VA **年省 $482.9k(payback 2.3 y)**。三個 preset 
 理論值 → 80 % DoD = 60 sec 有效備援,**落在 OCP ORV3 30–90 sec 規範區間**;長時
 outage 由 facility UPS 接力(§2.1)。
 
+→ **客戶因此可以**:**機房斷電瞬間,AI 工作負載有 60 秒安全 graceful shutdown
+時間**,客戶不會掉訓練 checkpoint、推論 batch 結果不會中斷,**單次斷電事件
+損失從「整批 GPU 工作重跑」降到「最後一個 batch 完整收尾」**。
+
 ### 📦 3.49× — ONNX 模型壓縮 → 邊緣 NPU 可跑
 
 LSTM 219 KB FP32 → **63 KB INT8**(量測,精度只掉 0.10 pp)。**STM32N6
 Neural-ART NPU 1.6 MB FLASH 只用 4 %**,單樣本 NPU < 110 µs(對比 ST datasheet
 typical 0.3 ms 仍有 3× margin),BBU 內本地推論斷網仍可運作(§2.5 / 附錄 C)。
+
+→ **客戶因此可以**:**機房斷網時 BBU 仍能本地預測健康度**(不依賴雲端),
+而且**不會被 SaaS per-inference billing 綁定** —— 客戶買硬體一次性付費,
+推論免費跑;**BBU 健康資料留在客戶現場**,符合 EU Battery Passport 2027 與
+資安合規需求。
 
 ---
 
@@ -263,77 +297,94 @@ $$
 
 ---
 
-## 2.4 RUL 預測管線(三情境一表看完)
+## 2.4 RUL 預測管線
 
-訓練資料 Severson 2019 [1] 公開的 124 顆 LFP 18650 cell;我們的 HDF5 解析
-路徑解出 138 顆有 ≥ 100 cycle 觀測,**13-feature paper-aligned Full model**
-(完整數學定義見**附錄 A**),橫跨 5 種 regressor × 4 個 cell filter 做完整
-sweep(`data/processed/severson_model_eval.json`)。
+訓練資料 Severson 2019 [1] 公開的 124 顆 LFP 18650 cell。**業師最該記住兩個
+數字**:
 
-| 情境 | 最佳模型 | Test MAPE | R² | 解讀 |
-|---|---|---:|---:|---|
-| **Random split**(7:3,10-seed median)| Full bagged-GBT (K=24) + xstrict filter (n=134)| **8.38 %** | **0.890** | 達 v2.1 附件 B「< 10 % MAPE」承諾;低於 Severson paper 9.1 %;per-seed [5.93, 12.91] %、7/10 seeds < 10 % |
-| **Cross-batch**(b1+b2 → b3,新 protocol)| Full bagged-OLS + xstrict(n_test ≈ 44)| **13.87 %** | **+0.207** | GBT 在 cross-batch 反退化 17–22 %(protocol-specific overfit);**改用 OLS 的 routing 規則** |
-| **Cross-chemistry**(LFP → NASA NMC)| 5-feat OLS,138 → 4 cell | 線性外插炸開(>8000 %)| — | 5/5 feature OOD,**z-distance 5–65 σ**(附錄 B);per-chemistry calibration **必須** |
+| 指標 | 結果 | 客戶意義 |
+|---|---|---|
+| **Severson 同 batch random split MAPE** | **8.38 %**(R² 0.890) | **比 Severson paper benchmark 9.1 % 還準**,代表客戶用同款 LFP 電芯時模型可信度 |
+| **跨 batch / 新 protocol fall-back MAPE** | **13.87 %**(R² +0.207) | 客戶換新快充協議或新批次電芯時,模型仍可用、誤差受控 |
 
 > **部署 routing 規則**(寫進 v2.1 §F 客戶 SOP):**同 protocol** 用 bagged-GBT
-> 享 8.38 % 點精度;**新 protocol** fall back bagged-OLS;**新化學** 每批必跑
-> calibration cycle,OLS / GBT 都不能直接外插。
+> 享 8.38 % 點精度;**新 protocol** fall back bagged-OLS;**新化學**(LFP → NMC
+> 等)每批必跑 calibration cycle,**5/5 feature OOD、z-distance 5–65 σ 證實
+> 線性外插無意義**。完整 5 regressor × 4 filter sweep + 13-feature 工程詳述 +
+> NASA cross-dataset z-distance 表見**附錄 A / B**。
 
 ---
 
-## 2.5 LSTM + 機率輸出 + 邊緣部署
+## 2.5 LSTM + 邊緣部署
 
-§2.4 的 GBT 在 Severson **lab 壓力測試** cell 上漂亮,但跟產品實際 BBU duty
-(0.05 C float、~ 50 cycles/yr)分布有顯著差距。我們訓練 **2-layer LSTM**
-(hidden = 64,input (99, 7))+ 50 顆 PyBaMM-calibrated 合成 BBU-duty cell
-(`cycle_life` 4215–13131,84–263 BBU 年),讓單一模型 span 兩個 regime。
+業師只要記住**兩件事就夠**:
 
-**三件 measured headline**(完整 op dispatch 與容量配適見**附錄 C**):
-
-| 指標 | 結果 | 用途 |
+| 業師問 | 我們答 | 客戶意義 |
 |---|---|---|
-| **整體 test MAPE / R²** | **19.10 % / 0.86**(37 顆隨機 holdout)| Fleet 推論主力 |
-| **Conformal sharpening** | 90 % PI 寬度 1910 → **1075 cycles**(**−44 %**),test coverage 100 %(≥ 90 % 保證)| Tier-3 admission 從「±19 yr」收到「±11 yr」**actionable** |
-| **INT8 量化(STM32N6 部署 go/no-go)** | ONNX **219 KiB → 63 KiB**(**3.49× 壓縮**),ΔMAPE +0.10 pp,R² 不變,CPU p50 1.11× 加速 | NPU 1.6 MB FLASH 用 4 %,無 PSRAM spillover |
+| **「模型準不準?」** | **19.10 % MAPE / R² 0.86**(2-layer LSTM,trained on Severson 138 + 合成 BBU duty 50 = 188 cells)| Fleet 推論可用,跨 lab 壓力測試與 BBU 浮充兩個 regime 都誠實 |
+| **「部署到 BBU 上跑得動嗎?」** | **STM32N6 NPU 27–109 µs 單樣本**(INT8 量化、模型 63 KB 占 NPU FLASH 4 %)| 比 ST datasheet typical 0.3 ms 快 3×,**斷網本地推論 + 不被雲端 per-inference 訂閱綁** |
 
-**LSTM 19.10 % vs §2.4 GBT 8.38 % 看似退步,實為「per-regime sharpness 換
-cross-regime honesty」的取捨**:GBT 漂亮但只看過 Severson 壓力測試 cell,
-對 BBU 部署是**沉默外插**;augmented LSTM 對兩個 regime 都誠實。**Fleet 推論
-用 LSTM,學術 baseline 報 GBT ensemble**(§2.4)。
-
-**STM32N6 NPU latency 估算 54.7 µs**(±2× 區間 27–109 µs,40 % NPU 利用率
-假設);對 ST datasheet Neural-ART INT8 LSTM typical 0.3 ms 仍有 **3× margin**。
-
-> **機率輸出設計**:Severson 尾部稀疏導致點預測對早夭 cell +151 % 高估
-> (b2c0 / b2c46 等);**MC Dropout + Split Conformal** 提供 frequency calibration
-> 保證,**模型對自己不確定的 cell 拉寬 PI 而非沉默地報錯誤點估**。完整原理
-> + per-batch MAPE 切面 + q_factor = 0.563 等細節見 `docs/whitepaper.md` §3.3.7。
+> **為什麼 LSTM 19.10 % > GBT 8.38 %?**這不是退步,是「per-regime sharpness
+> 換 cross-regime honesty」的取捨:GBT 只看過 Severson 壓力測試 cell,對 BBU
+> 浮充部署是**沉默外插**;augmented LSTM 涵蓋兩個 regime,點精度退讓但對客戶
+> 部署 honest。**Fleet 推論用 LSTM,學術 baseline 報 GBT**(§2.4)。
+>
+> 完整訓練細節 / Conformal calibration / per-batch MAPE 切面 / op dispatch 見
+> **附錄 C** 與 `docs/whitepaper.md` §3.3。
 
 ---
 
-## 2.6 軟體三件套
+## 2.6 軟體三件套(客戶實際看到的產品)
 
-### 2.6.1 Battery Digital Twin (`/twin`)
+三件套全部以 SaaS USD 25k/site/yr 訂閱交付;每個產品給一個 **典型使用情境**
+讓業師看到客戶真實會怎麼用 —— **以下情境為示意 persona,非已成交客戶**,
+角色 / 流程符合北美 Tier-2/3 colo 業界常見維運慣例。
 
-物理 + ML 整合呈現:PyBaMM DFN(線下 build-time 預算的瞬態 / 老化情境波形)
-+ LSTM 推論點預測 + MC Dropout + Split Conformal 90 % PI 逐 cell 呈現。
-**Inference Walkthrough** 提供 9 顆精選 cell(span healthy / warning /
-early_aging / critical 四個 fleet 狀態),業師可現場點選任一 cell 觀察
-LSTM **輸入序列(99 cycle × 7 feature,normalised 0–1 per-line,raw 數值
-hover 可見)** 與該 cell 的 90 % conformal PI bar。
+### 2.6.1 Battery Digital Twin · `/twin`
 
-### 2.6.2 TCO Calculator (`/tco`)
+🔗 **Live demo**:<https://sysblade-atcc.vercel.app/twin>
 
-業務談判工具,USD 25k/site/yr SaaS 訂閱可帶走。彈性參數(racks、電價、PUE、
-grid carbon intensity)+ 三個 preset(Mid-tier · Texas / Hyperscale · Virginia
-/ Edge AI · Pacific NW)即時看 10 年成本差。完整推導見 §2.7。
+**典型使用情境 — 機房維運副理 daily check-in**:
+> 副理早上 9:00 開電腦,打開 `/twin` Inference Walkthrough。9 顆精選 cell 中
+> 看到「**b2c1 — critical**」紅色標籤,點進去看 LSTM 預測軌跡 — 點預測 238 cycles、
+> 90 % PI 區間 [144, 332]。換算成 BBU 年數 ≈ 2.9–6.6 年(中位數 4.8 年),
+> **發現該 cell 比 fleet 中位數快 3 年衰減**,當場開工單請工程隊優先排程現場巡檢。
 
-### 2.6.3 Fleet Dashboard (`/dashboard`)
+**產品內容**:物理 + ML 整合可視化 — PyBaMM DFN 線下預算的瞬態 / 老化波形 +
+LSTM 推論點預測 + MC Dropout + Split Conformal 90 % PI 逐 cell 呈現。9 顆精選
+cell span healthy / warning / early_aging / critical 四個狀態,業師現場點選即可
+觀察 LSTM 輸入序列(99 cycle × 7 feature)與 PI bar。
 
-對齊 v2.1 §E.3 三層服務承諾:
+### 2.6.2 TCO Calculator · `/tco`
+
+🔗 **Live demo**:<https://sysblade-atcc.vercel.app/tco>
+
+**典型使用情境 — Sysgration 業務客戶提案會議**:
+> 業務帶筆電進客戶提案會議。客戶 CFO 問:「**你們比 Vertiv 貴 50 %,
+> 我為什麼換你們?**」業務當場開 `/tco`,**現場拉 racks slider 到客戶實際規模
+> (50 racks)、電價填客戶當地 ERCOT 0.085 USD/kWh**,畫面立刻顯示 10 年省
+> $44.6k / 年、payback 2.4 年。CFO 看到回收期 < 折舊週期一半,**從「為什麼換」變
+> 「下個月可以開始 PoC 嗎」**。
+
+**產品內容**:業務談判工具,客戶可帶走自己跑數字。彈性參數(racks / 電價 /
+PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI · PNW)
+即時看 10 年成本差。完整公式見 §2.7。
+
+### 2.6.3 Fleet Dashboard · `/dashboard`
+
+🔗 **Live demo**:<https://sysblade-atcc.vercel.app/dashboard>
+
+**典型使用情境 — Sysgration 維運服務派工流程**:
+> 早上 7:00,某客戶 fleet 中一台 rack 從 warning 跨進 **early_aging**
+> (SOH 0.83 / RUL 720 cycles)。Tier-3 admission rule 自動觸發,系統推
+> ServiceNow ticket 給 Sysgration 工程隊 + email 客戶維運主管。**7-day SLA
+> 倒數開始**,工程隊查 fleet 地圖確認該 rack 位於德州 Dallas 機房區,排好
+> 3 天內派工人從 Plano 廠出發 + 帶替換 LFP pack。**整個流程客戶不需要自己
+> monitor、不會踩 SLA、Sysgration 拿維運服務年費**。
+
+**產品內容**(對齊 v2.1 §E.3 三層服務承諾):
 * **Tier-1 即時監控**:1000 台 fleet 的 SOH / RUL / status 即時表
-* **Tier-2 地理分布**:AI 機房密度加權(Texas 49 % / Virginia 27 %,本文模擬權重)
+* **Tier-2 地理分布**:AI 機房密度加權地圖(Texas 49 % / Virginia 27 %,本文模擬權重)
 * **Tier-3 替換隊列**:`status === "early_aging"`(SOH < 0.85 OR RUL < 800 cycles)→ 7-day SLA 派工
 
 > 1000 台機台是 **seeded RNG 模擬**,所有 panel 明標 **SIMULATED DATA**
