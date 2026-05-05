@@ -70,8 +70,10 @@ logs/
 # OS
 desktop.ini
 
-# tooling local settings — never commit
+# Local notes / personal config — never commit
 .claude/
+CLAUDE.md
+*.local.md
 
 # Proposal docx (business-sensitive, binary, regenerable from template + script)
 docs/proposal_v2.2_additions/*.docx

@@ -117,7 +117,7 @@ def check_fleet_invariants(report: Report) -> None:
         target_loc="apps/web/public/scenarios/fleet_devices.json",
     )
 
-    # Tier-3 admission rule (project house rule):
+    # Tier-3 admission rule (house rule):
     #   status == "early_aging"  ⇔  SOH < 0.85 OR RUL < 800
     n_status = sum(1 for d in devices if d["status"] == "early_aging")
     n_rule = sum(1 for d in devices if d["soh_lfp"] < 0.85 or d["rul_cycles"] < 800)
