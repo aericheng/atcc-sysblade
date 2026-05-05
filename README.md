@@ -8,8 +8,14 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 
 **Live demo**: <https://sysblade-atcc.vercel.app>
 **企劃書**: [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf)
-**技術白皮書**: [`docs/whitepaper.md`](docs/whitepaper.md)
+**技術白皮書**: [`docs/whitepaper.md`](docs/whitepaper.md) · [精煉版](docs/whitepaper_restructured.md)
 **簡報導覽**: [`PRESENTATION_GUIDE.md`](PRESENTATION_GUIDE.md)
+
+> **Status**:ATCC 2026 初賽提交版(2026-05-04 階段)。本 repo 公開展示僅供
+> 競賽評審與學術透明使用,授權詳見 [`LICENSE`](LICENSE);citation finalisation
+> 與 TCO 模型細修在複賽前完成。儀表板及孿生情境中的客戶 / 機房名稱**全為
+> 模擬 persona,非實際部署資料**(對應 `fleet_devices.json` 的 disclaimer
+> 欄位與 UI 上的 SIMULATED DATA 浮水印)。
 
 ---
 
@@ -36,7 +42,7 @@ LFP + 鋰離子電容(LIC)混合電池備援單元(BBU),搭配嵌入式電池數
 | Variance OLS | 1-feat / unfilt | 17.9 % | 15.8 % | 0.57 | 重現 Severson 2019 paper 頭條 |
 | Discharge OLS | 5-feat / unfilt | 17.5 % | 19.9 % | 0.53 | paper Table 1 5-feat |
 | Full + IR OLS | 13-feat / unfilt | 14.5 % | 14.5 % | +0.08 | 加 internal-resistance,**cross-batch R² 由負轉正** |
-| **Full + IR bagged-GBT (K=24)** | **13-feat / xstrict (≥400, n=134)** | **8.4 %** | 17.9 %(GBT 退化) | **0.89** | **首次達 v2.1 附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 < 10 % |
+| **Full + IR bagged-GBT (K=24)** | **13-feat / xstrict (≥400, n=134)** | **8.38 %** | 17.9 %(GBT 退化) | **0.89** | **首次達 v2.1 附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 < 10 % |
 | **Full + IR bagged-OLS** | **13-feat / xstrict** | 12.4 % | **13.9 %** | +0.21 | cross-batch generalisation 最佳 |
 
 **達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。
