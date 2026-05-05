@@ -50,11 +50,11 @@ uv pip install -e packages/battery-twin[dev,api]
 | **bagged-OLS + xstrict cell filter** | **13-feat,n=134** | 12.4 % | **13.9 %**(R² +0.21)|
 | **LSTM augmented** | 188 cells, MC Dropout + split conformal(q_factor 0.56)| 19.1 %(R² 0.86)| — |
 
-**v2.1 附件 B 軟體技術棧承諾**:< 10 % MAPE。**已達標**:bagged-GBT + xstrict cell filter random split 10-seed median **8.38 %**(per-seed [5.93, 12.91])。Cross-batch 部署用 bagged-OLS(13.87 %)。**未上實機資料前不承諾 < 5 %**(同來源明文)。
+**v2.2 附件 B 軟體技術棧承諾**:< 10 % MAPE。**已達標**:bagged-GBT + xstrict cell filter random split 10-seed median **8.38 %**(per-seed [5.93, 12.91])。Cross-batch 部署用 bagged-OLS(13.87 %)。**未上實機資料前不承諾 < 5 %**(同來源明文)。
 
 ## 為什麼有三條管線
 
-1. **bagged-GBT + xstrict cell filter** — paper 學術 baseline,提供 random split 8.38 % 的 in-distribution 上界,證明 13-feat 設計確實能達 v2.1 < 10 % 承諾。
+1. **bagged-GBT + xstrict cell filter** — paper 學術 baseline,提供 random split 8.38 % 的 in-distribution 上界,證明 13-feat 設計確實能達 v2.2 < 10 % 承諾。
 2. **bagged-OLS + xstrict cell filter** — cross-batch / cross-protocol fall-back,GBT 在跨 protocol 退化(17–22 %),bagged-OLS 在 cross-batch 反而最強(13.9 %)。
 3. **LSTM augmented(188 cells)** — production 推論引擎,給 /twin walkthrough 和 /dashboard 1000 台 fleet RUL 共用(one model, two views)。MC Dropout + split conformal calibrated PI 縮窄 44 %,coverage 仍 ≥ 90 %。
 

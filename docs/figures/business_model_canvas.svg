@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 760" font-family="'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif">
   <!-- Title -->
   <text x="620" y="28" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">Sysblade HyperBuffer · Business Model Canvas</text>
-  <text x="620" y="48" text-anchor="middle" font-size="12" fill="#475569">9 格商業邏輯 · 數字錨定 v2.1 §A / §G.3 / §F.1</text>
+  <text x="620" y="48" text-anchor="middle" font-size="12" fill="#475569">9 格商業邏輯 · 數字錨定 v2.2 §A / §G.3 / §F.1</text>
 
   <!-- ============ COLUMN 1: KEY PARTNERS (full upper height) ============ -->
   <rect x="20" y="60" width="240" height="480" rx="6" fill="#F8FAFC" stroke="#1E40AF" stroke-width="1.5"/>
@@ -71,7 +71,7 @@
     <text x="285" y="450" fill="#475569">  (compression 3.49×)</text>
     <text x="277" y="470">▸ BABA Act 合規供應鏈</text>
     <text x="277" y="490">▸ ATCC 工程 + 行銷雙軌團隊</text>
-    <text x="277" y="510">▸ v2.1 PDF 18 頁完整論證</text>
+    <text x="277" y="510">▸ v2.2 PDF 18 頁完整論證</text>
   </g>
 
   <!-- ============ COLUMN 3: VALUE PROPOSITION (full height, highlighted) ============ -->
@@ -227,5 +227,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="20" y="745" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.1 §A 市場規模 / §C.1 客戶分析 / §F.1 18 個月里程碑 / §G.3 TCO 與毛利</text>
+  <text x="20" y="745" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.2 §A 市場規模 / §C.1 客戶分析 / §F.1 18 個月里程碑 / §G.3 TCO 與毛利</text>
 </svg>

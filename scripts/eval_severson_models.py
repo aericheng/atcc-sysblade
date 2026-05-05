@@ -23,7 +23,7 @@ Expected MAPE (Severson Table S2 reference):
   Variance OLS    ~15 %      (1 feature)
   Discharge OLS   ~9.1 %     (5 features)
   Full OLS        ~7.5 %     (9 features paper / 13 features Plan C+)
-  bagged-GBT + xstrict filter: < 10 % committed by v2.1 §B (delivered
+  bagged-GBT + xstrict filter: < 10 % committed by v2.2 §B (delivered
                                at 8.38 % in 2026-05-03 run).
 """
 from __future__ import annotations

@@ -192,7 +192,7 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                   <span className="text-foreground">RUL &lt; 800 cycles</span>.
                 </p>
                 <Disclosure summary="What 800 cycles means in years">
-                  BBU duty averages ~50 cycles/yr (v2.1 §B.2), so{" "}
+                  BBU duty averages ~50 cycles/yr (v2.2 §B.2), so{" "}
                   <span className="text-foreground">RUL = 800 cycles</span> ≈ 16 years of BBU
                   service remaining. The 800-cycle threshold is the &ldquo;needs replacement
                   within ~16 years&rdquo; gate, not 800 days.
@@ -202,7 +202,7 @@ export function DashboardClient({ fleet }: { fleet: Fleet }) {
                   the same LSTM you saw on <span className="text-foreground">/twin</span> — each
                   device is matched to a PyBaMM-calibrated BBU-duty trajectory, the LSTM
                   predicts that trajectory&rsquo;s total cycle life, and we subtract the
-                  device&rsquo;s elapsed cycles (age × 50 cycles/yr per v2.1 §B.2). One model
+                  device&rsquo;s elapsed cycles (age × 50 cycles/yr per v2.2 §B.2). One model
                   deployed across the fleet, not a separate decay heuristic.{" "}
                   <span className="text-foreground">soh_lfp</span> stays as the per-device
                   state. <span className="text-foreground">soh_lic</span> is datasheet-derived

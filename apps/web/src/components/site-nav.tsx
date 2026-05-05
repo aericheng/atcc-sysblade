@@ -52,7 +52,7 @@ export function SiteNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 text-xs text-muted">
-          <span className="hidden lg:inline">ATCC C13 · v2.1</span>
+          <span className="hidden lg:inline">ATCC C13 · v2.2</span>
           <span className="rounded-full bg-warning/20 text-warning px-2 py-0.5 text-[10px] font-semibold tracking-wider">
             DEMO
           </span>

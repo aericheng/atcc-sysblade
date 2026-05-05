@@ -58,13 +58,13 @@ for d in OUT_DIRS:
 
 
 # ---------------------------------------------------------------------------
-# Rack-level constants from v2.1 proposal
+# Rack-level constants from v2.2 proposal
 # ---------------------------------------------------------------------------
 RACK_POWER_KW = 120.0           # GB200 NVL72 nominal
 RACK_BASELINE_KW = 80.0         # demo waveform mid-line (sub-peak, leaves ±30 % headroom)
 N_BBU_PER_RACK = 8              # parallel BBUs sharing the rack load
 LFP_PACK_KWH = 2.5              # per BBU (§E.1 Tier-B)
-LFP_PACK_NOMINAL_V = 48.0       # 15S × 3.2 V (§v2.1 修訂 #4)
+LFP_PACK_NOMINAL_V = 48.0       # 15S × 3.2 V (§v2.2 修訂 #4)
 LIC_ENERGY_KJ_PER_RACK = 5.0    # 5 kJ transient need (§E.1 Tier-A)
 LIC_OVERPROV_FACTOR = 69.0      # 345/5 from §Q4 答辯
 TRANSIENT_AMPLITUDE = 0.30      # ±30 % swing (§B.1 (2))
@@ -104,7 +104,7 @@ def _save(name: str, payload: dict) -> list[Path]:
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "generator": "scripts/generate_twin_scenarios.py",
         "pybamm_version": pybamm.__version__,
-        "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.1.pdf",
+        "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.2.pdf",
     }
     body = json.dumps(payload, separators=(",", ":"), default=_json_default)
     paths: list[Path] = []
@@ -933,8 +933,8 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
 
         # Elapsed cycles per device from age, assuming this paper's
         # engineering estimate of 50 cycles/yr BBU duty (anchored to
-        # v2.1 附件 C's "LFP 浮充 8–12 年壽命" + §G.3 "10-year, 1.5 vs 1
-        # replacements"; v2.1 itself does not state a per-year cycle
+        # v2.2 附件 C's "LFP 浮充 8–12 年壽命" + §G.3 "10-year, 1.5 vs 1
+        # replacements"; v2.2 itself does not state a per-year cycle
         # count). RUL = max(0, predicted_total_life - elapsed).
         cycles_per_year = 50.0
         elapsed_cycles = age_months / 12.0 * cycles_per_year

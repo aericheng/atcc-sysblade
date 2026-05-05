@@ -530,7 +530,7 @@ export function TwinClient({
               value={modelValidation.metrics.test_mape_pct.toFixed(1)}
               unit="%"
               tone="primary"
-              hint={`${modelValidation.metrics.n_test} held-out cells across Severson + BBU regimes · LSTM trades single-regime sharpness for cross-regime honesty (Severson-only 13-feat bagged-GBT delivers 8.4 % paper-aligned baseline, see whitepaper §3.3.3). v2.1 §B <10 % commitment is met by the bagged-GBT ensemble path; this LSTM tile is the deployed fleet-inference engine.`}
+              hint={`${modelValidation.metrics.n_test} held-out cells across Severson + BBU regimes · LSTM trades single-regime sharpness for cross-regime honesty (Severson-only 13-feat bagged-GBT delivers 8.4 % paper-aligned baseline, see whitepaper §3.3.3). v2.2 §B <10 % commitment is met by the bagged-GBT ensemble path; this LSTM tile is the deployed fleet-inference engine.`}
             />
             <Stat
               label="ONNX latency · laptop CPU"

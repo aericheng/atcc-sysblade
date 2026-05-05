@@ -57,11 +57,11 @@ If you'd rather frame manually, use Snipping Tool (Win+Shift+S) on a **1440×900
 
 ## Shot 4 — Fleet Dashboard (`/dashboard`)
 
-**What to capture**: 上半的 Tier-1/2/3 統計卡 + 下半的 US fleet map(綠/橙/紅點)。**水印 "SIMULATED DATA" 必須清晰可見** — 這是 v2.1 §B 的合規線。
+**What to capture**: 上半的 Tier-1/2/3 統計卡 + 下半的 US fleet map(綠/橙/紅點)。**水印 "SIMULATED DATA" 必須清晰可見** — 這是 v2.2 §B 的合規線。
 
 **Callouts to add**:
 - → Tier-3 紅點 : "status === 'early_aging' = SOH<0.85 OR RUL<800"
-- ⬆ Watermark : "依 v2.1 規範,模擬資料一律標示"
+- ⬆ Watermark : "依 v2.2 規範,模擬資料一律標示"
 - → 數量總和 : "Tier-1+2+3 = 1000 racks(來自 PyBaMM 場景)"
 
 **Caption**: "Fleet Dashboard — 1000 機櫃即時健康狀態,提前 800 cycles 觸發 Tier-3 替換預警"
