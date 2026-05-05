@@ -76,13 +76,16 @@ OVP/UVP 重啟**,單筆 GB200 訓練任務不會因為 BBU 抖動掉 checkpoint�
 5.7× 功率波動下降直接對應 **~25 % LFP 主電池循環壽命延長**(v2.1 §B.1 引述
 Attia 2020 *Nature*[6];Severson 2019 衰減模型外推[1])—— 在 BBU 浮充應用下
 LFP 服役壽命達 **8–12 年**(對比業界 NMC BBU 6–8 年基準,v2.1 附件 C 估算),
-**10 年內客戶電池組替換次數從 1.5 次降到 1 次**,直接撐起 §2.7 TCO 模型中
-USD 2,880 / rack / 10y 的替換成本節省(§2.7 / §3.1)。**對 ESG 永續報告同樣
-加分**(對齊 v2.1 §D.1 永續承諾)。
+**10 年內客戶電池組替換次數從 1.5 次降到 1 次**;這條壽命延長在 §2.7.1 TCO
+表中以「替換成本 -$2,880 / rack」**對沖** LFP+LIC capex 溢價「+$2,880 / rack」,
+**讓 Sysblade 能收 capex 溢價而客戶 TCO 不增** —— 客戶實質拿到 +25 % 服役年限
++ ESG 加分(對齊 v2.1 §D.1 永續承諾)。
 
-→ **客戶因此可以**:**10 年機房折舊週期內少替換半套 BBU 電池組**,Hyperscale
-500 racks 規模直接省下 USD 1.44 M 替換採購 + 工程派工成本;LFP 替換次數下降
-也能直接列入年度 ESG 碳排減量報告。
+→ **客戶因此可以**:**10 年機房折舊週期內少派 0.5 次替換工單**(Hyperscale
+500 racks 規模 = 250 次現場服務作業避免);capex 溢價內化抵銷後,客戶 TCO
+不變、卻拿到多 25 % 服役年限與 ESG 碳排減量報告可列入項目。33 % TCO saving
+主來源是瞬態損失 / 維運人力 / HVDC 過渡三 row(§2.7.1),壽命延長是「不漲價
+的價值升級」而非雙重計入。
 
 > 🔬 **獨立物理交叉驗證**:不只靠 Attia/Severson 單一證據鏈 —— Rainflow +
 > Wang 2011 *J. Power Sources* 半經驗 cycle-aging 公式在 worst-case GB200
@@ -92,12 +95,17 @@ USD 2,880 / rack / 10y 的替換成本節省(§2.7 / §3.1)。**對 ESG 永續�
 > 主動揭露而不藏**,§2.3.2)。**兩條獨立路徑同方向**才是「25 %」這個結論
 > 的根據,業師最該記得的方法學嚴謹點。
 
-### 🧠 8.38 % — 電池壽命預測 MAPE
+### 🧠 8.38 % — 電池壽命預測 MAPE(Severson 學術 baseline)
 
 **bagged-GBT (K=24) + Extra-strict cell filter(n=134)達成 RUL 預測 MAPE
 8.38 %(中位數,10-seed 取),低於 Severson 2019 paper benchmark 9.1 %**;
 Test R² 0.890,Per-seed 範圍 [5.93, 12.91] %,7/10 seeds < 10 %
 (§2.4 / `data/processed/severson_model_eval.json`)。
+
+> **誠實邊界**:8.38 % 是 Severson 同 batch random split 的**學術 benchmark**;
+> **fleet 部署實際採 augmented LSTM(19.10 % MAPE / R² 0.86)**,因 BBU 浮充
+> duty 與 Severson 壓力測試 cell 分布差距大,點精度退讓換來跨 regime 誠實
+> 是刻意的工程選擇(§2.5)。
 
 → **客戶因此可以**:**精準預測 BBU 替換時機**(典型 6–8 個月前可預警),
 維運主管能排好替換工單不撞 SLA、不踩突發停機,**從「壞了再換」變「預知排程」**。
@@ -125,8 +133,10 @@ outage 由 facility UPS 接力(§2.1)。
 ### 📦 3.49× — ONNX 模型壓縮 → 邊緣 NPU 可跑
 
 LSTM 219 KB FP32 → **63 KB INT8**(量測,精度只掉 0.10 pp)。**STM32N6
-Neural-ART NPU 1.6 MB FLASH 只用 4 %**,單樣本 NPU < 110 µs(對比 ST datasheet
-typical 0.3 ms 仍有 3× margin),BBU 內本地推論斷網仍可運作(§2.5 / 附錄 C)。
+Neural-ART NPU 1.6 MB FLASH 只用 4 %**,單樣本 NPU **27–109 µs 估算**(靜態
+graph proxy + ±2× 不確定區間,**實機 boot-up 為 W3+ 工作項**;附錄 C.4),
+對比 ST datasheet typical 0.3 ms 即使取 worst-case 109 µs 仍有 ~3× margin。
+BBU 內本地推論斷網仍可運作(§2.5 / 附錄 C)。
 
 → **客戶因此可以**:**機房斷網時 BBU 仍能本地預測健康度**(不依賴雲端),
 而且**不會被 SaaS per-inference billing 綁定** —— 客戶買硬體一次性付費,
@@ -177,8 +187,8 @@ LSTM 2-layer hidden=64 · INT8 63 KB · BBU 內本地推論
 ## 1.6 市場切入
 
 依 JLL Year-End 2025 Report:**全美在建資料中心容量 35 GW**,德州 6.5 GW(18.6 %)
-+ 北維吉尼亞 5.3 GW(15 %),**兩地合計約 33 % 為第一級戰場**;Texas 已超車
-Virginia,**興建中專案數首次超越**(2026 Q1)。
++ 北維吉尼亞 5.3 GW(15 %),**兩地合計約 33 % 為第一級戰場**(德州近年快速擴張,
+與 Virginia 已是同等量級主戰場)。
 
 **避開 Tier-1 hyperscale**(自研消化內需),**聚焦 Tier-2/3 colo**(對外服務
 AI inference,仍依賴外採 BBU)—— **目前市場上無一家現成廠商提供「軟體 +
@@ -204,7 +214,7 @@ AI inference 工作負載),per-rack 規格完全沿用 v2.1 §E.1「**同一個 
 | 層 | 規格 | 用途 / 設計依據 |
 |---|---|---|
 | **Tier-A** 瞬態緩衝 | **2× Eaton XLR-48-166 並聯**(48 V / 166 F / 53 Wh / ESR 5 mΩ)| 吃 ms 級瞬態(120 kW × 30 % × 100 ms ≈ 3.6 kJ + 30 % margin → **5 kJ 設計目標**),N+1 冗餘 |
-| **Tier-B** 短時備援 | **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱)| **60 sec graceful @ 120 kW peak**(80 % DoD,2.5 kWh ÷ 120 kW = 75 sec 理論值);LFP 採車規 Microvast / KORE Power 等北美/日韓系電芯,**避 BABA Act / CFIUS 風險** |
+| **Tier-B** 短時備援 | **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱)| **60 sec graceful @ 120 kW peak**(80 % DoD,2.5 kWh ÷ 120 kW = 75 sec 理論值);LFP 採車規 LG Energy Solution / Samsung SDI / KORE Power 等日韓系或北美自有 cell line 電芯,**避 BABA Act / CFIUS 風險** |
 | **Tier-C** 智能管理 | STM32N6 + Neural-ART NPU + edge LSTM | BBU 內邊緣推論(§2.5),斷網仍可運作 |
 | 介面 | 48 V DC + **±400 V HVDC ready**(雙電壓設計)| 規避 2027 OCP Mt. Diablo HVDC 換代 forklift 風險 |
 | 機械 | 單一 **12U OCP ORV3 BBU shelf** | 落 OCP ORV3 30–90 sec 備援規範區間 |
@@ -262,10 +272,10 @@ $$
 * **電化學機制** — LFP 衰減主導因子是高 C-rate 帶來的 **lithium plating + SEI 增厚 + 顆粒裂解**(Severson 2019 §3 衰減模型);把 RMS 應力從 8.7 kW 壓到 1.5 kW 等於把有效 C-rate 從 ~6 C peak 拉回到 ~1 C 連續,**完全落在 LFP 安全工作區**。
 * **量化估算** — 對齊 v2.1 §B.1 引述 Attia 2020 *Nature* [6] 的 closed-loop fast-charge 壽命優化結果:**LIC 削峰可延長 LFP 主電池循環壽命約 25 %**(v2.1 §D.1 永續承諾保守估 30 %)。
 * **產品層轉換** — 加上 BBU 浮充 duty(~50 cycles/yr)的循環極少特性,LFP 服役壽命從業界 6–8 年(NMC BBU 基準)→ **本案 LFP 8–12 年**(v2.1 附件 C);對應 **10 年內客戶電池組替換次數 1.5 → 1 次**(v2.1 §G.3 BOM 替換成本拆解)。
-* **TCO 影響** — 這條壽命延長線直接撐起 §2.7 TCO 表中**「替換成本下降 USD 2,880 / rack / 10y」**;Hyperscale 500 racks 即 **USD 1.44 M / 10y 直接 saving**。
+* **TCO 角色(誠實邊界)** — §2.7.1 表中 LFP+LIC「初次採購 +$2,880 / rack」與「替換成本 -$2,880 / rack」**互抵**,壽命延長對 TCO bottom-line 淨貢獻 ≈ 0;33 % saving 主來源是瞬態 -3,600 / 維運 -3,000 / HVDC -3,000(§2.7.1)。**壽命延長的角色是「讓 Sysblade 收 capex 溢價而不增客戶 TCO」**,客戶實質好處是同 TCO 拿到 +25 % 服役年限與 250 次/Hyperscale-500r/10y 替換派工避免。
 * **ESG 加分** — 對齊 v2.1 §D.1 永續承諾「以延長電池循環壽命為核心,對齊客戶 ESG 報告與碳排揭露需求」—— 客戶可把 LFP 替換次數下降直接列入碳排減量報告。
 
-> **核心商業價值 ⭐**:5.7× 物理層應力下降 → 25 % LFP 循環壽命延長 → 客戶 10 年內少換半次 BBU 電池組 → 直接體現在 33 % TCO saving 中。**這是業師最該記得的 cause-and-effect 鏈**。
+> **核心商業價值 ⭐**:5.7× 物理層應力下降 → 25 % LFP 循環壽命延長 → 客戶 10 年內少派 0.5 次替換工單 + ESG 加分。**Sysblade 用 capex 溢價 +$2,880 / rack 收下這條價值,在 §2.7.1 TCO 模型中與替換節省 -$2,880 互抵 — 客戶 TCO 持平,服役年限多 25 %**;33 % TCO saving 主由瞬態 / 維運 / HVDC 三 row 撐起,不是壽命延長(避免雙重計入)。
 
 ### 2.3.2 獨立交叉驗證 — Rainflow + Wang 2011 ⭐
 
@@ -322,7 +332,7 @@ $$
 | 業師問 | 我們答 | 客戶意義 |
 |---|---|---|
 | **「模型準不準?」** | **19.10 % MAPE / R² 0.86**(2-layer LSTM,trained on Severson 138 + 合成 BBU duty 50 = 188 cells)| Fleet 推論可用,跨 lab 壓力測試與 BBU 浮充兩個 regime 都誠實 |
-| **「部署到 BBU 上跑得動嗎?」** | **STM32N6 NPU 27–109 µs 單樣本**(INT8 量化、模型 63 KB 占 NPU FLASH 4 %)| 比 ST datasheet typical 0.3 ms 快 3×,**斷網本地推論 + 不被雲端 per-inference 訂閱綁** |
+| **「部署到 BBU 上跑得動嗎?」** | **STM32N6 NPU 27–109 µs 單樣本估算**(靜態 graph + ±2× 不確定區間,附錄 C.4;模型 63 KB 占 NPU FLASH 4 %;**實機 boot-up 為 W3+ 工作項**)| 對比 ST datasheet typical 0.3 ms 即使 worst-case 109 µs 仍 ~3× margin,**斷網本地推論 + 不被雲端 per-inference 訂閱綁** |
 
 > **為什麼 LSTM 19.10 % > GBT 8.38 %?**這不是退步,是「per-regime sharpness
 > 換 cross-regime honesty」的取捨:GBT 只看過 Severson 壓力測試 cell,對 BBU
@@ -346,9 +356,11 @@ $$
 
 **典型使用情境 — 機房維運副理 daily check-in**:
 > 副理早上 9:00 開電腦,打開 `/twin` Inference Walkthrough。9 顆精選 cell 中
-> 看到「**b2c1 — critical**」紅色標籤,點進去看 LSTM 預測軌跡 — 點預測 238 cycles、
-> 90 % PI 區間 [144, 332]。換算成 BBU 年數 ≈ 2.9–6.6 年(中位數 4.8 年),
-> **發現該 cell 比 fleet 中位數快 3 年衰減**,當場開工單請工程隊優先排程現場巡檢。
+> 看到「**b2c1 — critical**」紅色標籤(fleet 內 critical 占 3.9 %),點進去看
+> LSTM 預測軌跡 — **點預測 218 cycles、90 % PI [144, 332]**(≈ 4.4 BBU 年,
+> PI 區間 2.9–6.6 BBU 年)。同 9 顆 walkthrough 中位數預測 ~1,000 cycles ≈
+> 20 BBU 年,**b2c1 比 walkthrough 中位數快 ~16 年衰減**,當場開工單請工程
+> 隊優先排程現場巡檢。
 
 **產品內容**:物理 + ML 整合可視化 — PyBaMM DFN 線下預算的瞬態 / 老化波形 +
 LSTM 推論點預測 + MC Dropout + Split Conformal 90 % PI 逐 cell 呈現。9 顆精選
@@ -375,12 +387,14 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 🔗 **Live demo**:<https://sysblade-atcc.vercel.app/dashboard>
 
 **典型使用情境 — Sysgration 維運服務派工流程**:
-> 早上 7:00,某客戶 fleet 中一台 rack 從 warning 跨進 **early_aging**
-> (SOH 0.83 / RUL 720 cycles)。Tier-3 admission rule 自動觸發,系統推
-> ServiceNow ticket 給 Sysgration 工程隊 + email 客戶維運主管。**7-day SLA
-> 倒數開始**,工程隊查 fleet 地圖確認該 rack 位於德州 Dallas 機房區,排好
-> 3 天內派工人從 Plano 廠出發 + 帶替換 LFP pack。**整個流程客戶不需要自己
-> monitor、不會踩 SLA、Sysgration 拿維運服務年費**。
+> 早上 7:00,某客戶 fleet 中一台 rack(德州 Dallas 機房)SOH 從 warning 區
+> 0.86 跌至 **0.84**,跨入 **early_aging**(`SOH < 0.85` 分支觸發 Tier-3
+> admission;RUL 仍剩 5,400 cycles 但 SOH 已超出健康區間 — **本案 fleet 中
+> 所有 early_aging 都是 SOH 進,RUL < 800 分支實際零觸發**,誠實揭露)。系統
+> 推 ServiceNow ticket 給 Sysgration 工程隊 + email 客戶維運主管。**7-day
+> SLA 倒數開始**,工程隊查 fleet 地圖確認 rack 位置,排好 3 天內派工人從
+> Plano 廠出發 + 帶替換 LFP pack。**整個流程客戶不需要自己 monitor、不會
+> 踩 SLA、Sysgration 拿維運服務年費**。
 
 **產品內容**(對齊 v2.1 §E.3 三層服務承諾):
 * **Tier-1 即時監控**:1000 台 fleet 的 SOH / RUL / status 即時表
@@ -470,7 +484,8 @@ Payback 對 rack 數量不敏感(extra capex 與 saving 都隨 racks 線性 scal
 | **獨立物理交叉驗證** ⭐ | worst-case η = **0.945**(5.5 % per-Ah 損傷下降)| Rainflow + Wang 2011 *J. Power Sources* [7] 半經驗 cycle-aging;GB200 NVL72 reference profile [11];§2.3.2 |
 | **LFP 服役壽命** | **8 → 10–12 年**(BBU 浮充 duty)| v2.1 附件 C;對齊業界 NMC BBU 基準 6–8 年 |
 | **10 年內替換次數** | **1.5 → 1 次**(每客戶半次替換) | v2.1 §G.3 註解 |
-| **TCO 替換成本下降** | **USD 2,880 / rack / 10y** | 撐起 §2.7 TCO 表替換 row,Hyperscale 500r = **USD 1.44 M / 10y 直接 saving** |
+| **TCO 角色** | 替換 -$2,880 ↔ 初次採購 +$2,880(內化抵銷) | 客戶 TCO 不變,Sysblade 收 LFP+LIC capex 溢價;**33 % saving 主來源**見 §2.7.1 瞬態/維運/HVDC 三 row,**非**壽命延長 |
+| **操作層價值** | Hyperscale 500r × 0.5 替換 = **250 次現場派工避免** / 10y | 工程派工調度 + 停機協調成本,部分 reflected 於 §2.7.1 維運 -3,000 row |
 | **ESG 永續加分** | LFP 替換次數下降直接列入客戶碳排減量報告 | 對齊 v2.1 §D.1 永續承諾 |
 
 **附帶好處**:下游 PSU 重啟風險降低(電壓震盪 pp 從 62 mV 壓到 18 mV →
@@ -547,7 +562,7 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 
 | 維度 | Sysblade(Sysgration 推案) | Eaton | Vertiv | Schneider |
 |------|---|---|---|---|
-| **2024 年全球營收** | Sysgration 母公司 NT$ [填] 億 | **USD 24.9 B** | **USD 8.0 B** | **EUR 38.2 B** |
+| **2024 年全球營收** | Sysgration 母公司(TWSE 6312)營收量級**遠小於三家競品** —— 正是 Tier-2/3 縫隙合理的新進入者身分 | **USD 24.9 B** | **USD 8.0 B** | **EUR 38.2 B** |
 | **北美機房 BBU 業務市占(估)** | 0 %(新進入者) | **~ 15 %**(LIC 利基領導)| **~ 25 %**(Tier-1 重型 UPS 主力)| **~ 30 %**(集中式 UPS 王者)|
 | **為什麼還沒做 Sysblade 在做的事**(strategic moat 推論)| —— | 純電力元件商,**沒有軟體 / SaaS / ML 開發 DNA**;LIC 利基產品已是 cash cow,投 SaaS 整合 ROI 不對齊主業 | 重押 **Tier-1 hyperscale 大型 UPS** 案(單筆 USD M 級),Tier-2/3 colo 利基太薄,**策略上看不上小規模 BBU** | 集中式 UPS 是 Galaxy VS **核心產品線**,做 rack-level 等於 **cannibalize 自家旗艦** —— 大公司不會自我蠶食 |
 
