@@ -342,7 +342,7 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 **產品內容**(對齊 v2.1 §E.3 三層服務承諾):
 * **Tier-1 即時監控**:1000 台 fleet 的 SOH / RUL / status 即時表
 * **Tier-2 地理分布**:AI 機房密度加權地圖(Texas 49 % / Virginia 27 %,本文模擬權重)
-* **Tier-3 替換隊列**:`status === "early_aging"`(SOH < 0.85 或 RUL < 800 cycles),觸發 7-day SLA 派工
+* **Tier-3 替換隊列**:`status === "early_aging"`(SOH < 0.85 或 RUL < 800 cycles),觸發 7-day SLA 派工;**支援 row click drilldown**,點擊任一替換 row 開出 panel 顯示該 device 的 SOH (LFP/LIC) / RUL 與 BBU 年數估算 / 熱與操作層 metrics,fleet-level conformal PI 仍須點到 /twin 看 9 顆 walkthrough cell(W3+ roadmap)
 
 > 1000 台機台是 **seeded RNG 模擬**,所有 panel 明標 **SIMULATED DATA**
 > watermark。RUL 到 BBU 年數的換算:BBU duty 平均年循環約 50,BBU 年數

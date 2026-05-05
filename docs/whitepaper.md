@@ -690,6 +690,12 @@ Texas 6.5 GW(18.6 %)+ 北維吉尼亞 5.3 GW(15 %),兩地合計 ~33 %**;
 2. Sysblade 工程隊 7-day SLA 派工到現場
 3. 替換完成後,該 cell 進入 calibration cycle,RUL 重置
 
+**UX**:Tier-3 替換 row 支援點擊 drilldown,開出 modal 顯示該 device 的
+SOH (LFP/LIC bar 含 85 % gate marker) / RUL 與 BBU 年數估算 / 熱與操作層
+metrics(transient events 24h、temp LFP/LIC、age),並引導需要 conformal PI
+的 reader 跳到 /twin 看 9 顆 walkthrough cell(fleet-level 1000 台尚無 per-device
+PyBaMM trajectory 可校準 PI,屬 W3+ roadmap)。實作 `apps/web/src/components/device-drilldown.tsx`。
+
 ---
 
 ## 第五章 TCO 模型
