@@ -85,7 +85,6 @@ atcc/
 │       └── src/lib/{tco.ts, types.ts}            TCO 公式 + Device 型別
 ├── packages/
 │   ├── battery-twin/                             Python: physics + ML
-│   │   ├── pybamm_sim/                           PyBaMM DFN 封裝
 │   │   ├── lstm_rul/                             PyTorch LSTM + linear baseline
 │   │   └── data_loaders/                         Severson + NASA + CALCE 解析器
 │   └── shared/scenarios/                         JSON 雙寫 sink #2
@@ -100,7 +99,7 @@ atcc/
 │   ├── onnx_static_analysis.py                   STM32N6 NPU 靜態 graph 分析(自動 merge INT8 量測報告)
 │   └── check_whitepaper_numbers.py               whitepaper / README / PRESENTATION_GUIDE 數字 cross-check gate
 ├── data/raw/  data/processed/                    .gitignore(>8 GB)
-└── project guidance  DEPLOY.md  PRESENTATION_GUIDE.md
+└── DEPLOY.md  PRESENTATION_GUIDE.md
 ```
 
 ---
@@ -191,8 +190,8 @@ Severson .mat v7.3 訓練資料(8.3 GB)需要手動下載,流程見 [`docs/sever
 |---|---|
 | [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) | **競賽繳交版本(spec)**,所有 demo 的數字必須對齊 |
 | [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 v1.0 — 完整證據 + 局限討論 |
+| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 技術白皮書精煉版(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
 | [`PRESENTATION_GUIDE.md`](PRESENTATION_GUIDE.md) | 5 分鐘 demo 腳本 + 業師可能問的問題 |
-| [`project guidance`](project guidance) | 給 AI assistant 的工作指引(架構約束 + house rules) |
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
 

@@ -4,10 +4,12 @@ Sysblade Battery Digital Twin 核心 Python 套件 — 物理引擎 + ML + 資�
 
 ```
 battery-twin/
-├── pybamm_sim/        PyBaMM DFN 物理模型封裝(LFP + LIC 雙模 + BBU duty 合成)
 ├── lstm_rul/          PyTorch LSTM RUL + linear baseline(1/5/9/13-feat OLS)
 └── data_loaders/      Severson 2019 + NASA PCoE + CALCE CS2 載入器
 ```
+
+PyBaMM DFN 模擬與 BBU duty 合成腳本直接收在 `scripts/generate_twin_scenarios.py`
+與 `scripts/generate_bbu_duty_cells.py`,使用 PyBaMM upstream API,不另作 wrapper。
 
 ## 安裝
 
@@ -24,7 +26,6 @@ uv pip install -e packages/battery-twin[dev,api]
 
 | 模組 | 輸入 | 輸出 |
 |---|---|---|
-| `pybamm_sim` | 電流剖面 + cell parameter set | 電壓 / SOC / 溫度時間序列 |
 | `lstm_rul.model` | (N, 99, 7) per-cycle features | log10(cycle_life) 點預測 + MC Dropout PI(post-processed by split conformal in `scripts/export_lstm_onnx.py`,縮窄 44 %)|
 | `lstm_rul.baseline` | (N, k) feature matrix | OLS 線性回歸 + MAPE / RMSE / R² |
 | `data_loaders.severson_parser` | `.mat` v7.3 (HDF5) | `Cell` dataclass list,138 顆 LFP |

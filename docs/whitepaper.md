@@ -1059,9 +1059,6 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 ## 附錄 C — STM32N6 X-CUBE-AI 混合分析(measured size+accuracy + estimated NPU latency)
 
-完整版見獨立文件 [`docs/x_cube_ai_static_analysis.md`](x_cube_ai_static_analysis.md),
-本附錄摘要其重點。
-
 > **混合報告**:本附錄合併兩條證據鏈 ——
 >
 > 1. **靜態 graph 分析(proxy)**:用 Python `onnx` library + ST 公開資料
@@ -1221,8 +1218,7 @@ atcc-sysblade/
 │   └── 01_severson_eda.ipynb
 │
 ├── PRESENTATION_GUIDE.md                        # 5 分鐘 demo 腳本
-├── DEPLOY.md                                    # Vercel 部署 SOP
-└── project guidance                                    # AI 協作者規則(house rules)
+└── DEPLOY.md                                    # Vercel 部署 SOP
 ```
 
 > **End of document**
