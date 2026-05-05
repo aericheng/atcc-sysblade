@@ -89,8 +89,9 @@ LFP 服役壽命達 **8–12 年**(對比業界 NMC BBU 6–8 年基準,v2.1 附
 
 > 🔬 **獨立物理交叉驗證**:不只靠 Attia/Severson 單一證據鏈 —— Rainflow +
 > Wang 2011 *J. Power Sources* 半經驗 cycle-aging 公式在 worst-case GB200
-> 工作點(10 C × 30 ms 脈衝,arXiv:2508.14318 §3 reference profile)
-> **獨立**算出 hybrid vs LFP-only per-Ah 損傷比 **η = 0.945(5.5 % 下降)**;
+> 工作點(10 C × 30 ms 脈衝,**團隊依 Choukse 2025 [11] GB200 power-swing
+> 分析 per-cell BBU 下尺度推導**)**獨立**算出 hybrid vs LFP-only per-Ah
+> 損傷比 **η = 0.945(5.5 % 下降)**;
 > demo ±30 % 方波波形上 η = 1.012(因 Wang kernel 在 0.5–6 C flat,**團隊
 > 主動揭露而不藏**,§2.3.2)。**兩條獨立路徑同方向**才是「25 %」這個結論
 > 的根據,業師最該記得的方法學嚴謹點。
@@ -287,7 +288,7 @@ $$
 | 波形 | LFP-only Q_loss (60s) | Hybrid Q_loss (60s) | $\eta_{\text{cyc}}$ |
 |---|---:|---:|:--:|
 | demo (±30 %, 100 ms) | 0.0338 % | 0.0342 % | **1.012** |
-| **worst_case (10 C × 30 ms 脈衝, GB200 NVL72 ref [11])** | 0.0375 % | 0.0355 % | **0.945** |
+| **worst_case (10 C × 30 ms 脈衝,team-derived per-cell scaling of GB200 power-swing context [11])** | 0.0375 % | 0.0355 % | **0.945** |
 
 **判讀(誠實邊界)**:
 * **demo η = 1.012**(hybrid 略差 1.2 %)— Wang kernel 在 0.5–6 C 區間幾乎
@@ -481,7 +482,7 @@ Payback 對 rack 數量不敏感(extra capex 與 saving 都隨 racks 線性 scal
 | 維度 | 量化效果 | 引用 / 推導 |
 |---|---|---|
 | **循環壽命延長** | **~25 %**(保守估;v2.1 §D.1 列 30 %)| Attia 2020 *Nature* [6] closed-loop fast-charge optimization;Severson 2019 衰減模型外推 [1] |
-| **獨立物理交叉驗證** ⭐ | worst-case η = **0.945**(5.5 % per-Ah 損傷下降)| Rainflow + Wang 2011 *J. Power Sources* [7] 半經驗 cycle-aging;GB200 NVL72 reference profile [11];§2.3.2 |
+| **獨立物理交叉驗證** ⭐ | worst-case η = **0.945**(5.5 % per-Ah 損傷下降)| Rainflow + Wang 2011 *J. Power Sources* [7] 半經驗 cycle-aging;GB200 power-swing context per Choukse 2025 [11](10 C × 30 ms 脈衝為團隊 per-cell 下尺度推導);§2.3.2 |
 | **LFP 服役壽命** | **8 → 10–12 年**(BBU 浮充 duty)| v2.1 附件 C;對齊業界 NMC BBU 基準 6–8 年 |
 | **10 年內替換次數** | **1.5 → 1 次**(每客戶半次替換) | v2.1 §G.3 註解 |
 | **TCO 角色** | 替換 -$2,880 ↔ 初次採購 +$2,880(內化抵銷) | 客戶 TCO 不變,Sysblade 收 LFP+LIC capex 溢價;**33 % saving 主來源**見 §2.7.1 瞬態/維運/HVDC 三 row,**非**壽命延長 |
@@ -777,9 +778,12 @@ worst-case 109 µs 仍有 3× margin。
 
 ## 系統與標準
 
-11. **NVIDIA / arXiv:2508.14318** (2025). "Power-swing analysis of GB200
-    NVL72 rack-scale AI inference." (§2.3.2 worst-case 10 C × 30 ms 脈衝
-    波形之 reference profile 來源,§3 power-swing analysis)
+11. **Choukse, E., Buck, I., Alben, J., et al.** (Microsoft + NVIDIA, 2025).
+    "Power Stabilization for AI Training Datacenters."
+    arXiv:2508.14318. (§III utility-level MW/s ramp + 0.1–200 Hz 頻域規範,
+    §IV-B 提及 GB200 GPU-level power smoothing。**§2.3.2 worst-case
+    10 C × 30 ms 脈衝為團隊依本文 GB200 power-swing 分析自行 per-cell BBU
+    下尺度推導,原文未直接給出 cell-level 10 C × 30 ms 數值**)
 12. **NFPA 855: Standard for the Installation of Stationary Energy Storage
     Systems** (2023 ed.). National Fire Protection Association.
 13. **Open Compute Project (OCP) ORV3 Specification** v0.92 (2024).
