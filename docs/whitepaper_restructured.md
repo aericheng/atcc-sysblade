@@ -1,8 +1,8 @@
 ---
 title: "Sysblade HyperBuffer 技術白皮書"
 subtitle: "Part 1 架構速覽 · Part 2 技術細節 · Part 3 競品差異化"
-version: "v1.0"
-date: "2026-05-04"
+version: "v1.1"
+date: "2026-05-06"
 authors:
   - 系統電 ATCC C13 學生競賽團隊
 abstract: |
@@ -27,7 +27,7 @@ abstract: |
 # Sysblade HyperBuffer 技術白皮書
 
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
-> 文件版本 v1.0 / 2026-05-04
+> 文件版本 v1.1 / 2026-05-06(citation 校正、TCO 對稱性 footnote、persona 數字對齊 scenario JSON、`/dashboard` drilldown 揭露)
 > Live demo: <https://sysblade-atcc.vercel.app>
 > 上游文件:商業企劃書 v2.1 · 完整技術白皮書 `docs/whitepaper.md`
 

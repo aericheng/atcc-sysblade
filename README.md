@@ -2,7 +2,7 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
-[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📄 企劃書 v2.1**](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) · [**📘 技術白皮書**](docs/whitepaper.md) · [**📕 精煉版**](docs/whitepaper_restructured.md)
+[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📄 企劃書 v2.1 (PDF)**](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) · [**📑 v2.2 修訂版 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.1**](docs/whitepaper.md) · [**📕 精煉版 v1.1**](docs/whitepaper_restructured.md)
 
 ---
 
@@ -17,10 +17,12 @@
 
 **6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 壽命延長 · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW peak · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
 
-> **Status**:ATCC 2026 初賽提交版。本 repo 公開展示供競賽評審與學術透明
-> 使用,授權詳見 [LICENSE](LICENSE)。儀表板與孿生情境中的客戶 / 機房名稱
-> **全為示意 persona**,非實際部署資料(`fleet_devices.json` 的 disclaimer
-> 欄位 + UI 上 SIMULATED DATA 浮水印雙重標註)。
+> **Status**:ATCC 2026 初賽提交版,**最新更新 2026-05-06**(企劃書 v2.2
+> 修訂版 + 技術白皮書 v1.1 + `/dashboard` per-device drilldown 已 ship)。本
+> repo 公開展示供競賽評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀
+> 表板與孿生情境中的客戶 / 機房名稱**全為示意 persona**,非實際部署資料
+> (`fleet_devices.json` 的 disclaimer 欄位 + UI 上 SIMULATED DATA 浮水印
+> 雙重標註)。
 
 ---
 
@@ -148,9 +150,11 @@ LSTM 為 production 推論主力;bagged-GBT 13-feat 為「Severson paper 對齊�
 ```
 atcc/
 ├── docs/
-│   ├── Sysblade_HyperBuffer_Proposal_v2.1.pdf   競賽繳交文件(spec)
-│   ├── whitepaper.md                            技術白皮書 v1.0(完整版)
-│   ├── whitepaper_restructured.md               精煉版(三段式)
+│   ├── Sysblade_HyperBuffer_Proposal_v2.1.pdf   競賽繳交文件 v2.1 (spec)
+│   ├── proposal_v2.2_additions/
+│   │   └── Sysblade_HyperBuffer_Proposal_v2.2.docx  v2.2 修訂版(2026-05-06)
+│   ├── whitepaper.md                            技術白皮書 v1.1(完整版)
+│   ├── whitepaper_restructured.md               精煉版 v1.1(三段式)
 │   ├── severson_download.md                     Severson 2019 .mat v7.3 下載 SOP
 │   ├── x_cube_ai_install_sop.md                 STM32N6 X-CUBE-AI 安裝 SOP
 │   └── figures/                                 架構圖 + 截圖 + 業務模型 canvas
@@ -202,9 +206,10 @@ atcc/
 
 | 文件 | 用途 |
 |---|---|
-| [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) | **競賽企劃書 v2.1** — 所有 demo 數字必須對齊的 spec |
-| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 v1.0 — 完整證據 + 局限討論 |
-| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
+| [`docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf`](docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf) | **競賽企劃書 v2.1** — 所有 demo 數字必須對齊的 spec(初賽提交基準)|
+| [`docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx`](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) | **企劃書 v2.2 修訂版**(2026-05-06)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
+| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.1** — 完整證據 + 局限討論(2026-05-06 加 citation 校正、TCO 對稱性 footnote、`/dashboard` drilldown 揭露)|
+| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.1**(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
 | [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP |
