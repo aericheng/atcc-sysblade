@@ -63,12 +63,14 @@ The four pages must all load:
 - `/dashboard` (1000-device fleet, every panel watermarked SIMULATED DATA)
 
 If you see "Application error" on any page, check the build log — most likely a
-PyBaMM scenario JSON is missing under `apps/web/public/scenarios/`. Re-run:
+PyBaMM scenario JSON is missing under `apps/web/public/scenarios/`. From the
+repo root, re-generate (the script writes both sinks atomically — no `cp`):
 
 ```bash
 .venv/Scripts/python.exe scripts/generate_twin_scenarios.py
-cp packages/shared/scenarios/*.json apps/web/public/scenarios/
-git add -A && git commit -m "fix: regenerate scenarios" && git push
+git add packages/shared/scenarios apps/web/public/scenarios
+git commit -m "fix: regenerate scenarios"
+git push
 ```
 
 ## Custom domain (optional)

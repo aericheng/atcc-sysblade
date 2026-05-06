@@ -27,7 +27,7 @@ abstract: |
 # Sysblade HyperBuffer 技術白皮書
 
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
-> 文件版本 v1.0 / 2026-05-04
+> 文件版本 v1.1 / 2026-05-06
 > Github: <https://github.com/aericheng/atcc-sysblade>
 > Live demo: <https://sysblade-atcc.vercel.app>
 
