@@ -334,7 +334,13 @@ export function TcoClient() {
               for your specific rack count.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition cursor-not-allowed opacity-80">
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="Lead-gen form is illustrative only for the ATCC demo"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition cursor-not-allowed opacity-80"
+          >
             Email me the report <ArrowRight className="h-4 w-4" />
           </button>
         </CardBody>

@@ -191,7 +191,7 @@ def check_tco_savings_pct(report: Report) -> None:
 # ---------------------------------------------------------------------------
 def check_rainflow_validation_ratios(report: Report) -> None:
     """Whitepaper §3.2.1 quotes two damage ratios (demo 1.012, worst-case
-    0.907). These come from aging_rainflow_validation.json so any future
+    0.945). These come from aging_rainflow_validation.json so any future
     re-tuning of Wang's parameters or the worst-case waveform must update
     the whitepaper text in lockstep — this check is the gate."""
     path = SCENARIOS_PUB / "aging_rainflow_validation.json"

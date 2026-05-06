@@ -131,7 +131,7 @@ export function DeviceDrilldown({ device, onClose }: Props) {
             </div>
             <div className="relative h-2 overflow-hidden rounded-full bg-border">
               <div
-                className="absolute h-full rounded-full bg-info/70"
+                className="absolute h-full rounded-full bg-accent/70"
                 style={{ width: `${Math.max(0, Math.min(100, licBarPct))}%` }}
               />
             </div>
@@ -150,7 +150,7 @@ export function DeviceDrilldown({ device, onClose }: Props) {
             <h3 className="text-xs uppercase tracking-wider text-muted">RUL prediction</h3>
             <a
               href="/twin"
-              className="inline-flex items-center gap-1 text-[11px] text-info hover:underline"
+              className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
             >
               See conformal PI bands on /twin <ArrowUpRight className="h-3 w-3" />
             </a>
