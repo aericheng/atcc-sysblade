@@ -218,7 +218,9 @@ export default async function HomePage() {
                 The 5 kJ / rack rule
               </div>
               <p className="text-sm text-muted leading-relaxed">
-                One GB200 NVL72 rack pulls <span className="text-foreground font-medium">120 kW</span>; a &plusmn;30 %
+                One GB200 NVL72 rack pulls <span className="text-foreground font-medium">120 kW</span>{" "}
+                across <span className="text-foreground font-medium">8 BBUs in parallel</span>{" "}
+                (15 kW &amp; 6C peak per BBU); a &plusmn;30 %
                 swing over 100 ms costs about <span className="text-foreground font-medium">3.6 kJ</span> in
                 buffered energy. With 30 % margin and back-to-back triggers, the design target is{" "}
                 <span className="text-foreground font-medium">~5 kJ/rack</span>.

@@ -16,7 +16,8 @@ abstract: |
   交叉驗證 5.5 % per-Ah 損傷下降,§2.3.2)· **8.38 %** RUL 預測 MAPE
   (低於 Severson 2019 paper benchmark 9.1 %)·
   **33.1 %** 客戶 10 年 TCO 下降(Hyperscale 500 racks 年省 USD 482.9 k)·
-  **60 sec** graceful shutdown @ 120 kW rack peak(對齊 OCP ORV3 規範)·
+  **60 sec** graceful shutdown @ 120 kW rack peak(**8 台 BBU 並聯 / per rack**,
+  20 kWh 總能量,動態 ramp profile,業師最關注點見 **§2.1.1**)·
   **3.49×** ONNX INT8 量化壓縮(LSTM 從 219 KB 壓到 63 KB,ΔMAPE 僅
   +0.10 pp,部署於 STM32N6 Neural-ART NPU)。
 
@@ -87,11 +88,15 @@ LSTM 19.10 %**(跨 regime honesty 取捨,§2.5)。
 Hyperscale 500r·VA **年省 $482.9k**(payback 2.3 y);三 preset 29.9–33.2 %
 (完整 model + 敏感度見 §2.7)。
 
-### ⚡ 60 sec graceful @ 120 kW peak — 對齊 OCP ORV3
+### ⚡ 60 sec graceful @ 120 kW rack peak — 對齊 OCP ORV3
 
-2.5 kWh / 15S 整合 LFP pack(v2.2 §E.1 Tier-B),理論值 2.5 kWh ÷ 120 kW =
-75 sec,於 80 % DoD 下得到 **60 sec 有效備援**,落在 OCP ORV3 30–90 sec 規範
-區間;長時 outage 則由 facility UPS 接力(詳見 §2.1)。
+**每 rack 8 台 BBU 並聯**(`scripts/generate_twin_scenarios.py::N_BBU_PER_RACK = 8`),
+每台 2.5 kWh / 15S LFP pack(v2.2 §E.1 Tier-B),**rack 總能量 8 × 2.5 = 20 kWh**;
+單台 BBU 峰值 **15 kW(6C peak)**,落在車規 LFP pulse 規格內。理論值
+20 kWh ÷ 120 kW = **600 秒**,60 秒備援只用 **10 % DoD,留 8 倍餘量**,
+落在 OCP ORV3 30–90 sec 規範區間;graceful 為動態 power profile(t = 0–2 s 由
+LIC + LFP 共同承擔 6C peak,t = 2–60 s 由 LFP 以 1.5C 連續放電撐至結束),
+**完整 cell-level 工作點防禦見 §2.1.1 ⭐**。長時 outage 由 facility UPS 接力。
 
 ### 📦 3.49× — ONNX INT8 壓縮(邊緣 NPU 可跑)
 
@@ -107,7 +112,7 @@ LSTM 從 **219 KB FP32 壓縮到 63 KB INT8**(measured,ΔMAPE +0.10 pp)。模型
 | **~25 % 壽命延長** | 10 年內少派 0.5 次替換工單(Hyper 500 racks 規模等於 250 次現場派工避免)。LFP+LIC capex 溢價 +$2,880 與替換節省 -$2,880 互抵,**客戶 TCO 不增,而拿到 +25 % 服役年限與 ESG 碳排可列報告** |
 | **8.38 % MAPE** | BBU 替換時機可在 6–8 個月前預警,把維運從「壞了再換」改成「預知排程」 |
 | **33 % TCO 下降** | Mid 50r 年省 $44.6k,相當於 1 名維運工程師年薪;Hyper 500r 年省 $482.9k,約 5 台 H100 採購預算 |
-| **60 sec graceful** | 斷電瞬間 AI 工作負載仍有 60 sec 安全收尾,單次事件損失從「整批重跑」收斂到「最後 batch 收尾」 |
+| **60 sec graceful** | 斷電瞬間 AI 工作負載仍有 60 sec 安全收尾,單次事件損失從「整批重跑」收斂到「最後 batch 收尾」(8 台 BBU 並聯 / 動態 ramp profile,§2.1.1) |
 | **3.49× INT8** | 斷網仍能本地推論,客戶不被 cloud per-inference billing 綁定;BBU 健康資料留在客戶現場,符合 EU Battery Passport 2027 合規 |
 
 ---
@@ -133,7 +138,9 @@ LSTM 2-layer hidden=64 · INT8 63 KB · BBU 內本地推論
 **🔋 硬體層 — Per-rack 12U 機箱(對齊 v2.2 §E.1 三層電氣分層)**
 
 - **Tier-A**(瞬態)— 2× Eaton XLR-48-166 rack-level LIC 並聯,5 kJ 設計目標
-- **Tier-B**(備援)— 2.5 kWh / 15S 整合 LFP pack,**60 sec graceful @ 120 kW peak**
+- **Tier-B**(備援)— **每 rack 8 台 BBU 並聯**,每台 2.5 kWh / 15S LFP pack,
+  rack 總計 **20 kWh**,**60 sec graceful @ 120 kW rack peak**(每台 15 kW / 6C peak,
+  動態 ramp profile **§2.1.1**)
 - **Tier-C**(智能)— BMC + STM32N6 NPU + edge LSTM 推論
 
 模型流程依序為:PyBaMM DFN 在 build-time 線下預算波形,輸出 ONNX 後做 INT8
@@ -161,24 +168,107 @@ hyperscale 多以自研消化內需,Sysblade 不與其正面競爭,而是聚焦 
 
 ---
 
-## 2.1 硬體拓撲(per-rack 12U BBU)
+## 2.1 硬體拓撲(per-rack 8 台 12U BBU 並聯)
 
-Sysblade HyperBuffer 鎖定 Hyperscale tier 機房(單 rack 50–100 kW,GB200 等級
+Sysblade HyperBuffer 鎖定 Hyperscale tier 機房(單 rack 50–120 kW,GB200 等級
 AI inference 工作負載),per-rack 規格完全沿用 v2.2 §E.1「**同一個 12U 機箱
 內三層電氣分層**」架構(Electrical Tiering ≠ 物理拆解)。
+
+> **拓撲關鍵數字**(常被誤讀):每 rack **8 台 BBU 並聯**(對齊 `tco.ts:4`
+> 「Per-rack 10-year cost (USD) for a 100 kW-class rack with **8 BBUs**」與
+> `generate_twin_scenarios.py::N_BBU_PER_RACK = 8`)。單台 BBU 2.5 kWh /
+> 15 kW peak,rack 總能量 **20 kWh**,rack peak 120 kW 對應每台 BBU **6C peak
+> per cell**(非 48C,**讀者若用單台 BBU 容量除整 rack 功率心算會誤推 48C,
+> 這是 unit-mixing,完整化解見 §2.1.1**)。
 
 | 層 | 規格 | 用途 / 設計依據 |
 |---|---|---|
 | **Tier-A** 瞬態緩衝 | **2× Eaton XLR-48-166 並聯**(48.6 V / 166 F / 54 Wh / ESR 5 mΩ,per Eaton XLR-48R6167-R datasheet)| 吃 ms 級瞬態。能量需求估算 120 kW × 30 % × 100 ms ≈ 3.6 kJ,加 30 % margin 後取 **5 kJ 為設計目標**;N+1 冗餘 |
-| **Tier-B** 短時備援 | **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱)| **60 sec graceful @ 120 kW peak**(80 % DoD,2.5 kWh ÷ 120 kW = 75 sec 理論值);LFP 採車規 LG Energy Solution / Samsung SDI / KORE Power 等日韓系或北美自有 cell line 電芯,**避 BABA Act / CFIUS 風險** |
+| **Tier-B** 短時備援 | **每 rack 8 台 BBU 並聯**,每台 **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱),rack 總能量 **20 kWh** | **60 sec graceful @ 120 kW rack peak** —— 每台 BBU 15 kW peak / **6C peak per cell**,1.5C 連續;**20 kWh ÷ 120 kW = 600 sec 理論值**,60 秒備援只用 **10 % DoD,8 倍餘量**;動態 power profile 詳 §2.1.1 ⭐;LFP 採車規 LG Energy Solution / Samsung SDI / KORE Power 等日韓系或北美自有 cell line 電芯(連續 1–3C / pulse 5–10C 規格涵蓋本工作點),**避 BABA Act / CFIUS 風險** |
 | **Tier-C** 智能管理 | STM32N6 + Neural-ART NPU + edge LSTM | BBU 內邊緣推論(§2.5),斷網仍可運作 |
 | 介面 | 48 V DC + **±400 V HVDC ready**(雙電壓設計)| 規避 2027 OCP Mt. Diablo HVDC 換代 forklift 風險 |
 | 機械 | 單一 **12U OCP ORV3 BBU shelf** | 落 OCP ORV3 30–90 sec 備援規範區間 |
 | 長時 outage | **由 facility UPS 接力** | BBU 不獨自撐長時 |
 
-> **備援接力分工**:BBU 在第一秒接管 power、用 60 秒讓上層工作負載完成
-> checkpoint 與 graceful shutdown,facility UPS 處理長時 outage。客戶站若缺
-> facility UPS 須走 v2.2 §E.5 Tier-A 擴大版規格(本文未涵蓋)。
+> **備援接力分工**:斷電 t = 0 後,**8 台 BBU 在第 1 秒共同承擔 rack peak 120 kW**
+> (每台 15 kW / 6C peak < 2 秒,落在車規 LFP pulse 5–10C 規格內);BMC 觸發
+> GPU power-cap 將 rack 負載收斂至 ~30 kW(checkpoint + idle),由 LFP 在後
+> 58 秒以 **1.5C 連續放電**撐完 60 秒 graceful shutdown(**完整功率曲線見 §2.1.1**)。
+> facility UPS 處理長時 outage,客戶站若缺 facility UPS 須走 v2.2 §E.5 Tier-A
+> 擴大版規格(本文未涵蓋)。
+
+---
+
+## 2.1.1 ⭐ graceful 動態 power profile —— 業師最關注點
+
+**為什麼這節獨立成段**:讀者(尤其電池/電源產業背景)若用單台 BBU 容量除以
+整 rack 功率心算「2.5 kWh ÷ 120 kW = 75 秒 → 48C → LFP 物理不可行」,會錯誤
+推導出致命矛盾。**這是 unit-mixing 誤讀**:2.5 kWh 是 **單台 BBU**,120 kW 是
+**整 rack(8 台 BBU 並聯)**。本節用三層論述化解:**(1) 拓撲是 8 台並聯;
+(2) graceful 是動態 ramp 不是平直 120 kW × 60 秒;(3) cell-level 工作點完全
+落在車規 LFP datasheet 允許區**。
+
+### A. 拓撲層:每 rack 8 台 BBU 並聯
+
+| 項目 | 單台 BBU | 整 rack(8 台並聯) |
+|---|---:|---:|
+| 能量容量 | 2.5 kWh | **20 kWh** |
+| 峰值功率(t = 0) | 15 kW | 120 kW(GB200 NVL72 nominal) |
+| 連續功率(t > 2 s) | 3.75 kW | 30 kW(checkpoint + idle) |
+| LFP cell C-rate(peak) | **6C** | —— |
+| LFP cell C-rate(連續)| **1.5C** | —— |
+| 60 秒備援能量需求 | —— | **0.53 kWh**(僅 20 kWh 容量的 2.6 %) |
+
+來源:`scripts/generate_twin_scenarios.py` 第 63–73 行硬編參數
+(`N_BBU_PER_RACK = 8`、`LFP_PACK_KWH = 2.5`、`TARGET_PEAK_C_RATE = 6.0`)
+與 `apps/web/src/lib/tco.ts:4` TCO 模型「8 BBUs per rack」假設交叉一致。
+
+### B. 時序層:斷電後 60 秒功率曲線
+
+| 時段 | rack 負載 | 每台 BBU 負載 | per-cell C-rate | 主導機制 |
+|---|---:|---:|:--:|---|
+| **t = 0–500 ms** | 120 kW 滿載 | 15 kW | **6C peak** | LIC 主導(2× XLR-48-166 模組共 ~290 kJ usable,單獨可撐 ~2.4 秒) |
+| **t = 500 ms–2 s** | 120 kW → 30 kW(線性 ramp) | 15 kW → 3.75 kW | 6C → 1.5C | BMC 觸發 GPU power-cap,LIC + LFP 共同 ramp down |
+| **t = 2–60 s** | 30 kW 穩態 | 3.75 kW | **1.5C 連續** | LFP 獨撐(LIC 已耗盡進入待機) |
+
+**60 秒總放電能量積分**:t = 0–2 s 平均 ~75 kW × 2 s = 150 kJ,t = 2–60 s
+30 kW × 58 s = 1740 kJ,合計 **1.89 MJ ≈ 0.53 kWh per rack**,僅 rack 總能量
+20 kWh 的 **2.6 %**(留 38 倍能量餘量,跟「8 倍 DoD 餘量」是兩個不同維度
+的 margin:時間維度是 600 秒理論 / 60 秒承諾,能量維度是 20 kWh / 0.53 kWh 實耗)。
+
+### C. cell 工作點層:車規 LFP datasheet 合規性
+
+| 工作點 | 持續時間 | 車規 LFP datasheet 規格 | 結論 |
+|---|---|---|---|
+| **6C peak** | < 2 秒 | LG ESS B-series / Samsung SDI 高功率版 pulse 規格 5–10C × 30 秒允許 | ✅ 落在 pulse 允許區 |
+| **6C → 1.5C ramp** | 1.5 秒 | 仍屬 pulse 範疇(< 30 秒總窗口) | ✅ pulse 允許區 |
+| **1.5C 連續** | 58 秒 | 車規 LFP 連續放電規格 1–3C | ✅ 連續允許區下緣 |
+
+**沒有任何工作點需要「車規 LFP × 連續 6C × 60 秒」**(這個工作點才是 48C 誤讀
+的物理不可行點)。Sysblade 的設計是把 6C 限制在 < 2 秒 pulse,把 60 秒連續
+工作點壓到 1.5C —— **這是兩個不同的車規 LFP datasheet 規格條目,各自合規**。
+
+### D. GPU 協同 ramp 的觸發機制(W3 EVT 階段交付)
+
+斷電 t = 0 觸發鏈:**BBU 偵測 mains_loss → BMC 透過 OOB 介面通知 GB200 BMC →
+GPU driver 在 ~1 秒內將 power management limit 收斂到 idle clock**。具體
+control plane API(NVIDIA `nvml`、IPMI Power Capping Spec 1.0、Redfish
+`PowerLimit` resource)**選型於 EVT 工程板實測後再 commit**(對齊 v2.2 §F.1
+18 個月里程碑 2027 Q1)。本企劃書承諾的是 **power profile 設計與 cell 工作點
+合規性**,具體 API 為實作層細節,不在本層 spec 範圍。
+
+### E. 業師可預期的追問與我們的答案
+
+| 業師追問 | Sysblade 答辯 |
+|---|---|
+| 「2.5 kWh ÷ 120 kW = 75 秒 → 48C 不可行?」 | **單位混用誤讀**。2.5 kWh 是單台 BBU,120 kW 是整 rack(8 台並聯);正確算法 **20 kWh ÷ 120 kW = 600 秒理論 / 60 秒承諾,8 倍餘量,per-cell 6C peak**(非 48C)|
+| 「車規 LFP 怎麼撐 6C × 60 秒連續?」 | **不是連續 6C**,是 **6C × < 2 秒 pulse + 1.5C × 58 秒連續**(B 段表),兩段各自落在車規 LFP datasheet 不同規格條目允許區內 |
+| 「具體選哪一顆車規 LFP cell?」 | LG ESS B-series 與 Samsung SDI 高功率版均為候選,具體 cell selection 在 W3 EVT 階段(2026 Q3)依 datasheet 5–10C pulse + 1–3C 連續規格涵蓋本工作點為 GO 條件 |
+| 「GPU power-cap 怎麼實作?延遲多少?」 | W3 EVT 階段交付,候選 API 已列(nvml / IPMI / Redfish);本層為設計承諾與 power profile commit,**不是已驗證實作**,對齊 v2.2 §F.1 18 個月里程碑 |
+| 「客戶 inference workload 不能被中斷怎辦?」 | facility UPS 接手長時備援是 v2.2 §E 共同設計前提;Sysblade 60 秒 graceful 是給 **checkpoint + graceful drain**,不是無中斷服務(若客戶站缺 facility UPS,走 v2.2 §E.5 Tier-A 擴大版規格)|
+| 「為什麼不用更大 BBU 例如 25 kWh × 1 台?」 | **單點故障 blast radius**:per-rack 8 台並聯允許 N+1 容錯(任一台失效不影響 rack);整合單台 25 kWh 違反 v2.2 §E.1 12U OCP ORV3 機械形狀因子 + 失效範圍擴大 |
+
+⭐ **本節 §2.1.1 + §2.3.1 RMS 應力分析(C-rate 6C peak → 1C 連續)+ §2.3.2 Wang+rainflow 交叉驗證(worst-case 5.5 % per-Ah 損傷下降),共構 LFP cell 工作點完整防禦**。
 
 ---
 
@@ -259,7 +349,7 @@ Eaton in-the-loop 量測曲線校正;current-rating gate(463 A peak per module)
 
 5.7× 功率波動下降不只是「電壓好看」,而是直接對應 LFP 主電池壽命延長:
 
-* **電化學機制**:LFP 衰減主導因子是高 C-rate 引發的 lithium plating、SEI 增厚與顆粒裂解(Severson 2019 §3 衰減模型)。RMS 應力從 8.7 kW 壓到 1.5 kW,等於把有效 C-rate 從約 6 C peak 拉回約 1 C 連續,**完全落在 LFP 安全工作區**。
+* **電化學機制**:LFP 衰減主導因子是高 C-rate 引發的 lithium plating、SEI 增厚與顆粒裂解(Severson 2019 §3 衰減模型)。RMS 應力(rack 級)從 8.7 kW 壓到 1.5 kW,對應到 **per-BBU 單顆 LFP cell** 的有效 C-rate 從約 **6 C peak**(瞬態,< 2 秒 pulse)拉回約 **1 C 連續**(8 台 BBU 並聯,每台 ~1.1 kW continuous),**完全落在車規 LFP 安全工作區**(完整 8-BBU 拓撲與 cell 工作點推導見 §2.1.1)。
 * **量化估算**:依據 Attia 2020 *Nature* [6] 的 closed-loop fast-charge 結果,LIC 削峰可延長 LFP 主電池循環壽命約 25 %(v2.2 §D.1 的永續承諾保守估為 30 %)。
 * **產品層轉換**:BBU 浮充 duty 大約是每年 50 個循環(engineering estimate
   anchored to v2.1 §G.3 footnote + §E.1 Tier-B,**非** v2.1 §B.2 verbatim

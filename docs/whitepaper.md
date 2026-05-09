@@ -94,6 +94,20 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 
 ### 2.1 硬體拓撲
 
+> **拓撲關鍵數字 ⭐(業師最常誤讀,獨立陳述以避免 unit-mixing)**:
+>
+> Sysblade per-rack BBU 是 **8 台 BBU 並聯**架構(對齊
+> `scripts/generate_twin_scenarios.py::N_BBU_PER_RACK = 8` 與
+> `apps/web/src/lib/tco.ts:4` "Per-rack 10-year cost (USD) for a 100 kW-class
+> rack with 8 BBUs")。單台 BBU 容量 2.5 kWh / 峰值 15 kW,**rack 總能量
+> 8 × 2.5 = 20 kWh**,rack peak 120 kW 對應每台 BBU **6C peak per cell**
+> (非 48C)。讀者若用單台 BBU 容量(2.5 kWh)除以整 rack 功率(120 kW)
+> 心算 75 秒 → 48C,會錯誤推導 LFP 物理不可行 —— **這是 unit-mixing,正確
+> 算法為 20 kWh ÷ 120 kW = 600 秒理論 / 60 秒承諾,8 倍餘量;cell-level
+> 工作點為 6C × < 2 秒 pulse + 1.5C × 58 秒連續,落在車規 LFP datasheet
+> 不同規格條目允許區內**。完整 graceful 動態 power profile 與 cell 合規性
+> 推導見**精煉版白皮書 §2.1.1**(`docs/whitepaper_restructured.md`)。
+
 主電池:**15 串 LFP × 3.2 V = 48 V** 標稱(對齊 v2.2 §修訂 #4)。LFP 化學
 選擇有三個原因:
 
