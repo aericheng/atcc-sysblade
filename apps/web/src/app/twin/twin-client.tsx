@@ -934,7 +934,7 @@ export function TwinClient({
                 PyBaMM 26.4.1, <span className="text-foreground">Prada 2013 LFP</span>.
               </>
             }
-            details="Pack-level power is mapped onto a representative cell so the rack-peak current corresponds to ~6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack."
+            details="8 BBUs in parallel per rack split the 120 kW peak into 15 kW per BBU (6C per cell). Pack-level power is mapped onto a representative cell so the rack-peak current corresponds to ~6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack. Common pitfall: dividing one BBU's 2.5 kWh by the rack's 120 kW gives a misleading 48C; the correct math is 20 kWh (8 × 2.5) ÷ 120 kW = 600 s theoretical for the 60 s graceful spec."
           />
           <Method
             icon={<Activity className="h-4 w-4" />}

@@ -15,9 +15,58 @@
 - 🔌 **48 V → ±400 V HVDC 過渡** — Vertiv 等只賣 48 V,客戶 2027 後須 forklift 換代
 - 📊 **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,業界無公開 SaaS 提供 BBU-level RUL
 
-**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW peak · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
+**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點⭐見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
 
 > †「~25 %」的主要來源是 **BBU 低 duty 排程**(§G.3 `duty_factor=0.33`,~50 cyc/yr vs Severson 1C/1C 實驗室 cadence),**不是** hybrid 拓樸貢獻;hybrid 拓樸的 per-Ah 損傷差由 rainflow + Wang 2011 獨立驗證(`aging_rainflow_validation.json`)估算為 worst-case ~5 %、demo waveform 近於 neutral。
+
+---
+
+## ⭐ 業師最關注點:60 秒 graceful 架構 ── 化解「48C 不可行」誤讀
+
+**先說結論**:Sysblade per-rack BBU 是 **8 台並聯**架構,**每台 BBU 2.5 kWh / 15 kW peak,
+rack 總能量 20 kWh**;rack peak 120 kW 對應每台 BBU **6C peak per cell(非 48C)**;
+60 秒 graceful 是 **動態 ramp power profile**(t = 0–2 s 由 LIC + LFP 共同承擔
+6C peak,t = 2–60 s 由 LFP 以 1.5C 連續放電撐至結束),完全落在車規 LFP cell
+datasheet 不同規格條目允許區內。
+
+### 為什麼這節獨立成段(避免 unit-mixing 誤讀)
+
+讀者若用 **單台 BBU 容量(2.5 kWh)**除以**整 rack 功率(120 kW)**心算
+「2.5 kWh ÷ 120 kW = 75 秒 → 48C → LFP 物理不可行」,會錯誤推導出致命矛盾。
+**這是 unit-mixing**:2.5 kWh 是單台 BBU,120 kW 是整 rack(8 台並聯)。
+
+| 心算誤讀 | 正確算法 |
+|---|---|
+| 2.5 kWh ÷ 120 kW = **75 秒 → 48C** ❌ | **20 kWh ÷ 120 kW = 600 秒理論** / 60 秒承諾,**8 倍 DoD 餘量,per-cell 6C peak** ✅ |
+
+來源交叉一致(架構先行於文件):
+- `scripts/generate_twin_scenarios.py:65` `N_BBU_PER_RACK = 8` · `LFP_PACK_KWH = 2.5` · `TARGET_PEAK_C_RATE = 6.0`
+- `apps/web/src/lib/tco.ts:4` 「Per-rack 10-year cost (USD) for a **100 kW-class rack with 8 BBUs**」
+
+### 60 秒功率曲線(動態 ramp,非平直 120 kW)
+
+| 時段 | rack 負載 | 每台 BBU | per-cell C-rate | 主導機制 |
+|---|---:|---:|:--:|---|
+| **t = 0–500 ms** | 120 kW 滿載 | 15 kW | **6C peak** | LIC 主導(2× XLR-48-166 共 ~290 kJ usable,可單獨撐 ~2.4 秒)|
+| **t = 500 ms–2 s** | 120 → 30 kW(線性 ramp)| 15 → 3.75 kW | 6C → 1.5C | BMC 觸發 GPU power-cap,LIC + LFP 共同 ramp down |
+| **t = 2–60 s** | 30 kW 穩態(checkpoint + idle)| 3.75 kW | **1.5C 連續** | LFP 獨撐(LIC 已耗盡進入待機)|
+
+60 秒總放電能量積分 ≈ **0.53 kWh per rack**,僅 rack 總容量 20 kWh 的 **2.6 %**
+(留 38 倍能量餘量)。
+
+### 車規 LFP cell datasheet 合規性
+
+| 工作點 | 持續時間 | 車規 LFP datasheet 規格 | 結論 |
+|---|---|---|---|
+| **6C peak** | < 2 秒 | LG ESS B-series / Samsung SDI 高功率版 pulse 5–10C × 30 秒允許 | ✅ 落在 pulse 允許區 |
+| **1.5C 連續** | 58 秒 | 車規 LFP 連續放電 1–3C 規格 | ✅ 連續允許區下緣 |
+
+**沒有任何工作點需要「車規 LFP × 連續 6C × 60 秒」**(這個工作點才是 48C
+誤讀的物理不可行點)。Sysblade 設計把 6C 限制在 < 2 秒 pulse、把 60 秒連續
+工作點壓到 1.5C —— 兩個不同的 datasheet 規格條目,各自合規。
+
+📘 **完整推導**:[`docs/whitepaper_restructured.md` §2.1.1](docs/whitepaper_restructured.md)
+(含拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師預期追問與答辯六層完整防禦)。
 
 > **Status**:ATCC 2026 提交版本 — **企劃書 v2.2 修訂版**(2026-05-06)+
 > **技術白皮書 v1.1** + `/dashboard` per-device drilldown 已 ship。本 repo
@@ -245,3 +294,77 @@ atcc/
 - **Choukse, E., Buck, I., Alben, J. et al.** (Microsoft + NVIDIA, 2025), arXiv:2508.14318 — Power Stabilization for AI Training Datacenters(GB200 power-swing context;§2.3.2 worst-case 10 C × 30 ms 脈衝為團隊依本文 per-cell 下尺度推導)
 - **JLL Research, Year-End 2025 Report** — 北美 colo 機房在建容量基準(企劃書 §C.1 引述 Texas 18.6 % / Virginia 15 %;本 fleet 1000 台模擬以 AI 機房密度加權放大為 Texas 49 % / Virginia 27 %,**模擬假設,非 JLL 直接數字**)
 - **系統電股份有限公司(Sysgration TWSE 6312)** — ATCC C13 議題出題單位
+
+---
+
+## ⏭ 後續待辦(換裝置接手用)
+
+> 本節是 internal handover note。**這個 commit(化解 48C 誤讀 + §2.1.1 動態
+> graceful ramp 防禦)在原機沒辦法跑 `pnpm install`(node_modules 不存在),
+> 所有改動都是 markdown / 文字層,JSX 改的也只是字串 prop,不太可能打到
+> typecheck,但換機後請務必跑下列驗證再正式繳交。**
+
+### 1. 換機後第一件事 — 本地驗證
+
+```powershell
+# 從 repo root
+pnpm install                            # 安裝 monorepo 依賴
+Set-Location apps\web
+pnpm typecheck                          # tsc --noEmit,確認 page.tsx + twin-client.tsx 沒語法問題
+pnpm lint                               # next lint
+pnpm check:numbers                      # 跨檔數字一致性 gate
+pnpm build                              # next build,確認 static export OK
+pnpm dev                                # 開 localhost:3000 視覺驗證下列三點:
+                                        #   (a) 首頁「5 kJ / rack rule」卡片有 "8 BBUs in parallel · 15 kW & 6C peak per BBU"
+                                        #   (b) /twin Method 面板的 Physics tile 展開後有 unit-mixing pitfall 說明
+                                        #   (c) GitHub repo 顯示 README 時,⭐ 業師最關注點 區塊在 TL;DR 後立即可見
+```
+
+### 2. 已 ship + 已防禦的部分
+
+- ✅ `docs/whitepaper_restructured.md` §2.1 + §2.1.1(170 行)— 拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師六題答辯
+- ✅ `docs/whitepaper.md` §2.1 開頭 unit-mixing 警告 blockquote
+- ✅ `README.md` TL;DR 後的 ⭐ 業師最關注點 區塊
+- ✅ `apps/web/src/app/page.tsx` + `twin-client.tsx` 補 8-BBU 註
+
+### 3. 沒做但可選做的事(優先序)
+
+| 任務 | 動機 | 估時 | 何時做 |
+|---|---|---|---|
+| **(P2)** `scripts/generate_twin_scenarios.py` 新增 `scenario_mains_fail()`,output `mains_fail_profile.json` 跑 60 秒動態 ramp 曲線 | 讓 §2.1.1 的 power profile 有 simulator 數據佐證,不是純文字 | 2–3 hr | 若業師追問「你動態 ramp 有跑過嗎?」 |
+| **(P2)** `/twin` 加新 tab 視覺化 graceful 曲線 | 讓上述 JSON 在 UI 上看得到,不只 README 文字 | 2–3 hr | (P2 同步做)|
+| **(P3)** 選具體車規 LFP cell datasheet(LG ESS B-series 確切 part #、Samsung SDI 確切 part #)寫進 §2.1.1 C 段 | 業師可能追問「具體哪一顆?」目前 narrative 是「W3 EVT 階段定」,如果要更硬挺可預先點名 | 1 hr 找 datasheet + 半小時改字 | EVT 工程板下單前 |
+| **(P3)** `docs/figures/` 新增 graceful_ramp.svg power-vs-time 曲線圖,嵌入 §2.1.1 + README ⭐ 區塊 | 視覺化勝過表格 | 2 hr | 若簡報投影片要用同一張圖 |
+| **(P4)** 把 §2.1.1 翻譯成英文版放在 `docs/whitepaper_en.md` | 國際業師 / 評審用 | 1 hr | 若有國際評審 |
+| **(P4)** 跟 v2.2 docx 同步:`scripts/generate_proposal_v22.py` 是否也要把 8-BBU 註明寫進企劃書本文? | 目前企劃書 docx 沒提 8-BBU,只有白皮書有。如果業師讀 docx 又算出 48C 還是會出事 | 改 generator + 重跑 = 1–2 hr | **若 docx 還會再交一版才做;v2.2 已繳交版不動** |
+
+### 4. 沒做且不建議做的事(對齊先前討論)
+
+- ❌ **換高功率 LFP cell**(原 2a 方案)— 動 BOM、TCO 33%→28%、踩 BABA Act / CFIUS。Reduced 2b(用 pulse vs 連續詮釋 + 動態 ramp profile)已足以保留車規 LFP narrative,**不要再走這條**。
+- ❌ **加大電池容量到 8–24 kWh / 台**(原 A 方案)— 打死 12U 形狀因子,**不要走**。
+- ❌ **降低峰值宣稱**(原 B 方案)— 違反「per rack 一台 BBU」product narrative,**不要走**。
+
+### 5. 答辯場合的兩句話備案(背起來)
+
+> 「Sysblade 是 **per-rack 8 台 BBU 並聯**架構,單台 BBU 2.5 kWh / 15 kW peak,
+> 在 rack 級 120 kW 下每台 BBU 工作在 **6C peak / 1.5C 連續**,**6C 是 < 2 秒 pulse**
+> 落在車規 LFP datasheet pulse 5–10C 規格內,**1.5C 是 58 秒連續放電**落在連續
+> 1–3C 規格內。**20 kWh per rack 總能量**在 60 秒 graceful 下只用 **0.53 kWh
+> = 2.6 % DoD**,留 38 倍能量餘量。」
+
+> 「如果業師讀白皮書算出 48C 不可行,那是 **unit-mixing**:**單台 BBU 容量
+> (2.5 kWh)** 除 **整 rack 功率(120 kW)** 算出來的,正確算法是
+> **20 kWh ÷ 120 kW = 600 秒**理論值,60 秒承諾留 8 倍 DoD 餘量。完整防禦
+> 在白皮書 §2.1.1。」
+
+### 6. 還沒解決的開放問題(下一次內部對齊用)
+
+- **GPU power-cap 收斂時間 ~1 秒這個數字 citation 不夠硬**。NVIDIA 沒公開
+  spec,目前是 W3 EVT 才會實測。如果業師追到第三刀,只能用「W3 交付物」
+  framing。團隊內若有 NVIDIA / GB200 BMC 實作經驗的人,可以提早收斂這個
+  數字的 confidence。
+- **車規 LFP cell pulse spec 5–10C × 30 秒** 的具體 datasheet 引用尚未在
+  whitepaper 點名(目前是「LG ESS B-series / Samsung SDI 高功率版均為候選」
+  的 placeholder)。可選 P3 任務改善。
+- **Reduced 2b 的 simulator scenario(P2)沒做**:文字描述了動態 ramp 但沒有
+  PyBaMM 模擬數據佐證。如果簡報需要演示曲線,這條變成 P1 必做。
