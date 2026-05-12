@@ -564,9 +564,13 @@ LSTM 的 19.10 % 是「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % �
 顯著差距(§6.2 regime gap 列)。LSTM 訓練只看過壓力 regime,部署到 fleet
 時會在沒看過的 feature 區域外插。
 
-**做法**:`scripts/generate_bbu_duty_cells.py` 用 PyBaMM-calibrated 解析衰減
-模型(沿用 §3.1 `aging_lfp.json` 同一條曲線,參數化每顆 cell 的 duty
-severity)合成 50 顆 BBU-duty cell。每顆 cell:
+**做法**:`scripts/generate_bbu_duty_cells.py` 用 **Severson-anchored analytic 衰減
+模型**(沿用 §3.1 `aging_lfp.json` 同一條曲線,參數化每顆 cell 的 duty
+severity)合成 50 顆 BBU-duty cell。**注意:這是解析 SOH 曲線 + per-cell
+noise 的合成,不是 PyBaMM 物理 aging**(全 PyBaMM × 100 cells × 10k cycles
+計算成本過高,見 generator script 第 16-17 行 docstring 自述)。這 50 顆
+cell 僅作 **regime augmentation**,不獨立作為物理證據;production 階段
+ground truth 仍須回到真實 Severson cells + 客戶 PoC 累積資料。每顆 cell:
 
 * 從 `(ambient_c, charge_c_rate, avg_dod, events_per_year)` 三角分布抽樣
   其 duty profile,以本文工程估算(年 ~50 等效循環)為錨,壽命終值對齊
@@ -594,6 +598,34 @@ ensemble 在 Severson-only 上的 8.38 % 顯著高,因為模型現在 span 完�
 光譜。這是「per-regime sharpness」換「cross-regime honesty」的取捨;
 單純 Severson-only 的 8.38 % 是**對 BBU 部署沉默地錯誤**(它對 BBU
 duty cell 從未訓練過),augmented LSTM 對兩個 regime 都誠實。
+
+**Augmentation 反證(self-fulfilling 質疑回應)**:跑
+`python scripts/export_lstm_onnx.py --severson-only` 用同一條 LSTM 架構、
+同 seed=42、同 60/20/20 random split,只訓 138 顆 Severson 真實 cell:
+
+| 指標 | Augmented(Severson + 50 BBU) | **Severson-only** |
+|---|---:|---:|
+| Test MAPE | 19.10 % | **16.17 %** |
+| Test R² | 0.862 | **0.553** |
+| Conformal PI median width | 1075 cycles | **793 cycles** |
+| n_train / cal / test | 114 / 37 / 37 | **84 / 27 / 27** |
+| ONNX 匯出 | ✅ 生產 `model_validation.json` 推論主力 | ⚠️ 跳過(避免污染 production checkpoint) |
+
+(完整 JSON 在 `data/processed/lstm_severson_only_eval.json`,
+gitignore 白名單,CI 守門可比對。)
+
+**關鍵觀察**:
+1. **MAPE 不降反升 16.17 → 19.10 %** — 如果 BBU 合成 cell 是 self-fulfilling
+   作弊,augmented MAPE 應該低於 Severson-only。實際相反,augmentation 因為
+   要 fit 跨 100-13,000 cycle 的大 dynamic range 反而略增 MAPE。
+2. **R² 從 0.553 ↑ 0.862** — 因為加入長壽命 BBU cell 後 target 變量
+   variance 變大,explainable variance 比例上升。R² 上升不代表 MAPE 改善。
+3. **PI 反而變寬 793 → 1075 cycles** — augmented 模型對自身不確定性的
+   estimate 更寬;說明它知道 BBU regime 的 prediction 更難。
+
+**結論**:augmentation 純粹是 **regime coverage**,不是「降 MAPE 障眼法」;
+反證可用 `--severson-only` flag 一行重現。「BBU 合成 cell self-fulfilling」
+是合理但已被反證的質疑。
 
 **使用方式**:`/dashboard` 的 1000 台 fleet RUL 由 LSTM 直接推論:
 **每台裝置匹配一條 BBU duty 軌跡(以 age bucket 對應 severity tercile),
@@ -785,8 +817,8 @@ $$
 | 13-feat Full plain OLS / random split | median 14.51 % test MAPE | 對應 v2.2 附件 B baseline 對標值;ensemble 後拉低到 8.38 %(下一行) |
 | 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.2 附件 B 軟體技術棧的「MAPE < 10 %」承諾** |
 | 13-feat Full **bagged-OLS + xstrict** / cross-batch | **median 13.87 %** test MAPE,**R² = +0.21** | cross-batch 最佳 generalisation;GBT 在 cross-batch 反而退化到 17–22 %(protocol-specific overfit) |
-| **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**訓練集加入 50 顆 PyBaMM-calibrated 合成 BBU-duty cell**(`scripts/generate_bbu_duty_cells.py`,§3.3.8)| BBU 樣本 MAPE = 16.49 %(全 188-cell 切面),Severson 全切面 b1 17.02 % / b2 33.45 % / b3 14.72 %,整體 test MAPE 19.10 %、R² 0.86,**模型 span 兩個 regime**。仍是合成 cell 而非真實 BBU duty 量測;客戶 PoC 第一年累積資料後再校準 |
-| **LIC 不在 RUL 模型裡(scope)** | 產品是 LIC + LFP 混合,LSTM **僅預測 LFP** 的 RUL。LIC 在 transient 模擬中以一階 LPF/HPF 濾波器近似(`SPLIT_FILTER_TAU_S = 0.5 s`,`generate_twin_scenarios.py`),**未做電化學建模**;dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),由 datasheet calendar curve 建 lookup table 處理(LIC 公開實驗資料極少,不適合 LSTM 學)|
+| **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**訓練集加入 50 顆 Severson-anchored synthetic BBU-duty cell**(`scripts/generate_bbu_duty_cells.py`,§3.3.8;analytic decay + per-cell noise,**not** PyBaMM aging)| BBU 樣本 MAPE = 16.49 %(全 188-cell 切面),Severson 全切面 b1 17.02 % / b2 33.45 % / b3 14.72 %,整體 test MAPE 19.10 %、R² 0.86,**模型 span 兩個 regime**。**caveat**:合成 cell 的 cycle_life label 由同一條 Severson-fit 公式產出 → 對 bbu_* test cell 的「預測」本質上是「重現 generator 函數」,屬輕度 data leakage 風險;**production 推論信賴度仍須以 Severson 真實 cells + 客戶 PoC 為主**。BBU 合成 cell 僅作 *regime coverage*,不獨立作為物理證據 |
+| **LIC 不在 RUL 模型裡(scope),但 transient 模擬有 closed-form RC 物理層** | 產品是 LIC + LFP 混合,LSTM **僅預測 LFP** 的 RUL。Transient 模擬中 LIC 走 **closed-form 一階 RC 等效**(`_simulate_lic_rc()`,`generate_twin_scenarios.py`):v_lic(t) = V_nominal − Q/C − i × R_esr,參數錨 **Eaton XLR-48-166 × 2 並聯**(C = 332 F,ESR = 2.5 mΩ,V_nominal = 51.3 V,V_min = 38 V)。Demo waveform 跑出 worst-case droop **2.32 V**(從 51.3 → 48.98 V),距離 datasheet UVLO 38 V **餘裕 10.98 V**(`passes_cutoff = true`)。Droop 95 % 由 ESR drop(926 A peak × 2.5 mΩ)主導,5 % 由累積電容放電(13.31 kJ / 332 F);production 若需降 droop,加並聯模組(降 ESR)比加電量(加 C)有效。**未模**:pseudo-capacitance、temperature-dependent ESR、self-discharge、Helmholtz layer electrode kinetics — 這些 production 階段以 Eaton in-the-loop 量測校正。Dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),由 datasheet calendar curve 建 lookup table 處理(LIC 公開實驗資料極少,不適合 LSTM 學)|
 | **不**承諾 < 5 % MAPE | v2.2 附件 B 軟體技術棧明文「未上實機資料前不承諾 < 5 %」 | 即使模型達到也不在白皮書聲明 |
 | **達 v2.2 §B「< 10 % MAPE」承諾** | v2.2 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
 | Cross-batch 改善幅度(paper-style filter,n_test=44)| 19.25 %(5-feat OLS,R² -0.13)→ 14.54 %(13-feat OLS,R² +0.08)→ 13.87 %(bagged-OLS xstrict,R² +0.21)| bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化(17–22 %)驗證了 protocol-specific overfit 假設 |
@@ -865,7 +897,7 @@ $$
 | ML — cross-batch | bagged-OLS + xstrict (b1+b2 → b3) median MAPE **13.87 %、R² +0.21** | ✅ |
 | ML — cross-dataset | Severson → NASA 5/5 feature OOD,z = 5–65 σ → per-chemistry 校準 SOP(§3.3.5)| ✅ |
 | ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles(−44 %),test coverage 100 %(§3.3.7)| ✅ |
-| ML — regime augmentation | 50 顆 PyBaMM-calibrated 合成 BBU-duty cell 加入訓練,LSTM span Severson + BBU 兩 regime(§3.3.8)| ✅ |
+| ML — regime augmentation | 50 顆 **Severson-anchored synthetic BBU-duty cell**(analytic decay + per-cell noise,**non-PyBaMM**)加入訓練,LSTM span Severson + BBU 兩 regime(§3.3.8);僅作 regime coverage,production 信賴度仍以 Severson 真實 cells 為主 | ✅ |
 | 邊緣部署(measured)| ONNX export(opset 17)+ INT8 dynamic quant:**3.49× 壓縮、ΔMAPE +0.10 pp、CPU INT8 p50 1.11× 加速**(附錄 C)| ✅ |
 | 邊緣部署(estimate)| STM32N6 X-CUBE-AI 靜態圖分析,NPU latency **54.7 µs**(±2× 區間 27–109 µs,40 % NPU util 假設,附錄 C)| ✅ |
 | Live demo | `/twin` Battery Twin · `/tco` TCO Calculator · `/dashboard` 1000-台 fleet(seeded RNG 模擬,SIMULATED DATA watermark)| ✅ |
@@ -1201,7 +1233,7 @@ atcc-sysblade/
 │
 ├── scripts/
 │   ├── generate_twin_scenarios.py               # PyBaMM 4 個情境離線跑
-│   ├── generate_bbu_duty_cells.py               # 50 顆 PyBaMM-calibrated BBU duty 合成 cell
+│   ├── generate_bbu_duty_cells.py               # 50 顆 Severson-anchored synthetic BBU duty cell(analytic decay,non-PyBaMM)
 │   ├── eval_severson_models.py                  # §3.3.3 OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack sweep → JSON
 │   ├── eval_cross_dataset.py                    # §3.3.5 + 附錄 B 結果 → JSON
 │   ├── export_lstm_onnx.py                      # §3.4 LSTM 訓練 + ONNX 匯出 + MC Dropout + split conformal

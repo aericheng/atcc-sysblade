@@ -2,9 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Stat } from "@/components/ui/stat";
-import { computeTco, formatTons, formatUsd, type TcoInputs } from "@/lib/tco";
-import { ArrowRight, Leaf } from "lucide-react";
+import {
+  computeTco,
+  formatPayback,
+  formatTons,
+  formatUsd,
+  TCO_LINE_ITEM_SOURCES,
+  type TcoInputs,
+} from "@/lib/tco";
+import { ArrowRight, BookOpen, Leaf } from "lucide-react";
 
 const PRESETS: Record<string, TcoInputs> = {
   "Mid-tier (50 racks · Texas)": {
@@ -233,7 +241,7 @@ export function TcoClient() {
 
         {/* Headline outputs */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
               label="Fleet 10-year saving"
               value={formatUsd(result.fleet.savingUsd)}
@@ -247,6 +255,26 @@ export function TcoClient() {
               hint={`${(result.perRack.savingPct * 100).toFixed(1)} % per rack`}
             />
             <Stat
+              label="Payback period"
+              value={formatPayback(result.fleet.paybackYears)}
+              tone={
+                Number.isFinite(result.fleet.paybackYears) && result.fleet.paybackYears > 0
+                  ? result.fleet.paybackYears < 3
+                    ? "success"
+                    : result.fleet.paybackYears < 7
+                      ? "primary"
+                      : "warning"
+                  : "default"
+              }
+              hint={
+                Number.isFinite(result.fleet.paybackYears) && result.fleet.paybackYears > 0
+                  ? `extra CAPEX recovered via predictive ops + transient + replacement-frequency savings · ${(result.perRack.savingPct * 100).toFixed(1)} % TCO saving anchors the model`
+                  : inputs.racks === 0
+                    ? "Set rack count > 0 to compute payback"
+                    : "Operating savings ≤ 0 under this scenario — see line-item table for what's driving it"
+              }
+            />
+            <Stat
               label="CO₂ avoided · 10y"
               value={formatTons(result.fleet.co2SavedKg)}
               tone="default"
@@ -255,7 +283,7 @@ export function TcoClient() {
                   {/* EPA average passenger vehicle ≈ 4.6 t CO₂/yr (10y → 46 t).
                       Dividing fleet 10-year savings by 46 t gives the
                       "passenger cars taken off the road for a year" headline. */}
-                  <Leaf className="h-3 w-3" /> ≈ {(result.fleet.co2SavedKg / 1000 / 4.6 / 10).toFixed(0)} cars / yr equivalent
+                  <Leaf className="h-3 w-3" /> ≈ {Math.max(0, result.fleet.co2SavedKg / 1000 / 4.6 / 10).toFixed(0)} cars / yr equivalent
                 </span>
               }
             />
@@ -321,6 +349,81 @@ export function TcoClient() {
               </tbody>
             </table>
           </div>
+        </CardBody>
+      </Card>
+
+      {/* Sources & assumptions — per-line-item citation panel. Lets a
+          business mentor audit each delta end-to-end without flipping
+          back to the v2.2 PDF. Each entry corresponds 1:1 with the
+          TCO_LINE_ITEM_SOURCES catalogue in `apps/web/src/lib/tco.ts`. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary" />
+            Sources & assumptions
+          </CardTitle>
+          <p className="mt-1.5 text-[11px] text-muted">
+            Each TCO line item below is anchored to v2.2 §G.3 Table 6 + a named external
+            reference. The proposal PDF carries the full table on the cited page; this panel
+            mirrors the same numbers so on-screen audit is one click away.
+          </p>
+        </CardHeader>
+        <CardBody>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted text-[10px] uppercase tracking-wider">
+                  <th className="text-left py-2 pr-3 whitespace-nowrap">Line item</th>
+                  <th className="text-left py-2 pr-3 whitespace-nowrap">v2.2 anchor</th>
+                  <th className="text-left py-2">Why this number</th>
+                </tr>
+              </thead>
+              <tbody>
+                {TCO_LINE_ITEM_SOURCES.map((entry) => (
+                  <tr key={entry.key} className="border-t border-border align-top">
+                    <td className="py-2.5 pr-3 font-medium whitespace-nowrap">
+                      {entry.label}
+                    </td>
+                    <td className="py-2.5 pr-3 whitespace-nowrap text-primary">
+                      {entry.source}
+                    </td>
+                    <td className="py-2.5 leading-relaxed text-muted">{entry.anchor}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Disclosure summary="Sensitivity notes" className="mt-4">
+            <ul className="ml-4 list-disc space-y-1 text-[11px] leading-relaxed text-muted">
+              <li>
+                <span className="text-foreground">Electricity price &amp; PUE</span> scale only
+                the <em>transient</em> and <em>ops</em> lines (factor{" "}
+                <code className="text-foreground">k = (price / 0.10) × (PUE / 1.4)</code>);{" "}
+                <em>initial purchase</em>, <em>replacements</em>, and <em>HVDC</em> are
+                fixed-cost assumptions independent of energy cost.
+              </li>
+              <li>
+                <span className="text-foreground">CO₂ delta</span> uses a per-rack/yr energy
+                overhead estimate (2400 kWh traditional → 1700 kWh Sysblade) × grid carbon
+                intensity. Clamped at zero to avoid showing negative CO₂ savings under edge
+                inputs.
+              </li>
+              <li>
+                <span className="text-foreground">Payback period</span> annualises{" "}
+                <em>all</em> recurring deltas (transient + ops + replacements + HVDC) over 10
+                years; numerator is the one-time CAPEX premium (Sysblade − Traditional initial).
+                Returns <code className="text-foreground">N/A</code> when the saving direction
+                makes payback undefined (racks = 0, negative CAPEX delta, or operating savings
+                ≤ 0).
+              </li>
+              <li>
+                <span className="text-foreground">All numbers are baseline references</span>{" "}
+                from v2.2 §G.3. Production deals replace each with customer-specific quotes;
+                the elasticity model lets you stress-test the baseline without losing
+                traceability to the source row.
+              </li>
+            </ul>
+          </Disclosure>
         </CardBody>
       </Card>
 

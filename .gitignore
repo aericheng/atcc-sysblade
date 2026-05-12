@@ -18,6 +18,10 @@ dist/
 build/
 .turbo/
 *.tsbuildinfo
+# Vercel CI uses `npm install --legacy-peer-deps` (vercel.json) and emits a
+# package-lock.json transiently; local dev uses pnpm + pnpm-lock.yaml.
+# Committing the npm lockfile causes drift between the two installers.
+apps/web/package-lock.json
 
 # Env
 .env
@@ -43,6 +47,7 @@ data/processed/**
 !data/processed/lstm_quantization_report.json
 !data/processed/cross_dataset_mape.json
 !data/processed/x_cube_ai_static_analysis.json
+!data/processed/lstm_severson_only_eval.json
 *.mat
 *.h5
 *.parquet
@@ -79,3 +84,8 @@ PRESENTATION_GUIDE.md
 # Proposal docx (business-sensitive, binary, regenerable from template + script)
 docs/proposal_v2.2_additions/*.docx
 _v21_text_cache.json
+
+# Personal infographic generators for proposal/whitepaper figures.
+# Output paths are hardcoded to the author's local Downloads folder, so
+# these are author-machine-only tooling — not portable to teammates' boxes.
+scripts/generate_*_png.py

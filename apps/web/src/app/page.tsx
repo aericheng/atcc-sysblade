@@ -26,7 +26,7 @@ export default async function HomePage() {
       <section className="pt-12 pb-4">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs text-muted mb-6">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
-          OCP Mt. Diablo 400 ready · LFP + LIC hybrid · 2026 Q4 EVT
+          OCP Mt. Diablo 400 spec aligned · LFP + LIC hybrid · 2026 Q4 design freeze target
         </div>
         <h1 className="text-3xl sm:text-4xl md:text-6xl font-semibold tracking-tight leading-[1.1] md:leading-[1.05] max-w-4xl text-balance">
           Hybrid energy buffer for{" "}
@@ -75,7 +75,18 @@ export default async function HomePage() {
             },
             {
               v: "~25 %",
-              label: (<><span className="text-foreground font-medium">LFP cycle-life extension</span> · Attia 2020 + Severson decay model · 10-yr replacements 1.5 → 1</>),
+              label: (
+                <>
+                  <span className="text-foreground font-medium">
+                    LFP service-life advantage · BBU low-duty schedule
+                  </span>
+                  {" "}· §G.3 duty_factor 0.33 (~50 cyc/yr vs Severson 1C/1C) ·{" "}
+                  10-yr replacements 1.5 → 1 ·{" "}
+                  <span className="text-muted">
+                    hybrid-topology rainflow Δ separate ~5 % on worst-case
+                  </span>
+                </>
+              ),
               tone: "from-success to-accent",
             },
             {
@@ -101,7 +112,7 @@ export default async function HomePage() {
                 }
               : {
                   v: "<50 ms",
-                  label: (<><span className="text-foreground font-medium">Edge inference latency target</span> · STM32N6 ONNX path (W2)</>),
+                  label: (<><span className="text-foreground font-medium">Edge inference latency target</span> · STM32N6 ONNX path (run <code>export_lstm_onnx.py</code> to populate)</>),
                   tone: "from-primary to-accent",
                 },
           ] as const).map((s, i) => (
@@ -143,7 +154,7 @@ export default async function HomePage() {
               <>
                 <span className="text-foreground font-medium">PyBaMM DFN physics</span> +{" "}
                 <span className="text-foreground font-medium">LSTM RUL</span> trained on{" "}
-                <span className="text-foreground font-medium">188 LFP cells</span> (138 Severson 2019 + 50 PyBaMM-calibrated BBU-duty),
+                <span className="text-foreground font-medium">188 LFP cells</span> (138 Severson 2019 + 50 Severson-anchored synthetic BBU-duty),
                 with 90 % prediction intervals from{" "}
                 <span className="text-success font-medium">MC Dropout + split conformal</span> (PIs 44 % sharper, ≥90 % coverage held).
                 Cloud trains, edge (STM32N6) infers, OTA updates weights.
@@ -186,7 +197,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           <div>
             <div className="text-xs uppercase tracking-[0.2em] text-muted mb-3">Why now</div>
-            <h2 className="text-3xl font-semibold tracking-tight">The transient gap nobody is filling.</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">A specific gap in the power-protection stack.</h2>
             <p className="mt-4 text-muted leading-relaxed">
               Microsoft Azure published the underlying problem (arXiv 2508.14318): LLM-training compute&ndash;sync cycles
               swing rack power <span className="text-foreground font-medium">&plusmn;30 % over 1&ndash;50 ms</span>.
@@ -194,8 +205,10 @@ export default async function HomePage() {
               <span className="text-foreground font-medium">hybrid LFP+LIC buffer at the rack level</span> so existing ORV3 deployments don&rsquo;t need PSU swaps.
             </p>
             <p className="mt-4 text-muted leading-relaxed">
-              Schneider &times; NVIDIA chase 800 V hyperscalers. Vertiv chases facility-level UPS.
-              The <span className="text-foreground font-medium">middle tier</span> &mdash; CoreWeave, Lambda, Equinix, Digital Realty &mdash; is left on hardware that wasn&rsquo;t designed for AI workloads.
+              Every major incumbent already has rack-level products. We don&rsquo;t claim category creation —
+              we claim a specific gap at the <span className="text-foreground font-medium">BBU layer</span>{" "}
+              (between PSU caps and UPS) for the <span className="text-foreground font-medium">Tier-2/3 AI segment</span> that needs sub-second
+              transient absorption without forklifting their existing UPS.
             </p>
           </div>
           <Card>
@@ -226,6 +239,113 @@ export default async function HomePage() {
             </CardBody>
           </Card>
         </div>
+      </section>
+
+      {/* Where we sit in the stack — layer-by-layer competitive landscape.
+          Honest framing: incumbents already cover their layers. Sysblade
+          claims the BBU layer + embedded Twin SaaS, not category creation. */}
+      <section className="space-y-6">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-muted mb-3">Competitive landscape</div>
+          <h2 className="text-3xl font-semibold tracking-tight max-w-3xl">
+            Where Sysblade sits in the power-protection stack.
+          </h2>
+          <p className="mt-3 text-muted max-w-3xl leading-relaxed">
+            Each layer below has incumbents — the case for Sysblade isn&rsquo;t
+            &ldquo;nobody else does this,&rdquo; it&rsquo;s
+            <span className="text-foreground"> &ldquo;the hybrid LFP+LIC BBU + embedded Twin is the specific combination missing at the BBU layer for AI racks.&rdquo;</span>
+          </p>
+        </div>
+
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead>
+              <tr className="text-muted text-[10px] uppercase tracking-wider border-b border-border">
+                <th className="text-left py-2.5 pr-3 whitespace-nowrap">Layer</th>
+                <th className="text-left py-2.5 pr-3 whitespace-nowrap">Incumbents</th>
+                <th className="text-left py-2.5 pr-3 whitespace-nowrap">Time window covered</th>
+                <th className="text-left py-2.5">How Sysblade differs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border align-top">
+                <td className="py-3 pr-3 font-medium whitespace-nowrap">PSU caps</td>
+                <td className="py-3 pr-3 text-muted">
+                  NVIDIA GB300 (PSU-internal film/electrolytic capacitors)
+                </td>
+                <td className="py-3 pr-3 text-muted whitespace-nowrap">1&ndash;10 ms</td>
+                <td className="py-3 text-muted leading-relaxed">
+                  PSU-internal &mdash; requires <span className="text-foreground">new boards</span>.
+                  Sysblade is rack-external, drops into existing ORV3 / OCP racks without PSU swap.
+                </td>
+              </tr>
+              <tr className="border-b border-border align-top">
+                <td className="py-3 pr-3 font-medium whitespace-nowrap text-success">
+                  BBU (rack-level)
+                </td>
+                <td className="py-3 pr-3 text-muted">
+                  OEM BBU vendors (Murata / Delta / Lite-On); single-chemistry NMC packs;
+                  Eaton XLR sells the LIC modules we use
+                </td>
+                <td className="py-3 pr-3 text-muted whitespace-nowrap">10&nbsp;ms &ndash; 60&nbsp;s</td>
+                <td className="py-3 text-muted leading-relaxed">
+                  <span className="text-success font-medium">Sysblade&rsquo;s layer.</span>{" "}
+                  Hybrid <span className="text-foreground">LFP&nbsp;+&nbsp;LIC</span> + embedded
+                  digital twin RUL is the specific combination missing here. Eaton sells the
+                  cap, not the integrated system.
+                </td>
+              </tr>
+              <tr className="border-b border-border align-top">
+                <td className="py-3 pr-3 font-medium whitespace-nowrap">Rack UPS</td>
+                <td className="py-3 pr-3 text-muted">
+                  Schneider Galaxy VS, Vertiv Liebert APM/GXT, Eaton 9395 / BladeUPS
+                </td>
+                <td className="py-3 pr-3 text-muted whitespace-nowrap">60 s &ndash; tens of min</td>
+                <td className="py-3 text-muted leading-relaxed">
+                  Adjacent layer &mdash; Sysblade <span className="text-foreground">complements</span>
+                  these (BBU handles sub-second transients before the UPS even notices), it
+                  does not replace them.
+                </td>
+              </tr>
+              <tr className="border-b border-border align-top">
+                <td className="py-3 pr-3 font-medium whitespace-nowrap">Facility UPS</td>
+                <td className="py-3 pr-3 text-muted">
+                  Schneider Galaxy VS (large), Eaton 9395P, Vertiv Liebert EXM
+                </td>
+                <td className="py-3 pr-3 text-muted whitespace-nowrap">minutes &ndash; hours</td>
+                <td className="py-3 text-muted leading-relaxed">
+                  Different scale entirely. Sysblade doesn&rsquo;t target facility power
+                  protection; we sit <em>upstream</em> of the rack.
+                </td>
+              </tr>
+              <tr className="align-top">
+                <td className="py-3 pr-3 font-medium whitespace-nowrap text-success">
+                  RUL software
+                </td>
+                <td className="py-3 pr-3 text-muted">
+                  Generic anomaly-detection SaaS (DataDog telemetry, Splunk ITSI);
+                  Schneider EcoStruxure (facility-focused)
+                </td>
+                <td className="py-3 pr-3 text-muted whitespace-nowrap">N/A (continuous)</td>
+                <td className="py-3 text-muted leading-relaxed">
+                  Generic anomaly tools don&rsquo;t understand battery physics.{" "}
+                  <span className="text-success font-medium">Sysblade Twin</span> is
+                  PyBaMM-DFN + Severson-calibrated LSTM + conformal PIs &mdash; the SaaS layer
+                  is grounded in cell chemistry, not statistical thresholds.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-xs text-muted leading-relaxed max-w-3xl">
+          The 5 kJ / rack design point sits squarely in the &ldquo;tens of milliseconds&rdquo;
+          gap between PSU caps and rack UPS &mdash; the layer where the AI-training workload
+          characteristic creates new demand that incumbents&rsquo; legacy product lines
+          weren&rsquo;t designed for. We compete head-on at the BBU layer (against OEM BBU
+          vendors with single-chemistry packs) and the RUL software layer (against generic
+          anomaly-detection SaaS), and partner with the UPS layer above us.
+        </p>
       </section>
     </div>
   );

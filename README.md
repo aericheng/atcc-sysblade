@@ -15,7 +15,9 @@
 - 🔌 **48 V → ±400 V HVDC 過渡** — Vertiv 等只賣 48 V,客戶 2027 後須 forklift 換代
 - 📊 **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,業界無公開 SaaS 提供 BBU-level RUL
 
-**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 壽命延長 · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW peak · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
+**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW peak · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
+
+> †「~25 %」的主要來源是 **BBU 低 duty 排程**(§G.3 `duty_factor=0.33`,~50 cyc/yr vs Severson 1C/1C 實驗室 cadence),**不是** hybrid 拓樸貢獻;hybrid 拓樸的 per-Ah 損傷差由 rainflow + Wang 2011 獨立驗證(`aging_rainflow_validation.json`)估算為 worst-case ~5 %、demo waveform 近於 neutral。
 
 > **Status**:ATCC 2026 提交版本 — **企劃書 v2.2 修訂版**(2026-05-06)+
 > **技術白皮書 v1.1** + `/dashboard` per-device drilldown 已 ship。本 repo
@@ -127,9 +129,11 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 
 ### LSTM(augmented,跨兩個 regime)
 
+> **Augmentation 反證(P1-1)**:跑 `python scripts/export_lstm_onnx.py --severson-only` 用同一條 LSTM 架構、同 seed=42、同 60/20/20 random split,只訓 138 顆 Severson 真實 cell(去掉 50 顆合成 BBU)— 結果 test MAPE **16.17 %**、R² **0.553**、conformal PI median width **793 cycles**(完整 JSON 在 `data/processed/lstm_severson_only_eval.json`)。**augmentation 把 MAPE 從 16.17 → 19.10 % 反而略升**(因為要 fit 跨 100-13,000 cycles 的大 dynamic range),R² 從 0.55 → 0.86 是因為加入長壽命 cell 後 explainable variance 比例上升。**augmentation 純粹是 regime coverage,不是 MAPE 障眼法** — 這條反證在白皮書 §3.3.8 加入,反駁「BBU 合成 cell 是不是 self-fulfilling」的合理質疑。
+
 | 項目 | 值 | 備註 |
 |---|---:|---|
-| 訓練 cell 數 | **188** | 138 Severson 2019 fast-charge + 50 PyBaMM-calibrated BBU-duty |
+| 訓練 cell 數 | **188** | 138 Severson 2019 fast-charge + 50 Severson-anchored synthetic BBU-duty(analytic decay,not PyBaMM aging) |
 | Test MAPE(隨機 split) | **19.1 %** | Severson-only baseline → augment 後 span 雙 regime |
 | Test R² | **0.86** | 跨 regime trade-off 後仍維持高解釋度 |
 | ONNX size | FP32 219 KiB → **INT8 63 KiB(3.49× 壓縮 measured)** | 遠小於 STM32N6 1.6 MB ML FLASH;`scripts/quantize_lstm_onnx.py` 量測 |
@@ -174,7 +178,7 @@ atcc/
 ├── notebooks/                                    EDA + 訓練 smoke test
 ├── scripts/
 │   ├── generate_twin_scenarios.py                4 個 PyBaMM 場景 + 1000-device fleet
-│   ├── generate_bbu_duty_cells.py                50 顆 PyBaMM-calibrated BBU duty 合成 cell
+│   ├── generate_bbu_duty_cells.py                50 顆 Severson-anchored synthetic BBU duty cell(analytic decay)
 │   ├── export_lstm_onnx.py                       訓練 LSTM + ONNX export + MC Dropout + split conformal
 │   ├── eval_severson_models.py                   OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack 全 sweep
 │   ├── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試

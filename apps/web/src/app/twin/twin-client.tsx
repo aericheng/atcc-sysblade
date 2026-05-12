@@ -11,6 +11,7 @@ import {
   LineChart,
   ReferenceArea,
   ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -63,7 +64,18 @@ interface Scenario {
     lic_throughput_kj?: number;
     lic_energy_kj_capacity?: number;
     lic_headroom_ratio?: number;
-    [k: string]: number | null | undefined;
+    // LIC RC physics layer (Eaton XLR 48V × 2 parallel datasheet anchor)
+    lic_v_nominal?: number;
+    lic_v_min?: number;
+    lic_v_max?: number;
+    lic_v_droop_v?: number;
+    lic_v_pp_v?: number;
+    lic_v_min_datasheet?: number;
+    lic_headroom_to_cutoff_v?: number;
+    lic_passes_cutoff?: boolean | number;
+    lic_c_f?: number;
+    lic_esr_ohm?: number;
+    [k: string]: number | boolean | null | undefined;
   };
   _meta?: Record<string, string>;
 }
@@ -182,16 +194,26 @@ function useSweep(sweepMs: number, pauseMs: number, paused: boolean, fps: number
  *  to be already-decimated (~400 points is plenty for visual fidelity
  *  at chart-pixel scales; 800 makes path generation needlessly expensive
  *  per frame). */
-type ScopePoint = { t: number; v: number; p_total: number; p_lfp: number };
+type ScopePoint = { t: number; v: number; p_total: number; p_lfp: number; v_lic?: number };
 
 function ScopeCharts({
   data,
   mode,
   durationS,
+  licCutoffV,
+  licNominalV,
+  licVMin,
+  licHeadroomV,
+  licPassesCutoff,
 }: {
   data: ScopePoint[];
   mode: "lfp" | "hybrid";
   durationS: number;
+  licCutoffV?: number;
+  licNominalV?: number;
+  licVMin?: number;
+  licHeadroomV?: number;
+  licPassesCutoff?: boolean;
 }) {
   const [paused, setPaused] = useState(false);
   const sweep = useSweep(4500, 1500, paused);
@@ -293,6 +315,88 @@ function ScopeCharts({
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
+
+      {/* LIC voltage trajectory — only rendered in hybrid mode (LFP-only
+          baseline has no LIC engaged). Shows v_lic(t) from the closed-form
+          RC model with a hard reference line at the Eaton XLR datasheet
+          UVLO cutoff so the headroom is visually obvious. */}
+      {mode === "hybrid" && licCutoffV != null && licNominalV != null && (
+        <ChartCard
+          title="LIC bank voltage (closed-form RC model)"
+          subtitle={`Eaton XLR 48 V × 2 parallel · C = 332 F · ESR = 2.5 mΩ · v_min observed ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "✓ passes" : "✗ fails"} UVLO @ ${licCutoffV.toFixed(0)} V`}
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
+              <YAxis
+                domain={[licCutoffV - 1, licNominalV + 1.5]}
+                stroke=""
+                tickFormatter={(v) => v.toFixed(0)}
+                label={{ value: "V_lic (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 10 }}
+              />
+              <Tooltip content={<DarkTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+              {/* Eaton datasheet UVLO cutoff — dashed red, labelled. If
+                  v_lic ever crosses this line the production design fails
+                  for that waveform. The check_whitepaper_numbers.py gate
+                  asserts v_min > cutoff at scenario regeneration time. */}
+              <ReferenceLine
+                y={licCutoffV}
+                stroke="var(--danger)"
+                strokeDasharray="6 4"
+                strokeWidth={1.2}
+                label={{
+                  value: `Eaton XLR UVLO ${licCutoffV.toFixed(0)} V`,
+                  position: "insideTopRight",
+                  fill: "var(--danger)",
+                  fontSize: 10,
+                }}
+                ifOverflow="extendDomain"
+              />
+              <ReferenceLine
+                y={licNominalV}
+                stroke="var(--muted)"
+                strokeDasharray="2 4"
+                strokeWidth={0.8}
+                label={{
+                  value: `nominal ${licNominalV.toFixed(1)} V`,
+                  position: "insideTopRight",
+                  fill: "var(--muted)",
+                  fontSize: 10,
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="v_lic"
+                stroke="var(--success)"
+                strokeWidth={1.6}
+                dot={false}
+                name="V_lic (RC model)"
+                isAnimationActive={false}
+              />
+              {showLeadingDot && leadingPoint.v_lic != null && (
+                <ReferenceDot
+                  x={leadingPoint.t}
+                  y={leadingPoint.v_lic}
+                  r={4}
+                  fill="var(--success)"
+                  stroke="white"
+                  strokeOpacity={0.6}
+                  strokeWidth={1}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+          <p className="text-xs text-muted mt-2">
+            <span className="text-success font-medium">{(licHeadroomV ?? 0).toFixed(2)} V headroom</span>{" "}
+            from worst-case droop to Eaton XLR UVLO. Droop is{" "}
+            <span className="text-foreground">ESR-dominated</span>: 926 A peak × 2.5 mΩ ≈ 2.32 V,
+            with the cumulative-charge term (∫i·dt / C) contributing only ~0.78 V at peak energy
+            excursion. Production validates ESR(SOC) + bulk-C(V) curves in-the-loop with Eaton.
+          </p>
+        </ChartCard>
+      )}
     </div>
   );
 }
@@ -320,6 +424,10 @@ export function TwinClient({
     const v = active.series.v_cell;
     const p = active.series.p_total_kw;
     const pLfp = mode === "hybrid" ? active.series.p_lfp_kw : p;
+    // v_lic only exists for the hybrid scenario (the LFP-only baseline
+    // has no LIC engaged). The chart-side conditional already gates
+    // rendering on mode === "hybrid", but we still null-skip here.
+    const vLic = mode === "hybrid" ? active.series.v_lic : undefined;
     // Decimate to ≤400 points before passing to the scope. The Python
     // generator already wrote 800 points (40 Hz over a 10 s window) which
     // is 4× Nyquist for the 10 Hz transient — we can halve again with no
@@ -328,22 +436,26 @@ export function TwinClient({
     const step = t.length > target ? Math.floor(t.length / target) : 1;
     const out: ScopePoint[] = [];
     for (let i = 0; i < t.length; i += step) {
-      out.push({
+      const pt: ScopePoint = {
         t: Number(t[i].toFixed(3)),
         v: Number(v[i].toFixed(4)),
         p_total: Number(p[i].toFixed(2)),
         p_lfp: Number(pLfp[i].toFixed(2)),
-      });
+      };
+      if (vLic) pt.v_lic = Number(vLic[i].toFixed(3));
+      out.push(pt);
     }
     // Always keep the final sample so the axis domain matches the data.
     const lastIdx = t.length - 1;
     if (out[out.length - 1]?.t !== Number(t[lastIdx].toFixed(3))) {
-      out.push({
+      const last: ScopePoint = {
         t: Number(t[lastIdx].toFixed(3)),
         v: Number(v[lastIdx].toFixed(4)),
         p_total: Number(p[lastIdx].toFixed(2)),
         p_lfp: Number(pLfp[lastIdx].toFixed(2)),
-      });
+      };
+      if (vLic) last.v_lic = Number(vLic[lastIdx].toFixed(3));
+      out.push(last);
     }
     return out;
   }, [active, mode]);
@@ -368,12 +480,15 @@ export function TwinClient({
   return (
     <div className="space-y-10">
       <header className="space-y-3">
-        <div className="text-xs uppercase tracking-[0.2em] text-muted">Battery Digital Twin · Live PyBaMM DFN</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-muted">Battery Digital Twin · PyBaMM DFN (LFP) + first-order LIC equivalent</div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Solving the GB200 millisecond transient.</h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          PyBaMM DFN simulation — one rack, <span className="text-foreground font-medium">80 kW baseline</span>,{" "}
+          PyBaMM DFN solves the <span className="text-foreground font-medium">LFP cell</span>;
+          the <span className="text-foreground font-medium">LIC side</span> is represented by
+          its R<sub>esr</sub> × C<sub>bulk</sub> equivalent (datasheet-anchored, not
+          electrochemical). One rack, <span className="text-foreground font-medium">80 kW baseline</span>,{" "}
           <span className="text-foreground font-medium">±30 % square pulses every 100 ms</span>.
-          Toggle below to see the <span className="text-success font-medium">LIC absorb the high-frequency component</span>.
+          Toggle below to see the <span className="text-success font-medium">LIC equivalent absorb the high-frequency residual</span>.
         </p>
       </header>
 
@@ -403,7 +518,7 @@ export function TwinClient({
           </div>
         </CardHeader>
         <CardBody className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
               label="V cell peak-to-peak (steady state)"
               value={
@@ -421,7 +536,7 @@ export function TwinClient({
               hint={mode === "hybrid" ? `${pReduction.toFixed(1)}× smoother current` : "Full ±30 % swing through cell"}
             />
             <Stat
-              label="LIC peak SoC excursion"
+              label="LIC peak energy excursion"
               value={
                 mode === "hybrid"
                   ? `${(hybrid.stats.lic_peak_excursion_kj ?? 0).toFixed(2)}`
@@ -435,13 +550,41 @@ export function TwinClient({
               tone={mode === "hybrid" ? "primary" : "default"}
               hint={
                 mode === "hybrid"
-                  ? `${(hybrid.stats.lic_headroom_ratio ?? 0).toFixed(0)}× headroom on the worst-case instantaneous excursion`
+                  ? `∫p_lic·dt running max · ${(hybrid.stats.lic_headroom_ratio ?? 0).toFixed(0)}× headroom vs nominal LIC capacity`
+                  : "Not engaged in baseline"
+              }
+            />
+            <Stat
+              label="LIC voltage droop (RC model)"
+              value={
+                mode === "hybrid"
+                  ? (hybrid.stats.lic_v_droop_v ?? 0).toFixed(2)
+                  : "—"
+              }
+              unit={mode === "hybrid" ? "V from nominal" : ""}
+              tone={
+                mode === "hybrid"
+                  ? (hybrid.stats.lic_passes_cutoff ? "success" : "danger")
+                  : "default"
+              }
+              hint={
+                mode === "hybrid"
+                  ? `closed-form RC · C ${(hybrid.stats.lic_c_f ?? 0).toFixed(0)} F · ESR ${((hybrid.stats.lic_esr_ohm ?? 0) * 1000).toFixed(2)} mΩ · v_min ${(hybrid.stats.lic_v_min ?? 0).toFixed(2)} V (${(hybrid.stats.lic_headroom_to_cutoff_v ?? 0).toFixed(1)} V to Eaton XLR ${(hybrid.stats.lic_v_min_datasheet ?? 0).toFixed(0)} V cutoff)`
                   : "Not engaged in baseline"
               }
             />
           </div>
 
-          <ScopeCharts data={scopeData} mode={mode} durationS={active.duration_s ?? 10} />
+          <ScopeCharts
+            data={scopeData}
+            mode={mode}
+            durationS={active.duration_s ?? 10}
+            licCutoffV={hybrid.stats.lic_v_min_datasheet as number | undefined}
+            licNominalV={hybrid.stats.lic_v_nominal as number | undefined}
+            licVMin={hybrid.stats.lic_v_min as number | undefined}
+            licHeadroomV={hybrid.stats.lic_headroom_to_cutoff_v as number | undefined}
+            licPassesCutoff={Boolean(hybrid.stats.lic_passes_cutoff)}
+          />
         </CardBody>
       </Card>
 
@@ -783,11 +926,11 @@ export function TwinClient({
             title="Hybrid split"
             tagline={
               <>
-                First-order LPF,{" "}
+                First-order LIC equivalent + LPF,{" "}
                 <span className="text-foreground font-medium">τ = 0.5 s</span>, cutoff ≈ 0.32 Hz.
               </>
             }
-            details="Content above the cutoff goes to the LIC; the slow residual goes to the LFP. The 10 Hz GB200 pulse rate sits well above the cutoff (lands on LIC's kHz-class bandwidth), while 30–90 s graceful-shutdown events sit well below (land on LFP). The two regimes separate cleanly."
+            details="The LIC side is represented by its R_esr × C_bulk dominant time constant (Eaton XLR 48 V / 166 F · ~5 mΩ ESR → τ ≈ 0.83 s); the demo uses τ = 0.5 s as a deliberately tighter control-law setpoint so the DC-DC pushes more high-frequency content onto the LIC than passive coupling would. Content above the cutoff goes to the LIC, the slow residual to the LFP. 10 Hz GB200 pulses sit well above the cutoff; 30–90 s graceful-shutdown events sit well below. LIC pseudo-capacitance, electrode kinetics, and self-discharge are NOT modelled here — production uses Eaton's datasheet ESR(SOC) + bulk-C(V) curves or in-the-loop measurement."
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}
@@ -1066,7 +1209,7 @@ function ErrorByLifetimeBucket({
         <span className="text-foreground font-medium">early-failure cells</span>.
       </p>
       <Disclosure summary={`Why LSTM MAPE sits at ~${overallMapePct.toFixed(0)} % and how the PIs handle it`} className="mt-2">
-        The Long bucket is now dominated by 50 PyBaMM-calibrated BBU-duty cells with 5,000–13,000
+        The Long bucket is now dominated by 50 Severson-anchored synthetic BBU-duty cells with 5,000–13,000
         cycle lifetimes — adding them widened the model&rsquo;s regime coverage so it can speak
         about the actual BBU operating point, but lifted overall test MAPE from the Severson-only
         ~16 % to {overallMapePct.toFixed(1)} % (whitepaper §3.3.7 / §3.3.8).
@@ -1161,15 +1304,21 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 model honestly reporting it has limited training signal there, narrow PIs for
                 healthy cells reflect actual confidence.
               </Disclosure>
-              <Disclosure summary="Regime mix · Severson b1–3 vs PyBaMM bbu_* cells" className="mt-1">
+              <Disclosure summary="Regime mix · Severson b1–3 vs Severson-anchored synthetic bbu_* cells" className="mt-1">
                 <span className="text-foreground">Severson fast-charge cells</span> (b1/b2/b3 IDs,
                 3.6C–8C, lab-stress lifetimes 100–2,000 cycles) and{" "}
-                <span className="text-foreground">PyBaMM-calibrated BBU-duty cells</span>{" "}
-                (bbu_* IDs, ~0.05C float, ~50 cycles/yr → 5,000–13,000 cycle lifetimes). The
-                LSTM trains on both regimes (188 cells total) so it can speak about the actual
-                BBU operating point — pick a `bbu_*` cell to see what the model predicts on the
-                regime your customer&rsquo;s pack will live in. Whitepaper §3.3.5 covers the
-                calibration of the synthetic BBU cells.
+                <span className="text-foreground">Severson-anchored synthetic BBU-duty cells</span>{" "}
+                (bbu_* IDs, ~0.05C float, ~50 cycles/yr → 5,000–13,000 cycle lifetimes).{" "}
+                <span className="text-warning">
+                  Synthetic cells use an analytic Severson-fit SOH curve + per-cell noise,
+                  NOT PyBaMM aging (full PyBaMM 100 cells × 10k cycles is computationally
+                  prohibitive). They serve as <em>regime augmentation</em> only — production
+                  evidence rests on real Severson cells.
+                </span>{" "}
+                The LSTM trains on both regimes (188 cells total) so it can speak about the
+                actual BBU operating point — pick a `bbu_*` cell to see what the model
+                predicts on the regime your customer&rsquo;s pack will live in. Whitepaper
+                §3.3.5 covers the calibration methodology.
               </Disclosure>
             </div>
           </div>
