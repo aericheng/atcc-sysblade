@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, ArrowUpRight } from "lucide-react";
-import { type Device, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
+import { X, ArrowUpRight, Zap } from "lucide-react";
+import { type Device, type LicRcEnvelope, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
 
 interface Props {
   device: Device;
+  licRcEnvelope: LicRcEnvelope;
   onClose: () => void;
 }
 
@@ -21,7 +22,7 @@ interface Props {
  * devices. fleet_devices.json carries point estimates only; the PI machinery
  * lives in /twin where we have per-cell PyBaMM trajectories to calibrate.
  */
-export function DeviceDrilldown({ device, onClose }: Props) {
+export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
   // Close on Escape key — keyboard accessibility.
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -189,12 +190,114 @@ export function DeviceDrilldown({ device, onClose }: Props) {
           <Metric label="Temp LIC" value={`${device.temp_lic_c.toFixed(1)} °C`} />
         </section>
 
+        {/* LIC bank RC envelope — system-level reference, not per-device
+            telemetry. Sourced from /twin hybrid scenario (closed-form RC
+            model anchored to Eaton XLR datasheet). Shown here so a Tier-3
+            queue reviewer can quickly confirm: even on this aging device,
+            the rack's LIC bank still clears the UVLO under the demo
+            transient waveform. */}
+        <section className="space-y-3 border-b border-border p-5">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted">
+              <Zap className="h-3 w-3 text-primary" />
+              LIC bank envelope · system-level RC
+            </h3>
+            <a
+              href="/twin"
+              className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
+            >
+              See v_lic(t) curve on /twin <ArrowUpRight className="h-3 w-3" />
+            </a>
+          </div>
+
+          {/* Headroom bar: from V_min_datasheet (38 V cutoff) on the left
+              to V_nominal on the right. The fill shows where v_min sits
+              within that band — the further right, the more headroom. */}
+          {(() => {
+            const lo = licRcEnvelope.v_min_datasheet;
+            const hi = licRcEnvelope.v_nominal;
+            const span = Math.max(1e-6, hi - lo);
+            const vMinPct = ((licRcEnvelope.v_min - lo) / span) * 100;
+            const fillColor = licRcEnvelope.passes_cutoff ? "#34d399" : "#f87171";
+            const safeFillPct = Math.max(0, Math.min(100, vMinPct));
+            return (
+              <div>
+                <div className="mb-1 flex items-baseline justify-between text-xs">
+                  <span className="text-muted">v_min observed</span>
+                  <span className="font-mono font-medium tabular-nums">
+                    {licRcEnvelope.v_min.toFixed(2)} V
+                    <span className="ml-1 text-muted">/ {hi.toFixed(1)} V nominal</span>
+                  </span>
+                </div>
+                <div className="relative h-2 overflow-hidden rounded-full bg-border">
+                  <div
+                    className="absolute h-full rounded-full"
+                    style={{ width: `${safeFillPct}%`, background: fillColor }}
+                  />
+                  {/* v_nominal marker at far right */}
+                  <div
+                    className="absolute top-0 h-full w-px bg-muted/70"
+                    style={{ left: "100%" }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-muted">
+                  <span>UVLO {lo.toFixed(0)} V</span>
+                  <span>nominal {hi.toFixed(1)} V</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Four-up metric tiles for the actual numbers. */}
+          <div className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4">
+            <Metric
+              label="Droop (worst-case)"
+              value={`${licRcEnvelope.v_droop_v.toFixed(2)} V`}
+            />
+            <Metric
+              label="Headroom to UVLO"
+              value={`${licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V`}
+            />
+            <Metric
+              label="Bank C"
+              value={`${licRcEnvelope.c_f.toFixed(0)} F`}
+            />
+            <Metric
+              label="Bank ESR"
+              value={`${(licRcEnvelope.esr_ohm * 1000).toFixed(2)} mΩ`}
+            />
+          </div>
+
+          {licRcEnvelope.passes_cutoff ? (
+            <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[11px] text-success">
+              ✓ Passes Eaton XLR UVLO ({licRcEnvelope.v_min_datasheet.toFixed(0)} V) under the
+              v2.2 §B.1 demo transient waveform — {licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V
+              margin to cutoff.
+            </div>
+          ) : (
+            <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-[11px] text-danger">
+              ✗ LIC v_min falls below datasheet UVLO — production design fails for this waveform.
+            </div>
+          )}
+
+          <p className="text-[11px] leading-relaxed text-muted">
+            <span className="font-medium text-warning">System-level reference</span>, not
+            per-device telemetry — the LIC bank topology (Eaton XLR-48-166 × 2 parallel) is
+            common to all rack-level Sysblade BBUs per v2.2 §E.1. Per-device LIC voltage
+            telemetry lands with the FastAPI backend (W3+). Droop is ESR-dominated
+            (~95 % at 926 A peak), so production scaling beyond 8 BBU/rack would mainly add
+            parallel modules to drop ESR rather than additional capacitance.
+          </p>
+        </section>
+
         {/* Disclaimer footer */}
         <footer className="bg-surface/60 px-5 py-3 text-[11px] leading-relaxed text-muted">
           <span className="font-medium text-warning">Synthetic device.</span> Generated by a seeded
           RNG simulator (<span className="font-mono text-foreground">scripts/generate_twin_scenarios.py</span>);
-          no production deployment. Fleet site names use real cloud-provider brands as
-          illustrative personas only — no commercial relationship is implied or claimed.
+          no production deployment. Fleet site names are fictional personas (TenantCo / ColoOp /
+          DataCo / HyperscaleCo / CarrierHotel) — no real-brand commercial relationship is
+          implied or claimed.
         </footer>
       </div>
     </div>

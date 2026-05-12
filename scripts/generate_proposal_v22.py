@@ -196,7 +196,7 @@ def edit_appendix(doc):
         "Random split (10-seed median):bagged-GBT (K=24) + xstrict cell filter (cycle_life ≥ 400, n=134) MAPE 8.38 %、R² 0.890、per-seed [5.93, 12.91],7/10 seeds < 10 % — 首次達 v2.1 附件 B 軟體技術棧「< 10 % MAPE」承諾",
         "Cross-batch (b1+b2 → b3 新 protocol):bagged-OLS + xstrict MAPE 13.87 %、R² +0.207 — GBT 在 cross-batch 反退化(17–22 %)因 protocol-specific 過擬合,部署 routing 規則為「同 protocol 用 bagged-GBT、新 protocol fall back bagged-OLS」",
         "Cross-chemistry (Severson → NASA NMC):5/5 feature 全部 OOD、z-distance 5–65 σ — 量化證明跨化學體系需 per-chemistry calibration cycle,不可線性外插",
-        "LSTM fleet 部署:Severson 138 + 50 顆 PyBaMM-calibrated BBU-duty 合成 cell = 188 cells 訓練;test MAPE 19.10 % / R² 0.86 跨兩個 regime 誠實揭露 — fleet 推論用 LSTM,學術 baseline 報 GBT(同模型兩視角)",
+        "LSTM fleet 部署:Severson 138 + 50 顆 Severson-anchored synthetic BBU-duty cell(analytic decay + per-cell noise,非 PyBaMM 物理 aging)= 188 cells 訓練;test MAPE 19.10 % / R² 0.86 跨兩個 regime 誠實揭露 — 合成 cell 僅作 regime augmentation,production 信賴度仍以 Severson 真實 cells 為主;fleet 推論用 LSTM,學術 baseline 報 GBT(同模型兩視角)",
     ]
     for b in bullets_d1:
         _ins_before(anchor, "• " + b)
@@ -207,11 +207,11 @@ def edit_appendix(doc):
 
     # D.3 Rainflow + Wang 2011 cross-validation
     _ins_before(anchor, "D.3 獨立物理交叉驗證 — Rainflow + Wang 2011", style="Heading 2", bold=True)
-    _ins_before(anchor, "v2.1 §B.1 引述 Attia 2020 Nature [13] / Severson 2019 衰減模型外推之「~25 % LFP 循環壽命延長」屬統計外推。v2.2 補第二條獨立物理路徑:對 PyBaMM 產出的 LFP cell 電流跑 ASTM E1049-85 4-point rainflow + Wang 2011 J. Power Sources 半經驗 cycle-aging 公式,獨立估算每 Ah 損傷比 η = Q_loss(hybrid) / Q_loss(LFP-only):")
+    _ins_before(anchor, "v2.1 §B.1 引述 Attia 2020 Nature [13] / Severson 2019 衰減模型外推之「~25 % LFP 循環壽命延長」屬統計外推,且主要組成是 BBU 低 duty 排程(§G.3 duty_factor 0.33,~50 cyc/yr vs Severson 1C/1C lab cadence),非 hybrid 拓樸貢獻。v2.2 補第二條獨立物理路徑量化 hybrid 拓樸貢獻:對 PyBaMM 產出的 LFP cell 電流跑 ASTM E1049-85 4-point rainflow + Wang 2011 J. Power Sources 半經驗 cycle-aging 公式,獨立估算每 Ah 損傷比 η = Q_loss(hybrid) / Q_loss(LFP-only):")
     bullets_d3 = [
         "demo 波形(±30 % / 100 ms):η = 1.012 — Wang kernel 在 0.5–6 C flat,demo cell C-rate 落 3.2–6 C 讓 hybrid 平直波形 per-Ah 損傷略高;主動揭露 demo 振幅本不是 hybrid 真正發揮優勢的工作點",
         "worst_case(10 C × 30 ms 脈衝,GB200 power-swing context per Choukse 2025 [11];團隊依 paper §IV-B per-cell BBU 下尺度推導):η = 0.945 — 5.5 % per-Ah 損傷下降,LIC 把 10 C 脈衝吸收後 LFP 看到的最大 C-rate 降至 4.8 C,對應 v2.1 §B.1「10–30 ms 5–10 C 瞬態」設計對象",
-        "兩條獨立路徑(Attia/Severson 統計外推 + Wang/Rainflow 物理半經驗)同方向,才是「~25 %」結論的方法學根據;報告 JSON 存 apps/web/public/scenarios/aging_rainflow_validation.json(repo 可追溯,不被 UI 消費)",
+        "兩條獨立路徑同方向但量級不同:Attia/Severson 統計外推(BBU duty schedule 主導)貢獻大部分 ~25 % 壽命優勢;Wang/Rainflow 物理半經驗(hybrid 拓樸 per-Ah 損傷)額外貢獻 worst-case ~5.5 %、demo 波形近 neutral。兩條一起才完整支撐「~25 %」結論;報告 JSON 存 apps/web/public/scenarios/aging_rainflow_validation.json(repo 可追溯,不被 UI 消費)",
     ]
     for b in bullets_d3:
         _ins_before(anchor, "• " + b)

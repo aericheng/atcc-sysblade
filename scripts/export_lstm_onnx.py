@@ -22,6 +22,7 @@ Outputs:
 """
 from __future__ import annotations
 
+import argparse
 import json
 import pickle
 import sys
@@ -446,7 +447,7 @@ def extract_walkthroughs(
     return out
 
 
-def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
+def build_dataset(include_bbu: bool = True) -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
     """Concat Severson lab cells with synthetic BBU-duty cells (if present).
 
     Severson cells come from the standard pickle path; BBU cells from the
@@ -457,7 +458,10 @@ def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
     coverage no longer collapses to the Severson distribution.
 
     BBU cells are skipped silently if the pickle is missing (keeps the
-    Severson-only build path working).
+    Severson-only build path working). Setting ``include_bbu=False``
+    forces a Severson-only build — used by the ``--severson-only`` mode
+    to support the whitepaper §3.3.8 regime-augmentation defensibility
+    claim with a side-by-side reproducible number.
     """
     seqs: list[np.ndarray] = []
     labels: list[float] = []
@@ -481,7 +485,9 @@ def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
 
     bbu_path = REPO / "data" / "processed" / "bbu_duty_cells.pkl"
     n_bbu_kept = 0
-    if bbu_path.exists():
+    if not include_bbu:
+        print(f"  BBU-duty cells: 0  (--severson-only mode; augmentation deliberately disabled)")
+    elif bbu_path.exists():
         bbu_cells = pickle.loads(bbu_path.read_bytes())
         for c in bbu_cells:
             seq = c["sequence"]
@@ -501,8 +507,27 @@ def build_dataset() -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--severson-only",
+        action="store_true",
+        help=(
+            "Skip the 50 synthetic BBU-duty cells and train/eval the same LSTM "
+            "on Severson 2019 real cells only (same seed=42, same 60/20/20 split). "
+            "Writes a minimal eval to data/processed/lstm_severson_only_eval.json "
+            "and does NOT overwrite model_validation.json or lstm_rul.pt/.onnx. "
+            "Used to support the whitepaper §3.3.8 regime-augmentation defensibility "
+            "claim with a side-by-side reproducible Severson-only number."
+        ),
+    )
+    args = parser.parse_args()
+    severson_only = args.severson_only
+
+    if severson_only:
+        print("=== MODE: --severson-only (BBU augmentation disabled) ===")
+
     print("loading dataset...")
-    X, y_log, ids, batches = build_dataset()
+    X, y_log, ids, batches = build_dataset(include_bbu=not severson_only)
     y = 10.0 ** y_log
     print(f"  {X.shape[0]} cells, X.shape={X.shape}")
 
@@ -538,51 +563,62 @@ def main() -> None:
     models_dir = REPO / "models"
     models_dir.mkdir(exist_ok=True)
 
-    print("exporting to ONNX...")
-    onnx_path = models_dir / "lstm_rul.onnx"
-    dummy = torch.tensor(res.scaler.transform(X[:1]), dtype=torch.float32)
-    res.model.eval()
-    torch.onnx.export(
-        res.model,
-        dummy,
-        onnx_path,
-        input_names=["per_cycle_features"],
-        output_names=["log10_cycle_life"],
-        dynamic_axes={
-            "per_cycle_features": {0: "batch"},
-            "log10_cycle_life": {0: "batch"},
-        },
-        opset_version=17,
-    )
-    onnx_size_kb = onnx_path.stat().st_size / 1024
-    print(f"  wrote {onnx_path}  ({onnx_size_kb:.1f} KiB)")
+    # ONNX export + latency benchmark — only for the production path.
+    # severson-only mode skips this: the eval is purely about MAPE/R²
+    # under the same training pipeline, and the production ONNX must not
+    # be overwritten with a model trained on a different dataset.
+    if severson_only:
+        onnx_size_kb = None
+        diff = None
+        p50 = None
+        p99 = None
+        ort = None
+    else:
+        print("exporting to ONNX...")
+        onnx_path = models_dir / "lstm_rul.onnx"
+        dummy = torch.tensor(res.scaler.transform(X[:1]), dtype=torch.float32)
+        res.model.eval()
+        torch.onnx.export(
+            res.model,
+            dummy,
+            onnx_path,
+            input_names=["per_cycle_features"],
+            output_names=["log10_cycle_life"],
+            dynamic_axes={
+                "per_cycle_features": {0: "batch"},
+                "log10_cycle_life": {0: "batch"},
+            },
+            opset_version=17,
+        )
+        onnx_size_kb = onnx_path.stat().st_size / 1024
+        print(f"  wrote {onnx_path}  ({onnx_size_kb:.1f} KiB)")
 
-    # Verify the ONNX output matches the PyTorch output.
-    print("verifying ONNX equivalence...")
-    import onnxruntime as ort
-    sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
-    onnx_inp = res.scaler.transform(X[:1]).astype(np.float32)
-    onnx_out = sess.run(None, {"per_cycle_features": onnx_inp})[0]
-    torch_out = res.model(torch.tensor(onnx_inp)).detach().numpy()
-    diff = float(np.max(np.abs(onnx_out - torch_out)))
-    print(f"  max |ONNX - PyTorch| = {diff:.2e}  ({'OK' if diff < 1e-4 else 'MISMATCH'})")
+        # Verify the ONNX output matches the PyTorch output.
+        print("verifying ONNX equivalence...")
+        import onnxruntime as ort
+        sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+        onnx_inp = res.scaler.transform(X[:1]).astype(np.float32)
+        onnx_out = sess.run(None, {"per_cycle_features": onnx_inp})[0]
+        torch_out = res.model(torch.tensor(onnx_inp)).detach().numpy()
+        diff = float(np.max(np.abs(onnx_out - torch_out)))
+        print(f"  max |ONNX - PyTorch| = {diff:.2e}  ({'OK' if diff < 1e-4 else 'MISMATCH'})")
 
-    # Benchmark single-sample latency (this is what an STM32N6 would see —
-    # it processes one BBU's reading at a time, not batches).
-    print("benchmarking CPU latency (single sample, 1000 trials)...")
-    sample = res.scaler.transform(X[0:1]).astype(np.float32)
-    # warm up
-    for _ in range(20):
-        sess.run(None, {"per_cycle_features": sample})
-    timings = []
-    for _ in range(1000):
-        t0 = time.perf_counter()
-        sess.run(None, {"per_cycle_features": sample})
-        timings.append((time.perf_counter() - t0) * 1000.0)  # ms
-    timings = np.asarray(timings)
-    p50 = float(np.percentile(timings, 50))
-    p99 = float(np.percentile(timings, 99))
-    print(f"  p50 {p50:.2f} ms   p99 {p99:.2f} ms   target <50 ms")
+        # Benchmark single-sample latency (this is what an STM32N6 would see —
+        # it processes one BBU's reading at a time, not batches).
+        print("benchmarking CPU latency (single sample, 1000 trials)...")
+        sample = res.scaler.transform(X[0:1]).astype(np.float32)
+        # warm up
+        for _ in range(20):
+            sess.run(None, {"per_cycle_features": sample})
+        timings = []
+        for _ in range(1000):
+            t0 = time.perf_counter()
+            sess.run(None, {"per_cycle_features": sample})
+            timings.append((time.perf_counter() - t0) * 1000.0)  # ms
+        timings = np.asarray(timings)
+        p50 = float(np.percentile(timings, 50))
+        p99 = float(np.percentile(timings, 99))
+        print(f"  p50 {p50:.2f} ms   p99 {p99:.2f} ms   target <50 ms")
 
     # Build the model_validation.json payload for the UI.
     out = REPO / "packages" / "shared" / "scenarios" / "model_validation.json"
@@ -595,16 +631,18 @@ def main() -> None:
             "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "generator": "scripts/export_lstm_onnx.py",
             "torch_version": torch.__version__,
-            "onnxruntime_version": ort.__version__,
+            "onnxruntime_version": (ort.__version__ if ort is not None else None),
             "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.2.pdf",
         },
-        "title": "LSTM RUL — Severson 2019 + PyBaMM BBU-duty + ONNX edge inference",
+        "title": "LSTM RUL — Severson 2019 + Severson-anchored synthetic BBU-duty + ONNX edge inference",
         "description": (
             f"PyTorch 2-layer LSTM (hidden=64) trained on per-cycle summary features "
             f"from {X.shape[0]} LFP cells "
             f"({sum(1 for b in batches if b != 'bbu')} Severson 2019 batches 1+2+3 + "
-            f"{sum(1 for b in batches if b == 'bbu')} PyBaMM-calibrated BBU-duty cells "
-            f"to close the regime gap, see whitepaper §3.3.5). "
+            f"{sum(1 for b in batches if b == 'bbu')} Severson-anchored synthetic BBU-duty "
+            f"cells; analytic decay + per-cell noise, NOT PyBaMM aging — see whitepaper "
+            f"§3.3.5/§3.3.8 for the caveat that synthetic cells share their generator's "
+            f"decay function with their labels and thus serve as regime augmentation only). "
             f"Exported to ONNX and benchmarked under onnxruntime CPU as a "
             f"proxy for the STM32N6 NPU deployment path."
         ),
@@ -631,7 +669,7 @@ def main() -> None:
             "p50_ms": p50,
             "p99_ms": p99,
             "target_ms": 50,
-            "passes_target": p99 < 50,
+            "passes_target": (p99 < 50) if p99 is not None else None,
         },
         "predicted_vs_actual": _build_predicted_vs_actual(ids, batches, y, pred_all, te),
     }
@@ -692,6 +730,66 @@ def main() -> None:
     # Replace raw PI with conformal-calibrated one in the per-cell output.
     pi["p5"] = pi_cal["conformal_lower"]
     pi["p95"] = pi_cal["conformal_upper"]
+
+    # ----- severson-only branch -----
+    # Writes a minimal eval JSON to data/processed/ (single sink, not
+    # apps/web public + packages/shared), skips fleet-aware walkthroughs
+    # (they require fleet_devices.json's 4-status mapping which only makes
+    # sense for the augmented model), and saves the .pt under a suffixed
+    # name so it does not overwrite the production checkpoint.
+    if severson_only:
+        out_path = REPO / "data" / "processed" / "lstm_severson_only_eval.json"
+        minimal_payload = {
+            "_meta": payload["_meta"],
+            "purpose": (
+                "Severson-only LSTM eval — supports the whitepaper §3.3.8 "
+                "regime-augmentation defensibility claim. Same LSTM architecture, "
+                "same seed=42, same 60/20/20 random split as the augmented run; "
+                "the only difference is that the 50 synthetic BBU-duty cells are "
+                "EXCLUDED from training. Compare to packages/shared/scenarios/"
+                "model_validation.json to isolate the augmentation effect from "
+                "the model architecture's intrinsic performance on real cells."
+            ),
+            "title": "LSTM RUL — Severson 2019 ONLY (no BBU augmentation)",
+            "model": payload["model"],
+            "metrics": payload["metrics"],
+            "uncertainty": {
+                "method": "mc_dropout",
+                "n_samples": 100,
+                "raw_test_coverage_90pct": raw_coverage,
+                "raw_median_pi_width_cycles": float(np.median(pi_widths_raw)),
+                "conformal_method": "split_conformal_adaptive",
+                "conformal_alpha": 0.10,
+                "conformal_q_factor": q_factor,
+                "conformal_n_calibration": int(len(cal)),
+                "conformal_test_coverage_90pct": cal_coverage,
+                "conformal_median_pi_width_cycles": float(np.median(pi_widths_conf)),
+            },
+            "predicted_vs_actual": payload["predicted_vs_actual"],
+        }
+        body = json.dumps(minimal_payload, indent=2, default=float)
+        out_path.write_text(body, encoding="utf-8")
+        print(f"wrote {out_path.relative_to(REPO)}  ({len(body)/1024:.1f} KiB)")
+
+        M.save_checkpoint(
+            models_dir / "lstm_rul_severson_only.pt",
+            res.model,
+            res.scaler,
+            meta={
+                "train_mape": metrics_train["mape_pct"],
+                "test_mape": metrics_test["mape_pct"],
+                "feature_names": payload["model"]["feature_names"],
+                "mode": "severson_only",
+            },
+        )
+        print(
+            f"\n=== Severson-only result === "
+            f"test MAPE {metrics_test['mape_pct']:.2f}%  "
+            f"test R² {metrics_test['r2']:.3f}  "
+            f"conformal PI median width {float(np.median(pi_widths_conf)):.0f} cycles "
+            f"({len(tr)} train / {len(cal)} cal / {len(te)} test)"
+        )
+        return
 
     # Walkthroughs — per-cell input + hidden state + cumulative-prediction
     # trajectory for a curated set of cells. Used by the /twin "Inference

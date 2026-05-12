@@ -72,6 +72,20 @@ TRANSIENT_PERIOD_S = 0.10       # 100 ms square wave
 SPLIT_FILTER_TAU_S = 0.5        # 1st-order LPF τ → cutoff ≈ 1/(2π·τ) ≈ 0.32 Hz
 TARGET_PEAK_C_RATE = 6.0        # cell C-rate at the rack's peak power (§E.1 Tier-B)
 
+# ---------------------------------------------------------------------------
+# LIC bank physical parameters (Eaton XLR 48 V module × 2 in parallel, per
+# v2.2 §E.1 Tier-A "2× off-the-shelf Eaton XLR 48 V LIC modules"; values
+# are typical datasheet figures for the XLR-48-166 family — exact ESR
+# varies by lot, so production must use Eaton's per-lot data sheet).
+# ---------------------------------------------------------------------------
+LIC_MODULE_C_F = 166.0          # F per module (datasheet typical)
+LIC_MODULE_ESR_OHM = 0.005      # 5 mΩ per module (DC ESR, datasheet typical)
+LIC_N_PARALLEL = 2              # two modules in parallel per §E.1 Tier-A
+LIC_V_NOMINAL_V = 51.3          # fully-charged terminal voltage per module
+LIC_V_MIN_DATASHEET_V = 38.0    # discharge cutoff per Eaton XLR datasheet (typ.)
+LIC_BANK_C_F = LIC_MODULE_C_F * LIC_N_PARALLEL          # parallel adds C
+LIC_BANK_ESR_OHM = LIC_MODULE_ESR_OHM / LIC_N_PARALLEL  # parallel halves ESR
+
 # Pack peak current (per BBU) at the demo waveform's max instantaneous power.
 # Used to map pack current onto a representative cell at TARGET_PEAK_C_RATE.
 I_PEAK_PACK_A = (
@@ -143,7 +157,18 @@ def _build_power_profile(duration_s: float, dt: float) -> tuple[np.ndarray, np.n
 
 
 def _split_with_lic(p_total_kw: np.ndarray, dt: float, tau_s: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
-    """Split rack power into (LFP slow, LIC fast) using a first-order LPF.
+    """Split rack power into (LFP slow, LIC fast) using a first-order RC-equivalent LPF.
+
+    This is a *first-order equivalent model* of the LIC, NOT an electrochemical
+    simulation. Only the LFP side is solved by PyBaMM DFN downstream; the LIC
+    side is represented by its R_esr × C_bulk dominant time constant, which
+    for Eaton XLR 48 V / 166 F at ~5 mΩ ESR gives τ ≈ 0.83 s. We use τ = 0.5 s
+    here as a control-law design choice (deliberately tighter than the cell's
+    intrinsic τ so the DC-DC pushes more content onto the LIC than the cell
+    would absorb passively). Production validation must replace this with
+    Eaton's datasheet ESR(SOC) + bulk-C(V) curves or in-the-loop measurements;
+    LIC pseudo-capacitance, electrode kinetics, self-discharge, and current
+    limits are NOT modelled here.
 
     LFP follows the running mean (low-pass output); LIC takes the residual.
     Cutoff is fc = 1/(2π·τ); with τ = 0.5 s that's ≈0.32 Hz, so content with
@@ -210,6 +235,80 @@ def _simulate_lfp_cell(
     }
 
 
+def _simulate_lic_rc(
+    p_lic_kw: np.ndarray,
+    t: np.ndarray,
+    c_f: float = LIC_BANK_C_F,
+    esr_ohm: float = LIC_BANK_ESR_OHM,
+    v_nominal: float = LIC_V_NOMINAL_V,
+    v_min_datasheet: float = LIC_V_MIN_DATASHEET_V,
+) -> dict:
+    """Closed-form first-order RC model for the LIC bank.
+
+    Linearises the cell-level constitutive relation i ≈ p / V_nominal,
+    which is valid when |ΔV| << V_nominal. For our demo waveform that
+    holds easily — the worst-case voltage excursion below is ~1-3 % of
+    V_nominal, well inside the linear regime.
+
+    Outputs v_lic(t) plus headroom statistics that production must
+    verify before EVT:
+      • v_min / v_max bracket the operating-voltage envelope under the
+        demo profile.
+      • v_droop_v is the worst-case voltage drop from fully-charged
+        nominal — this is what the DC-DC's input-undervoltage trip
+        sees, NOT the cumulative-energy excursion the upstream LPF
+        model computes.
+      • headroom_to_cutoff_v is the safety margin between the worst
+        observed v_lic and the Eaton XLR datasheet discharge cutoff
+        (~38 V). Production must keep this strictly positive.
+
+    This is still an *equivalent* model: pseudo-capacitance, electrode
+    kinetics, temperature-dependent ESR, and self-discharge are NOT
+    captured (per the docstring of _split_with_lic). Eaton must validate
+    in-the-loop before mass production.
+    """
+    p_w = p_lic_kw * 1000.0
+    # Quasi-static current under V ≈ V_nominal linearisation.
+    i_a = p_w / v_nominal
+
+    # Cumulative charge transfer Q(t) = ∫ i dt; trapezoidal so the result
+    # is consistent with the cumulative-energy calculation in the caller.
+    dt_arr = np.diff(t)
+    seg = 0.5 * (i_a[:-1] + i_a[1:])
+    q_c = np.concatenate(([0.0], np.cumsum(seg * dt_arr)))
+
+    # V_lic(t) = V_nominal − Q/C − i × ESR (capacitive + ohmic drops).
+    v_lic = v_nominal - q_c / c_f - i_a * esr_ohm
+
+    v_min = float(np.min(v_lic))
+    v_max = float(np.max(v_lic))
+    return {
+        "v_lic": v_lic,
+        "i_lic_a": i_a,
+        "v_min": v_min,
+        "v_max": v_max,
+        "v_droop_v": float(v_nominal - v_min),
+        "v_swell_v": float(v_max - v_nominal),
+        "v_pp_v": float(v_max - v_min),
+        "v_nominal": v_nominal,
+        "v_min_datasheet": v_min_datasheet,
+        "headroom_to_cutoff_v": float(v_min - v_min_datasheet),
+        "passes_cutoff": bool(v_min > v_min_datasheet),
+        "model": {
+            "c_f": c_f,
+            "esr_ohm": esr_ohm,
+            "linearisation": "i ≈ p / V_nominal (valid when |ΔV| << V_nominal)",
+            "captured": "bulk-C + DC ESR",
+            "not_captured": [
+                "pseudo-capacitance",
+                "temperature-dependent ESR",
+                "self-discharge",
+                "electrode kinetics (Helmholtz layer dynamics)",
+            ],
+        },
+    }
+
+
 def _stable_window_pp(t: np.ndarray, v: np.ndarray, t0: float = 4.0, t1: float = 6.0) -> float:
     """Peak-to-peak voltage in a steady-state window — what the demo headlines."""
     mask = (t >= t0) & (t <= t1)
@@ -266,18 +365,34 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
     v_cell = np.asarray(sim["V_cell"])
     sim_t = np.asarray(sim["t"])
 
-    # Peak instantaneous LIC state-of-charge excursion (kJ).
+    # Peak cumulative net-energy excursion seen by the LIC (kJ).
     # ∫ p_lic·dt is the running net energy that has flowed INTO the LIC; its
-    # max magnitude is the peak amount the LIC has to hold at any instant.
-    # NOT to be confused with ∫|p_lic|·dt, which is two-way throughput.
+    # max magnitude is the peak amount of stored energy the LIC must hold at
+    # any instant during the window. This is NOT a state-of-charge fraction
+    # (SOC is unitless 0–1); it is an absolute energy excursion in kJ, which
+    # is what we compare against the LIC's nominal energy capacity to derive
+    # headroom. Field naming reflects this: `lic_net_energy_kj` is the time
+    # series, `lic_peak_excursion_kj` is the max-abs scalar. Not to be
+    # confused with ∫|p_lic|·dt, which is two-way throughput.
     # Use a vectorised trapezoidal cumulative integral (O(n) vs O(n²) loop).
     integrate = getattr(np, "trapezoid", np.trapz)
     dt_arr = np.diff(t)
     seg_avg = 0.5 * (p_lic[:-1] + p_lic[1:])
-    lic_soc_kj = np.concatenate(([0.0], np.cumsum(seg_avg * dt_arr)))
-    lic_peak_excursion_kj = float(np.max(np.abs(lic_soc_kj)))
+    lic_net_energy_kj = np.concatenate(([0.0], np.cumsum(seg_avg * dt_arr)))
+    lic_peak_excursion_kj = float(np.max(np.abs(lic_net_energy_kj)))
     lic_throughput_kj = float(integrate(np.abs(p_lic), t))
     lic_capacity_kj = LIC_ENERGY_KJ_PER_RACK * LIC_OVERPROV_FACTOR
+
+    # First-order RC physics of the LIC bank — quantifies the voltage
+    # droop the upstream DC-DC's UVLO actually sees, NOT just the
+    # bookkeeping energy excursion. Closes the previous gap where
+    # business mentors could ask "did you simulate the LIC at all?"
+    # — with this, the answer is "yes, datasheet-anchored closed-form
+    # RC model; pseudo-capacitance + electrode kinetics are out of scope
+    # (production validates in-the-loop with Eaton)".
+    lic_rc = _simulate_lic_rc(p_lic, t)
+    v_lic_full = np.asarray(lic_rc["v_lic"])
+    i_lic_full = np.asarray(lic_rc["i_lic_a"])
 
     payload = {
         "title": "Hybrid LFP + LIC — flattened transient delivered to LFP",
@@ -286,7 +401,17 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             f"(≈{1.0/(2*np.pi*SPLIT_FILTER_TAU_S):.2f} Hz, τ={SPLIT_FILTER_TAU_S} s) "
             "to the lithium-ion capacitor; the LFP pack sees only the smoothed "
             "average. Cell voltage stays in the plateau, electrode stress drops, "
-            "expected cycle life extends ~25 % per the proposal §A."
+            "expected cycle life extends ~25 % per the proposal §A "
+            "— note this 25 % is primarily a BBU-low-duty-schedule contribution "
+            "(§G.3 duty_factor 0.33, ~50 cyc/yr vs Severson 1C/1C lab cadence); "
+            "rainflow + Wang 2011 cross-validation shows the hybrid-topology "
+            "per-Ah damage component contributes ~5 % on worst-case waveforms "
+            "and is ~neutral on the demo waveform (see aging_rainflow_validation.json). "
+            "Modelling scope: PyBaMM DFN is solved on the LFP cell only; the "
+            "LIC is represented by its first-order R_esr × C_bulk equivalent "
+            "(see _split_with_lic docstring). LIC pseudo-capacitance, "
+            "electrode kinetics, and self-discharge are out of scope for this "
+            "demo and validated in production via Eaton XLR datasheet curves."
         ),
         "duration_s": duration_s,
         "split_filter_tau_s": SPLIT_FILTER_TAU_S,
@@ -298,6 +423,12 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             "v_cell": _decimate(v_cell, n).tolist(),
             "v_pack": _decimate(v_cell * 15, n).tolist(),
             "i_cell": _decimate(np.asarray(sim["I_cell"]), n).tolist(),
+            # LIC RC physics-layer trajectories. Same time grid as the rest
+            # (so a chart can overlay v_lic on top of p_lic without
+            # interpolation). v_lic is what the DC-DC's input rail sees,
+            # i_lic_a is the linearised quasi-static current used to derive it.
+            "v_lic": _decimate(v_lic_full, n).tolist(),
+            "i_lic_a": _decimate(i_lic_full, n).tolist(),
         },
         "stats": {
             "v_cell_min": float(np.min(v_cell)),
@@ -315,6 +446,18 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             "lic_throughput_kj": lic_throughput_kj,
             "lic_energy_kj_capacity": lic_capacity_kj,
             "lic_headroom_ratio": lic_capacity_kj / max(lic_peak_excursion_kj, 1e-6),
+            # LIC RC physics-layer stats — answer the "did you simulate LIC
+            # at all?" question with closed-form RC numbers.
+            "lic_v_nominal": lic_rc["v_nominal"],
+            "lic_v_min": lic_rc["v_min"],
+            "lic_v_max": lic_rc["v_max"],
+            "lic_v_droop_v": lic_rc["v_droop_v"],
+            "lic_v_pp_v": lic_rc["v_pp_v"],
+            "lic_v_min_datasheet": lic_rc["v_min_datasheet"],
+            "lic_headroom_to_cutoff_v": lic_rc["headroom_to_cutoff_v"],
+            "lic_passes_cutoff": lic_rc["passes_cutoff"],
+            "lic_c_f": lic_rc["model"]["c_f"],
+            "lic_esr_ohm": lic_rc["model"]["esr_ohm"],
         },
     }
     _save("transient_hybrid.json", payload)
@@ -822,17 +965,23 @@ def scenario_aging_rainflow_validation(duration_s: float = 60.0, dt: float = 0.0
 # 4. Synthetic fleet of 1000 BBU devices for the /dashboard page
 # ---------------------------------------------------------------------------
 SITES = [
-    # (site_label, location, weight, lat, lng)
-    ("CoreWeave-Dallas-01",       "Dallas, TX",        18, 32.78, -96.80),
-    ("CoreWeave-Plano-02",        "Plano, TX",         12, 33.02, -96.70),
-    ("Lambda-Austin-01",          "Austin, TX",        10, 30.27, -97.74),
-    ("Equinix-DA11-Dallas",       "Dallas, TX",         8, 32.93, -96.83),
-    ("Digital-Realty-Ashburn-01", "Ashburn, VA",       16, 39.04, -77.49),
-    ("Equinix-DC15-Ashburn",      "Ashburn, VA",       12, 39.06, -77.46),
-    ("Microsoft-Quincy-WA",       "Quincy, WA",         8, 47.23, -119.85),
-    ("Meta-Eagle-Mountain-UT",    "Eagle Mountain, UT", 6, 40.32, -112.01),
-    ("AWS-Hilliard-OH",           "Hilliard, OH",       5, 40.03, -83.16),
-    ("Google-CouncilBluffs-IA",   "Council Bluffs, IA", 5, 41.26, -95.86),
+    # (anonymised site label, location, weight, lat, lng)
+    # Site names are fictional personas representing a plausible Tier-2/3
+    # AI colocation customer mix across the major North American AI clusters.
+    # NO commercial / customer / endorsement relationship with any real brand
+    # is implied. Legal-risk hygiene: previous iterations used real cloud-
+    # provider brand names as personas, which carries unnecessary trademark
+    # exposure even with a banner disclaimer. Anonymise at source.
+    ("TenantCo-DFW-01",          "Dallas, TX",        18, 32.78, -96.80),
+    ("TenantCo-DFW-02",          "Plano, TX",         12, 33.02, -96.70),
+    ("HyperscaleCo-AUS-01",      "Austin, TX",        10, 30.27, -97.74),
+    ("ColoOp-DAL-01",            "Dallas, TX",         8, 32.93, -96.83),
+    ("CarrierHotel-IAD-01",      "Ashburn, VA",       16, 39.04, -77.49),
+    ("ColoOp-IAD-02",            "Ashburn, VA",       12, 39.06, -77.46),
+    ("DataCo-PNW-01",            "Quincy, WA",         8, 47.23, -119.85),
+    ("DataCo-UT-01",             "Eagle Mountain, UT", 6, 40.32, -112.01),
+    ("ColoOp-OH-01",             "Hilliard, OH",       5, 40.03, -83.16),
+    ("DataCo-IA-01",             "Council Bluffs, IA", 5, 41.26, -95.86),
 ]
 
 

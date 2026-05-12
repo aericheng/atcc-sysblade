@@ -35,8 +35,8 @@ uv pip install -e packages/battery-twin[dev,api]
 
 - **Severson 2019** *Nature Energy* 4, 383–391 — 124-cell LFP 公開資料(`b1` + `b2` + `b3` 三批),
   我們解出 138 顆有完整 ≥ 100 cycle 觀測的 cell。下載 SOP 在 `docs/severson_download.md`
-- **PyBaMM-calibrated BBU duty cells** — 50 顆合成,參數對齊 Severson 平均行為 + 0.05C float duty + 25 °C 環境,
-  cycle_life 5,000–13,000(填 Severson 沒覆蓋到的 BBU 操作 regime)
+- **Severson-anchored synthetic BBU duty cells** — 50 顆合成,**analytic Severson-fit SOH curve + per-cell noise**(**不是 PyBaMM 跑出來的物理 aging**;100 cells × 10k cycles 全 PyBaMM aging 計算成本過高,見 `scripts/generate_bbu_duty_cells.py` 16-17 行 docstring 自述)。參數對齊 Severson 平均 + 0.05C float duty + 25 °C 環境,
+  cycle_life 5,000–13,000(填 Severson 沒覆蓋到的 BBU 操作 regime,作為 *regime augmentation* 用,不獨立作為物理證據)
 - **NASA PCoE B0005-7** — 4 顆 NMC,跨化學測試專用(5/5 feature 全部 OOD,證明跨化學部署需 per-chemistry 校準)
 
 ## 模型 + 誤差目標

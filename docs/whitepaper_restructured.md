@@ -59,13 +59,18 @@ peak-to-peak 也同步從 62 mV 收斂到 18 mV(**3.5× 改善**)。
 
 ### ⏳ ~25 % — LFP 主電池循環壽命延長
 
-這條 5.7× 應力下降直接對應 **~25 % LFP 循環壽命延長**,主要依據是 Attia 2020
-*Nature* [6] 與 Severson 衰減模型外推 [1];我們再以 Rainflow + Wang 2011
-作為第二條獨立物理路徑,在 worst-case GB200 工作點 cross-validate 出
-**5.5 % per-Ah 損傷下降**(完整方法見 §2.3.2)。BBU 浮充 duty 下 LFP 服役壽命
-因此達 **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),客戶 10 年內替換次數
-從 1.5 次降為 1 次。capex 溢價與替換節省如何在 §2.7.1 TCO 表中互抵的完整
-邏輯詳見 §2.3.1 最後一段。
+這個 25 % 的**主要組成**是 BBU 低 duty 排程(§2.3.1 `duty_factor = 0.33`,
+~50 cyc/yr vs Severson 1C/1C 實驗室 cadence ~365 cyc/yr),而**不是** hybrid
+拓樸本身;Attia 2020 *Nature* [6] 與 Severson 衰減模型外推 [1] 給出 BBU
+duty 下的壽命估算。Hybrid 拓樸的 per-Ah 損傷貢獻**獨立**由 Rainflow +
+Wang 2011 cross-validation 估算(§2.3.2):在 GB200 worst-case 波形下
+hybrid 比純 LFP 損傷低 **5.5 %**,在 demo 波形上**幾近 neutral**(整合比
+1.012,hybrid 略高 1.2 %,因 Wang kernel 在 0.5–6 C 區近於平坦)。BBU 浮充
+duty 下 LFP 服役壽命估達 **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),
+客戶 10 年內替換次數從 1.5 次降為 1 次 — **此估值對 cycle cadence 假設
+非常敏感**(若客戶實際 duty 升到 200 cyc/yr,壽命優勢會大幅縮減,§2.7.2
+sensitivity)。capex 溢價與替換節省如何在 §2.7.1 TCO 表中互抵的完整邏輯
+詳見 §2.3.1 最後一段。
 
 ### 🧠 8.38 % — RUL 預測 MAPE(Severson 學術 baseline)
 
@@ -419,11 +424,13 @@ Payback 對 rack 數量不敏感(extra capex 與 saving 都隨 racks 線性 scal
 **LIC + 主電池分頻控制律與整體調校客戶都要自己做**(需要電化學 + ML 兩棲
 團隊,Tier-2/3 colo 沒這個工程量能)。
 
-**measured 數據**(PyBaMM DFN 模擬,完整見 §2.3):LFP 接收功率 RMS 從
-8.7 kW 壓到 1.5 kW(**5.7×**),電芯電壓震盪 peak-to-peak 從 62 mV 收斂到
-18 mV(**3.5×**)。這條物理層應力下降直接對應約 25 % LFP 壽命延長,壽命
-延長在 §2.7 TCO 模型中扮演的「capex 溢價對沖」角色,完整論述見 §2.3.1、
-§2.3.2 與 §2.7.1。
+**measured 數據**(PyBaMM DFN 模擬 LFP cell,LIC 側為 R_esr × C_bulk 一階等效,
+完整見 §2.3):LFP 接收功率 RMS 從 8.7 kW 壓到 1.5 kW(**5.7×**),電芯電壓震盪
+peak-to-peak 從 62 mV 收斂到 18 mV(**3.5×**)。**注意這條 5.7× / 3.5× 是訊號
+處理層的削峰證據**(LPF 截掉高頻),與 25 % 壽命優勢的因果鏈不是直接的 —
+壽命優勢主要由 BBU 低 duty 排程貢獻(§2.3.1),hybrid 拓樸的 per-Ah 損傷
+貢獻獨立由 Rainflow + Wang 2011 估算為 worst-case ~5.5 %(§2.3.2)。完整
+邏輯見 §2.3.1、§2.3.2 與 §2.7.1。
 
 **附帶好處**:電壓震盪 pp 收斂到 18 mV 之後,PSU 不會誤觸 OVP/UVP,Tier-2/3
 客戶 SLA 達標壓力連帶下降。

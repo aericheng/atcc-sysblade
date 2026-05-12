@@ -1,0 +1,1019 @@
+{
+  "_meta": {
+    "generated_at": "2026-05-12T02:17:44+00:00",
+    "generator": "scripts/export_lstm_onnx.py",
+    "torch_version": "2.11.0+cpu",
+    "onnxruntime_version": null,
+    "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.2.pdf"
+  },
+  "purpose": "Severson-only LSTM eval \u2014 supports the whitepaper \u00a73.3.8 regime-augmentation defensibility claim. Same LSTM architecture, same seed=42, same 60/20/20 random split as the augmented run; the only difference is that the 50 synthetic BBU-duty cells are EXCLUDED from training. Compare to packages/shared/scenarios/model_validation.json to isolate the augmentation effect from the model architecture's intrinsic performance on real cells.",
+  "title": "LSTM RUL \u2014 Severson 2019 ONLY (no BBU augmentation)",
+  "model": {
+    "architecture": "LSTM(input=7, hidden=64, layers=2) + Dense(32) + Linear(1)",
+    "n_parameters": 54081,
+    "input_shape": [
+      99,
+      7
+    ],
+    "feature_names": [
+      "cycle_norm",
+      "qd_max",
+      "qd_range",
+      "v_mean",
+      "v_std",
+      "t_max",
+      "duration_s"
+    ],
+    "onnx_size_kb": null,
+    "onnx_torch_max_diff": null
+  },
+  "metrics": {
+    "n_train": 84,
+    "n_test": 27,
+    "train_mape_pct": 12.841747844664875,
+    "test_mape_pct": 16.166538314363812,
+    "test_rmse_cycles": 214.84940771606918,
+    "test_r2": 0.5529263311690662,
+    "split": "random_80_20_seed42"
+  },
+  "uncertainty": {
+    "method": "mc_dropout",
+    "n_samples": 100,
+    "raw_test_coverage_90pct": 1.0,
+    "raw_median_pi_width_cycles": 1958.2576473236081,
+    "conformal_method": "split_conformal_adaptive",
+    "conformal_alpha": 0.1,
+    "conformal_q_factor": 0.4049149162081257,
+    "conformal_n_calibration": 27,
+    "conformal_test_coverage_90pct": 0.9629629629629629,
+    "conformal_median_pi_width_cycles": 792.9277311799603
+  },
+  "predicted_vs_actual": [
+    {
+      "cell_id": "b1c0",
+      "batch": "b1",
+      "actual": 1190,
+      "predicted": 843,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c1",
+      "batch": "b1",
+      "actual": 1179,
+      "predicted": 926,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c2",
+      "batch": "b1",
+      "actual": 1177,
+      "predicted": 893,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c3",
+      "batch": "b1",
+      "actual": 1226,
+      "predicted": 997,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c4",
+      "batch": "b1",
+      "actual": 1227,
+      "predicted": 922,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c5",
+      "batch": "b1",
+      "actual": 1074,
+      "predicted": 883,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c6",
+      "batch": "b1",
+      "actual": 636,
+      "predicted": 747,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c7",
+      "batch": "b1",
+      "actual": 870,
+      "predicted": 869,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c8",
+      "batch": "b1",
+      "actual": 879,
+      "predicted": 909,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c9",
+      "batch": "b1",
+      "actual": 1054,
+      "predicted": 861,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c10",
+      "batch": "b1",
+      "actual": 906,
+      "predicted": 789,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c11",
+      "batch": "b1",
+      "actual": 788,
+      "predicted": 716,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c12",
+      "batch": "b1",
+      "actual": 902,
+      "predicted": 766,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c13",
+      "batch": "b1",
+      "actual": 897,
+      "predicted": 865,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c14",
+      "batch": "b1",
+      "actual": 880,
+      "predicted": 747,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c15",
+      "batch": "b1",
+      "actual": 719,
+      "predicted": 683,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c16",
+      "batch": "b1",
+      "actual": 862,
+      "predicted": 858,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c17",
+      "batch": "b1",
+      "actual": 857,
+      "predicted": 772,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c18",
+      "batch": "b1",
+      "actual": 691,
+      "predicted": 696,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c19",
+      "batch": "b1",
+      "actual": 788,
+      "predicted": 731,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c20",
+      "batch": "b1",
+      "actual": 534,
+      "predicted": 745,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c21",
+      "batch": "b1",
+      "actual": 559,
+      "predicted": 715,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c22",
+      "batch": "b1",
+      "actual": 891,
+      "predicted": 792,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c23",
+      "batch": "b1",
+      "actual": 1014,
+      "predicted": 895,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c24",
+      "batch": "b1",
+      "actual": 1017,
+      "predicted": 824,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c25",
+      "batch": "b1",
+      "actual": 854,
+      "predicted": 734,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c26",
+      "batch": "b1",
+      "actual": 870,
+      "predicted": 789,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c27",
+      "batch": "b1",
+      "actual": 842,
+      "predicted": 716,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c28",
+      "batch": "b1",
+      "actual": 860,
+      "predicted": 727,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c29",
+      "batch": "b1",
+      "actual": 917,
+      "predicted": 880,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c30",
+      "batch": "b1",
+      "actual": 709,
+      "predicted": 748,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c31",
+      "batch": "b1",
+      "actual": 876,
+      "predicted": 1041,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c32",
+      "batch": "b1",
+      "actual": 731,
+      "predicted": 766,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c33",
+      "batch": "b1",
+      "actual": 757,
+      "predicted": 733,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c34",
+      "batch": "b1",
+      "actual": 742,
+      "predicted": 813,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c35",
+      "batch": "b1",
+      "actual": 703,
+      "predicted": 826,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c36",
+      "batch": "b1",
+      "actual": 704,
+      "predicted": 897,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c37",
+      "batch": "b1",
+      "actual": 648,
+      "predicted": 800,
+      "split": "test"
+    },
+    {
+      "cell_id": "b1c38",
+      "batch": "b1",
+      "actual": 617,
+      "predicted": 634,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c39",
+      "batch": "b1",
+      "actual": 625,
+      "predicted": 699,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c40",
+      "batch": "b1",
+      "actual": 966,
+      "predicted": 749,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c41",
+      "batch": "b1",
+      "actual": 1051,
+      "predicted": 824,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c42",
+      "batch": "b1",
+      "actual": 702,
+      "predicted": 709,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c43",
+      "batch": "b1",
+      "actual": 651,
+      "predicted": 672,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c44",
+      "batch": "b1",
+      "actual": 616,
+      "predicted": 788,
+      "split": "train"
+    },
+    {
+      "cell_id": "b1c45",
+      "batch": "b1",
+      "actual": 599,
+      "predicted": 754,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c0",
+      "batch": "b2",
+      "actual": 300,
+      "predicted": 546,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c1",
+      "batch": "b2",
+      "actual": 148,
+      "predicted": 148,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c2",
+      "batch": "b2",
+      "actual": 438,
+      "predicted": 464,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c3",
+      "batch": "b2",
+      "actual": 335,
+      "predicted": 264,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c4",
+      "batch": "b2",
+      "actual": 444,
+      "predicted": 461,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c5",
+      "batch": "b2",
+      "actual": 480,
+      "predicted": 504,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c6",
+      "batch": "b2",
+      "actual": 511,
+      "predicted": 386,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c7",
+      "batch": "b2",
+      "actual": 663,
+      "predicted": 578,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c8",
+      "batch": "b2",
+      "actual": 982,
+      "predicted": 743,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c9",
+      "batch": "b2",
+      "actual": 1061,
+      "predicted": 698,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c10",
+      "batch": "b2",
+      "actual": 561,
+      "predicted": 468,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c11",
+      "batch": "b2",
+      "actual": 477,
+      "predicted": 500,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c12",
+      "batch": "b2",
+      "actual": 458,
+      "predicted": 451,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c13",
+      "batch": "b2",
+      "actual": 483,
+      "predicted": 432,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c14",
+      "batch": "b2",
+      "actual": 485,
+      "predicted": 469,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c15",
+      "batch": "b2",
+      "actual": 209,
+      "predicted": 180,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c16",
+      "batch": "b2",
+      "actual": 483,
+      "predicted": 593,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c17",
+      "batch": "b2",
+      "actual": 494,
+      "predicted": 535,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c18",
+      "batch": "b2",
+      "actual": 487,
+      "predicted": 431,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c19",
+      "batch": "b2",
+      "actual": 461,
+      "predicted": 373,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c20",
+      "batch": "b2",
+      "actual": 502,
+      "predicted": 519,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c21",
+      "batch": "b2",
+      "actual": 489,
+      "predicted": 540,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c22",
+      "batch": "b2",
+      "actual": 513,
+      "predicted": 532,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c23",
+      "batch": "b2",
+      "actual": 527,
+      "predicted": 523,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c24",
+      "batch": "b2",
+      "actual": 495,
+      "predicted": 593,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c25",
+      "batch": "b2",
+      "actual": 461,
+      "predicted": 599,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c26",
+      "batch": "b2",
+      "actual": 471,
+      "predicted": 512,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c27",
+      "batch": "b2",
+      "actual": 468,
+      "predicted": 492,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c28",
+      "batch": "b2",
+      "actual": 509,
+      "predicted": 503,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c29",
+      "batch": "b2",
+      "actual": 498,
+      "predicted": 468,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c30",
+      "batch": "b2",
+      "actual": 481,
+      "predicted": 488,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c31",
+      "batch": "b2",
+      "actual": 492,
+      "predicted": 654,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c32",
+      "batch": "b2",
+      "actual": 519,
+      "predicted": 489,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c33",
+      "batch": "b2",
+      "actual": 520,
+      "predicted": 506,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c34",
+      "batch": "b2",
+      "actual": 499,
+      "predicted": 529,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c35",
+      "batch": "b2",
+      "actual": 463,
+      "predicted": 425,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c36",
+      "batch": "b2",
+      "actual": 535,
+      "predicted": 456,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c37",
+      "batch": "b2",
+      "actual": 478,
+      "predicted": 519,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c38",
+      "batch": "b2",
+      "actual": 465,
+      "predicted": 501,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c39",
+      "batch": "b2",
+      "actual": 459,
+      "predicted": 495,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c40",
+      "batch": "b2",
+      "actual": 499,
+      "predicted": 453,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c41",
+      "batch": "b2",
+      "actual": 429,
+      "predicted": 500,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c42",
+      "batch": "b2",
+      "actual": 466,
+      "predicted": 487,
+      "split": "test"
+    },
+    {
+      "cell_id": "b2c43",
+      "batch": "b2",
+      "actual": 462,
+      "predicted": 482,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c44",
+      "batch": "b2",
+      "actual": 457,
+      "predicted": 489,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c45",
+      "batch": "b2",
+      "actual": 487,
+      "predicted": 511,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c46",
+      "batch": "b2",
+      "actual": 429,
+      "predicted": 555,
+      "split": "train"
+    },
+    {
+      "cell_id": "b2c47",
+      "batch": "b2",
+      "actual": 713,
+      "predicted": 452,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c0",
+      "batch": "b3",
+      "actual": 1009,
+      "predicted": 1127,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c1",
+      "batch": "b3",
+      "actual": 1063,
+      "predicted": 1084,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c2",
+      "batch": "b3",
+      "actual": 1267,
+      "predicted": 1049,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c3",
+      "batch": "b3",
+      "actual": 1115,
+      "predicted": 1075,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c4",
+      "batch": "b3",
+      "actual": 1048,
+      "predicted": 1142,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c5",
+      "batch": "b3",
+      "actual": 828,
+      "predicted": 902,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c6",
+      "batch": "b3",
+      "actual": 667,
+      "predicted": 993,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c7",
+      "batch": "b3",
+      "actual": 1836,
+      "predicted": 1072,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c8",
+      "batch": "b3",
+      "actual": 828,
+      "predicted": 985,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c9",
+      "batch": "b3",
+      "actual": 1039,
+      "predicted": 1005,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c10",
+      "batch": "b3",
+      "actual": 1078,
+      "predicted": 1010,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c11",
+      "batch": "b3",
+      "actual": 817,
+      "predicted": 871,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c12",
+      "batch": "b3",
+      "actual": 932,
+      "predicted": 988,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c13",
+      "batch": "b3",
+      "actual": 816,
+      "predicted": 928,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c14",
+      "batch": "b3",
+      "actual": 858,
+      "predicted": 960,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c15",
+      "batch": "b3",
+      "actual": 876,
+      "predicted": 914,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c16",
+      "batch": "b3",
+      "actual": 1638,
+      "predicted": 1140,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c17",
+      "batch": "b3",
+      "actual": 1315,
+      "predicted": 1144,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c18",
+      "batch": "b3",
+      "actual": 1146,
+      "predicted": 1110,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c19",
+      "batch": "b3",
+      "actual": 1155,
+      "predicted": 1102,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c20",
+      "batch": "b3",
+      "actual": 813,
+      "predicted": 952,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c21",
+      "batch": "b3",
+      "actual": 772,
+      "predicted": 1061,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c22",
+      "batch": "b3",
+      "actual": 1002,
+      "predicted": 1120,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c24",
+      "batch": "b3",
+      "actual": 825,
+      "predicted": 903,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c25",
+      "batch": "b3",
+      "actual": 989,
+      "predicted": 853,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c26",
+      "batch": "b3",
+      "actual": 1028,
+      "predicted": 922,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c27",
+      "batch": "b3",
+      "actual": 850,
+      "predicted": 892,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c28",
+      "batch": "b3",
+      "actual": 541,
+      "predicted": 662,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c29",
+      "batch": "b3",
+      "actual": 858,
+      "predicted": 1044,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c30",
+      "batch": "b3",
+      "actual": 935,
+      "predicted": 1053,
+      "split": "test"
+    },
+    {
+      "cell_id": "b3c31",
+      "batch": "b3",
+      "actual": 731,
+      "predicted": 918,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c33",
+      "batch": "b3",
+      "actual": 1284,
+      "predicted": 1204,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c34",
+      "batch": "b3",
+      "actual": 1158,
+      "predicted": 1102,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c35",
+      "batch": "b3",
+      "actual": 1093,
+      "predicted": 1111,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c36",
+      "batch": "b3",
+      "actual": 923,
+      "predicted": 1062,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c37",
+      "batch": "b3",
+      "actual": 1390,
+      "predicted": 1146,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c38",
+      "batch": "b3",
+      "actual": 1935,
+      "predicted": 1142,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c39",
+      "batch": "b3",
+      "actual": 1156,
+      "predicted": 1179,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c40",
+      "batch": "b3",
+      "actual": 796,
+      "predicted": 917,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c41",
+      "batch": "b3",
+      "actual": 786,
+      "predicted": 978,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c42",
+      "batch": "b3",
+      "actual": 1642,
+      "predicted": 1011,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c43",
+      "batch": "b3",
+      "actual": 1046,
+      "predicted": 983,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c44",
+      "batch": "b3",
+      "actual": 940,
+      "predicted": 994,
+      "split": "train"
+    },
+    {
+      "cell_id": "b3c45",
+      "batch": "b3",
+      "actual": 1801,
+      "predicted": 1108,
+      "split": "train"
+    }
+  ]
+}

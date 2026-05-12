@@ -15,7 +15,10 @@ just with per-cell parameter variation.
 
 This is **not pure PyBaMM aging** — that would take overnight to run
 for 100 cells × thousands of cycles per the existing script's comment.
-What we do instead is PyBaMM-calibrated analytic feature generation:
+What we do instead is **Severson-anchored analytic feature generation**
+(the name "PyBaMM-calibrated" was used in earlier iterations and was
+imprecise — the only PyBaMM anchor here is shared parameter source via
+the Severson calibration; no DFN solve happens for these cells):
 
   * SOH(cycle): two-regime decay calibrated to Severson mean fade,
     scaled by per-cell duty severity.
