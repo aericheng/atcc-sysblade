@@ -21,10 +21,20 @@
 /**
  * Per-line-item source catalogue. Surfaced by the /tco page's "Sources &
  * assumptions" panel so each Sysblade-vs-Traditional delta is auditable.
- * `key` matches the field name on `RackCosts`; `note` explains the
- * specific assumption and where it came from. Production deals would
- * replace these references with customer-specific quote numbers, but the
- * v2.2 baseline must remain consistent across deck + whitepaper + UI.
+ * `key` matches the field name on `RackCosts`; `anchor` explains the
+ * specific assumption with directional industry context.
+ *
+ * IMPORTANT — citation discipline:
+ * The numeric anchors below are pinned to v2.2 §G.3 Table 6 (the
+ * canonical source for this proposal). External industry references
+ * (BNEF, Wood Mackenzie, Uptime Institute, ASHRAE, Schneider HVDC)
+ * are named to indicate the *category* of organisation that publishes
+ * in each area, NOT as verified citations to specific documents. The
+ * team must replace these with concrete report IDs + page numbers
+ * before any production sales conversation. Business mentors who
+ * pattern-match real org names but find numbers don't match a specific
+ * issue is a self-inflicted credibility hit; this catalogue is honest
+ * about its directional nature.
  */
 export const TCO_LINE_ITEM_SOURCES: Array<{
   key: keyof Omit<RackCosts, "total">;
@@ -37,35 +47,35 @@ export const TCO_LINE_ITEM_SOURCES: Array<{
     label: "Initial purchase (8 × BBU ASP)",
     source: "v2.2 §G.3 Table 6, row 1",
     anchor:
-      "Traditional NMC BBU ASP $720/unit (BNEF 2024 BBU price index, median Tier-2 rack BBU); Sysblade target $1080/unit reflecting the LFP+LIC hybrid + embedded Twin (cost engineering in v2.2 §E.2 Bill-of-Materials table).",
+      "Traditional NMC BBU ASP $720/unit reflects mid-2020s mid-tier rack BBU procurement pricing (directional industry baseline — verify against BloombergNEF / IDTechEx battery price surveys for specific deals). Sysblade target $1080/unit reflects the LFP+LIC hybrid + embedded Twin (cost engineering in v2.2 §E.2 BOM table).",
   },
   {
     key: "replacements",
     label: "Replacements over 10 years",
     source: "v2.2 §G.3 Table 6, row 2",
     anchor:
-      "Traditional NMC 6-8 yr service life (Wood Mackenzie 2024 Data-center BBU report) → 1.5× replacements in 10y at $1080 each; Sysblade LFP under BBU duty 10+ yr (Severson-fit decay + duty_factor 0.33, /twin aging chart) → 1× replacement.",
+      "Traditional NMC 6-8 yr service life is a typical industry range for cycle-fade + calendar-life-bound BBU packs under data-center duty (directional — verify against Wood Mackenzie / IDTechEx data-center BBU publications for specific deals). 1.5× replacements in 10y at $1080 each; Sysblade LFP under BBU duty 10+ yr (Severson-fit decay + duty_factor 0.33, see /twin aging chart) → 1× replacement.",
   },
   {
     key: "transient",
     label: "Transient downtime cost",
     source: "v2.2 §G.3 Table 6, row 3",
     anchor:
-      "Uptime Institute 2024 Outage Analysis: median rack-level transient event $/MWh ~$9k. Traditional NMC sees ~6 sag-induced restarts/yr at 80 kW × 100 ms ≈ $4800/rack/10y; Sysblade LIC absorbs sub-1s events → ~75 % reduction to $1200/rack/10y (per §B.1 5.7× power-stress drop on LFP).",
+      "Downtime cost from voltage-sag-induced restarts conservatively estimated using rack-level transient event cost ranges commonly cited by Uptime Institute outage analyses (directional — specific issue + page TBD by team). Traditional NMC sees ~6 sag-induced restarts/yr at 80 kW × 100 ms ≈ $4800/rack/10y; Sysblade LIC absorbs sub-1s events → ~75 % reduction to $1200/rack/10y (per §B.1 5.7× power-stress drop on LFP).",
   },
   {
     key: "ops",
     label: "Ops labour (predictive maintenance)",
     source: "v2.2 §G.3 Table 6, row 4",
     anchor:
-      "ASHRAE TC 9.9 2024 update: traditional BBU inspection ~50 h/rack/10y at $100/h ≈ $5000; Sysblade Twin-driven predictive ops cuts to ~20 h/rack/10y ≈ $2000 (RUL-triggered Tier-3 replacement vs scheduled inspection).",
+      "Traditional BBU inspection labour estimated at ~50 h/rack/10y at ~$100/h ≈ $5000 — anchored to data-center ops cost ranges in ASHRAE TC 9.9 thermal guidelines + industry rack-ops benchmarks (directional — specific document + page TBD by team). Sysblade Twin-driven predictive ops cuts to ~20 h/rack/10y ≈ $2000 (RUL-triggered Tier-3 replacement vs scheduled inspection).",
   },
   {
     key: "hvdc",
     label: "HVDC transition retrofit",
     source: "v2.2 §G.3 Table 6, row 5",
     anchor:
-      "Schneider 2024 HVDC migration whitepaper: 48V→±400V retrofit ~$600/rack/yr × 8y ≈ $4800 for legacy NMC sets that need forklift swap. Sysblade ORV3-ready interface → drops to $1800/rack/10y residual integration cost (no chemistry rework needed).",
+      "48V→±400V HVDC retrofit estimated at ~$600/rack/yr × 8y ≈ $4800 for legacy NMC sets needing forklift swap during the industry transition (directional — Schneider/Vertiv/Eaton publish HVDC migration whitepapers in this category; specific document TBD by team). Sysblade ORV3-ready interface → drops to $1800/rack/10y residual integration cost (no chemistry rework needed).",
   },
 ];
 
