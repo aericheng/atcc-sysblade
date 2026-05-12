@@ -34,6 +34,13 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "20"
+          # setup-node@v5 auto-detects package manager from lockfiles; the
+          # repo root has pnpm-lock.yaml (local dev path) which makes the
+          # action try to set up a pnpm cache and then fail with "Unable to
+          # locate executable file: pnpm" because the CI lane deliberately
+          # uses npm (see "Install" step below + vercel.json parity note).
+          # Disable the auto-cache to keep this lane on npm.
+          package-manager-cache: false
 
       - name: Install (npm with legacy peer deps, matches Vercel)
         working-directory: apps/web
