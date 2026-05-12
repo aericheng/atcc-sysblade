@@ -218,7 +218,11 @@ export function DashboardClient({
                   )}
                 </p>
                 <Disclosure summary="What 800 cycles means in years">
-                  BBU duty averages ~50 cycles/yr (v2.2 §B.2), so{" "}
+                  BBU duty averages ~50 cycles/yr (engineering estimate anchored to{" "}
+                  <span className="text-foreground">v2.1 §G.3 footnote + §E.1 Tier-B</span>:
+                  &ldquo;LFP 在 BBU 浮充應用實測 8–12 年壽命估算&rdquo; / &ldquo;30–90 sec
+                  graceful @ 120 kW&rdquo;; per-year cycle count itself is not stated in v2.1
+                  §B.2 — the proposal&rsquo;s §B.2 covers market positioning, not duty cadence), so{" "}
                   <span className="text-foreground">RUL = 800 cycles</span> ≈ 16 years of BBU
                   service remaining. The 800-cycle threshold is the &ldquo;needs replacement
                   within ~16 years&rdquo; gate, not 800 days. Under the LSTM-driven path,
@@ -236,7 +240,9 @@ export function DashboardClient({
                       a Severson-anchored synthetic BBU-duty trajectory (analytic decay,
                       not PyBaMM aging — see /twin Regime mix disclosure), the LSTM predicts that
                       trajectory&rsquo;s total cycle life, and we subtract the device&rsquo;s
-                      elapsed cycles (age × 50 cycles/yr per v2.2 §B.2). One model deployed
+                      elapsed cycles (age × 50 cyc/yr — engineering estimate anchored to v2.1
+                      §G.3 footnote &ldquo;LFP BBU 浮充 8–12 yr life&rdquo;, not a verbatim
+                      v2.1 §B.2 claim). One model deployed
                       across the fleet, not a separate decay heuristic.
                     </>
                   ) : (

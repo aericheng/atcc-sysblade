@@ -610,7 +610,7 @@ export function TwinClient({
               value={Math.round((aging.stats["cycle_at_80pct_soh_bbu"] as number) ?? 0)}
               unit="cycles"
               tone="primary"
-              hint="§B.2 50 cycles/yr → ≈ 67 yr cycle life · 10-yr design target met with margin (calendar life binds, not cycle-fade)"
+              hint="50 cyc/yr engineering estimate (anchored to v2.1 §G.3 + §E.1 Tier-B 8-12 yr LFP 浮充 life) → ≈ 67 yr cycle-fade life · 10-yr design target met with margin (calendar life binds, not cycle-fade)"
             />
             <Stat
               label="Knee point (full-cycle reference)"
