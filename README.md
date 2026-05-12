@@ -33,9 +33,9 @@
 | 路由 | 功能 | 突出技術 |
 |---|---|---|
 | [`/`](https://sysblade-atcc.vercel.app/) | 首頁 — 5 張頭條卡 + 板塊導引 | 從 scenario JSON 動態取真實量測值 |
-| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN(Prada2013 LFP)+ LSTM RUL + 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 |
-| [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10 年 TCO 計算器 | 4 個 slider × 3 個 preset · 純 HTML/Tailwind bar chart |
-| [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + 三層服務分層 + per-device drilldown(SOH / RUL / 熱 / 操作層 metrics)· 全頁 SIMULATED DATA 浮水印 |
+| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (LIC, Eaton XLR datasheet anchor)** + LSTM RUL + 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 + **v_lic(t) chart 顯示 UVLO 餘裕** |
+| [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10 年 TCO 計算器 | 4 個 slider × 3 個 preset · 純 HTML/Tailwind bar chart · **Payback period tile + 5 條 §G.3 source anchor panel** |
+| [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + 三層服務分層 + per-device drilldown(SOH / RUL / 熱 / 操作層 metrics + **LIC bank envelope headroom bar**)· 全頁 SIMULATED DATA 浮水印 · site 名為虛擬 persona |
 
 ![Sysblade architecture](docs/figures/architecture.png)
 
@@ -56,6 +56,25 @@ scripts/export_lstm_onnx.py               └ apps/web/public/scenarios/
                                             → next build (static export)
                                               → out/ → Vercel CDN
 ```
+
+### 物理層分層 — 為什麼 LIC 不走 PyBaMM
+
+**LFP cell 走 PyBaMM DFN**(化學最複雜、最 critical);**LIC 側走 closed-form 一階 RC 等效模型**
+(`_simulate_lic_rc()` in `scripts/generate_twin_scenarios.py`),參數錨 Eaton XLR-48-166 × 2 並聯 datasheet:
+
+| 參數 | 值 | 來源 |
+|---|---:|---|
+| Bank capacitance C | 332 F | 166 F × 2 modules in parallel |
+| Bank ESR | 2.5 mΩ | 5 mΩ × 0.5 (parallel) |
+| V_nominal | 51.3 V | 滿電終端電壓 |
+| V_min (datasheet UVLO) | 38.0 V | Eaton XLR discharge cutoff |
+
+Demo waveform 跑出來:**worst-case droop 2.32 V**(從 51.3 → 48.98 V)、**headroom 10.98 V 到 UVLO**、
+`passes_cutoff = true`。Droop 組成:**95 % 來自 ESR drop**(926 A peak × 2.5 mΩ)、5 % 來自累積電容放電
+(13.31 kJ ÷ 332 F)— 換句話說 production 若需降 droop,加並聯模組(降 ESR)比加電量(加 C)有效。
+**未模**:pseudo-capacitance、temperature-dependent ESR、self-discharge、electrode kinetics
+(Helmholtz layer dynamics)— production 階段以 Eaton in-the-loop 量測校正。`/twin` 第 3 張 ChartCard
+渲染 v_lic(t) 配紅色 dashed line 標 UVLO,業師可直接指螢幕。
 
 ---
 
