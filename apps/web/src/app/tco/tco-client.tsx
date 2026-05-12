@@ -363,9 +363,13 @@ export function TcoClient() {
             Sources & assumptions
           </CardTitle>
           <p className="mt-1.5 text-[11px] text-muted">
-            Each TCO line item below is anchored to v2.2 §G.3 Table 6 + a named external
-            reference. The proposal PDF carries the full table on the cited page; this panel
-            mirrors the same numbers so on-screen audit is one click away.
+            Each TCO line item below is pinned to <span className="text-foreground">v2.2 §G.3 Table 6</span>{" "}
+            (the canonical source for this proposal); the &ldquo;industry anchor&rdquo; column
+            names the <em>category</em> of organisation that publishes in each area, NOT a
+            verified citation to a specific document. The team replaces these with concrete
+            report IDs + page numbers in production sales conversations. Surfaced here so a
+            reviewer can audit the directional assumptions end-to-end without flipping back to
+            the PDF.
           </p>
         </CardHeader>
         <CardBody>
@@ -375,7 +379,7 @@ export function TcoClient() {
                 <tr className="text-muted text-[10px] uppercase tracking-wider">
                   <th className="text-left py-2 pr-3 whitespace-nowrap">Line item</th>
                   <th className="text-left py-2 pr-3 whitespace-nowrap">v2.2 anchor</th>
-                  <th className="text-left py-2">Why this number</th>
+                  <th className="text-left py-2">Why this number (directional industry context)</th>
                 </tr>
               </thead>
               <tbody>

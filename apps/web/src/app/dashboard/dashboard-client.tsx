@@ -204,12 +204,28 @@ export function DashboardClient({
                 <p>
                   Tier-3 queue rule: <span className="text-foreground">SOH &lt; 85 %</span> <em>or</em>{" "}
                   <span className="text-foreground">RUL &lt; 800 cycles</span>.
+                  {rulFromLstm && (
+                    <span className="text-muted/80">
+                      {" "}
+                      In this build LSTM-predicted RULs sit well above the 800-cycle gate (LFP
+                      cycle-fade under BBU duty extrapolates into thousands of cycles), so
+                      admission triggers almost exclusively on{" "}
+                      <span className="text-foreground">SOH &lt; 0.85</span>; the RUL branch is
+                      retained as the safety net for the{" "}
+                      <code className="text-foreground">synthetic_decay</code> fallback path
+                      (smaller RUL range).
+                    </span>
+                  )}
                 </p>
                 <Disclosure summary="What 800 cycles means in years">
                   BBU duty averages ~50 cycles/yr (v2.2 §B.2), so{" "}
                   <span className="text-foreground">RUL = 800 cycles</span> ≈ 16 years of BBU
                   service remaining. The 800-cycle threshold is the &ldquo;needs replacement
-                  within ~16 years&rdquo; gate, not 800 days.
+                  within ~16 years&rdquo; gate, not 800 days. Under the LSTM-driven path,
+                  cycle-fade headroom is typically much larger than calendar life —{" "}
+                  <span className="text-foreground">calendar life binds at ~8-12 yr</span> per
+                  v2.2 附件 C, so cycle-fade is rarely the binding constraint for replacement
+                  decisions.
                 </Disclosure>
                 <Disclosure summary="Where rul_cycles, soh_lfp, soh_lic come from">
                   {rulFromLstm ? (

@@ -164,7 +164,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             <span className="text-xs text-muted">cycles</span>
             <span className="ml-auto text-xs text-muted">
               ≈ <span className="font-mono text-foreground tabular-nums">{bbuYrs.toFixed(1)}</span>{" "}
-              BBU years remaining
+              yr <span className="text-muted/70">(cycle-fade only)</span>
             </span>
           </div>
 
@@ -179,6 +179,21 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             ΔMAPE +0.10 pp INT8). 90 % conformal PI bands are calibrated only on the 9
             walkthrough cells in /twin; per-device fleet PI bands would require
             per-device PyBaMM trajectories.
+          </p>
+          <p className="text-[11px] leading-relaxed text-muted">
+            <span className="text-warning font-medium">⚠ Cycle-fade headroom only:</span>{" "}
+            the &ldquo;{bbuYrs.toFixed(1)} yr&rdquo; figure is{" "}
+            <span className="text-foreground">cycles ÷ 50 cyc/yr</span> assuming BBU low-duty
+            cadence — under LSTM-predicted long cycle-fade life, this number can read in the
+            tens-to-hundreds of years. <span className="text-foreground font-medium">Calendar
+            life binds at ~8–12 yr</span> (v2.2 附件 C: LFP 浮充壽命 + thermal/SEI growth),
+            so the headline <span className="text-foreground">10-yr service target</span> is
+            calendar-bound, not cycle-bound. Tier-3 admission in this LSTM-driven path
+            triggers almost exclusively on <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span>;
+            the <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> branch in the
+            admission rule is the safety net for the{" "}
+            <code className="text-foreground">synthetic_decay</code> fallback path (when the
+            LSTM checkpoint isn&rsquo;t available at generation time).
           </p>
         </section>
 
