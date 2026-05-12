@@ -87,6 +87,68 @@ using a browser with manual paywall / vendor portal access — not WebFetch.
 
 ---
 
+## Second WebFetch round (2026-05-12 cont.) — alternative routes for blocked sources
+
+Attempted 8 additional alt-route WebFetches for the 4 blocked sources
+(Semantic Scholar / Wayback / Bloomberg news / Octopart / DigiKey / Reuters /
+ScienceDirect abstract / Google Scholar / Wikipedia EV battery / IEA Global
+EV Outlook / TDK press release). **0 of 4 blocked sources moved to verified**;
+2 sources had useful **trend-level** corroboration even though specific
+numbers stayed blocked. Summary:
+
+### What the alternative routes added
+
+| Source | Alt-route result |
+|---|---|
+| **BNEF LFP $95 → $65** | IEA Global EV Outlook 2024 confirmed: "almost 14% fall in pack price between 2022 and 2023" + "NMC <25% more expensive than LFP in 2023, down from 50% premium in 2021". **Trend matches** our directional claim. **Specific $ values still NOT publicly accessible** — both IEA and BNEF deliberately keep absolute $/kWh inside paywalled reports. Wikipedia EV-battery article cites IEA 2024 LFP $130/kWh (different from our claimed $95-$65 trajectory) — **note discrepancy and flag for team to confirm against actual BNEF Survey 2023/2024 PDF**. |
+| **Eaton XLR-48-166** | DigiKey product filter showed individual EDLC capacitors (2.7/3/5.5 V cells from Eaton/Maxwell/Cornell Dubilier) **but no 48 V pre-assembled modules** in standard catalog. Suggests Eaton XLR-48 modules sold via direct industrial channel (not stocked at DigiKey/Mouser) — model existence likely real but spec verification requires Eaton sales engagement. |
+| **JM Energy ULTIMO 3300F** | Wikipedia Lithium-ion capacitor article references "ULTIMO Li-ion hybrid capacitor Spec Sheet" archive link (unavailable). TDK acquired JM Energy 2017 (general LIC article context — TDK press release URL timed out). **Existence verified, specific 3300F numbers still need TDK direct datasheet**. |
+| **Wang 2019 thermal runaway** | ScienceDirect 403, PubMed zero results, Google Scholar showed 100+ citing works but not the original. Paper exists (per citing-works traffic) but specific LFP 230–270 °C / NMC 150–210 °C onset values need Elsevier subscription. |
+| **ST AN5354 / RM0498** | Multiple URL pattern attempts to st.com all timed out (60s budget). Likely ST account login required for full PDF download. |
+| Reuters BNEF coverage | Tool config blocked Claude Code from fetching reuters.com. |
+| Bloomberg article | 403 Forbidden. |
+| Wayback Machine | Tool config blocked Claude Code from fetching web.archive.org. |
+
+### Net status after second round
+
+- **Trend-level verified** (additional 1): BNEF / IEA battery price trend
+  (LFP cheaper than NMC, prices falling 2022-2023) — generally supported,
+  **but our specific $95→$65 number requires BNEF subscription to confirm**.
+  Wikipedia-IEA cross-reference suggests our specific values may be off
+  (IEA 2024 reports LFP $130/kWh, different from $65).
+- **Identity verified** (additional 1): JM Energy + ULTIMO LIC product line
+  existed (Wikipedia + TDK acquisition history), specific 3300F cell specs
+  pending.
+- **Still blocked**: Wang 2019, Eaton XLR-48-166 spec table, ST AN5354 +
+  RM0498, BNEF specific $/kWh values.
+
+### Conclusion — what WebFetch can and can't do
+
+This audit pass demonstrates a practical pattern for future citation work:
+
+1. **WebFetch works well for**: open-access journals (Marquis), arXiv abstracts,
+   Wikipedia, open data portal pages (NASA PCoE), and **supplementary PDFs
+   on Springer / Nature** (the Severson SI was 4.6 MB and pypdf-parsed
+   cleanly).
+2. **WebFetch fails for**: paywalled main papers (Nature, Elsevier),
+   vendor datasheet PDFs that need account login or are slow-loading
+   (Eaton, ST, TDK), aggregator catalogs with anti-bot (DigiKey, Mouser,
+   Octopart), and major news outlets explicitly blocked by tool policy
+   (Reuters, Wayback Machine).
+3. **For our remaining 4 blocked citations, complete verification requires**
+   either (a) institutional subscriptions (Nature, ScienceDirect, BNEF),
+   (b) vendor sales engagement (Eaton industrial channel), or (c) ST
+   account creation. **None of these is reachable from this CLI session**.
+
+The honest move before 複賽 is to either commission a librarian / 圖書館員
+walk-through of the 4 blocked sources, or rewrite the citing whitepaper
+sections to **softer attributions** that the publicly-accessible
+trend-level data can support (e.g. "BNEF surveys show LFP-NMC price
+parity converging through 2023-2024" instead of "BNEF LFP $95 → $65/kWh"
+specifically).
+
+---
+
 ## Memory note discrepancy resolution
 
 The original [memory](../.claude/projects/.../memory/project_citation_verification_pre_rematch.md)
