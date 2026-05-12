@@ -144,13 +144,24 @@ def check_lic_rc_invariants(report: Report) -> None:
     # Soft drift detector for the headline droop number quoted in
     # whitepaper §3.3.x and PRESENTATION_GUIDE Q6. Tolerance ±0.1 V covers
     # PyBaMM-side floating-point noise. Whitepaper currently quotes 2.32 V.
+    #
+    # PRESENTATION_GUIDE.md is in .gitignore (local-only cheat sheet, per
+    # global CLAUDE.md), so on CI runners the file is absent. Make the PG
+    # check soft: only verified when the file exists; whitepaper claim is
+    # mandatory because that doc IS committed.
     wp = _read(WHITEPAPER)
-    pg = _read(REPO / "PRESENTATION_GUIDE.md")
+    pg_path = REPO / "PRESENTATION_GUIDE.md"
+    pg_present = pg_path.exists()
+    pg_text = _read(pg_path) if pg_present else ""
     droop_claim_v = 2.32
     droop_claim_in_wp = bool(re.search(r"\b2\.32\s*V", wp))
-    droop_claim_in_pg = bool(re.search(r"\b2\.32\s*V", pg))
+    droop_claim_in_pg = bool(re.search(r"\b2\.32\s*V", pg_text)) if pg_present else True
     report.add(
-        name="LIC droop '2.32 V' claim in whitepaper + PRESENTATION_GUIDE matches RC JSON",
+        name=(
+            "LIC droop '2.32 V' claim in whitepaper"
+            + (" + PRESENTATION_GUIDE" if pg_present else " (PG skipped, gitignored)")
+            + " matches RC JSON"
+        ),
         passed=(
             _approx(s["lic_v_droop_v"], droop_claim_v, 0.1)
             and droop_claim_in_wp
@@ -158,9 +169,18 @@ def check_lic_rc_invariants(report: Report) -> None:
         ),
         detail=(
             f"json droop={s['lic_v_droop_v']:.3f} V · "
-            f"'2.32 V' in whitepaper={droop_claim_in_wp} · in PRESENTATION_GUIDE={droop_claim_in_pg}"
+            f"'2.32 V' in whitepaper={droop_claim_in_wp} · "
+            + (
+                f"in PRESENTATION_GUIDE={droop_claim_in_pg}"
+                if pg_present
+                else "PG=skipped(gitignored, not in CI checkout)"
+            )
         ),
-        target_loc="docs/whitepaper.md + PRESENTATION_GUIDE.md ↔ transient_hybrid.json (lic_v_droop_v)",
+        target_loc=(
+            "docs/whitepaper.md"
+            + (" + PRESENTATION_GUIDE.md" if pg_present else "")
+            + " ↔ transient_hybrid.json (lic_v_droop_v)"
+        ),
     )
 
 
