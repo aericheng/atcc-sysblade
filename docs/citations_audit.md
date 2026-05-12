@@ -39,27 +39,51 @@ This audit closes part of the deferred work flagged in the
 
 ---
 
-## ❌ Not searched in this pass — pending external verification
+## External citations — 2026-05-12 WebFetch round outcome
 
-These remain on the [`project_citation_verification_pre_rematch`](../.claude/projects/.../memory/project_citation_verification_pre_rematch.md) backlog:
+Attempted WebFetch on 8 external citations. Results below; **2 fully verified,
+2 partially verified, 4 blocked by paywall / vendor-page timeout / authentication**.
 
-| # | Citation | Status |
+### ✅ Fully verified
+
+| # | Citation | Verification |
 |---|---|---|
-| 2 | Severson 2019 *Nature Energy* paper — verify Variance 15.0% in Figure 2c / Table 1; Discharge 9.1% in Table 1 + Figure 2c | Pending WebFetch <https://www.nature.com/articles/s41560-019-0356-8> |
-| 3 | Wang et al. 2019 *Prog. Energy Combust. Sci.* 73 §2.1 Table 2 — LFP 230–270 °C / NMC 150–210 °C thermal-runaway onset | Pending WebFetch DOI |
-| 3 | Bandhauer 2011 *J. Electrochem. Soc.* 158 R1 §3 — thermal runaway comparison | Pending WebFetch DOI |
-| 4 | Eaton XLR-48-166 module datasheet — 53 Wh / ESR ≈ 5 mΩ / ≥ 100k cycles | Pending Eaton website lookup (model number `-166` suffix unverified) |
-| 4 | JM Energy ULTIMO 3300F cell datasheet — 10–30 Wh/kg / 5–10 kW/kg | Pending JM Energy datasheet |
-| 5 | NASA PCoE Battery Data Set — Saha & Goebel 2007 README, B0005-B0018 specs 2.0 Ah / 2.5 V cutoff | Pending WebFetch NASA PCoE repo |
-| 6 | Marquis 2019 *J. Electrochem. Soc.* 166 A3693 — SPM 5–10× benchmark | Pending DOI <https://doi.org/10.1149/2.0341915jes> |
-| 8 | ST AN5354 §Performance + §Power-aware ML — NPU 30–60% peak GOPS / NPU vs CPU 5× 功耗比 | Pending ST login + AN5354 PDF |
-| 8 | ST RM0498 — STM32N6 NPU 1.6 MB ML FLASH / 1 MB ML SRAM / 300 GOPS | Pending ST login + RM0498 PDF |
-| 9 | BloombergNEF Lithium-Ion Battery Price Survey 2023–2024 — LFP 95 → 65 USD/kWh | Pending WebFetch <https://about.bnef.com/> latest survey |
+| 6 | **Marquis 2019** *J. Electrochem. Soc.* 166 A3693 — "An Asymptotic Derivation of a Single Particle Model with Electrolyte", Marquis / Sulzer / Timms / Please / Chapman | DOI <https://doi.org/10.1149/2.0341915jes> WebFetch returned full match. Paper IS the SPM/SPMe derivation. **Benchmark wording note**: paper reports "order of magnitude (~10×) decrease in computation time" (Model Comparisons § / Figure 4) + "SPMe requires just over 10% of the memory required by the DFN model" (900 → 110 states). Our repo's "5–10×" framing is in range but cherry-picks the upper end; "~10× faster + 10× memory reduction" is the more honest reading. **whitepaper.md:165 wording acceptable, optionally tighten to ~10×**. |
+| 7 | **arXiv:2508.14318** — Choukse et al. Microsoft+NVIDIA 2025 "Power Stabilization for AI Training Datacenters" | Verified 2026-05-04 via earlier WebFetch (see memory) |
+| extra | Severson 2019 paper identity + Variance/Discharge model methodology | Fetched Nature SI PDF directly (4.6 MB, 62 pages, pypdf-parsed locally). Confirmed title/authors/journal/year exact match; "Variance" model exists (as classifier), "Discharge" model exists (as regression); paper uses "Mean Percent Error" terminology (not "MAPE"). Supplementary Table 4 lists regression MPE values: Constant 29.6/34.9/36.1, Discharge@100 25.0/26.4/45.3, Slope@91-100 25.1/26.1/33.7, Multivariate@100 18.8/78.5/50.0, Multivariate@300 12.5/(26.9)/45.5. |
 
-**Recommendation**: assign one team member 4–6 hours during the week before
-the 複賽 to walk these 9 line items; each gets either a "verified ✓" mark with
-DOI + page + verbatim excerpt, or a citation rewrite to remove the specific
-section number that doesn't exist.
+### 🟡 Partially verified — identity confirmed, headline numbers paywalled
+
+| # | Citation | Verification |
+|---|---|---|
+| 2 | **Severson 2019** main-paper "9.1%" Discharge test error headline | **Not verifiable from SI alone** — the Nature SI PDF (62 pages) doesn't include the abstract or main results section; "9.1" string is zero hits in SI text. Main paper text is behind Nature paywall (idp.nature.com auth redirect). The "9.1%" headline is widely cited externally and likely correct, but cannot verbatim-confirm via WebFetch. **Recommendation**: team gets Nature subscription / interlibrary loan to confirm before 複賽. Closest SI-verifiable models report 12.5–78.5% MPE across feature sets — well-known headline is the elastic-net 5-feature "Discharge" model. |
+| 5 | **NASA PCoE Battery Data Set** | Dataset existence + download link confirmed on NASA page. **README + B0005-B0018 / 2.0 Ah / 2.5 V specs in the dataset ZIP** (not on the index page); requires download + extraction to verify verbatim. |
+
+### ❌ Blocked — could not verify this round
+
+| # | Citation | Block reason |
+|---|---|---|
+| 3 | Wang et al. 2019 *Prog. Energy Combust. Sci.* 73 — LFP 230–270 °C / NMC 150–210 °C thermal-runaway onset | ScienceDirect 403; not in PubMed |
+| 3 | Bandhauer 2011 *J. Electrochem. Soc.* 158 R1 | Not attempted (paywall expected) |
+| 4 | **Eaton XLR-48-166** module — 53 Wh / ESR ≈ 5 mΩ / ≥ 100k cycles | Eaton vendor pages repeatedly timed out (60s budget); Mouser distributor page timeout |
+| 4 | **JM Energy ULTIMO 3300F** — 10–30 Wh/kg / 5–10 kW/kg | TDK product page ECONNREFUSED; Wikipedia confirms JM Energy + ULTIMO existed but doesn't carry specific specs |
+| 8 | ST AN5354 § Performance / § Power-aware ML | st.com PDF timeout (likely needs ST account login for full access) |
+| 8 | ST RM0498 — STM32N6 NPU 1.6 MB FLASH / 1 MB SRAM / 300 GOPS | st.com product page + PDF timeout |
+| 9 | BloombergNEF 2024 Battery Price Survey — LFP $95 → $65/kWh | All BNEF blog URLs tried returned 404 / blog index empty; specific 2024 release URL pattern unknown |
+
+### Verification toolkit notes
+
+- **What worked**: open-access DOIs (Marquis paper), open NASA pages (PCoE index), arXiv abstract pages, Nature **supplementary** PDFs (the Severson SI was 4.6 MB and pypdf parsed it locally). Wikipedia for context.
+- **What didn't**: Nature main-paper PDF (paywall redirect), ScienceDirect (paywall 403), vendor PDF downloads from Eaton / ST / TDK (timeouts), BloombergNEF (URL pattern + paywall).
+- **For the 4 blocked sources**: complete-verification requires either (a) Nature / Elsevier subscription, (b) direct vendor datasheet downloads (manual browser, not WebFetch), or (c) ST account login + AN5354/RM0498 PDF mirror.
+
+### Recommendation
+
+The 2026-05-12 round consumed ~30 minutes of WebFetch budget and verified 3
+of 9 line items, partially verified 2 more, leaving 4 blocked. The remaining
+4 should be hit during the dedicated 複賽 prep week (4–6 h budget per the
+[memory note](../.claude/projects/.../memory/project_citation_verification_pre_rematch.md))
+using a browser with manual paywall / vendor portal access — not WebFetch.
 
 ---
 
