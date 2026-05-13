@@ -205,6 +205,10 @@ function ScopeCharts({
   licVMin,
   licHeadroomV,
   licPassesCutoff,
+  licCF,
+  licESR,
+  licPeakKw,
+  licDroopV,
 }: {
   data: ScopePoint[];
   mode: "lfp" | "hybrid";
@@ -214,6 +218,10 @@ function ScopeCharts({
   licVMin?: number;
   licHeadroomV?: number;
   licPassesCutoff?: boolean;
+  licCF?: number;
+  licESR?: number;
+  licPeakKw?: number;
+  licDroopV?: number;
 }) {
   const [paused, setPaused] = useState(false);
   const sweep = useSweep(4500, 1500, paused);
@@ -323,7 +331,7 @@ function ScopeCharts({
       {mode === "hybrid" && licCutoffV != null && licNominalV != null && (
         <ChartCard
           title="LIC bank voltage (closed-form RC model)"
-          subtitle={`Eaton XLR 48 V × 2 parallel · C = 332 F · ESR = 2.5 mΩ · v_min observed ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "✓ passes" : "✗ fails"} UVLO @ ${licCutoffV.toFixed(0)} V`}
+          subtitle={`Eaton XLR 48 V × 2 parallel · C = ${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · v_min observed ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "✓ passes" : "✗ fails"} UVLO @ ${licCutoffV.toFixed(0)} V`}
         >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -391,9 +399,12 @@ function ScopeCharts({
           <p className="text-xs text-muted mt-2">
             <span className="text-success font-medium">{(licHeadroomV ?? 0).toFixed(2)} V headroom</span>{" "}
             from worst-case droop to Eaton XLR UVLO. Droop is{" "}
-            <span className="text-foreground">ESR-dominated</span>: 926 A peak × 2.5 mΩ ≈ 2.32 V,
-            with the cumulative-charge term (∫i·dt / C) contributing only ~0.78 V at peak energy
-            excursion. Production validates ESR(SOC) + bulk-C(V) curves in-the-loop with Eaton.
+            <span className="text-foreground">ESR-dominated</span>:{" "}
+            {(((licPeakKw ?? 0) * 1000) / (licNominalV ?? 51.3)).toFixed(0)} A peak ×{" "}
+            {((licESR ?? 0) * 1000).toFixed(2)} mΩ ≈ {(licDroopV ?? 0).toFixed(2)} V,
+            with the cumulative-charge term (∫i·dt / C) contributing the residual ~0.78 V at
+            peak energy excursion. Production validates ESR(SOC) + bulk-C(V) curves in-the-loop
+            with Eaton.
           </p>
         </ChartCard>
       )}
@@ -584,6 +595,10 @@ export function TwinClient({
             licVMin={hybrid.stats.lic_v_min as number | undefined}
             licHeadroomV={hybrid.stats.lic_headroom_to_cutoff_v as number | undefined}
             licPassesCutoff={Boolean(hybrid.stats.lic_passes_cutoff)}
+            licCF={hybrid.stats.lic_c_f as number | undefined}
+            licESR={hybrid.stats.lic_esr_ohm as number | undefined}
+            licPeakKw={hybrid.stats.lic_peak_kw as number | undefined}
+            licDroopV={hybrid.stats.lic_v_droop_v as number | undefined}
           />
         </CardBody>
       </Card>

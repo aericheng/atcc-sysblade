@@ -116,9 +116,12 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
                 aria-hidden="true"
               />
             </div>
-            <div className="mt-1 flex justify-between text-[10px] text-muted">
+            <div className="relative mt-1 flex justify-between text-[10px] text-muted">
               <span>{sohBarRange.min} %</span>
-              <span style={{ position: "absolute", marginLeft: `${sohWarnBarPct - 4}%` }}>
+              <span
+                className="absolute top-0"
+                style={{ left: `calc(${sohWarnBarPct}% - 1.5rem)` }}
+              >
                 85 % gate
               </span>
               <span>{sohBarRange.max} %</span>
@@ -163,8 +166,21 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             </span>
             <span className="text-xs text-muted">cycles</span>
             <span className="ml-auto text-xs text-muted">
-              ≈ <span className="font-mono text-foreground tabular-nums">{bbuYrs.toFixed(1)}</span>{" "}
-              yr <span className="text-muted/70">(cycle-fade only)</span>
+              {bbuYrs >= 15 ? (
+                <>
+                  cycle-fade headroom{" "}
+                  <span className="font-mono text-foreground">≫ 10 yr</span>{" "}
+                  <span className="text-muted/70">(calendar-life binds first)</span>
+                </>
+              ) : (
+                <>
+                  ≈{" "}
+                  <span className="font-mono text-foreground tabular-nums">
+                    {bbuYrs.toFixed(1)}
+                  </span>{" "}
+                  yr <span className="text-muted/70">(cycle-fade only)</span>
+                </>
+              )}
             </span>
           </div>
 
@@ -182,18 +198,20 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           </p>
           <p className="text-[11px] leading-relaxed text-muted">
             <span className="text-warning font-medium">⚠ Cycle-fade headroom only:</span>{" "}
-            the &ldquo;{bbuYrs.toFixed(1)} yr&rdquo; figure is{" "}
-            <span className="text-foreground">cycles ÷ 50 cyc/yr</span> assuming BBU low-duty
-            cadence — under LSTM-predicted long cycle-fade life, this number can read in the
-            tens-to-hundreds of years. <span className="text-foreground font-medium">Calendar
-            life binds at ~8–12 yr</span> (v2.2 附件 C: LFP 浮充壽命 + thermal/SEI growth),
-            so the headline <span className="text-foreground">10-yr service target</span> is
-            calendar-bound, not cycle-bound. Tier-3 admission in this LSTM-driven path
-            triggers almost exclusively on <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span>;
-            the <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> branch in the
-            admission rule is the safety net for the{" "}
-            <code className="text-foreground">synthetic_decay</code> fallback path (when the
-            LSTM checkpoint isn&rsquo;t available at generation time).
+            the &ldquo;{bbuYrs >= 15 ? "≫ 10 yr" : `${bbuYrs.toFixed(1)} yr`}&rdquo;
+            figure is <span className="text-foreground">cycles ÷ 50 cyc/yr</span> assuming
+            BBU low-duty cadence — LSTM-predicted long cycle-fade life can read in the
+            tens-to-hundreds of years on raw division, which is why we cap the display at
+            ≫ 10 yr. <span className="text-foreground font-medium">Calendar life binds at
+            ~8–12 yr</span> (v2.1 §G.3 footnote + §E.1 Tier-B: LFP 浮充壽命 + thermal/SEI
+            growth), so the headline{" "}
+            <span className="text-foreground">10-yr service target</span> is calendar-bound,
+            not cycle-bound. Tier-3 admission in this LSTM-driven path triggers almost
+            exclusively on <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span>;
+            the <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> branch in
+            the admission rule is the safety net for the{" "}
+            <code className="text-foreground">synthetic_decay</code> fallback path (when
+            the LSTM checkpoint isn&rsquo;t available at generation time).
           </p>
         </section>
 
@@ -303,6 +321,15 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             telemetry lands with the FastAPI backend (W3+). Droop is ESR-dominated
             (~95 % at 926 A peak), so production scaling beyond 8 BBU/rack would mainly add
             parallel modules to drop ESR rather than additional capacitance.
+          </p>
+          <p className="text-[11px] leading-relaxed text-muted">
+            <span className="font-medium text-warning">⚠ Current-rating gate not modelled:</span>{" "}
+            the RC model verifies voltage envelope (v_min &gt; 38 V) but does NOT check the
+            463 A per-module peak (926 A across 2 parallel) against the Eaton XLR-48-166
+            datasheet&rsquo;s rated pulse current. Typical 48 V LIC modules at this size
+            handle 500–1500 A briefly under 30 s, so the 100 ms pulse should be inside
+            spec — but production must verify on Eaton&rsquo;s lot-specific datasheet
+            before EVT (see <code className="text-foreground">docs/citations_audit.md</code>).
           </p>
         </section>
 

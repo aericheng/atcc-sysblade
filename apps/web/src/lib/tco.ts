@@ -113,10 +113,13 @@ const SYSBLADE_PER_RACK: RackCosts = {
   total: 19400,
 };
 
-// Energy overhead from BBU + cooling, attributable to BBU losses, per rack/year.
-// Order-of-magnitude estimate used for CO2 comparison only.
-const TRADITIONAL_KWH_PER_RACK_YEAR = 2400; // ~5% loss on a 5.5 kW BBU draw, 8 BBUs
-const SYSBLADE_KWH_PER_RACK_YEAR = 1700; // higher round-trip efficiency + thermal
+// BBU-side direct energy overhead (round-trip + idle losses), per rack/year.
+// Order-of-magnitude estimate used for CO2 comparison only. The cooling
+// overhead is added downstream by multiplying by PUE in `computeTco` —
+// i.e. these constants are BBU-only, NOT BBU + cooling, so multiplying
+// the result by `inputs.pue` correctly compounds the cooling factor.
+const TRADITIONAL_KWH_PER_RACK_YEAR = 2400; // BBU-only direct loss (NMC, 8 BBUs)
+const SYSBLADE_KWH_PER_RACK_YEAR = 1700; // BBU-only direct loss (higher round-trip + thermal efficiency)
 
 export interface TcoResult {
   perRack: { traditional: RackCosts; sysblade: RackCosts; saving: number; savingPct: number };

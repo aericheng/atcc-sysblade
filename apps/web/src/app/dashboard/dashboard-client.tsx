@@ -55,14 +55,18 @@ export function DashboardClient({
     return buckets;
   }, [fleet.devices]);
 
-  // Most-urgent first: smallest RUL at the top, so row 1 is the device that
-  // needs replacing soonest. Aligned with the Tier-1 status logic — anything
-  // already flagged early_aging (SOH < 0.85 OR rul < 800) is on the queue.
+  // Most-urgent first: primary sort by lowest SOH (the dominant admission
+  // signal under LSTM-driven RULs, which sit well above the 800-cycle gate);
+  // tiebreak by smallest RUL so within a SOH band the device with less
+  // cycle-fade headroom shows up first. Avoids the prior bug where a healthier
+  // SOH 84 % device could outrank a worse SOH 79 % device just because the
+  // LSTM happened to predict slightly more cycles for the trajectory it was
+  // matched to.
   const replacementCandidates = useMemo(
     () =>
       fleet.devices
         .filter((d) => d.status === "early_aging")
-        .sort((a, b) => a.rul_cycles - b.rul_cycles)
+        .sort((a, b) => a.soh_lfp - b.soh_lfp || a.rul_cycles - b.rul_cycles)
         .slice(0, 8),
     [fleet.devices],
   );
@@ -83,7 +87,8 @@ export function DashboardClient({
         </div>
         <p className="leading-relaxed text-muted">
           All site names below (<span className="text-foreground">TenantCo / ColoOp / DataCo /
-          HyperscaleCo / CarrierHotel</span>, suffixed with the closest airport-code city) are
+          HyperscaleCo / CarrierHotel</span>, suffixed with an airport or US state code
+          (DFW / IAD / AUS / DAL · WA / UT / OH / IA)) are
           <span className="text-foreground"> fictional personas</span> for the ATCC 2026
           academic demonstration — they are <span className="text-foreground font-medium">not
           tied to any real company, customer, or commercial relationship</span>. Every device
@@ -135,7 +140,7 @@ export function DashboardClient({
             label="Early aging"
             value={fleet.status_summary.early_aging}
             tone="danger"
-            hint="SOH dropping faster than RUL model expects"
+            hint="SOH < 85 % or RUL < 800 cycles · auto Tier-3 admission"
           />
         </div>
       </section>
@@ -277,7 +282,7 @@ export function DashboardClient({
         <Card className="simulated-watermark">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Most urgent 8 · sorted by lowest RUL first
+              Most urgent 8 · sorted by lowest SOH first (RUL tiebreak)
             </CardTitle>
             <p className="text-[11px] text-muted mt-1.5">
               Click any row for SOH / RUL / thermal drilldown.
@@ -348,8 +353,8 @@ export function DashboardClient({
             <p className="text-xs text-muted mt-4 flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-warning" />
               {fleet.replacement_queue_count} devices currently on the replacement queue (status =
-              early_aging) — automatically registered into the customer&rsquo;s ServiceNow / Jira
-              pipeline via webhook.
+              early_aging) — ServiceNow / Jira webhook integration is on the W3+ roadmap
+              (no live integration in this static-demo build).
             </p>
           </CardBody>
         </Card>

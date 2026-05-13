@@ -136,7 +136,7 @@ export default async function HomePage() {
             Hardware-Defined, Software-Augmented.
           </h2>
           <p className="mt-3 text-muted max-w-2xl">
-            We don&rsquo;t sell a cheaper BBU &mdash; we sell the only{" "}
+            We don&rsquo;t sell a cheaper BBU &mdash; we sell an integrated{" "}
             <span className="text-foreground font-medium">rack-level system</span> that simultaneously solves{" "}
             <span className="text-foreground font-medium">millisecond transients</span>, the{" "}
             <span className="text-foreground font-medium">HVDC transition</span>, and{" "}
@@ -157,7 +157,7 @@ export default async function HomePage() {
                 <span className="text-foreground font-medium">188 LFP cells</span> (138 Severson 2019 + 50 Severson-anchored synthetic BBU-duty),
                 with 90 % prediction intervals from{" "}
                 <span className="text-success font-medium">MC Dropout + split conformal</span> (PIs 44 % sharper, ≥90 % coverage held).
-                Cloud trains, edge (STM32N6) infers, OTA updates weights.
+                Cloud trains, edge (STM32N6) infers; OTA weight updates are W3+ roadmap.
               </>
             }
             cta="Run physics simulation"
@@ -236,6 +236,12 @@ export default async function HomePage() {
                 <Mini label="Configured" value="345 kJ" />
                 <Mini label="Headroom" value="69×" tone="text-success" />
               </div>
+              <p className="text-[10px] text-muted/80 leading-relaxed pt-1">
+                <span className="text-muted">Headroom 69×</span> = configured capacity ÷ §E.1 5 kJ design need.
+                The <span className="text-muted">/twin</span> page reports a separate <span className="text-muted">~26×</span>{" "}
+                ratio = capacity ÷ <em>actual</em> cumulative excursion under the demo waveform (13.3 kJ).
+                Two denominators, both correct — landing shows structural over-provision, /twin shows operational margin.
+              </p>
             </CardBody>
           </Card>
         </div>
