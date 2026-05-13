@@ -67,10 +67,13 @@ Wang 2011 cross-validation 估算(§2.3.2):在 GB200 worst-case 波形下
 hybrid 比純 LFP 損傷低 **5.5 %**,在 demo 波形上**幾近 neutral**(整合比
 1.012,hybrid 略高 1.2 %,因 Wang kernel 在 0.5–6 C 區近於平坦)。BBU 浮充
 duty 下 LFP 服役壽命估達 **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),
-客戶 10 年內替換次數從 1.5 次降為 1 次 — **此估值對 cycle cadence 假設
-非常敏感**(若客戶實際 duty 升到 200 cyc/yr,壽命優勢會大幅縮減,§2.7.2
-sensitivity)。capex 溢價與替換節省如何在 §2.7.1 TCO 表中互抵的完整邏輯
-詳見 §2.3.1 最後一段。
+客戶 10 年內替換次數從 1.5 次降為 1 次。**注意 calendar life 是 binding
+constraint**(v2.1 §G.3 footnote + §E.1 Tier-B 明文 8–12 yr LFP 浮充壽命),
+**不是 cycle-fade 限制** — LSTM 預測 BBU duty 下 cycle-fade headroom 可達
+數萬 cycles(`/dashboard` drilldown 顯示 ≫ 10 yr cycle-fade 時記得這條)。
+**此估值對 cycle cadence 假設非常敏感**(若客戶實際 duty 升到 200 cyc/yr,
+壽命優勢會大幅縮減,§2.7.2 sensitivity)。capex 溢價與替換節省如何在 §2.7.1
+TCO 表中互抵的完整邏輯詳見 §2.3.1 最後一段。
 
 ### 🧠 8.38 % — RUL 預測 MAPE(Severson 學術 baseline)
 
@@ -218,13 +221,54 @@ $$
 | LFP 接收功率 RMS | 8.7 kW | 1.5 kW | **5.7×** |
 | 電池電壓震盪 (steady-state pp) | ~62 mV | ~18 mV | **3.5×** |
 
+### 2.3.0 LIC 物理層 — closed-form RC + Eaton datasheet anchor ⭐
+
+LFP 我們走完整 PyBaMM DFN 物理模擬;**LIC 側刻意分層**走 closed-form 一階
+RC 等效模型(`_simulate_lic_rc()`,`scripts/generate_twin_scenarios.py`)。
+為什麼分層?LIC 跟 LFP 化學完全不同,塞一起算 10 秒跑半小時,投資報酬不對;
+production 階段直接用 Eaton in-the-loop 量測比 PyBaMM 重做更精準。
+
+**參數錨**(Eaton XLR-48-166 × 2 並聯,datasheet 典型值):
+
+| 參數 | 值 |
+|---|---:|
+| Bank capacitance C | **332 F**(166 F × 2 parallel) |
+| Bank ESR | **2.5 mΩ**(5 mΩ × 0.5,parallel) |
+| V_nominal(滿電) | 51.3 V |
+| V_min(datasheet UVLO) | 38.0 V |
+
+**Demo waveform 跑出來**:
+
+| 指標 | 值 |
+|---|---:|
+| Worst-case droop | **2.32 V**(從 51.3 → 48.98 V) |
+| Headroom to UVLO | **10.98 V**(`passes_cutoff = true`) |
+| Droop 組成 | 95 % 由 ESR drop 主導(926 A peak × 2.5 mΩ),5 % 由累積電容放電 |
+| 13.31 kJ ÷ 332 F 累積 | 0.78 V |
+
+**production 含意**:droop ESR-dominated → 加並聯模組(降 ESR)比加電量(加 C)
+有效。`/twin` 第 3 張 ChartCard 直接渲染 v_lic(t) 配紅色 dashed UVLO line,
+業師可現場驗證。
+
+**未模(明示邊界)**:LIC pseudo-capacitance、temperature-dependent ESR、
+self-discharge、Helmholtz layer electrode kinetics — 這些 production 階段以
+Eaton in-the-loop 量測曲線校正;current-rating gate(463 A peak per module)
+也未在 RC 模型內驗證,需 Eaton lot-specific datasheet 確認(`docs/citations_audit.md`)。
+
 ### 2.3.1 為什麼這對 LFP 壽命是決定性影響
 
 5.7× 功率波動下降不只是「電壓好看」,而是直接對應 LFP 主電池壽命延長:
 
 * **電化學機制**:LFP 衰減主導因子是高 C-rate 引發的 lithium plating、SEI 增厚與顆粒裂解(Severson 2019 §3 衰減模型)。RMS 應力從 8.7 kW 壓到 1.5 kW,等於把有效 C-rate 從約 6 C peak 拉回約 1 C 連續,**完全落在 LFP 安全工作區**。
 * **量化估算**:依據 Attia 2020 *Nature* [6] 的 closed-loop fast-charge 結果,LIC 削峰可延長 LFP 主電池循環壽命約 25 %(v2.2 §D.1 的永續承諾保守估為 30 %)。
-* **產品層轉換**:BBU 浮充 duty 大約是每年 50 個循環,屬循環極少場景。將 25 % 壽命延長映射到產品層,LFP 服役壽命可達 **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),客戶 10 年內替換次數從 **1.5 次降到 1 次**。
+* **產品層轉換**:BBU 浮充 duty 大約是每年 50 個循環(engineering estimate
+  anchored to v2.1 §G.3 footnote + §E.1 Tier-B,**非** v2.1 §B.2 verbatim
+  數字),屬循環極少場景。將 25 % 壽命延長映射到產品層,LFP 服役壽命可達
+  **8–12 年**(NMC BBU 基準 6–8 年,v2.2 附件 C),客戶 10 年內替換次數從
+  **1.5 次降到 1 次**。**注意 calendar life(thermal-driven SEI growth)是
+  binding constraint** — LSTM-driven RUL 預測 BBU duty cycle-fade headroom
+  可達數萬 cycles,但 calendar life 在 8–12 yr 內已強制報廢。`/dashboard`
+  drilldown 對「≫ 10 yr cycle-fade」顯示加 calendar-life-binds caveat。
 
 **TCO 角色(誠實邊界)**:在 §2.7.1 TCO 表中,LFP+LIC 「初次採購 +$2,880 / rack」與「替換節省 −$2,880 / rack」剛好互抵,**壽命延長對 TCO bottom-line 的淨貢獻趨近於零**;33 % saving 主要是由瞬態損失(−3,600)、維運人力(−3,000)、HVDC 過渡(−3,000)三條 row 撐起(§2.7.1)。換句話說,壽命延長的角色是讓 Sysblade 能收下這筆 capex 溢價而不增加客戶 TCO,客戶實質拿到的是 +25 % 服役年限、Hyperscale 500 racks 規模 250 次現場派工避免,以及可列入 ESG 碳排報告的減量(對齊 v2.2 §D.1)。
 
@@ -281,14 +325,41 @@ $$
 
 | 客戶問 | 我們答 | 客戶意義 |
 |---|---|---|
-| **「模型準不準?」** | **19.10 % MAPE / R² 0.86**(2-layer LSTM,Severson 138 + 合成 BBU duty 50 = 188 cells)| Fleet 推論可用,跨 lab 壓力測試與 BBU 浮充兩個 regime 都涵蓋 |
+| **「模型準不準?」** | **19.10 % MAPE / R² 0.86**(2-layer LSTM,Severson 138 顆真實 + 50 顆 **Severson-anchored synthetic BBU-duty** cell;合成 cell 走 analytic decay + per-cell noise,**不是** PyBaMM aging)| Fleet 推論可用,跨 lab 壓力測試與 BBU 浮充兩個 regime 都涵蓋 |
 | **「部署到 BBU 上跑得動嗎?」** | **STM32N6 NPU 27–109 µs 單樣本估算**(靜態 graph + ±2× 區間,附錄 C.4;模型 63 KB 占 NPU FLASH 4 %)| 對比 ST datasheet typical 0.3 ms 即使 worst-case 109 µs 仍 ~3× margin;**斷網本地推論 + 不被 cloud per-inference billing 綁** |
 
 > **為什麼 LSTM 19.10 % > GBT 8.38 %?**這不是退步,是「per-regime sharpness
 > 換 cross-regime honesty」的取捨:GBT 只看過 Severson 壓力測試 cell,對 BBU
 > 浮充部署是**沉默外插**;augmented LSTM 涵蓋兩個 regime,點精度退讓但對客戶
 > 部署 honest。**Fleet 推論用 LSTM,學術 baseline 報 GBT**(§2.4)。
->
+
+### 2.5.1 合成 cell 是否 self-fulfilling — Severson-only 反證 ⭐
+
+業師會問:**50 顆 Severson-anchored synthetic BBU 是不是讓模型訓自己?**
+合成 cell 的 cycle_life label 由同一條 Severson-fit 解析公式產出,LSTM 在
+這些 cell 上的預測本質上就是「重現 generator 函數」 — **形式上有 data
+leakage 風險**。
+
+我們跑了反證 — `python scripts/export_lstm_onnx.py --severson-only` 用
+同一條 LSTM、同 seed=42、同 60/20/20 random split,**只訓 138 顆真實
+Severson cell**:
+
+| 指標 | Augmented(138 真實 + 50 合成) | **Severson-only** |
+|---|---:|---:|
+| Test MAPE | 19.10 % | **16.17 %** |
+| Test R² | 0.862 | **0.553** |
+| Conformal PI median width | 1075 cycles | **793 cycles** |
+| n_train / cal / test | 114 / 37 / 37 | 84 / 27 / 27 |
+
+**關鍵觀察**:**augmentation 反而把 MAPE 從 16.17 % 升到 19.10 %**。如果合成
+cell 是 self-fulfilling 作弊,augmented MAPE 應該更低;**實際相反 → 反證
+作弊質疑**。Augmentation 的價值是 R² **從 0.55 升到 0.86** + 跨 regime
+部署能力,**不是 MAPE 障眼法**。
+
+可一條 flag 重現,seed=42 deterministic;完整 JSON 在
+`data/processed/lstm_severson_only_eval.json`,CI 守門 4 條 soft check 對齊
+README + 完整白皮書 §3.3.8。
+
 > 完整訓練細節 / Conformal calibration / per-batch MAPE 切面 / op dispatch 見
 > **附錄 C** 與 `docs/whitepaper.md` §3.3。
 
