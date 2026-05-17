@@ -77,7 +77,7 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 
 ### Lean BoM vs Full BoM 兩版本
 
-- **§2.1 Lean BoM** — 僅留 critical path + safety enabler,NT$ ~38,250,推薦
+- **§2.1 Lean BoM** — 僅留 critical path + safety enabler,NT$ ~39,858,推薦
 - **§2.2 Full BoM (v1.2 凍結)** — 含完整 demonstrator 配備,NT$ ~47,900,作為 stretch / 比較
 
 省下的 buffer 不是用來買新東西,而是吸收採購意外、補耗材、覆蓋失敗重做(LFP 點焊失敗、MOSFET 燒掉等)。
@@ -132,7 +132,7 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 - **Demonstrator baseline 500 W ±30 % @ 100 ms**(從 v1.1 1 kW 降載,因 Maxwell Ioper 19 A 限制)
 - **Supercap = 2× Maxwell BMOD0058-E016-B02 串聯**(32 V bank,29 F equivalent,44 mΩ ESR)
 - **Per-cell C-rate = 5C peak / ~1C 連續**(spec 6C / 1.5C → demonstrator 5C / 1C,差距落在 datasheet 同條目允許區)
-- **電子負載升級 RIDEN DL24M 600W**(原 DL24P 150W 帶不動 650 W peak,BoM 對應 +NT$ 2,000)
+- **電子負載升級 ATORCH DL24M 600W**(原 DL24P 150W 帶不動 650 W peak;v1.4 修正品牌 — RIDEN 是雙向電源品牌,DL24 家族屬 ATORCH;BoM 對應 +NT$ 2,000)
 
 **過程文獻**:
 - v1.1 推 1 kW baseline + 「2× Maxwell」是 BoM 草案;v1.2 web search 發現 Maxwell BMOD0058 Ioper = 19 A,串聯 1 kW baseline 時 i_peak = 18.6 A 沒餘量
@@ -147,13 +147,23 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 ```
 改 `BASELINE_KW`(降載)或 `CONFIGS` 列表(換 cap 品牌)後重跑,看新 gate 結果。
 
+**v1.4 datasheet 嚴謹化(2026-05-17)**:Heisener listing 引用的「Ioper 19 A」是業界折衷標式;Maxwell BMOD0058-E016-C02 / B02 datasheet 實際定義為 **ΔT-based** IDCMAX:
+
+| 溫升 ΔT | IDCMAX | 9.3 A 工作點餘量 |
+|---|---:|---:|
+| 15 °C(保守條件) | 14 A | **34 %** |
+| (中間,Heisener 標式)| 19 A | 51 % |
+| 40 °C(可接受)| 23 A | 60 % |
+
+9.3 A 在**最保守 ΔT = 15°C 條件**下仍 > 20 % safety margin,加上 IPEAK 190 A(<2 s pulse)— gate 結論不變。Datasheet PDF:`https://maxwell.com/wp-content/uploads/2021/08/3003212.2_Datasheet_BMOD0058-E016-C02.pdf`。
+
 ---
 
 # Part 2 · BoM 與採購計畫
 
 > v1.3:拆成兩版 — **§2.1 Lean BoM(推薦,critical-path-only)** 與 **§2.2 Full BoM(v1.2 凍結版,留作對照)**。預算 NT$ 5 萬上限。
 
-## 2.1 ⭐ Lean BoM(推薦,NT$ ~38,250)
+## 2.1 ⭐ Lean BoM(推薦,NT$ ~39,858)
 
 只留 critical path(🎯)+ safety enabler(🛡️),刪掉 v1.2 為「完整 demonstrator」加的 ⏭️ 元件。
 
@@ -163,12 +173,12 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 | 🎯 #2 | 主電池 | LFP 26650 3.2V/5Ah | **8**(降為 8S1P,不做 2P,不買備品) | 250 | 2,000 | 蝦皮 / 露天;**v1.2 16 顆 → v1.3 8 顆** |
 | 🎯 #2 | 電池座 | 26650 holder + 端子 | 1 套 | 800 | 800 | **預設彈片座**(不假設借到點焊) |
 | 🛡️ | BMS | JK-BMS 8S 100A active balance | 1 | 2,800 | 2,800 | cell-level OVP/UVP/balancing 一條解 |
-| 🎯 #2 | 超級電容 | Maxwell BMOD0058 × 2(串聯 32V)| 2 | 4,500 | 9,000 | §1.3 鎖定;Heisener (HK) 主通路 |
+| 🎯 #2 | 超級電容 | **Maxwell BMOD0058-E016-C02 × 2**(串聯 32V)| 2 | 5,304 | 10,608 | **v1.4 更新**:Heisener B02 通路缺貨(2026-05-17 查證),改 DigiKey 台 stock 26 pcs(part 11673898),隔日到貨;C02 datasheet 與 B02 同 family — 16V/58F/22mΩ ESR/IPEAK 190A/IDCMAX 14A(ΔT=15°C)或 23A(ΔT=40°C),M5 螺絲端子 4 Nm,9.3 A 工作點全條件下 ≥ 34 % 餘量;§1.3 gate 仍 PASS |
 | 🎯 #2 | 控制板 | STM32 Black Pill F411 | **1**(v1.2 是 2 顆) | 600 | 600 | Pi 5 兼 telemetry bridge,不需第 2 顆 |
 | 🎯 #2 | 功率切換 | IRFB4115 × 4 + 5°C/W 鰭片 + 矽脂 | 1 套 | 900 | 900 | hybrid 控制律的物理執行單元 |
 | 🎯 #2 | Gate driver | UCC27282 × 2 + bootstrap + carrier | 1 套 | 900 | 900 | (Fallback IR2110 NT$ 50/顆) |
 | 🎯 #2 | 電流量測 | INA226 模組 × 2 | 2 | 100 | 200 | **降階**:取代 LEM Hall sensor NT$ 3,000,30 A 工作點 INA226 夠 |
-| 🎯 #2 | GB200 emulator | RIDEN DL24M 600 W USB 可程式 | 1 | 4,500 | 4,500 | 動態 profile 必要 |
+| 🎯 #2 | GB200 emulator | **ATORCH DL24M 600 W**(單機)USB 可程式 | 1 | 4,500 | 4,500 | **v1.4 修正**:品牌 RIDEN → ATORCH;**買單機 600 W 版**(jumper cap + 軟體切 150/300/450/600 W mode);避開賣家標「150 W × 4 並聯到 600 W」— 那是 DL24 (150W) 冒充 DL24M;**peak 650 W 略超 600 W cap ~8 %**,100 ms pulse 在 IPEAK 容差內可接受,簡報若見頂部削平標明 cap 限制不影響削峰 ratio |
 | 🎯 #3 | 邊緣推論板 | Raspberry Pi 5 8GB + 電源 | 1 | 4,500 | 4,500 | **取代 STM32N6570-DK NT$ 9,000**;ONNX runtime INT8 LSTM 直接跑 |
 | 🎯 #4 | 溫度感測 | DS18B20 × 4 | 1 套 | 200 | 200 | LIVE row 給 dashboard 用,4 顆夠 |
 | 🛡️ | LFP 側保護 | 80A blade fuse + 100A 接觸器 + E-stop | 1 套 | 1,500 | 1,500 | |
@@ -185,11 +195,13 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 | 🛡️ | **30V/3A bench DC PSU**(或借學校 EE 系)| LFP 8S 0.5C CC/CV 充電 + supercap pre-charge SOP §4.5.5 L1 | 1 | 1,500 | 1,500 | v1.3 review H1;若借不到才買;主要候選 EVENTEK DPS3010 |
 | 🛡️ | **數位萬用表**(或借學校)| cell OCV 粗篩、ESR / V / I 量、debug | 1 | 800 | 800 | v1.3 review H1;若借不到才買;標稱 Fluke 17B+ 或 UNI-T UT139C |
 | 🛡️ | **ST-Link V2 clone** | Black Pill DFU brick 保險 / SWD debug | 1 | 300 | 300 | v1.3 review H1;主 flash 路徑是 USB-C DFU,此為 fallback |
-| **小計** | | | | | **~38,250** | |
+| **小計** | | | | | **~39,858** | |
 
-**Buffer:NT$ ~11,750**(50,000 − 38,250)。Lean BoM 預算仍寬鬆,可吸收採購意外、補耗材、買額外探棒、或 W4 階段加碼買 STM32N6 補做實機 trace(若 Pi 5 latency 數字想再加強)。
+**Buffer:NT$ ~10,142**(50,000 − 39,858)。Lean BoM 預算仍寬鬆,可吸收採購意外、補耗材、買額外探棒、或 W4 階段加碼買 STM32N6 補做實機 trace(若 Pi 5 latency 數字想再加強)。
 
-> v1.3 review H1 補 6 項合計 NT$ 4,300:USB-RS485 dongle + USB hub + Pi 5 配件 + bench PSU + 萬用表 + ST-Link。其中 bench PSU 與萬用表若 Sysgration 或學校 EE 系可借,buffer 回升到 ~14,050。
+> v1.3 review H1 補 6 項合計 NT$ 4,300:USB-RS485 dongle + USB hub + Pi 5 配件 + bench PSU + 萬用表 + ST-Link。其中 bench PSU 與萬用表若 Sysgration 或學校 EE 系可借,buffer 回升到 ~12,442。
+>
+> **v1.4 更新(2026-05-17)**:Maxwell 通路從 Heisener B02(缺貨)切 DigiKey C02(現貨 26 pcs),單價 4,500 → 5,304(+18 %);總額 +1,608,Buffer 從 11,750 → 10,142;借得到 PSU+萬用表 buffer 從 14,050 → 12,442。電氣規格同 family,§1.3 gate 仍 PASS。
 
 ### Lean vs Full 差異(v1.2 → v1.3 砍掉的清單)
 
@@ -205,7 +217,7 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 | INA226 線材 + DS18B20 從 NT$ 600 → 400 | **200** | 8 顆 → 4 顆溫度感測夠 |
 | 散熱風扇 4 → 2 | **200** | 開放式架構,2 顆足 |
 | PPE 簡化 | **1,200** | 噴罐獨立列,手套 + 護目鏡夠 |
-| **總計** | **~9,650** | v1.2 NT$ 47,900 → v1.3 NT$ ~38,250(含 B1 supercap pre-charge NT$ 250 + H1 補 6 項 NT$ 4,300) |
+| **總計** | **~8,042** | v1.2 NT$ 47,900 → v1.4 NT$ ~39,858(含 B1 supercap pre-charge NT$ 250 + H1 補 6 項 NT$ 4,300 + v1.4 Maxwell 通路升 DigiKey C02 +NT$ 1,608) |
 
 ### 採購順序(下單優先級)
 
@@ -226,7 +238,7 @@ team: "ATCC C13 學生競賽團隊(4 人)"
 | **BMS** | JK-BMS 8S 100A active balance(LFP 預設) | 1 | 2,800 | 2,800 | 蝦皮;支援 RS485 telemetry |
 |  | OR Daly Smart BMS 8S 80A | 1 | 2,200 | 2,200 | |
 | **DC-DC / 雙向** | DPS5020 5 A / 50 V 數位電源(buck-only)+ 電子負載當 source | 1 | 1,800 | 1,800 | 若需雙向,改 RIDEN RD6018W ~NT$ 5,500 |
-| **電子負載 (GB200 emulator)** | **RIDEN DL24M 600 W** 可程式電子負載,USB 控制 | 1 | 4,500 | 4,500 | **v1.2 升級**:demonstrator peak 650 W,原 DL24P 150W 帶不動;DL24M 5 ms 階躍同 DL24P,韌體 API 相容無需改動 |
+| **電子負載 (GB200 emulator)** | **ATORCH DL24M 600 W**(單機)可程式電子負載,USB 控制 | 1 | 4,500 | 4,500 | **v1.2 升級**:demonstrator peak 650 W,原 DL24P 150W 帶不動;DL24M 5 ms 階躍同 DL24P,韌體 API 相容無需改動。**v1.4 品牌修正**(RIDEN → ATORCH) |
 | **控制板** | STM32 Nucleo-L476RG 或 Black Pill F411 | 2 | 600 | 1,200 | 控制律執行 + ADC 取樣 |
 | **邊緣推論板** | STM32N6570-DK (Neural-ART NPU dev kit) | 1 | 9,000 | 9,000 | lead time 風險高,Mouser/Digi-Key 確認;備案 Pi 5 + Coral USB ~NT$ 4,500 |
 | **電流感測** | LEM HASS 50-S Hall sensor × 2(LFP / LIC 各一) | 2 | 1,500 | 3,000 | 量到 6C × 5 Ah = 30 A ok |
@@ -264,7 +276,7 @@ team: "ATCC C13 學生競賽團隊(4 人)"
                                  │ USB
                                  ▼
               ┌──────────────────────────────────────────┐
-              │  RIDEN DL24P 電子負載 — GB200 emulator    │
+              │  ATORCH DL24M 電子負載 — GB200 emulator   │
               │  播放 ±30 % @ 100 ms power profile        │
               └──────────────────────┬───────────────────┘
                                      │ DC load
@@ -542,6 +554,12 @@ IRFB4115 Ifsm pulse rating 700 A → **燒 MOSFET、熔 PCB trace、可能觸發
 **L1 SOP**(每次 demo 前 5 分鐘):
 
 ```
+0. ⚠️ 萬用表先量 v_supercap +/- 兩端電壓:
+     若 = 0 V → 正常(初始或上次 demo 後有 short wire 短接保存)
+     若 > 0 V(典型 1–2 V)→ "bounce-back"(datasheet 警告):
+       Maxwell 模組充滿放完電,儲存無 short wire 會自然回升 ~2 V。
+       串聯使用時可能造成電擊。
+       對策:接 5 Ω 預充電阻跨 +/- 兩端放電 30 秒,再進 step 1。
 1. 確認 supercap 主接觸器 OPEN
 2. bench PSU 設 32 V / 限流 1 A,接 supercap +/- 端
 3. 開 PSU,等 30-60 秒(supercap 充電,讀電流降到 < 50 mA)
@@ -552,6 +570,8 @@ IRFB4115 Ifsm pulse rating 700 A → **燒 MOSFET、熔 PCB trace、可能觸發
 8. 合 supercap 主接觸器(此時 inrush 已限制)
 9. 啟動 STM32 控制,觀察 5 秒 supercap 路電流 ≤ 30 A
 ```
+
+**儲存規則(v1.4 review 補)**:demo / 測試 session 結束後,supercap bank 必須 **+/- 兩端短路保存**(5 Ω 預充電阻跨接,或專用 shorting wire)。Maxwell datasheet WARNING 明文:「fully discharged module may bounce back up to 2 V if stored without shorting wire on +/- terminals. Series-string usage with bounce-back has potential to cause dangerous electrical shocks.」
 
 **L2 電路**:
 
@@ -663,6 +683,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 | 電弧 | 不徒手插拔帶電線,Anderson SB50 連接器只在系統下電後操作 |
 | 絕緣失效 | 整個系統浮地(不接大地),用差動探棒量測,嚴禁示波器探地直接夾 BMS |
 | **Supercap inrush** | **不可徒手合 supercap 主接觸器** — 必跑 §4.5.5 L1 預充 SOP;違反 = 200+ A inrush 直接燒 MOSFET 與線材 |
+| **Supercap bounce-back**(v1.4 補)| 放完電儲存 supercap bank 必加 short wire 跨 +/- 端;datasheet 警告未短接會自然回升 2 V,串聯使用造成電擊風險。每次 demo 前先量 v_supercap 確認狀態 |
 | **Ground loop / 接地策略**(v1.3 review H5) | (1) 系統電氣浮地 — DC bus 兩端不接 AC mains earth;(2) PC / DL24M / bench PSU / JK-485 dongle 都接 PC AC earth(共地);(3) **scope 接地僅單點**:接「電池 −(pack ground)」, 絕不接電池 + 或 supercap +;(4) cell-level mV 量測**必須用差動探棒**(借)— 普通探棒共地接 cell− 會引入 60 Hz mains noise 並可能對 BMS 產生電氣壓力 |
 
 ## 6.2 操作層
@@ -895,6 +916,35 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 6. **新工具**:`scripts/generate_scaled_8s_sim.py` — 重跑 gate 用,改 BASELINE_KW 或 CONFIGS 即可 re-validate。
 
 **未動的章節**(v1.2 review 確認仍正確):Part 4 韌體選型(MOSFET 30 A 級在新降載後反而更輕鬆,IRFB4115 + UCC27282 維持)、Part 6 安全 SOP、Part 9 fallback 階梯、Part 11 next-steps。
+
+## v1.4(2026-05-17,Maxwell 通路改 DigiKey C02 + DL24M 品牌修正 + datasheet 嚴謹化)
+
+**觸發 1(Maxwell 通路)**:用戶在 Heisener 找不到 BMOD0058-E016-**B02** 庫存(v1.2 記錄的 6,732 pcs 已售罄或下架);DigiKey 台 listing `BMOD0058-E016-**C02**`(part 11673898)庫存 26 pcs。用戶 WebFetch DigiKey product page + Maxwell datasheet PDF 驗證 C02 規格。
+
+**觸發 2(DL24M 品牌)**:用戶傳露天 listing `ATORCH DL24M 150W 可並聯 600W`,WebSearch 三條交叉驗證後確認 BoM 寫的「RIDEN DL24M」品牌錯誤 — DL24 系列(DL24 / DL24P / DL24M / DL24MP / DL24M-H)全屬 **ATORCH(炬為)**;**RIDEN** 是另一品牌(做 DPS5020 / RD60XX 雙向電源,無電子負載線)。露天那台「DL24M 150W 並聯 600W」實為 DL24(150W) 冒充 DL24M。真正 DL24M 是**單機 600W**,透過 jumper cap + 軟體切 150 / 300 / 450 / 600 W 4 mode。
+
+**驗證結果**(C02 vs B02 同 family):
+- 電氣:16V / 58F / 22mΩ ESR — 完全一致 ✅
+- IDCMAX(datasheet 嚴謹版):14A @ ΔT=15°C / 23A @ ΔT=40°C;9.3A 工作點最保守 34 % 餘量(原 B02 標的 19A 是中間折衷標式)
+- IPEAK:190 A(B02 標 200 A 是 round-up)
+- 端子:M5 螺絲(4 Nm 扭力);完美相容 ring lug + 10 AWG 矽膠線 + Anderson SB50
+- 尺寸:226.5 × 49.5 × 75.9 mm(v1.3 BoM W/H 寫反 76 × 49.5,實際是 49.5 × 75.9;envelope 不變)
+
+**對應修訂**:
+1. **§2.1 BoM**:Maxwell 列改 C02 + DigiKey 通路 + 單價 4,500 → 5,304(+18%);小計 38,250 → 39,858;Buffer 11,750 → 10,142(借得到 PSU+萬用表 14,050 → 12,442)
+2. **§1.3 footnote**:加 datasheet ΔT-based IDCMAX 嚴謹說明表(取代「19 A 統一標式」),補 datasheet PDF URL
+3. **§4.5.5 L1 SOP**:加 step 0 — 萬用表先量 v_supercap,若 > 0 V 表示 bounce-back(datasheet WARNING),用 5 Ω 預充電阻放電 30 秒再進 step 1
+4. **§4.5.5 加儲存規則**:每次 session 結束後 supercap +/- 端必須 short wire 保存
+5. **§6.1 安全表加一條 Supercap bounce-back**:demo 前必量 v_supercap 確認狀態
+6. **PURCHASE_LIST.md**:第一波 1B 改 DigiKey;採購時程「Heisener 24h 追單」改 DigiKey 「隔日到貨」;總額 / 風險警示同步;加 receiving 後 bounce-back 量測 SOP
+7. **DL24M 品牌全文修正**:§1.3 / §2.1 BoM / §2.2 BoM / §3 ASCII art / PURCHASE_LIST 第一波 1A 共 5 處 `RIDEN DL24M` → `ATORCH DL24M`;BoM 備註加「**買單機 600 W 版**,避開賣家標『150W × 4 並聯到 600W』冒充」
+8. **DL24M peak overload caveat**:demonstrator peak 650 W 略超 DL24M 單機 600 W cap ~8%,100 ms pulse 在 IPEAK 容差內;簡報若波形見頂部削平標明 cap 限制不影響削峰 ratio 結論
+
+**為什麼這條值得 v1.4 而不是悄悄改**:Heisener → DigiKey 看似採購雜事,但 datasheet 嚴謹化(ΔT-based IDCMAX)+ bounce-back warning 是**安全相關發現**,直接寫進 SOP 才能避免 W2 接電時踩雷。
+
+**未動的章節**(v1.4 review 確認仍正確):Part 0 現實檢查、Part 1.1 系統 spec(per-cell 工作點不變)、Part 3 系統架構、Part 4 韌體(MOSFET 30A 級對 9.3A 工作點仍輕鬆)、Part 5 驗證、Part 7 時程、Part 9 fallback、Part 11 next-steps。
+
+---
 
 ## v1.3(2026-05-17,用戶 reframe「不要做整顆 BBU,只要證明可行性」)
 
