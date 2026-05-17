@@ -100,3 +100,6 @@ _v21_text_cache.json
 # Output paths are hardcoded to the author's local Downloads folder, so
 # these are author-machine-only tooling — not portable to teammates' boxes.
 scripts/generate_*_png.py
+
+# Md → PDF output (binary, regenerable via scripts/md_to_pdf.py)
+out_pdf/

@@ -1,8 +1,8 @@
 # 複賽 BBU Demonstrator 採購清單
 
-> v1.3 critical-path-only mode 凍結 · 2026-05-17
-> 對應 BoM:[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md#21--lean-bom推薦nt-38250)
-> 總額 NT$ 38,250 / Buffer 11,750(借得到 bench PSU + 萬用表 → 14,050)
+> v1.4 凍結 · 2026-05-17(Maxwell 通路升 DigiKey C02)
+> 對應 BoM:[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md#21--lean-bom推薦nt-39858)
+> 總額 NT$ 39,858 / Buffer 10,142(借得到 bench PSU + 萬用表 → 12,442)
 
 ---
 
@@ -10,8 +10,8 @@
 
 | 時間 | 動作 |
 |---|---|
-| **5/17 PM** | **Heisener Maxwell BMOD0058 × 2 立刻按下單**(lead time 風險最高);其餘第一波 1A/1C/1D 同步下 |
-| 5/17 晚上 | Maxwell 24h 內無 confirmation → email Heisener 確認庫存 |
+| **5/17 PM** | **DigiKey Maxwell BMOD0058-E016-C02 × 2 立刻按下單**(現貨 26 pcs,隔日到貨);其餘第一波 1A/1C/1D 同步下 |
+| 5/17 晚上 | DigiKey 訂單 confirmation email 預期當日到 — 若 24h 沒收到,登入帳號或客服查詢 |
 | 5/18 早上 | UCC27282 Mouser lead time > 4 週 → **立刻**蝦皮下 IR2110 備案 |
 | 5/18 全天 | 第二波下單;問學校 EE 系借 bench PSU + 萬用表 + **示波器 + 差動探棒**(M3 必用) |
 | 5/19 前 | 點焊機借不借決定(預設借不到 → 彈片座 BoM 已含) |
@@ -30,7 +30,7 @@
 | **JK-BMS 8S 100A**(限 JK-B 系列) | 1 | 2,800 | `JK-BMS 8S B1A8S20P`、`極空 BMS JK-B` | RS485 + 藍牙;**勿買 DZ11/PB1**(jkbms.py 不支援 offset) |
 | STM32 Black Pill F411 | 1 | 600 | `STM32F411 Black Pill`、`WeAct F411CE` | F411CE 512KB;USB-C |
 | INA226 模組 | 2 | 200 | `INA226 模組 breakout` | I²C + onboard shunt + 量程 ≥ 36V |
-| RIDEN DL24M 600W | 1 | 4,500 | `RIDEN DL24M 600W` | **600W 版**(非 150W DL24P);USB + 4 線 Kelvin |
+| **ATORCH DL24M 600W**(單機) | 1 | 4,500 | `ATORCH DL24M 600W 單機`、`DL24M 40A 200V`、`DL24M jumper 切 600W` | **v1.4 品牌修正**(RIDEN → ATORCH);**買單機 600 W 版**(jumper cap + 軟體切 150/300/450/600 W mode);**避開**「150W × 4 並聯到 600W」listing 那是 DL24 冒充 DL24M;USB + 4 線 Kelvin;最穩備案 Amazon ASIN `B0993H6NXH`(USD ~50-65) |
 | DS18B20 防水 | 4 | 200 | `DS18B20 防水 不鏽鋼` | 不鏽鋼封裝 |
 | USB-RS485 dongle | 1 | 200 | `USB RS485 CH340 MAX485` | **帶 MAX485**(便宜版只有 USB-TTL 不夠) |
 | USB hub 4-port 自供電 | 1 | 300 | `USB 3.0 hub 4 port 帶電源` | 含 5V/3A 外接電源 |
@@ -39,13 +39,17 @@
 | 40A 5-pin auto relay(B1) | 1 | 120 | `汽車繼電器 40A 12V 5腳`、`Bosch 0332019150` | 12V 線圈 / NO 接點 / 真 40A |
 | 2N7000(B1 driver) | 2 | 50 | `2N7000 TO-92` | TO-92 |
 
-### 1B. Heisener(HK · 主通路)— 9,000
+### 1B. DigiKey 台(現貨主通路)— 10,608
 
 | 品項 | 數 | NT$ | 通路 | 備案 |
 |---|---:|---:|---|---|
-| **Maxwell BMOD0058-E016-B02** | 2 | 9,000 | heisener.com 搜 `BMOD0058-E016-B02` | Heisener 延 > 2 週 → eBay 二手 `Maxwell BMOD0058` 或 LS Mtron `LSUM016R8C0058F`(同 form-factor) |
+| **Maxwell BMOD0058-E016-C02** | 2 | 10,608 | digikey.tw part **11673898** | DigiKey 缺貨 → eBay 二手 `Maxwell BMOD0058` 或 LS Mtron `LSUM016R8C0058F`(同 form-factor) |
 
-**規格驗證**:16V / 58F / 22mΩ ESR / Ioper 19A;計畫文件記 2026 庫存 6,732 pcs
+**規格驗證**(對 datasheet PDF 3003212.2):16V / 58F / 22mΩ ESR / **IDCMAX 14 A @ ΔT=15°C 或 23 A @ ΔT=40°C** / IPEAK 190 A / M5 螺絲端子 4 Nm / 226.5 × 49.5 × 75.9 mm / 0.63 kg。9.3 A 工作點全條件下 ≥ 34 % 餘量,§1.3 gate PASS。**單價 NT$ 5,304 × 2 = 10,608**(DigiKey 台幣計價;1 顆 5,304 / 10 顆批 4,672 / 50 顆批 4,419)。
+
+**v1.4 通路升 DigiKey 理由**:Heisener B02 通路缺貨(v1.2 記錄 6,732 pcs 已售完);DigiKey 台 stock 26 pcs C02 隔日到貨、台幣計價、發票退換貨機制完整,差價 NT$ 1,608(+18 %)Buffer 吃得下,免「Heisener 24h email 追單」的時間壓力。
+
+⚠️ **datasheet WARNING(收貨當日必做)**:Maxwell 模組未短路保存 +/- 端可能 bounce back 至 2 V → 收到後**第一動作:萬用表量 +/- 兩端**,若 > 0 V 用 5 Ω 預充電阻跨接放電 30 秒。串聯 / 預充 SOP 全程在 §4.5.5。
 
 ### 1C. Mouser / Digi-Key / 利眾 / 唐文 — 1,800
 
@@ -106,22 +110,25 @@
 | 波次 | 含項 | 小計 |
 |---|---:|---:|
 | 第一波 1A(蝦皮 / 露天) | 13 項 | 13,150 |
-| 第一波 1B(Heisener Maxwell) | 1 項 × 2 顆 | 9,000 |
+| 第一波 1B(DigiKey Maxwell C02) | 1 項 × 2 顆 | 10,608 |
 | 第一波 1C(Mouser / 利眾) | 2 項 | 1,800 |
 | 第一波 1D(Pi 代理) | 2 項 | 5,700 |
 | 第二波(安全 + 電源,2 項可借) | 10 項 | 6,400 |
 | 第三波(機械散熱) | 3 項 | 2,200 |
-| **採購總額** | **30 SKU** | **~38,250** |
+| **採購總額** | **30 SKU** | **~39,858** |
 | **+ 運費 / 雜耗估** | | ~2,000 |
-| **實付** | | **~40,000-41,000** |
-| **Buffer**(全買新) | | 11,750 |
-| **Buffer**(借得到 PSU + 萬用表) | | **14,050** |
+| **實付** | | **~41,500-42,500** |
+| **Buffer**(全買新) | | 10,142 |
+| **Buffer**(借得到 PSU + 萬用表) | | **12,442** |
 
 ---
 
 ## ⚠️ 風險警示(下單前必讀)
 
 | 風險 | 機率 | 對策 |
+|---|:--:|---|
+| DigiKey Maxwell C02 缺貨 | 低 | 26 pcs 現貨;若清貨切 eBay 二手 `BMOD0058` 或 LS Mtron `LSUM016R8C0058F`(同 form-factor) |
+| Supercap bounce-back(收貨後)| 高(若未量測)| **收貨當日**萬用表量 +/- 兩端,> 0 V 用 5 Ω 跨接放電 30 秒;之後 demo 結束都必 short wire 保存 |
 |---|:--:|---|
 | Heisener Maxwell 24h 無 confirmation | 中 | email 追;延 > 2 週切 eBay / LS Mtron 備案 |
 | UCC27282 Mouser lead time > 4 週 | 中 | **5/18 早上**看到立刻換 IR2110(蝦皮 NT$ 200 全套),韌體加 minimum-duty 5-95% 切換 |
