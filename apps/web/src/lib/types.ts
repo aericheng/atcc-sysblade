@@ -58,3 +58,35 @@ export interface LicRcEnvelope {
   c_f: number;
   esr_ohm: number;
 }
+
+/**
+ * Bench demonstrator live telemetry snapshot — schema produced by
+ * `scripts/live_demonstrator_bridge.py` and polled by /dashboard client-side
+ * every 5 s. See docs/BBU_IMPLEMENTATION_PLAN.md §5.4 (M4 critical path).
+ *
+ * `live=false` is the placeholder the static build ships with — the
+ * dashboard renders a "Waiting for telemetry" card in that state. When the
+ * lab laptop runs the bridge it overwrites the file with `live=true` and
+ * a populated `device` object.
+ *
+ * The `device` shape extends Device with live-only electrical extras
+ * (v_pack_v, i_pack_a, p_load_w, hybrid_mode) that have no meaning for
+ * the simulated 1000-device fleet.
+ */
+export interface LiveDeviceTelemetry extends Device {
+  v_pack_v: number;
+  i_pack_a: number;
+  p_load_w: number;
+  hybrid_mode: boolean;
+}
+
+export interface LiveDemonstratorSnapshot {
+  _meta: {
+    generated_at: string;
+    generator: string;
+    mode: "mock" | "bench" | "offline";
+    uptime_s?: number;
+  };
+  live: boolean;
+  device: LiveDeviceTelemetry | null;
+}

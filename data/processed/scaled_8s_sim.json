@@ -1,0 +1,128 @@
+{
+  "_meta": {
+    "generated_at": "2026-05-16T17:51:16+00:00",
+    "generator": "scripts/generate_scaled_8s_sim.py",
+    "pybamm_version": "26.4.1",
+    "purpose": "W1 Day 1 gate per docs/BBU_IMPLEMENTATION_PLAN.md §1.3"
+  },
+  "demonstrator_params": {
+    "n_series": 8,
+    "v_pack_nominal_v": 25.6,
+    "pack_kwh": 0.25,
+    "baseline_kw": 0.5,
+    "transient_amplitude": 0.3,
+    "transient_period_s": 0.1,
+    "split_tau_s": 0.5,
+    "target_peak_c_rate": 6.0,
+    "i_peak_pack_a": 25.390625
+  },
+  "lfp_receive_power": {
+    "std_pure_kw": 0.14999992514975666,
+    "std_hybrid_kw": 0.02623856055125767,
+    "ratio": 5.716774167421575,
+    "spec_target": 5.7
+  },
+  "cell_voltage_swing_stable_window": {
+    "pp_pure_v": 0.061647409306542666,
+    "pp_hybrid_v": 0.017525803615439983,
+    "ratio": 3.5175225432876687,
+    "spec_target": 3.5
+  },
+  "supercap_configs": [
+    {
+      "config": {
+        "label": "2× Maxwell BMOD0058 並聯 (16 V bank, needs DC-DC)",
+        "n_series": 1,
+        "n_parallel": 2,
+        "c_bank_f": 116.0,
+        "esr_bank_ohm": 0.011,
+        "v_nominal_bank_v": 16.0,
+        "v_min_bank_v": 8.0,
+        "cost_nt": 9000
+      },
+      "droop_check": {
+        "v_min": 15.795391985319222,
+        "v_max": 16.068925705855946,
+        "v_pp": 0.2735337205367241,
+        "v_droop_from_nominal": 0.20460801468077783,
+        "headroom_to_uvlo_v": 7.795391985319222,
+        "passes_uvlo": true,
+        "i_peak_a": 18.564356435643568,
+        "esr_drop_peak_v": 0.20420792079207922,
+        "esr_drop_fraction": 0.9980445834962877
+      }
+    },
+    {
+      "config": {
+        "label": "2× Maxwell BMOD0058 串聯 (32 V bank, ~match 8S LFP)",
+        "n_series": 2,
+        "n_parallel": 1,
+        "c_bank_f": 29.0,
+        "esr_bank_ohm": 0.044,
+        "v_nominal_bank_v": 32.0,
+        "v_min_bank_v": 16.0,
+        "cost_nt": 9000
+      },
+      "droop_check": {
+        "v_min": 31.590783970638444,
+        "v_max": 32.13785141171189,
+        "v_pp": 0.5470674410734482,
+        "v_droop_from_nominal": 0.40921602936155566,
+        "headroom_to_uvlo_v": 15.590783970638444,
+        "passes_uvlo": true,
+        "i_peak_a": 9.282178217821784,
+        "esr_drop_peak_v": 0.40841584158415845,
+        "esr_drop_fraction": 0.9980445834962877
+      }
+    },
+    {
+      "config": {
+        "label": "4× Maxwell BMOD0058 串並 2S2P (32 V / 58 F / 11 mΩ)",
+        "n_series": 2,
+        "n_parallel": 2,
+        "c_bank_f": 58.0,
+        "esr_bank_ohm": 0.022,
+        "v_nominal_bank_v": 32.0,
+        "v_min_bank_v": 16.0,
+        "cost_nt": 18000
+      },
+      "droop_check": {
+        "v_min": 31.79539198531922,
+        "v_max": 32.068925705855946,
+        "v_pp": 0.27353372053672587,
+        "v_droop_from_nominal": 0.2046080146807796,
+        "headroom_to_uvlo_v": 15.79539198531922,
+        "passes_uvlo": true,
+        "i_peak_a": 9.282178217821784,
+        "esr_drop_peak_v": 0.20420792079207922,
+        "esr_drop_fraction": 0.998044583496279
+      }
+    },
+    {
+      "config": {
+        "label": "2× Maxwell 串聯,ESR 悲觀 2× (二手老化)",
+        "n_series": 2,
+        "n_parallel": 1,
+        "c_bank_f": 29.0,
+        "esr_bank_ohm": 0.088,
+        "v_nominal_bank_v": 32.0,
+        "v_min_bank_v": 16.0,
+        "cost_nt": 9000
+      },
+      "droop_check": {
+        "v_min": 31.182368129054286,
+        "v_max": 32.365257231161635,
+        "v_pp": 1.1828891021073495,
+        "v_droop_from_nominal": 0.8176318709457142,
+        "headroom_to_uvlo_v": 15.182368129054286,
+        "passes_uvlo": true,
+        "i_peak_a": 9.282178217821784,
+        "esr_drop_peak_v": 0.8168316831683169,
+        "esr_drop_fraction": 0.9990213348991989
+      }
+    }
+  ],
+  "gate_decision": "PASS",
+  "gate_recommendation": "採購清單照 Part 2 走;從 supercap_results 中挑通過 UVLO + 成本最低者",
+  "note": "削峰 ratio 是 LPF 數學特性(τ vs signal period),不依賴 supercap physical params;supercap 配置只影響 UVLO droop 是否撐得住。因此 ratio 通常通過;真正的 gate 是 supercap droop 表中至少 1 個配置 passes_uvlo=true 且 cost 落在預算內。"
+}
