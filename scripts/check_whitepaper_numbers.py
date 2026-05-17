@@ -48,6 +48,15 @@ DOCS_WITH_ML_HEADLINES = [WHITEPAPER, README, TWIN_README]
 # Source-of-truth JSON
 SCENARIOS_PUB = REPO / "apps" / "web" / "public" / "scenarios"
 SCENARIOS_SHARED = REPO / "packages" / "shared" / "scenarios"
+
+# Frontend-only scenarios that intentionally live in apps/web/public/scenarios/
+# without a packages/shared/ counterpart. These are bridge-fed telemetry
+# mirrors (the frontend reads them, but they're not part of the reproducible
+# offline-physics pipeline), so the double-sink sync invariant doesn't apply.
+SINGLE_SINK_SCENARIOS_FRONTEND_ONLY: set[str] = {
+    "live_demonstrator.json",  # written by scripts/live_demonstrator_bridge.py
+}
+
 SEVERSON_EVAL = REPO / "data" / "processed" / "severson_model_eval.json"
 QUANT_REPORT = REPO / "data" / "processed" / "lstm_quantization_report.json"
 LSTM_SEVERSON_ONLY_EVAL = REPO / "data" / "processed" / "lstm_severson_only_eval.json"
@@ -94,6 +103,14 @@ def _approx(a: float, b: float, tol: float) -> bool:
 def check_scenarios_in_sync(report: Report) -> None:
     files = sorted(p.name for p in SCENARIOS_PUB.glob("*.json"))
     for fname in files:
+        if fname in SINGLE_SINK_SCENARIOS_FRONTEND_ONLY:
+            report.add(
+                name=f"scenarios sync · {fname} (single-sink, exempt)",
+                passed=True,
+                detail="frontend-only LIVE telemetry mirror; double-sink sync not enforced",
+                target_loc=f"apps/web/public/scenarios/{fname}",
+            )
+            continue
         a = (SCENARIOS_SHARED / fname).read_bytes()
         b = (SCENARIOS_PUB / fname).read_bytes()
         ha = hashlib.sha256(a).hexdigest()[:16]
@@ -181,6 +198,87 @@ def check_lic_rc_invariants(report: Report) -> None:
             + (" + PRESENTATION_GUIDE.md" if pg_present else "")
             + " ↔ transient_hybrid.json (lic_v_droop_v)"
         ),
+    )
+
+
+def check_mains_fail_invariants(report: Report) -> None:
+    """Mains-fail 60 s graceful-ramp scenario invariants.
+
+    Pins the four headline numbers HANDOVER.md §5 and README.md ⭐ section
+    quote verbatim (6 C peak / 1.5 C cont. / 2.6 % DoD / pass-cutoff), so
+    any future tweak to the generator parameters that drifts them out of
+    those windows fails the gate before reaching a reviewer's eyes.
+    """
+    path = SCENARIOS_PUB / "mains_fail_profile.json"
+    if not path.exists():
+        report.add(
+            name="mains_fail_profile.json present",
+            passed=False,
+            detail="mains_fail_profile.json missing — re-run scripts/generate_twin_scenarios.py",
+            target_loc=str(path.relative_to(REPO)),
+        )
+        return
+    d = json.loads(_read(path))
+    s = d["stats"]
+
+    # Hard: per-BBU C-rate must match README ⭐ section + HANDOVER §5 verbatim.
+    report.add(
+        name="mains-fail peak C-rate = 6 C per BBU (README ⭐ + HANDOVER §5)",
+        passed=_approx(s["peak_c_rate_per_bbu"], 6.0, 0.05),
+        detail=f"peak_c_rate_per_bbu={s['peak_c_rate_per_bbu']:.3f}",
+        target_loc="apps/web/public/scenarios/mains_fail_profile.json (stats)",
+    )
+    report.add(
+        name="mains-fail continuous C-rate = 1.5 C per BBU (README ⭐ + HANDOVER §5)",
+        passed=_approx(s["continuous_c_rate_per_bbu"], 1.5, 0.05),
+        detail=f"continuous_c_rate_per_bbu={s['continuous_c_rate_per_bbu']:.3f}",
+        target_loc="apps/web/public/scenarios/mains_fail_profile.json (stats)",
+    )
+
+    # Hard: DoD must stay near the 2.6 % HANDOVER claim. Tolerance ±0.3 pp
+    # covers minor ramp-shape adjustments without letting a 5 %+ regression
+    # slip through.
+    report.add(
+        name="mains-fail DoD ≈ 2.6 % per rack (HANDOVER §5 答辯句)",
+        passed=_approx(s["dod_pct"], 2.6, 0.3),
+        detail=f"dod_pct={s['dod_pct']:.3f} % · energy_delivered_kj={s['energy_delivered_kj']:.0f}",
+        target_loc="apps/web/public/scenarios/mains_fail_profile.json (stats)",
+    )
+
+    # Hard: LIC must clear datasheet UVLO under this scenario too.
+    report.add(
+        name="mains-fail LIC v_min stays above Eaton 38 V cutoff",
+        passed=bool(s["lic_passes_cutoff"]) and s["lic_v_min"] > s["lic_v_min_datasheet"],
+        detail=(
+            f"v_min={s['lic_v_min']:.2f} V · cutoff={s['lic_v_min_datasheet']:.1f} V · "
+            f"droop={s['lic_v_droop_v']:.2f} V · headroom={s['lic_headroom_to_cutoff_v']:.2f} V"
+        ),
+        target_loc="apps/web/public/scenarios/mains_fail_profile.json (RC layer)",
+    )
+
+    # Soft: README ⭐ section narrative anchors three timing values. Verify
+    # the JSON stages match. If someone re-tunes the generator to a
+    # different stage layout, README ⭐ table goes stale.
+    stages = d.get("stages", {})
+    readme = _read(README)
+    readme_mentions_60s = bool(re.search(r"60\s*秒\s*graceful", readme))
+    readme_mentions_500ms = bool(re.search(r"t\s*=\s*0[–-]500\s*ms", readme))
+    readme_mentions_2s = bool(re.search(r"t\s*=\s*500\s*ms[–-]2\s*s", readme))
+    report.add(
+        name="mains-fail stages align with README ⭐ table (0–0.5 s / 0.5–2 s / 2–60 s)",
+        passed=(
+            _approx(stages.get("peak_hold_s", 0), 0.5, 0.05)
+            and _approx(stages.get("ramp_s", 0), 1.5, 0.05)
+            and _approx(d.get("duration_s", 0), 60.0, 0.5)
+            and readme_mentions_60s and readme_mentions_500ms and readme_mentions_2s
+        ),
+        detail=(
+            f"json peak_hold_s={stages.get('peak_hold_s')} · "
+            f"ramp_s={stages.get('ramp_s')} · duration_s={d.get('duration_s')} · "
+            f"README has 60s='{readme_mentions_60s}' / 0-500ms='{readme_mentions_500ms}' / "
+            f"500ms-2s='{readme_mentions_2s}'"
+        ),
+        target_loc="apps/web/public/scenarios/mains_fail_profile.json (stages) ↔ README.md ⭐",
     )
 
 
@@ -594,6 +692,7 @@ def main() -> int:
     check_scenarios_in_sync(report)
     check_fleet_invariants(report)
     check_lic_rc_invariants(report)
+    check_mains_fail_invariants(report)
     check_landing_headlines(report)
     check_tco_savings_pct(report)
     check_rainflow_validation_ratios(report)
