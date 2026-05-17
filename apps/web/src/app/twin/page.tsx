@@ -15,9 +15,10 @@ async function loadScenario(name: string) {
 }
 
 export default async function TwinPage() {
-  const [lfpOnly, hybrid, aging, modelValidation] = await Promise.all([
+  const [lfpOnly, hybrid, mainsFail, aging, modelValidation] = await Promise.all([
     loadScenario("transient_lfp_only"),
     loadScenario("transient_hybrid"),
+    loadScenario("mains_fail_profile"),
     loadScenario("aging_lfp"),
     loadScenario("model_validation"),
   ]);
@@ -25,6 +26,7 @@ export default async function TwinPage() {
     <TwinClient
       lfpOnly={lfpOnly}
       hybrid={hybrid}
+      mainsFail={mainsFail}
       aging={aging}
       modelValidation={modelValidation}
     />

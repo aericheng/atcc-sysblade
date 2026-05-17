@@ -94,6 +94,20 @@ I_PEAK_PACK_A = (
     / LFP_PACK_NOMINAL_V
 )
 
+# ---------------------------------------------------------------------------
+# Mains-fail graceful ramp — 60 s rack-level transient for §2.1.1 narrative.
+# Three stages: (A) peak-hold while GPU power-cap signal propagates;
+# (B) exponential decay as GPU throttles to survival; (C) continuous
+# survival-power phase. The stage A duration and ramp τ are engineering
+# placeholders — W3 EVT measures on GB200 BMC hardware before freeze
+# (HANDOVER §6 open question).
+# ---------------------------------------------------------------------------
+MAINS_FAIL_DURATION_S = 60.0
+MAINS_FAIL_DT = 0.02            # 3000 steps; balances DFN cost vs LIC dynamics
+MAINS_FAIL_PEAK_HOLD_S = 0.5    # LIC-led peak hold (~2.4 s usable energy, see README ⭐)
+MAINS_FAIL_RAMP_S = 1.5         # linear ramp window — BMC throttles GPU power-cap
+MAINS_FAIL_CONTINUOUS_KW = 30.0 # GPU survival power → 1.5 C continuous per BBU
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -156,7 +170,12 @@ def _build_power_profile(duration_s: float, dt: float) -> tuple[np.ndarray, np.n
     return t, p_kw
 
 
-def _split_with_lic(p_total_kw: np.ndarray, dt: float, tau_s: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
+def _split_with_lic(
+    p_total_kw: np.ndarray,
+    dt: float,
+    tau_s: float = 0.5,
+    lfp_init_kw: float | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """Split rack power into (LFP slow, LIC fast) using a first-order RC-equivalent LPF.
 
     This is a *first-order equivalent model* of the LIC, NOT an electrochemical
@@ -187,7 +206,12 @@ def _split_with_lic(p_total_kw: np.ndarray, dt: float, tau_s: float = 0.5) -> tu
     # peak, so max_c_rate(hybrid) shows 10 C from this single seeded
     # sample — the integrated and rainflow ratios still rest on 60 s of
     # post-warmup data and are unaffected.
-    lfp[0] = p_total_kw[0]
+    # Default seed = first sample of the profile (the behaviour the
+    # transient_hybrid headline numbers depend on — do not change without
+    # re-running cross-checks). Mains-fail style scenarios that begin with
+    # a step transient should override via lfp_init_kw to the pre-step
+    # steady-state so the LIC absorbs the step.
+    lfp[0] = float(lfp_init_kw) if lfp_init_kw is not None else p_total_kw[0]
     for i in range(1, len(p_total_kw)):
         lfp[i] = alpha * p_total_kw[i] + (1 - alpha) * lfp[i - 1]
     lic = p_total_kw - lfp
@@ -461,6 +485,148 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
         },
     }
     _save("transient_hybrid.json", payload)
+
+
+# ---------------------------------------------------------------------------
+# 2.5. Mains-fail graceful ramp — 60 s transient for §2.1.1 narrative
+# ---------------------------------------------------------------------------
+def _build_mains_fail_profile(
+    duration_s: float,
+    dt: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Rack-level power profile for the mains-fail graceful-ramp scenario.
+
+    Stage A (0 → PEAK_HOLD_S): rack at RACK_POWER_KW — LIC-led peak hold
+    while the BMC propagates mains-fail to the GPU power-cap controller.
+    Stage B (PEAK_HOLD_S → PEAK_HOLD_S + RAMP_S): linear ramp from
+    RACK_POWER_KW to CONTINUOUS_KW as GPU throttles to survival.
+    Stage C (rest of window): rack at CONTINUOUS_KW (training paused,
+    checkpoint + idle workload).
+
+    Per-BBU C-rate at rack peak is RACK_POWER_KW / N_BBU_PER_RACK / LFP_PACK_KWH
+    = 6 C (pulse, < 2 s — inside automotive LFP datasheet pulse 5–10 C spec).
+    Per-BBU C-rate during Stage C is CONTINUOUS_KW / N_BBU_PER_RACK / LFP_PACK_KWH
+    = 1.5 C (continuous — inside the 1–3 C continuous spec). These two
+    numbers are what the answer-back card in HANDOVER §5 quotes.
+    """
+    t = np.arange(0.0, duration_s + dt, dt)
+    p = np.empty_like(t)
+    p_peak = RACK_POWER_KW
+    p_cont = MAINS_FAIL_CONTINUOUS_KW
+    ramp_start = MAINS_FAIL_PEAK_HOLD_S
+    ramp_end = ramp_start + MAINS_FAIL_RAMP_S
+
+    hold_mask = t < ramp_start
+    ramp_mask = (t >= ramp_start) & (t < ramp_end)
+    cont_mask = t >= ramp_end
+
+    p[hold_mask] = p_peak
+    # Linear ramp p(t') = p_peak + (p_cont − p_peak) × (t' / RAMP_S)
+    # — README ⭐ section quotes this as "120 → 30 kW (linear ramp)".
+    t_ramp = t[ramp_mask] - ramp_start
+    p[ramp_mask] = p_peak + (p_cont - p_peak) * (t_ramp / MAINS_FAIL_RAMP_S)
+    p[cont_mask] = p_cont
+    return t, p
+
+
+def scenario_mains_fail(
+    duration_s: float = MAINS_FAIL_DURATION_S,
+    dt: float = MAINS_FAIL_DT,
+) -> None:
+    """Simulate 60 s mains-fail graceful ramp on the hybrid LFP + LIC stack.
+
+    Closes the HANDOVER §3 (P2) open item: "scripts/ has no
+    scenario_mains_fail()" — the §2.1.1 dynamic-ramp narrative is now
+    backed by simulated data, not just prose.
+    """
+    logger.info("=== Scenario: 60s mains-fail graceful ramp (hybrid) ===")
+    t, p_kw = _build_mains_fail_profile(duration_s, dt)
+    # Seed the LPF at Stage-C continuous power so the LIC absorbs the t=0
+    # step (mains was up at 30 kW immediately before t=0, then GPU spikes
+    # to 120 kW the moment mains drops).
+    p_lfp, p_lic = _split_with_lic(
+        p_kw, dt, tau_s=SPLIT_FILTER_TAU_S, lfp_init_kw=MAINS_FAIL_CONTINUOUS_KW,
+    )
+    sim = _simulate_lfp_cell(p_lfp, t)
+
+    n = 800
+    v_cell = np.asarray(sim["V_cell"])
+
+    # Energy bookkeeping — DoD against full rack-level LFP capacity.
+    integrate = getattr(np, "trapezoid", np.trapz)
+    energy_delivered_kj = float(integrate(p_kw, t))           # kW·s = kJ
+    pack_capacity_kwh = LFP_PACK_KWH * N_BBU_PER_RACK         # 8 × 2.5 = 20 kWh / rack
+    energy_capacity_kj = pack_capacity_kwh * 3600.0           # → 72 000 kJ
+    dod_pct = (energy_delivered_kj / energy_capacity_kj) * 100.0
+
+    # Per-BBU C-rate snapshot — the two numbers HANDOVER §5 quotes verbatim.
+    p_peak_kw_per_bbu = float(np.max(p_kw)) / N_BBU_PER_RACK
+    p_cont_kw_per_bbu = MAINS_FAIL_CONTINUOUS_KW / N_BBU_PER_RACK
+    peak_c_rate = p_peak_kw_per_bbu / LFP_PACK_KWH            # 15 / 2.5 = 6 C
+    continuous_c_rate = p_cont_kw_per_bbu / LFP_PACK_KWH      # 3.75 / 2.5 = 1.5 C
+
+    # LIC RC bank dynamics during the ramp.
+    lic_rc = _simulate_lic_rc(p_lic, t)
+    v_lic_full = np.asarray(lic_rc["v_lic"])
+    i_lic_full = np.asarray(lic_rc["i_lic_a"])
+
+    payload = {
+        "title": "60-second graceful ramp under mains-fail",
+        "description": (
+            "Anchors whitepaper §2.1.1 dynamic-ramp narrative with simulated data. "
+            f"Stage A (0–{MAINS_FAIL_PEAK_HOLD_S:.1f} s): LIC-led peak hold while BMC "
+            f"propagates mains-fail to power-cap controller — {peak_c_rate:.0f} C per-BBU "
+            "pulse, inside automotive LFP datasheet pulse spec (5–10 C). "
+            f"Stage B ({MAINS_FAIL_PEAK_HOLD_S:.1f}–"
+            f"{MAINS_FAIL_PEAK_HOLD_S + MAINS_FAIL_RAMP_S:.1f} s): linear ramp from "
+            f"{RACK_POWER_KW:.0f} kW down to {MAINS_FAIL_CONTINUOUS_KW:.0f} kW as GPU throttles. "
+            f"Stage C ({MAINS_FAIL_PEAK_HOLD_S + MAINS_FAIL_RAMP_S:.1f}–"
+            f"{duration_s:.0f} s): {MAINS_FAIL_CONTINUOUS_KW:.0f} kW continuous = "
+            f"{continuous_c_rate:.1f} C per-BBU, inside 1–3 C continuous spec. "
+            "GPU power-cap convergence time is an engineering placeholder; "
+            "W3 EVT must measure on GB200 / Bluefield BMC hardware before "
+            "production freezes this number (HANDOVER §6 open question)."
+        ),
+        "duration_s": duration_s,
+        "stages": {
+            "peak_hold_s": MAINS_FAIL_PEAK_HOLD_S,
+            "ramp_s": MAINS_FAIL_RAMP_S,
+            "ramp_shape": "linear",
+            "peak_kw": RACK_POWER_KW,
+            "continuous_kw": MAINS_FAIL_CONTINUOUS_KW,
+        },
+        "series": {
+            "t": _decimate(t, n).tolist(),
+            "p_total_kw": _decimate(p_kw, n).tolist(),
+            "p_lfp_kw": _decimate(p_lfp, n).tolist(),
+            "p_lic_kw": _decimate(p_lic, n).tolist(),
+            "v_cell": _decimate(v_cell, n).tolist(),
+            "v_pack": _decimate(v_cell * 15, n).tolist(),
+            "i_cell": _decimate(np.asarray(sim["I_cell"]), n).tolist(),
+            "v_lic": _decimate(v_lic_full, n).tolist(),
+            "i_lic_a": _decimate(i_lic_full, n).tolist(),
+        },
+        "stats": {
+            "v_cell_min": float(np.min(v_cell)),
+            "v_cell_max": float(np.max(v_cell)),
+            "v_cell_swing": float(np.max(v_cell) - np.min(v_cell)),
+            "energy_delivered_kj": energy_delivered_kj,
+            "energy_capacity_kj": energy_capacity_kj,
+            "dod_pct": dod_pct,
+            "energy_headroom_ratio": energy_capacity_kj / max(energy_delivered_kj, 1e-6),
+            "peak_c_rate_per_bbu": peak_c_rate,
+            "continuous_c_rate_per_bbu": continuous_c_rate,
+            "p_peak_per_bbu_kw": p_peak_kw_per_bbu,
+            "p_continuous_per_bbu_kw": p_cont_kw_per_bbu,
+            "lic_v_min": lic_rc["v_min"],
+            "lic_v_max": lic_rc["v_max"],
+            "lic_v_droop_v": lic_rc["v_droop_v"],
+            "lic_v_min_datasheet": lic_rc["v_min_datasheet"],
+            "lic_headroom_to_cutoff_v": lic_rc["headroom_to_cutoff_v"],
+            "lic_passes_cutoff": lic_rc["passes_cutoff"],
+        },
+    }
+    _save("mains_fail_profile.json", payload)
 
 
 # ---------------------------------------------------------------------------
@@ -1186,6 +1352,7 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
 if __name__ == "__main__":
     scenario_transient_lfp_only()
     scenario_transient_hybrid()
+    scenario_mains_fail()
     scenario_aging_lfp()
     scenario_aging_rainflow_validation()
     scenario_fleet_devices()

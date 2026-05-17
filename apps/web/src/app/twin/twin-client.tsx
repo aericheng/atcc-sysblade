@@ -52,6 +52,14 @@ interface Scenario {
   transient_amplitude?: number;
   transient_period_s?: number;
   split_filter_tau_s?: number;
+  // Mains-fail scenario only — three-stage ramp design parameters.
+  stages?: {
+    peak_hold_s: number;
+    ramp_s: number;
+    ramp_shape?: "linear" | "exponential";
+    peak_kw: number;
+    continuous_kw: number;
+  };
   series: Record<string, number[]>;
   stats: {
     v_cell_min?: number;
@@ -415,11 +423,13 @@ function ScopeCharts({
 export function TwinClient({
   lfpOnly,
   hybrid,
+  mainsFail,
   aging,
   modelValidation,
 }: {
   lfpOnly: Scenario;
   hybrid: Scenario;
+  mainsFail: Scenario;
   aging: AgingScenario;
   modelValidation: ModelValidation;
 }) {
@@ -480,6 +490,38 @@ export function TwinClient({
       })),
     [aging],
   );
+
+  // Mains-fail 60s ramp data. Keep full resolution in [0, 3] s (where the
+  // peak-hold + exponential decay + early settling all happen) and decimate
+  // every 4 samples after, since Stage C just sits at the continuous level.
+  const rampPowerData = useMemo(() => {
+    const t = mainsFail.series.t;
+    const pT = mainsFail.series.p_total_kw;
+    const pL = mainsFail.series.p_lfp_kw;
+    const pI = mainsFail.series.p_lic_kw;
+    const out: Array<{ t: number; p_total: number; p_lfp: number; p_lic: number }> = [];
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] > 3 && i % 4 !== 0 && i !== t.length - 1) continue;
+      out.push({
+        t: Number(t[i].toFixed(3)),
+        p_total: Number(pT[i].toFixed(2)),
+        p_lfp: Number(pL[i].toFixed(2)),
+        p_lic: Number(pI[i].toFixed(2)),
+      });
+    }
+    return out;
+  }, [mainsFail]);
+
+  const rampLicData = useMemo(() => {
+    const t = mainsFail.series.t;
+    const v = mainsFail.series.v_lic;
+    const out: Array<{ t: number; v_lic: number }> = [];
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] > 3 && i % 4 !== 0 && i !== t.length - 1) continue;
+      out.push({ t: Number(t[i].toFixed(3)), v_lic: Number(v[i].toFixed(3)) });
+    }
+    return out;
+  }, [mainsFail]);
 
   const stableLfp = lfpOnly.stats["v_cell_pp_stable"] as number;
   const stableHybrid = hybrid.stats["v_cell_pp_stable"] as number;
@@ -600,6 +642,99 @@ export function TwinClient({
             licPeakKw={hybrid.stats.lic_peak_kw as number | undefined}
             licDroopV={hybrid.stats.lic_v_droop_v as number | undefined}
           />
+        </CardBody>
+      </Card>
+
+      {/* Mains-fail graceful ramp — 60s rack-scale transient backing whitepaper §2.1.1 narrative */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <CardTitle>Mains-fail · 60 s graceful ramp at rack scale</CardTitle>
+              <Disclosure summary="What you&apos;re seeing" className="mt-2">
+                {mainsFail.description}
+              </Disclosure>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
+              Simulated · physics-anchored
+            </span>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Stat
+              label="Energy used vs rack capacity"
+              value={((mainsFail.stats.dod_pct as number) ?? 0).toFixed(2)}
+              unit={`% of ${(((mainsFail.stats.energy_capacity_kj as number) ?? 0) / 3600).toFixed(0)} kWh`}
+              tone="success"
+              hint={`${((mainsFail.stats.energy_delivered_kj as number) ?? 0).toFixed(0)} kJ delivered · ${((mainsFail.stats.energy_headroom_ratio as number) ?? 0).toFixed(0)}× headroom against the 20 kWh per-rack LFP capacity`}
+            />
+            <Stat
+              label="Per-BBU C-rate"
+              value={`${((mainsFail.stats.peak_c_rate_per_bbu as number) ?? 0).toFixed(0)} / ${((mainsFail.stats.continuous_c_rate_per_bbu as number) ?? 0).toFixed(1)}`}
+              unit="C peak / cont."
+              tone="primary"
+              hint={`${((mainsFail.stats.p_peak_per_bbu_kw as number) ?? 0).toFixed(0)} kW × ${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s pulse (inside automotive LFP 5-10 C pulse spec) · ${((mainsFail.stats.p_continuous_per_bbu_kw as number) ?? 0).toFixed(2)} kW continuous (inside 1-3 C continuous spec)`}
+            />
+            <Stat
+              label="LIC droop @ t = 0"
+              value={((mainsFail.stats.lic_v_droop_v as number) ?? 0).toFixed(2)}
+              unit="V from nominal"
+              tone={mainsFail.stats.lic_passes_cutoff ? "success" : "danger"}
+              hint={`v_min ${((mainsFail.stats.lic_v_min as number) ?? 0).toFixed(2)} V · ${((mainsFail.stats.lic_headroom_to_cutoff_v as number) ?? 0).toFixed(1)} V headroom to Eaton XLR ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 0).toFixed(0)} V cutoff (2× XLR-48-166 parallel)`}
+            />
+            <Stat
+              label="LFP cell V swing"
+              value={(((mainsFail.stats.v_cell_swing as number) ?? 0) * 1000).toFixed(0)}
+              unit="mV peak-to-peak"
+              tone="default"
+              hint={`v_min ${((mainsFail.stats.v_cell_min as number) ?? 0).toFixed(3)} V → v_max ${((mainsFail.stats.v_cell_max as number) ?? 0).toFixed(3)} V · LFP stays in plateau across the full 60 s ramp`}
+            />
+          </div>
+
+          <ChartCard
+            title="Rack power split · 0-60 s"
+            subtitle={`Stage A 0-${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s peak hold · Stage B linear ramp ${(mainsFail.stages?.peak_kw ?? 120).toFixed(0)} → ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW over ${(mainsFail.stages?.ramp_s ?? 1.5).toFixed(1)} s · Stage C ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW continuous`}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={rampPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
+                <Tooltip content={<DarkTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name="Rack total" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name="LFP pack" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name="LIC bank" isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard
+            title="LIC bank voltage envelope · closed-form RC"
+            subtitle={`2× Eaton XLR-48-166 parallel · v_nominal 51.3 V · datasheet cutoff ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`}
+          >
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={rampLicData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <YAxis domain={[35, 55]} stroke="" tickFormatter={(v) => `${v} V`} />
+                <Tooltip content={<DarkTooltip />} />
+                <ReferenceLine
+                  y={(mainsFail.stats.lic_v_min_datasheet as number) ?? 38}
+                  stroke="var(--danger)"
+                  strokeDasharray="4 4"
+                  label={{
+                    value: `Eaton XLR cutoff ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`,
+                    position: "insideTopRight",
+                    fill: "var(--danger)",
+                    fontSize: 10,
+                  }}
+                />
+                <Line type="monotone" dataKey="v_lic" stroke="var(--primary)" strokeWidth={1.8} dot={false} name="v_lic" isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
         </CardBody>
       </Card>
 
