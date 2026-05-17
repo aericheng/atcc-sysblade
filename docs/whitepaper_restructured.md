@@ -267,6 +267,7 @@ control plane API(NVIDIA `nvml`、IPMI Power Capping Spec 1.0、Redfish
 | 「GPU power-cap 怎麼實作?延遲多少?」 | W3 EVT 階段交付,候選 API 已列(nvml / IPMI / Redfish);本層為設計承諾與 power profile commit,**不是已驗證實作**,對齊 v2.2 §F.1 18 個月里程碑 |
 | 「客戶 inference workload 不能被中斷怎辦?」 | facility UPS 接手長時備援是 v2.2 §E 共同設計前提;Sysblade 60 秒 graceful 是給 **checkpoint + graceful drain**,不是無中斷服務(若客戶站缺 facility UPS,走 v2.2 §E.5 Tier-A 擴大版規格)|
 | 「為什麼不用更大 BBU 例如 25 kWh × 1 台?」 | **單點故障 blast radius**:per-rack 8 台並聯允許 N+1 容錯(任一台失效不影響 rack);整合單台 25 kWh 違反 v2.2 §E.1 12U OCP ORV3 機械形狀因子 + 失效範圍擴大 |
+| 「複賽 demonstrator 是 8S × 5C peak / 1C 連續,跟 spec 6C/1.5C 不一致?」 | **是 scaled-down,per-cell 工作點 transferable**:demonstrator 因預算 + 26 天時程 + 學生實驗室安全考量,容量縮 ~10×、串數縮 1/2、cell C-rate peak 5C / 連續 ~1C(因 Maxwell BMOD0058 Ioper 19A 限制)。**控制律 τ=0.5s、互補濾波器、5.72×/3.52× 削峰物理 chemistry-agnostic 且 sim 驗過**(`scripts/generate_scaled_8s_sim.py` PASS)。Spec 6C/1.5C 仍是 EVT(2026 Q3)目標,對齊 v2.2 §F.1。詳 `docs/BBU_IMPLEMENTATION_PLAN.md` §1.1 demonstrator spec |
 
 ⭐ **本節 §2.1.1 + §2.3.1 RMS 應力分析(C-rate 6C peak → 1C 連續)+ §2.3.2 Wang+rainflow 交叉驗證(worst-case 5.5 % per-Ah 損傷下降),共構 LFP cell 工作點完整防禦**。
 

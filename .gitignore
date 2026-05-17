@@ -48,6 +48,17 @@ data/processed/**
 !data/processed/cross_dataset_mape.json
 !data/processed/x_cube_ai_static_analysis.json
 !data/processed/lstm_severson_only_eval.json
+# v1.3 review M5 — keep BBU implementation evidence in repo (M1-M4 artifacts)
+!data/processed/scaled_8s_sim.json
+!data/processed/lstm_latency_laptop_cpu.json
+!data/processed/lstm_latency_laptop_cpu.png
+# Pi 5 / STM32N6 evidence land here once those devices arrive (W2-W3 final M2):
+!data/processed/lstm_latency_pi5.json
+!data/processed/lstm_latency_pi5.png
+!data/processed/lstm_latency_stm32n6.json
+!data/processed/lstm_latency_stm32n6.png
+# hybrid_control_emulator.json intentionally NOT whitelisted — reproducible from
+# scripts/hybrid_control_emulator.py in 2 s; keeps git diff clean.
 *.mat
 *.h5
 *.parquet

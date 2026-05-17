@@ -2,7 +2,7 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
-[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📑 企劃書 v2.2 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.1**](docs/whitepaper.md) · [**📕 精煉版 v1.1**](docs/whitepaper_restructured.md)
+[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📑 企劃書 v2.2 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.1**](docs/whitepaper.md) · [**📕 精煉版 v1.1**](docs/whitepaper_restructured.md) · [**🔧 複賽 BBU 實作計畫 v1.3**](docs/BBU_IMPLEMENTATION_PLAN.md)
 
 ---
 
