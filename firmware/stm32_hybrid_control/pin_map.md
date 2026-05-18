@@ -8,7 +8,7 @@
 | PA1   | TIM2_CH2  | PWM out — supercap path low-side  | UCC27282 ch2 PWMN input    |
 | PA2   | USART2_TX | Telemetry @ 115200                | Pi 5 USB-UART RX (GPIO 15) |
 | PA3   | USART2_RX | (Optional) command-in from Pi 5   | Pi 5 USB-UART TX (GPIO 14) |
-| PA4   | ADC1_IN4  | Hall sensor LFP current           | HASS 50-S Vout (or INA226 alt-route) |
+| PA4   | ADC1_IN4  | Hall sensor LFP current           | HASS 50-S Vout (or INA228 I²C alt-route) |
 | PA5   | ADC1_IN5  | Hall sensor supercap current      | HASS 50-S Vout (SC path)   |
 | PA6   | ADC1_IN6  | V_bus voltage divider (1:10)      | DC bus + via 100k/10k      |
 | PA7   | ADC1_IN7  | V_supercap voltage divider (1:10) | Supercap + via 100k/10k    |
