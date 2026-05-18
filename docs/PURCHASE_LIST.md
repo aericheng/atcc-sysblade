@@ -1,8 +1,11 @@
 # 複賽 BBU Demonstrator 採購清單
 
-> v1.4 凍結 · 2026-05-17(Maxwell 通路升 DigiKey C02)
-> 對應 BoM:[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md#21--lean-bom推薦nt-39858)
-> 總額 NT$ 39,858 / Buffer 10,142(借得到 bench PSU + 萬用表 → 12,442)
+> **v1.8 凍結 · 2026-05-18**(對齊 `out_pdf/BBU_PROPOSAL_v2.pdf` 繳交版)
+> v1.5 → v1.6:JK-BMS RS485 customization + GX12 cable + USB-RS485 dongle 升 ICShop FT232+SP485EEN(+NT$ 1,400)
+> v1.6 → v1.7:Pi 5 通路鎖 DigiKey SC1432(USD $175,比 RS TW 貴 NT$ 1,100 換時程確定性);IRFB4115 通路鎖 DigiKey 真品(IRFB4115 仿冒重災區)
+> v1.7 → v1.8:**LFP cell qty 8 → 12**(對齊 proposal_v2:8 主用 + 4 備品 / cell-matching 池;+NT$ 1,000);**M1-M4 bench KPI Pass criteria 明文化**(§1.2 表 + §5.3 對應)
+> 對應 BoM:[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md)
+> 總額 **NT$ 44,234** / Buffer **5,766**(借得到 bench PSU + 萬用表 → **8,066**;**warning line NT$ 5,000**,目前餘 NT$ 766 ⚠️ 接近警戒,後續任何升級需明確理由)
 
 ---
 
@@ -10,10 +13,11 @@
 
 | 時間 | 動作 |
 |---|---|
-| **5/17 PM** | **DigiKey Maxwell BMOD0058-E016-C02 × 2 立刻按下單**(現貨 26 pcs,隔日到貨);其餘第一波 1A/1C/1D 同步下 |
-| 5/17 晚上 | DigiKey 訂單 confirmation email 預期當日到 — 若 24h 沒收到,登入帳號或客服查詢 |
-| 5/18 早上 | UCC27282 Mouser lead time > 4 週 → **立刻**蝦皮下 IR2110 備案 |
-| 5/18 全天 | 第二波下單;問學校 EE 系借 bench PSU + 萬用表 + **示波器 + 差動探棒**(M3 必用) |
+| **5/18 PM**(今天)| **DigiKey 同單下訂 4 項(Maxwell × 2 + INA228 × 2 + IRFB4115 × 5 + Pi 5 × 1)= ~NT$ 17,824 + 運費**;同時下 1A 蝦皮 / 露天;1C UCC27282 看 Mouser lead time;1D Pi 配件 PSU + SD + HDMI |
+| 5/18-19 | **Wave 1A 蝦皮一晚搞定**(13 項);JK-BMS 賣家下單(checkout 照 v1.6 customization 必勾 RS485 + 加購 GX12 cable);ICShop FT232+SP485EEN |
+| 5/18 | DigiKey 訂單 confirmation email 預期當日到 — 若 24h 沒收到,登入帳號或客服查詢 |
+| 5/19 早上 | UCC27282 Mouser lead time > 4 週 → **立刻**蝦皮下 IR2110 備案 |
+| 5/19 全天 | 第二波下單;問學校 EE 系借 bench PSU + 萬用表 + **示波器 + 差動探棒**(M3 必用) |
 | 5/19 前 | 點焊機借不借決定(預設借不到 → 彈片座 BoM 已含) |
 | 5/22 W1 review | 採購到貨清點 + 軟體 stub 全綠 |
 
@@ -21,49 +25,60 @@
 
 ## 🔥 第一波 — TODAY 5/17 PM 立刻下單(W1 內必到)
 
-### 1A. 蝦皮 / 露天(1-3 天到)— 小計 ~13,150
+### 1A. 蝦皮 / 露天(1-3 天到)— 小計 ~13,950(v1.8 +1,000 LFP 4 顆備品)
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
-| LFP 26650 3.2V/5Ah | 8 | 2,000 | `LFP 26650 5Ah`、`磷酸鋰鐵 26650`、`EVE 26650 5000mAh` | **LFP 不是 NMC**(NMC 3.7V);同批號;避開 NCR |
+| LFP 26650 3.2V/5Ah | **12** | **3,000** | `LFP 26650 5Ah`、`磷酸鋰鐵 26650`、`EVE 26650 5000mAh`、`A123 26650 高功率` | **v1.8 對齊 proposal_v2**:8 主用 + **4 備品**(DOA replacement + cell-matching 池);**5 防呆**:① 標 3.2V(不是 3.7V Li-ion)② 充飽 3.65V(不是 4.2V)③ 化學系統 LiFePO4 / 磷酸鋰鐵(不是 NCM/NMC/NCA)④ prefix IFR(不是 ICR/INR)⑤ 連續放電 ≥ 2C(我們 25A peak 要求);同批號;避開 NCR / BRC 假料品牌 |
 | 26650 8S holder + 端子 | 1 套 | 800 | `26650 電池盒 8串`、`26650 彈片座` | 焊腳 ≥ 0.3mm;**彈片座**(預設借不到點焊機) |
-| **JK-BMS 8S 100A**(限 JK-B 系列) | 1 | 2,800 | `JK-BMS 8S B1A8S20P`、`極空 BMS JK-B` | RS485 + 藍牙;**勿買 DZ11/PB1**(jkbms.py 不支援 offset) |
+| **JK-BMS 8S 100A**(限 JK-B 系列,含 RS485 customization) | 1 | 3,800 | `JK-BMS 8S B1A8S20P`、`極空 BMS JK-B` | **v1.6 升**:基礎 USD $89.98 + checkout 必勾 ☑ RS485 → ~USD $110-125 ≈ NT$ 3,800;☐ CANBus / ☐ Display / ☐ Heating 不勾;**勿買 DZ11/PB1**(jkbms.py offset 不同) |
+| **JK-BMS GX12-DuPont RS485 cable**(加購)| 1 | 200 | 同 JK-BMS 賣家頁面「RS485 Adapter Cable: Sold separately as optional add-on」 | JK-B RS485 訊號出在 4-pin GX12 port(俗稱 "GPS port"),需 cable 把 GX12 → DuPont 才能接 ICShop FT232+SP485EEN dongle |
 | STM32 Black Pill F411 | 1 | 600 | `STM32F411 Black Pill`、`WeAct F411CE` | F411CE 512KB;USB-C |
-| INA226 模組 | 2 | 200 | `INA226 模組 breakout` | I²C + onboard shunt + 量程 ≥ 36V |
 | **ATORCH DL24M 600W**(單機) | 1 | 4,500 | `ATORCH DL24M 600W 單機`、`DL24M 40A 200V`、`DL24M jumper 切 600W` | **v1.4 品牌修正**(RIDEN → ATORCH);**買單機 600 W 版**(jumper cap + 軟體切 150/300/450/600 W mode);**避開**「150W × 4 並聯到 600W」listing 那是 DL24 冒充 DL24M;USB + 4 線 Kelvin;最穩備案 Amazon ASIN `B0993H6NXH`(USD ~50-65) |
 | DS18B20 防水 | 4 | 200 | `DS18B20 防水 不鏽鋼` | 不鏽鋼封裝 |
-| USB-RS485 dongle | 1 | 200 | `USB RS485 CH340 MAX485` | **帶 MAX485**(便宜版只有 USB-TTL 不夠) |
+| **ICShop USB-RS485 dongle**(FT232 + SP485EEN) | 1 | 400 | ICShop 搜「FT232 RS485」或「USB to RS485」 | **v1.6 升**:從 generic CH340 升 FT232+SP485EEN;FT232 比 CH340 driver 穩(macOS/Linux 不卡);SP485EEN 半雙工 RS485 transceiver;搭 JK-BMS GX12 cable 的 DuPont 端子直連 |
 | USB hub 4-port 自供電 | 1 | 300 | `USB 3.0 hub 4 port 帶電源` | 含 5V/3A 外接電源 |
 | ST-Link V2 clone | 1 | 300 | `ST-Link V2 STM32 迷你` | 帶 SWD 4-pin cable |
 | 5Ω/50W 線繞電阻(B1 預充) | 1 | 80 | `50W 5歐姆 線繞電阻 鋁殼` | 鋁殼包覆型 |
 | 40A 5-pin auto relay(B1) | 1 | 120 | `汽車繼電器 40A 12V 5腳`、`Bosch 0332019150` | 12V 線圈 / NO 接點 / 真 40A |
 | 2N7000(B1 driver) | 2 | 50 | `2N7000 TO-92` | TO-92 |
 
-### 1B. DigiKey 台(現貨主通路)— 10,608
+### 1B. DigiKey 台(現貨主通路)— **17,824**(v1.7 +Pi 5 +IRFB4115)
+
+> **v1.7 集中通路**:Maxwell + INA228 + IRFB4115 + Pi 5 同單下訂,**運費攤平 ~NT$ 500**,3-5 工作天到貨
 
 | 品項 | 數 | NT$ | 通路 | 備案 |
 |---|---:|---:|---|---|
-| **Maxwell BMOD0058-E016-C02** | 2 | 10,608 | digikey.tw part **11673898** | DigiKey 缺貨 → eBay 二手 `Maxwell BMOD0058` 或 LS Mtron `LSUM016R8C0058F`(同 form-factor) |
+| **Maxwell BMOD0058-E016-C02** | 2 | 10,608 | digikey.tw part **11673898**(26 pcs 現貨) | DigiKey 缺貨 → eBay 二手 `Maxwell BMOD0058` 或 LS Mtron `LSUM016R8C0058F`(同 form-factor) |
+| **Adafruit INA228 breakout #5832** | 2 | 1,076 | digikey.tw part **1528-5832-ND**(671 pcs 現貨) | DigiKey 缺貨 → Adafruit US 直購(USD 14.95)或蝦皮 INA228 模組(無 STEMMA QT) |
+| **Infineon IRFB4115PBF MOSFET**(v1.7 從 1C 移入) | **5** | 540 | digikey.tw part **448-IRFB4115PBF-ND**(4,126 pcs 現貨) | **4 主 + 1 備品**(DOA / 焊壞不用等再下單);USD $3.37/pc × 5 = $16.85;IRFB4115 是仿冒重災區,DigiKey 真品 reliability margin 大;備案 Mouser / 利眾 / 唐文(蝦皮便宜但仿冒風險) |
+| **Raspberry Pi 5 8GB**(v1.7 通路鎖)| 1 | 5,600 | digikey.tw part **2648-SC1432-ND** / SC1432(11,513 pcs 現貨) | USD $175;比 RS TW (~NT$ 3,300) 貴 NT$ 2,200 但同單下訂省運費 + 時程確定性;備案 RS TW part **2841190** 或蝦皮 RS / iCircuit 官方店 |
 
-**規格驗證**(對 datasheet PDF 3003212.2):16V / 58F / 22mΩ ESR / **IDCMAX 14 A @ ΔT=15°C 或 23 A @ ΔT=40°C** / IPEAK 190 A / M5 螺絲端子 4 Nm / 226.5 × 49.5 × 75.9 mm / 0.63 kg。9.3 A 工作點全條件下 ≥ 34 % 餘量,§1.3 gate PASS。**單價 NT$ 5,304 × 2 = 10,608**(DigiKey 台幣計價;1 顆 5,304 / 10 顆批 4,672 / 50 顆批 4,419)。
+**Maxwell 規格驗證**(對 datasheet PDF 3003212.2):16V / 58F / 22mΩ ESR / **IDCMAX 14 A @ ΔT=15°C 或 23 A @ ΔT=40°C** / IPEAK 190 A / M5 螺絲端子 4 Nm / 226.5 × 49.5 × 75.9 mm / 0.63 kg。9.3 A 工作點全條件下 ≥ 34 % 餘量,§1.3 gate PASS。**單價 NT$ 5,304 × 2 = 10,608**(DigiKey 台幣計價;1 顆 5,304 / 10 顆批 4,672 / 50 顆批 4,419)。
 
 **v1.4 通路升 DigiKey 理由**:Heisener B02 通路缺貨(v1.2 記錄 6,732 pcs 已售完);DigiKey 台 stock 26 pcs C02 隔日到貨、台幣計價、發票退換貨機制完整,差價 NT$ 1,608(+18 %)Buffer 吃得下,免「Heisener 24h email 追單」的時間壓力。
 
 ⚠️ **datasheet WARNING(收貨當日必做)**:Maxwell 模組未短路保存 +/- 端可能 bounce back 至 2 V → 收到後**第一動作:萬用表量 +/- 兩端**,若 > 0 V 用 5 Ω 預充電阻跨接放電 30 秒。串聯 / 預充 SOP 全程在 §4.5.5。
 
-### 1C. Mouser / Digi-Key / 利眾 / 唐文 — 1,800
+**INA228 規格驗證**(對 TI INA228 datasheet + Adafruit 5832 schematic):85V 量程(supercap 32V 餘量 165%)/ 20-bit ADC / I²C 介面 / onboard shunt **R015 = 15 mΩ**(滿量程 ±10.9 A)/ STEMMA QT JST-SH 4-pin + 7 腳排針座(板上未焊,需自焊)/ ADR0+ADR1 跳線 4 種 address(預設 0x40)。**用法**:#1 量 supercap path(15 mΩ 直用,9.3 A peak 在量程內 85%);#2 量 LFP path(25 A peak 須**外接 5 mΩ shunt** 跨 VIN+ / VIN- 螺絲端子,將量程拉到 ±32 A;或讀 JK-BMS RS485 回報 I_total 反推)。2 顆並掛同條 I²C bus,**第 2 顆把 ADR0 跳線改 0x41**。
+
+**v1.5 升階 INA228 理由**:INA226(16-bit / 36V)對 supercap 32V bank 只 11% 餘量,bounce-back 場景可能踩線;INA228 量程 +165% + ADC 解析度 ×16 + 整合 coulomb / joule accumulator(M3 削峰量測直接讀累積能量,不需軟體積分)— +NT$ 876 升階值得。
+
+### 1C. Mouser / 利眾 / 唐文(UCC27282 專用通路)— 900
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
-| IRFB4115PBF | 4 | 900 | `IRFB4115PBF` | Vds 150V / Id 104A / Rds(on) 9.3mΩ;**Mouser 正品**(蝦皮山寨假料風險高);TO-220 |
+| ~~IRFB4115PBF~~ | ~~4~~ | ~~900~~ | (**v1.7 移到 1B DigiKey 同單下訂**) | — |
 | UCC27282 | 2 | 900 | `UCC27282` | **lead time ≤ 2 週**;> 4 週**立刻**換 IR2110 + 1N4148 + 10µF cap(蝦皮 NT$ 200 全套)+ 韌體加 minimum-duty 限制 |
 
-### 1D. Pi 5 台灣代理(Cytron / 翔暉)— 5,700
+### 1D. Pi 5 配件(主板已移到 1B DigiKey)— **1,200**
 
-| 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
+| 品項 | 數 | NT$ | 通路 | 確認重點 |
 |---|---:|---:|---|---|
-| Raspberry Pi 5 8GB | 1 | 4,500 | `Raspberry Pi 5 8GB` | **8GB 版** |
-| Pi 5 配件套裝 | 1 套 | 1,200 | `Pi 5 official PSU` + `SanDisk Extreme 32GB U3` + `micro HDMI 線 1m` | **官方 5V/5A PSU**(山寨會 throttle NPU);**micro-HDMI 非 mini-HDMI**;**U3 級 SD** |
+| ~~Raspberry Pi 5 8GB~~ | ~~1~~ | ~~4,500~~ | (**v1.7 移到 1B DigiKey 同單**)| 已升 NT$ 5,600(DigiKey SC1432)|
+| **5V/5A USB-C PSU**(Raspberry Pi 官方 27W)| 1 | 600 | 蝦皮 RS / iCircuit 官方店;或 Pi 5 同店 | **必 5V/5A 規格**(手機充電器 / 一般 USB-C PSU 會限流 → Pi 5 throttle / 開機掛)|
+| **SanDisk Extreme 32GB UHS-I C10 U3**(優先 A1) | 1 | 300-400 | **SanDisk 官方旗艦店 / WD 台灣 / PChome / momo / 博客來 / Costco** | ⚠️ **SanDisk 仿冒重災區**;**禁:蝦皮路邊、Aliexpress、Alibaba**;收貨用 **h2testw** 驗容量;若有 A1 標示同價就買 A1(Pi OS 開機 25s vs 45s)|
+| **micro-HDMI to HDMI 線 1m** | 1 | 200-300 | 蝦皮 | **micro-HDMI 不是 mini-HDMI**;Pi 5 有 2 個 micro-HDMI port |
 
 ---
 
@@ -109,17 +124,18 @@
 
 | 波次 | 含項 | 小計 |
 |---|---:|---:|
-| 第一波 1A(蝦皮 / 露天) | 13 項 | 13,150 |
-| 第一波 1B(DigiKey Maxwell C02) | 1 項 × 2 顆 | 10,608 |
-| 第一波 1C(Mouser / 利眾) | 2 項 | 1,800 |
-| 第一波 1D(Pi 代理) | 2 項 | 5,700 |
+| 第一波 1A(蝦皮 / 露天)— v1.8 LFP 8→12 顆 +1,000 | 13 項 | **13,950** |
+| 第一波 1B(DigiKey 同單:Maxwell + INA228 + IRFB4115 + Pi 5)| 4 項 | 17,824 |
+| 第一波 1C(Mouser / 利眾 — 只剩 UCC27282) | 1 項 | 900 |
+| 第一波 1D(Pi 5 配件 — 主板已移 1B)| 3 項 | 1,200 |
 | 第二波(安全 + 電源,2 項可借) | 10 項 | 6,400 |
 | 第三波(機械散熱) | 3 項 | 2,200 |
-| **採購總額** | **30 SKU** | **~39,858** |
+| **採購總額**(v1.8)| **34 SKU**(LFP 12 顆視為 1 SKU)| **~44,234** |
 | **+ 運費 / 雜耗估** | | ~2,000 |
-| **實付** | | **~41,500-42,500** |
-| **Buffer**(全買新) | | 10,142 |
-| **Buffer**(借得到 PSU + 萬用表) | | **12,442** |
+| **實付** | | **~45,900-46,900** |
+| **Buffer**(全買新) | | **5,766** |
+| **Buffer**(借得到 PSU + 萬用表) | | **8,066** |
+| **Warning line** | | NT$ 5,000(目前餘 **NT$ 766** ⚠️ 近警戒)|
 
 ---
 
@@ -132,7 +148,9 @@
 |---|:--:|---|
 | Heisener Maxwell 24h 無 confirmation | 中 | email 追;延 > 2 週切 eBay / LS Mtron 備案 |
 | UCC27282 Mouser lead time > 4 週 | 中 | **5/18 早上**看到立刻換 IR2110(蝦皮 NT$ 200 全套),韌體加 minimum-duty 5-95% 切換 |
-| Pi 5 蝦皮 / 代理缺貨 | 低 | 露天現貨;或 M2 fallback 用笔电 baseline 進簡報(p99 245 µs 仍可接受) |
+| Pi 5 DigiKey 缺貨 | **極低** | **v1.7 鎖 DigiKey SC1432,11,513 pcs 現貨**;備案 RS TW part 2841190 / 蝦皮 RS / iCircuit 官方店;或 M2 fallback 用笔电 baseline 進簡報(p99 245 µs 仍可接受)|
+| IRFB4115 蝦皮買到仿冒(Rds(on) 5× 預期 → 燒)| 中(若蝦皮)| **v1.7 鎖 DigiKey 真品**,4,126 pcs 現貨;NT$ 540 / 5 顆(蝦皮 NT$ 480 / 4 顆但仿冒風險)|
+| SanDisk SD card 仿冒(標 32GB 實際 8GB)| **高(若蝦皮路邊)** | **只認 SanDisk 官方旗艦店 / WD 台灣 / PChome / momo / 博客來 / Costco**;**禁 Aliexpress / Alibaba**;收貨用 h2testw 驗 |
 | JK-BMS 買到 DZ11/PB1 系列 | 中 | 採購時**問賣家確認 JK-B**;收貨用 `python scripts/jkbms.py --port COM3` 驗 protocol |
 | LFP cell 到貨 SOC 偏差 > 30 mV | 高 | **必跑 §4.2.1 pre-balance SOP**(30-60 min 拉到 ±50 mV 內再串聯) |
 | Maxwell supercap 直接接帶電 bus | 高(若未跑 SOP) | **必跑 §4.5.5 L1 pre-charge SOP**(bench PSU 把 supercap 拉到距 bus < 0.5V 才合主接觸器) |
