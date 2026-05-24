@@ -1,8 +1,8 @@
 ---
 title: "Sysblade HyperBuffer 技術白皮書"
 subtitle: "Part 1 架構速覽 · Part 2 技術細節 · Part 3 競品差異化"
-version: "v1.1"
-date: "2026-05-06"
+version: "v1.2"
+date: "2026-05-24"
 authors:
   - 系統電 ATCC C13 學生競賽團隊
 abstract: |
@@ -28,7 +28,7 @@ abstract: |
 # Sysblade HyperBuffer 技術白皮書
 
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
-> 文件版本 v1.1 / 2026-05-06(citation 校正、TCO 對稱性 footnote、persona 數字對齊 scenario JSON、`/dashboard` drilldown 揭露)
+> 文件版本 v1.2 / 2026-05-24(新增 §2.8 複賽 BBU demonstrator;對齊 `BBU_IMPLEMENTATION_PLAN.md` v1.10 + `BBU_PROPOSAL.md` v1.8 + Endrich LFP 採購 SOP)
 > Live demo: <https://sysblade-atcc.vercel.app>
 > 上游文件:商業企劃書 v2.2 · 完整技術白皮書 `docs/whitepaper.md`
 
@@ -564,6 +564,73 @@ Payback 對 rack 數量不敏感(extra capex 與 saving 都隨 racks 線性 scal
 但對電價 × PUE 敏感 — Virginia 0.105 USD/kWh × PUE 1.35 較 Texas 0.085 ×
 1.4 略放大瞬態損失差距,payback 縮短 ~ 0.1 年。完整 elasticity 邏輯見
 `apps/web/src/lib/tco.ts`,UI 在 `/tco`。
+
+---
+
+## 2.8 複賽 BBU demonstrator(2026-06-11 · M1–M4 bench validation)
+
+> 本節是初賽 SaaS 三件套的 **實機補強**。Part 2 §2.1–§2.7 描述的拓樸、控制律、
+> INT8 LSTM、dashboard,在複賽階段以 **8S LFP scaled-down demonstrator** 升級
+> 為實機 bench validation;對 colo 客戶的 spec-grade 15S 整機仍屬完整版
+> §8.2 EVT 2026 Q3 路線圖。完整 14 章工程細節:
+> `docs/BBU_IMPLEMENTATION_PLAN.md` v1.10、繳交版提案 `docs/BBU_PROPOSAL.md` v1.8。
+
+**為什麼 scaled-down**:26 天 / NT$ 5 萬 / 學生實驗室約束下,**spec-grade
+15S × 2.5 kWh 整機物理不可能**(車規 LFP 樣品 lead time 6–12 週、Eaton XLR
+LIC 4–8 週、15S × 360 A 學生實驗室安全不可承擔)。改交付 **per-cell 工作點
++ 控制律 + 拓樸與 spec 完全一致的縮放版**:8S × 1P LFP × Lithium Werks
+ANR26650M1B(A123 系 Nanophosphate® 正品,Endrich 台灣總代理)、
+2× Maxwell BMOD0058-E016-C02 串聯 32 V supercap、STM32F411 + Raspberry Pi 5。
+
+### 4 件 critical-path 證據(M1–M4)
+
+| # | Milestone | Artifact | Bench 判準 | Sim 對照 | 狀態(2026-05-24)|
+|:--:|---|---|---|---|:--:|
+| **M1** | 8S scaled sim gate | `data/processed/scaled_8s_sim.json` | power ratio ≥ 5× / voltage ratio ≥ 3× | **5.72× / 3.52×** | ✅ **PASS 2026-05-17** |
+| **M2** | INT8 LSTM 邊緣 latency | `lstm_latency_*.{json,png}` | Pi 5 p99 < 500 µs / ΔMAPE < 0.5 % | 笔电 INT8 baseline p99 245 µs | 🟡 partial(Pi 5 到貨後 swap)|
+| **M3** | Hybrid 削峰實機波形 | Scope 純 LFP vs hybrid 雙曲線 + 量測 JSON | LFP RMS ratio ≥ 3× / V_cell pp ratio ≥ 2× | sim 5.72× / 3.52× | 📋 soft 6/2 / hard 6/3 |
+| **M4** | Dashboard LIVE row E2E | 截圖 + 5 s 影片 | DL24M 增載 → 30 s 內 dashboard V 微降 / 溫度升 | — | ✅ 軟體 stack 完成 / W3 接 BMS |
+
+**Bench 判準寬鬆於 sim 的理由**:MOSFET Rds(on) 隨溫升、shunt 量測延遲、
+firmware 1 kHz tick、寄生電感、PCB layout 損耗皆為實機 budget;PyBaMM DFN
+純物理 sim 無這些損耗。3× / 2× 達標機率 > 90 %,5.7× / 3.5× 嚴格達標
+60–70 %。**答辯句**:「sim 是上界,bench 是工程目標下界,中間差距是實機損耗 budget」。
+
+### 既有頭條數字一致性(self-check)
+
+| 既有承諾 | demonstrator 對應 | 是否衝突 |
+|---|---|:--:|
+| **5.7× LFP RMS 削峰**(§2.3 / §2.3.1)| M3 實機波形對照,寬鬆判準 ≥ 3× | ✅ |
+| **3.5× V_cell pp 收斂**(§2.3)| M3 scope cell-level 量測,寬鬆判準 ≥ 2× | ✅ |
+| **8.38 % RUL MAPE**(§2.5 / Part 1.2)| 不變(無實機資料前不重訓);M2 推論側 INT8 onnx 為同一個 model | ✅ |
+| **3.49× ONNX INT8 壓縮**(Part 1.2 / 附錄 C)| M2 直接拿同 ONNX 跑 Pi 5,measured 對 ARM CPU 而非笔电 x86 | ✅ |
+| **/dashboard 1000 台 SIMULATED + watermark**(§2.6.3)| M4 LIVE row 在 1000 row 中插 1 真實 row,其餘 999 row SIMULATED watermark **未弱化** | ✅ |
+| **LFP 15S**(v2.2 §修訂 #4)| demonstrator 改 8S 為 scaled-down,**不修訂 spec**;EVT 階段 15S 仍是承諾 | ✅ |
+| 「不承諾 MAPE < 5 %」(v2.2 附件 B)| demonstrator 不重訓 RUL 模型,沿用 8.38 %;M2 ΔMAPE 是 INT8 量化精度非 RUL 點精度承諾 | ✅ |
+
+### Lean BoM 帳目 + Plan A→E fallback
+
+預算 NT$ 50,000 上限 → BoM **NT$ 43,801**(v1.10,2026-05-22 採購定案)/
+Buffer **NT$ 6,199**(借 PSU + 萬用表 → 8,499)/ warning line 5,000(目前餘
+1,199)。Plan A 預設(完整 demonstrator)→ A+ stretch(STM32N6 替 Pi 5)→
+**C 降階(4S PoC,M3 < 3× 觸發)** → D(元件單獨展示)→ E(純 SaaS,絕對
+最後)。每週 review 對照,**不可拖到複賽日才降階**;Plan B 跳號(Pi 5 已是
+lean 預設,B 失去獨立意義)。34 SKU 採購清單見 `docs/PURCHASE_LIST.md`。
+
+### 三層安全 SOP(學生實驗室 800 W bench 工作)
+
+**§4.5.5 Supercap pre-charge 三層防線**(L1 手動 PSU 拉到距 bus < 0.5 V →
+L2 5 Ω / 40 A automotive relay 旁路電阻 → L3 STM32 state machine 序列鎖);
+**§4.2.1 LFP 首充 SOP**(從 12 顆挑 OCV ≤ 30 mV 偏差的 8 顆 → 0.5C CC →
+3.65 V CV → < 0.05C 收斂 → 1 hr burn-in);**§6 配備**(Lith-Ex 鋰電池滅火
+噴罐 / Class T 100 A fast-blow fuse / 1.5 kV PPE 手套 + 側護目鏡 / E-stop /
+2 人在場)。完整 13 條風險登錄 + Plan A→E 觸發邏輯見
+`docs/BBU_IMPLEMENTATION_PLAN.md` §4 / §6 / §8 / §9。
+
+> **Endrich SOP**(`docs/ENDRICH_LFP_PURCHASE_SOP.md`,2026-05-20)是 LFP 採購
+> 防呆關鍵 — 蝦皮 / Alibaba 90 % 的「LFP 26650 5Ah」實測 4.2 V 充飽是 Li-ion
+> 偽裝。Endrich 是 Lithium Werks Asia 原廠代理,ANR26650M1B 規格全網交叉
+> 印證(3.3 V / 50 A 連續 / 6 mΩ / Nanophosphate LFP)。
 
 ---
 
