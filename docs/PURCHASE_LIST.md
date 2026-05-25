@@ -1,11 +1,13 @@
 # 複賽 BBU Demonstrator 採購清單
 
-> **v1.8 凍結 · 2026-05-18**(對齊 `out_pdf/BBU_PROPOSAL_v2.pdf` 繳交版)
+> **v1.10 凍結 · 2026-05-22**(採購定案:備品數量 + holder 單節 + 實價修正)
 > v1.5 → v1.6:JK-BMS RS485 customization + GX12 cable + USB-RS485 dongle 升 ICShop FT232+SP485EEN(+NT$ 1,400)
 > v1.6 → v1.7:Pi 5 通路鎖 DigiKey SC1432(USD $175,比 RS TW 貴 NT$ 1,100 換時程確定性);IRFB4115 通路鎖 DigiKey 真品(IRFB4115 仿冒重災區)
 > v1.7 → v1.8:**LFP cell qty 8 → 12**(對齊 proposal_v2:8 主用 + 4 備品 / cell-matching 池;+NT$ 1,000);**M1-M4 bench KPI Pass criteria 明文化**(§1.2 表 + §5.3 對應)
+> v1.8 → v1.9:**B1 relay driver 2N7000 → IRLZ44N**(Picker PC792A relay 線圈 133 mA,2N7000 餘量不足;IRLZ44N Id 47 A logic-level)
+> v1.9 → v1.10:**備品數量**(STM32 1→2、IRFB4115 5→6、UCC27282 2→3、DS18B20 4→6、MLCC/UF4007 各→10)+ **holder 改廣華單節 BH-26650-1×10**(台灣無 8 串整盒,−500)+ **UCC27282 / 5Ω DigiKey 實價修正**(−741)+ **DL24M → DL24M-H 600W 套組**(修正 v1.4:無單機 600W,真品 = master + 3 擴充模組;價暫不動,實價待確認);淨 −433
 > 對應 BoM:[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md)
-> 總額 **NT$ 44,234** / Buffer **5,766**(借得到 bench PSU + 萬用表 → **8,066**;**warning line NT$ 5,000**,目前餘 NT$ 766 ⚠️ 接近警戒,後續任何升級需明確理由)
+> 總額 **NT$ 43,801** / Buffer **6,199**(借得到 bench PSU + 萬用表 → **8,499**;**warning line NT$ 5,000**,目前餘 **NT$ 1,199**)
 
 ---
 
@@ -25,25 +27,25 @@
 
 ## 🔥 第一波 — TODAY 5/17 PM 立刻下單(W1 內必到)
 
-### 1A. 蝦皮 / 露天(1-3 天到)— 小計 ~13,950(v1.8 +1,000 LFP 4 顆備品)
+### 1A. 蝦皮 / 露天(1-3 天到)— 小計 ~14,520(v1.10:STM32 備品 + holder 單節 + DS18B20 備品 + 5Ω 實價)
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
 | LFP 26650 3.2V/5Ah | **12** | **3,000** | `LFP 26650 5Ah`、`磷酸鋰鐵 26650`、`EVE 26650 5000mAh`、`A123 26650 高功率` | **v1.8 對齊 proposal_v2**:8 主用 + **4 備品**(DOA replacement + cell-matching 池);**5 防呆**:① 標 3.2V(不是 3.7V Li-ion)② 充飽 3.65V(不是 4.2V)③ 化學系統 LiFePO4 / 磷酸鋰鐵(不是 NCM/NMC/NCA)④ prefix IFR(不是 ICR/INR)⑤ 連續放電 ≥ 2C(我們 25A peak 要求);同批號;避開 NCR / BRC 假料品牌 |
-| 26650 8S holder + 端子 | 1 套 | 800 | `26650 電池盒 8串`、`26650 彈片座` | 焊腳 ≥ 0.3mm;**彈片座**(預設借不到點焊機) |
+| **26650 單節電池盒 BH-26650-1**(廣華) | **10** | **300** | 廣華 shop.cpu.com.tw `BH-26650-1`;或蝦皮 `26650 單節 電池盒 彈片` | **v1.10**:台灣無 8 串整盒 → 單節 holder × 10 排 8S1P(8 用 + 2 備);NT$ 30/顆;★★★★★(2 節款 ★★ 避開);79×29×29mm,A123 平頭相容;Endrich 若答帶 tab 則當純機械座 |
 | **JK-BMS 8S 100A**(限 JK-B 系列,含 RS485 customization) | 1 | 3,800 | `JK-BMS 8S B1A8S20P`、`極空 BMS JK-B` | **v1.6 升**:基礎 USD $89.98 + checkout 必勾 ☑ RS485 → ~USD $110-125 ≈ NT$ 3,800;☐ CANBus / ☐ Display / ☐ Heating 不勾;**勿買 DZ11/PB1**(jkbms.py offset 不同) |
 | **JK-BMS GX12-DuPont RS485 cable**(加購)| 1 | 200 | 同 JK-BMS 賣家頁面「RS485 Adapter Cable: Sold separately as optional add-on」 | JK-B RS485 訊號出在 4-pin GX12 port(俗稱 "GPS port"),需 cable 把 GX12 → DuPont 才能接 ICShop FT232+SP485EEN dongle |
-| STM32 Black Pill F411 | 1 | 600 | `STM32F411 Black Pill`、`WeAct F411CE` | F411CE 512KB;USB-C |
-| **ATORCH DL24M 600W**(單機) | 1 | 4,500 | `ATORCH DL24M 600W 單機`、`DL24M 40A 200V`、`DL24M jumper 切 600W` | **v1.4 品牌修正**(RIDEN → ATORCH);**買單機 600 W 版**(jumper cap + 軟體切 150/300/450/600 W mode);**避開**「150W × 4 並聯到 600W」listing 那是 DL24 冒充 DL24M;USB + 4 線 Kelvin;最穩備案 Amazon ASIN `B0993H6NXH`(USD ~50-65) |
-| DS18B20 防水 | 4 | 200 | `DS18B20 防水 不鏽鋼` | 不鏽鋼封裝 |
+| STM32 Black Pill F411 | **2** | **1,200** | `STM32F411 Black Pill`、`WeAct F411CE` | F411CE 512KB;USB-C;**v1.10:1 用 + 1 備品**(控制大腦,3.3V GPIO 接 32V 電路易 brick,W3 死線備品可當場換) |
+| **ATORCH DL24M-H 600W 套組** | 1 | 4,500 | `DL24M-H 600W`、`ATORCH DL24M-H`、`DL24M 600W 套組` | **v1.10 修正 v1.4 錯誤**:無「單機 600W」DL24M —— 單一模組僅 150W;600W = **DL24M-H 完整套組(master + 3 擴充模組,150W×4)**。下單**必問賣家「master + 3 擴充模組附齊?」**;避開 DL24(150W)/ DL24P(180W)誤購;蝦皮無貨 → AliExpress ATORCH 官方店;USB 可程式 + 4 線 Kelvin;**套組實價待確認,可能異動 Buffer** |
+| DS18B20 防水 | **6** | **300** | `DS18B20 防水 不鏽鋼` | 不鏽鋼封裝;**v1.10:4 用 + 2 備品**(1-Wire 3 腳易接反燒) |
 | **ICShop USB-RS485 dongle**(FT232 + SP485EEN) | 1 | 400 | ICShop 搜「FT232 RS485」或「USB to RS485」 | **v1.6 升**:從 generic CH340 升 FT232+SP485EEN;FT232 比 CH340 driver 穩(macOS/Linux 不卡);SP485EEN 半雙工 RS485 transceiver;搭 JK-BMS GX12 cable 的 DuPont 端子直連 |
 | USB hub 4-port 自供電 | 1 | 300 | `USB 3.0 hub 4 port 帶電源` | 含 5V/3A 外接電源 |
 | ST-Link V2 clone | 1 | 300 | `ST-Link V2 STM32 迷你` | 帶 SWD 4-pin cable |
-| 5Ω/50W 線繞電阻(B1 預充) | 1 | 80 | `50W 5歐姆 線繞電阻 鋁殼` | 鋁殼包覆型 |
+| 5Ω/50W 線繞電阻(B1 預充) | 1 | **50** | `RX24 50W 5歐姆 鋁殼電阻`、`5R 50W 鋁殼` | **v1.10 實價 80→50**:RX24 鋁殼繞線;**認「現貨」賣家**(避開「較長備貨」6/2-6/8 到貨會卡 W3) |
 | 40A 5-pin auto relay(B1) | 1 | 120 | `汽車繼電器 40A 12V 5腳`、`Bosch 0332019150` | 12V 線圈 / NO 接點 / 真 40A |
-| 2N7000(B1 driver) | 2 | 50 | `2N7000 TO-92` | TO-92 |
+| IRLZ44N(B1 relay driver) | 2 | 50 | `IRLZ44N TO-220`、`IRLZ44NPBF` | **v1.9 換 2N7000**:Picker PC792A relay 線圈 133 mA,2N7000 Id 200 mA 餘量不足;IRLZ44N logic-level(Vgs(th) 1-2 V,STM32 3.3 V GPIO 直驅)/ Id 47 A / TO-220;**搭 UF4007 flyback 跨接線圈** |
 
-### 1B. DigiKey 台(現貨主通路)— **17,824**(v1.7 +Pi 5 +IRFB4115)
+### 1B. DigiKey 台(現貨主通路)— **17,932**(v1.10 IRFB4115 5→6)
 
 > **v1.7 集中通路**:Maxwell + INA228 + IRFB4115 + Pi 5 同單下訂,**運費攤平 ~NT$ 500**,3-5 工作天到貨
 
@@ -51,7 +53,7 @@
 |---|---:|---:|---|---|
 | **Maxwell BMOD0058-E016-C02** | 2 | 10,608 | digikey.tw part **11673898**(26 pcs 現貨) | DigiKey 缺貨 → eBay 二手 `Maxwell BMOD0058` 或 LS Mtron `LSUM016R8C0058F`(同 form-factor) |
 | **Adafruit INA228 breakout #5832** | 2 | 1,076 | digikey.tw part **1528-5832-ND**(671 pcs 現貨) | DigiKey 缺貨 → Adafruit US 直購(USD 14.95)或蝦皮 INA228 模組(無 STEMMA QT) |
-| **Infineon IRFB4115PBF MOSFET**(v1.7 從 1C 移入) | **5** | 540 | digikey.tw part **448-IRFB4115PBF-ND**(4,126 pcs 現貨) | **4 主 + 1 備品**(DOA / 焊壞不用等再下單);USD $3.37/pc × 5 = $16.85;IRFB4115 是仿冒重災區,DigiKey 真品 reliability margin 大;備案 Mouser / 利眾 / 唐文(蝦皮便宜但仿冒風險) |
+| **Infineon IRFB4115PBF MOSFET**(v1.7 從 1C 移入) | **6** | 648 | digikey.tw part **448-IRFB4115PBF-ND**(4,126 pcs 現貨) | **v1.10:4 主 + 2 備品**(MOSFET 電力電子頭號陣亡品,有時成對死);USD $3.37/pc × 6 = $20.22;IRFB4115 是仿冒重災區,DigiKey 真品 reliability margin 大;備案 Mouser / 利眾 / 唐文(蝦皮便宜但仿冒風險) |
 | **Raspberry Pi 5 8GB**(v1.7 通路鎖)| 1 | 5,600 | digikey.tw part **2648-SC1432-ND** / SC1432(11,513 pcs 現貨) | USD $175;比 RS TW (~NT$ 3,300) 貴 NT$ 2,200 但同單下訂省運費 + 時程確定性;備案 RS TW part **2841190** 或蝦皮 RS / iCircuit 官方店 |
 
 **Maxwell 規格驗證**(對 datasheet PDF 3003212.2):16V / 58F / 22mΩ ESR / **IDCMAX 14 A @ ΔT=15°C 或 23 A @ ΔT=40°C** / IPEAK 190 A / M5 螺絲端子 4 Nm / 226.5 × 49.5 × 75.9 mm / 0.63 kg。9.3 A 工作點全條件下 ≥ 34 % 餘量,§1.3 gate PASS。**單價 NT$ 5,304 × 2 = 10,608**(DigiKey 台幣計價;1 顆 5,304 / 10 顆批 4,672 / 50 顆批 4,419)。
@@ -64,12 +66,12 @@
 
 **v1.5 升階 INA228 理由**:INA226(16-bit / 36V)對 supercap 32V bank 只 11% 餘量,bounce-back 場景可能踩線;INA228 量程 +165% + ADC 解析度 ×16 + 整合 coulomb / joule accumulator(M3 削峰量測直接讀累積能量,不需軟體積分)— +NT$ 876 升階值得。
 
-### 1C. Mouser / 利眾 / 唐文(UCC27282 專用通路)— 900
+### 1C. DigiKey(UCC27282 併入 1B 同單)— 189
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
 | ~~IRFB4115PBF~~ | ~~4~~ | ~~900~~ | (**v1.7 移到 1B DigiKey 同單下訂**) | — |
-| UCC27282 | 2 | 900 | `UCC27282` | **lead time ≤ 2 週**;> 4 週**立刻**換 IR2110 + 1N4148 + 10µF cap(蝦皮 NT$ 200 全套)+ 韌體加 minimum-duty 限制 |
+| **UCC27282DR** | **3** | **189** | digikey.tw part **13213543**(SOIC-8,6,570 pcs 現貨,NT$ 63/顆)| **v1.10**:2 用 + 1 備品(gate driver 常陪 MOSFET 陣亡);通路改 DigiKey(舊 Mouser 估 900 過高,實價 −711);**併入 1B DigiKey 同單**;Fallback IR2110 + 1N4148 + 10µF cap(蝦皮 NT$ 200 全套) |
 
 ### 1D. Pi 5 配件(主板已移到 1B DigiKey)— **1,200**
 
@@ -92,8 +94,8 @@
 | 1.5kV 絕緣手套 + 護目鏡 | 1 套 | 800 | `絕緣手套 1000V 電工`、`護目鏡 安全 防衝擊` | EN 60903 Class 0+;含側護 |
 | **Lith-Ex / F-500 鋰電池滅火噴罐** | 1 | 1,200 | `Lith-Ex 鋰電池滅火`、`F-500 噴罐` | **必鋰電池專用**(ABC 一般滅火器 ❌) |
 | 矽膠線 10AWG + Anderson SB50 + 熱縮套 | 1 套 | 800 | `矽膠線 10AWG`、`Anderson SB50 紅` | 矽膠絕緣(PVC 耐熱不夠) |
-| 1µF 50V X7R MLCC(UCC27282 bootstrap) | 4 | 50 | `1uF 50V X7R 0805` | X7R 非 Y5V;若改 IR2110 改 10µF 50V 電解 |
-| UF4007 二極體 | 4 | 50 | `UF4007 快速恢復` | trr < 75ns |
+| 1µF 50V X7R MLCC(UCC27282 bootstrap) | **10** | **60** | `1uF 50V X7R 0805` | X7R 非 Y5V;**v1.10:4→10 備品**(被動件焊接必損耗);若改 IR2110 改 10µF 50V 電解 |
+| UF4007 二極體 | **10** | 50 | `UF4007 快速恢復` | trr < 75ns;**v1.10:4→10 備品**(relay 線圈 flyback + 保護;銅板價多買) |
 | ★ bench PSU 30V/3A(借不到才買) | 1 | 1,500 | `EVENTEK DPS3010`、`UNI-T UTP3315TFL` | **優先借學校 EE 系** |
 | ★ 數位萬用表(借不到才買) | 1 | 800 | `Fluke 17B+`、`UNI-T UT139C` | **優先借學校 EE 系** |
 
@@ -124,18 +126,20 @@
 
 | 波次 | 含項 | 小計 |
 |---|---:|---:|
-| 第一波 1A(蝦皮 / 露天)— v1.8 LFP 8→12 顆 +1,000 | 13 項 | **13,950** |
-| 第一波 1B(DigiKey 同單:Maxwell + INA228 + IRFB4115 + Pi 5)| 4 項 | 17,824 |
-| 第一波 1C(Mouser / 利眾 — 只剩 UCC27282) | 1 項 | 900 |
-| 第一波 1D(Pi 5 配件 — 主板已移 1B)| 3 項 | 1,200 |
-| 第二波(安全 + 電源,2 項可借) | 10 項 | 6,400 |
-| 第三波(機械散熱) | 3 項 | 2,200 |
-| **採購總額**(v1.8)| **34 SKU**(LFP 12 顆視為 1 SKU)| **~44,234** |
+| 第一波 1A(蝦皮 / 露天)| 13 項 | 14,520 |
+| 第一波 1B(DigiKey 同單:Maxwell + INA228 + IRFB4115×6 + Pi 5)| 4 項 | 17,932 |
+| 第一波 1C(DigiKey:UCC27282DR×3,併 1B 同單)| 1 項 | 189 |
+| 第一波 1D(Pi 5 配件)| 3 項 | 1,200 |
+| 第二波(安全 + 電源,2 項可借)| 10 項 | 7,510 |
+| 第三波(機械散熱)| 3 項 | 2,300 |
+| **採購總額(v1.10,canonical = §2.1 統一 BoM)**| **34 SKU** | **~43,801** |
 | **+ 運費 / 雜耗估** | | ~2,000 |
-| **實付** | | **~45,900-46,900** |
-| **Buffer**(全買新) | | **5,766** |
-| **Buffer**(借得到 PSU + 萬用表) | | **8,066** |
-| **Warning line** | | NT$ 5,000(目前餘 **NT$ 766** ⚠️ 近警戒)|
+| **實付** | | **~45,500-46,500** |
+| **Buffer**(全買新)| | **6,199** |
+| **Buffer**(借得到 PSU + 萬用表)| | **8,499** |
+| **Warning line** | | NT$ 5,000(目前餘 **NT$ 1,199**)|
+
+> **註**:上方分波小計加總為 NT$ 43,651(購物分類視角);與 canonical 採購總額 NT$ 43,801 差 NT$ 150,為 TO-220 鰭片 / 矽脂在 `BBU_IMPLEMENTATION_PLAN.md §2.1 統一 BoM` 歸入「IRFB4115 套」、本表歸入「第三波散熱」的分類歸屬差。**headline 總額以 §2.1 統一 BoM NT$ 43,801 為準。**
 
 ---
 

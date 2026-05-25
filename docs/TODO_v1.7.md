@@ -104,7 +104,7 @@
 | [ ] | DS18B20 防水溫度 × 4 | 4 | 200 | 🟡 | 不鏽鋼封裝 |
 | [ ] | 80A blade fuse + 100A 接觸器 + E-stop | 1 套 | 1,500 | 🟡 | DC rated 接觸器 |
 | [ ] | Class T fast-blow 100A fuse + holder | 1 套 | 800 | 🟡 | Bussmann JJN-100 |
-| [ ] | Supercap pre-charge 套件(5Ω/50W + 40A relay + 2N7000)| 1 套 | 250 | 🟡 | 3 顆別漏 |
+| [ ] | Supercap pre-charge 套件(5Ω/50W + 40A relay + IRLZ44N)| 1 套 | 250 | 🟡 | 3 件別漏(v1.9:driver 2N7000 → IRLZ44N,relay 線圈 133mA)|
 | [ ] | 1.5kV 絕緣手套 + 護目鏡 | 1 套 | 800 | 🟡 | 工業安全用品行 |
 | [ ] | **Lith-Ex / F-500 鋰電池滅火噴罐** | 1 | 1,200 | 🔴 | ⚠️ 台灣通路不密,**提早查** |
 | [ ] | 透明壓克力 400×250×150 + 鋁角材 | 1 套 | 1,800 | 🟢 | 雷射切割代工 |
