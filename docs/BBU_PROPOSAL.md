@@ -77,7 +77,7 @@ commit_baseline: "GitHub aericheng/atcc-sysblade,本提案對應 commit `9a6314a
 | 安全(fuses / 接觸器 / E-stop / PPE / Lith-Ex 滅火噴罐 / pre-charge 套件) | 4,550 |
 | 機構 + 散熱 + 線材 + 雜耗 | 4,160 |
 | Pi 5 配件 + SD card + 周邊 | 2,300 |
-| UCC27282 + 2N7000 + 5Ω 預充電阻 + USB hub | 2,700 |
+| UCC27282 + IRLZ44N + 5Ω 預充電阻 + USB hub | 2,700 |
 | 借設備(學校 EE 系:bench PSU / 萬用表 / 示波器 / 差動探棒)| (借)|
 | **Buffer** | **5,766**(借 PSU+萬用表 → 8,066)|
 

@@ -12,7 +12,7 @@
 | PA5   | ADC1_IN5  | Hall sensor supercap current      | HASS 50-S Vout (SC path)   |
 | PA6   | ADC1_IN6  | V_bus voltage divider (1:10)      | DC bus + via 100k/10k      |
 | PA7   | ADC1_IN7  | V_supercap voltage divider (1:10) | Supercap + via 100k/10k    |
-| PB0   | GPIO_OUT  | K1 relay drive (40A bypass)       | 2N7000 gate → relay coil   |
+| PB0   | GPIO_OUT  | K1 relay drive (40A bypass)       | IRLZ44N gate → relay coil  |
 | PB1   | GPIO_OUT  | Q3 precharge MOSFET gate          | IRFB4115 gate via UCC27282 |
 | PB2   | EXTI2     | **E-STOP input** (active low)     | E-stop button + 10k pull-up |
 | PB10  | I2C2_SCL  | (Optional) DS18B20 1-wire OR I2C  | Temp sensors / OLED        |

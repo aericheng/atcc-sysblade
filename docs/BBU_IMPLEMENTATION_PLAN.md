@@ -1,10 +1,10 @@
 ---
 title: "Sysblade HyperBuffer 單顆 BBU 實作計畫 — 複賽階段(2026 Q2)"
-version: "v1.8(2026-05-18 對齊 BBU_PROPOSAL_v2.pdf)"
+version: "v1.10(2026-05-22 採購定案:備品數量 + holder 單節 + 5Ω/UCC27282 實價)"
 date: "2026-05-18"
 deadline: "2026-06-11(複賽日)"
 scope: "Tier B — 8S LFP demonstrator(per-cell 工作點對齊 v2.2 §E.1,容量/串數縮放)"
-budget: "NT$ 5 萬以內;BoM v1.8 鎖定 NT$ 44,234,Buffer NT$ 5,766(借得到 PSU+萬用表 → 8,066);warning line NT$ 5,000,餘量 NT$ 766"
+budget: "NT$ 5 萬以內;BoM v1.10 鎖定 NT$ 43,801,Buffer NT$ 6,199(借得到 PSU+萬用表 → 8,499);warning line NT$ 5,000,餘量 NT$ 1,199"
 team: "ATCC C13 系統電工業菁英賽 學生競賽團隊(4 人)"
 upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `whitepaper_restructured.md`)"
 ---
@@ -45,9 +45,9 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 | 項目 | NT$ |
 |---|---:|
 | 預算上限 | 50,000 |
-| BoM v1.8 小計 | **44,234** |
-| Buffer(全買) | **5,766** |
-| Buffer(借得到 PSU + 萬用表) | **8,066** |
+| BoM v1.10 小計 | **43,801** |
+| Buffer(全買) | **6,199** |
+| Buffer(借得到 PSU + 萬用表) | **8,499** |
 | Warning line | 5,000 |
 
 ## 風險摘要
@@ -71,8 +71,8 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 
 | 檔案 | 用途 |
 |---|---|
-| **本文件(BBU_IMPLEMENTATION_PLAN.md v1.8)** | 設計決策 / 答辯支撐 / 安規查找;**繳交主文件** |
-| `docs/PURCHASE_LIST.md` v1.8 | 採購清單分波 + 收貨驗證 SOP + 風險表 |
+| **本文件(BBU_IMPLEMENTATION_PLAN.md v1.10)** | 設計決策 / 答辯支撐 / 安規查找;**繳交主文件** |
+| `docs/PURCHASE_LIST.md` v1.10 | 採購清單分波 + 收貨驗證 SOP + 風險表 |
 | `docs/TODO_v1.7.md` | 77 項代辦清單(印出來打勾;v1.7-era artifact,v1.8 LFP qty 改動已在 PURCHASE_LIST 處理)|
 | `out_pdf/BBU_PROPOSAL_v2.pdf` | **複賽繳交對外提案書**;v1.8 BBU plan + PURCHASE_LIST 對齊此提案 |
 | `PRESENTATION_GUIDE.md` | 5 分鐘 demo 腳本 + Q1-Q10 業師硬問答辯 |
@@ -160,7 +160,7 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 
 ### Lean BoM vs Full BoM 兩版本
 
-- **§2.1 Lean BoM** — 僅留 critical path + safety enabler,NT$ ~44,234(v1.8),推薦
+- **§2.1 Lean BoM** — 僅留 critical path + safety enabler,NT$ ~43,801(v1.10),推薦
 - **§2.2 Full BoM (v1.2 凍結)** — 含完整 demonstrator 配備,NT$ ~47,900,作為 stretch / 比較
 
 省下的 buffer 不是用來買新東西,而是吸收採購意外、補耗材、覆蓋失敗重做(LFP 點焊失敗、MOSFET 燒掉等)。
@@ -262,7 +262,7 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 
 > v1.3:拆成兩版 — **§2.1 Lean BoM(推薦,critical-path-only)** 與 **§2.2 Full BoM(v1.2 凍結版,留作對照)**。預算 NT$ 5 萬上限。
 
-## 2.1 ⭐ Lean BoM(推薦,NT$ ~44,234 / v1.8)
+## 2.1 ⭐ Lean BoM(推薦,NT$ ~43,801 / v1.10)
 
 只留 critical path(🎯)+ safety enabler(🛡️),刪掉 v1.2 為「完整 demonstrator」加的 ⏭️ 元件。
 
@@ -270,20 +270,20 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 |:--:|---|---|---:|---:|---:|---|
 | 🎯 #1 | (純軟體) | §1.3 sim,已完成 | — | 0 | 0 | `data/processed/scaled_8s_sim.json` |
 | 🎯 #2 | 主電池 | LFP 26650 3.2V/5Ah | **12**(8 主用 + 4 備品 + 配對池)| 250 | 3,000 | 蝦皮 / 露天;**v1.8 對齊 proposal_v2:8 → 12 顆**(4 顆備品 for DOA replacement + cell-matching 池;從 12 顆挑 OCV 偏差最小的 8 顆組 8S1P,§4.2.1 SOP);**v1.2 16 → v1.3 8 → v1.8 12** |
-| 🎯 #2 | 電池座 | 26650 holder + 端子 | 1 套 | 800 | 800 | **預設彈片座**(不假設借到點焊) |
+| 🎯 #2 | 電池座 | **26650 單節電池盒 BH-26650-1(廣華)** | **10**(8 用 + 2 備品)| 30 | 300 | **v1.10**:台灣無 8 串整盒(26650 holder 市場主流 1/2 節),用單節 holder 排 8S1P;選 BH-26650-1(★★★★★;2 節款 ★★ 避開);廣華現貨;A123 平頭相容;**Endrich 若答帶 tab → holder 當純機械座**(電流走焊點不走彈片);裸電芯則彈片載流 |
 | 🛡️ | **BMS** | **JK-BMS JK-B 系列 8S 100A active balance**(含 RS485 customization) | 1 | 3,800 | 3,800 | **v1.6 (2026-05-18 用戶採購確認)**:基礎 USD $89.98,**checkout 必選 customization「RS485 Function」** → 漲到 ~USD $110-125 ≈ NT$ 3,520-4,000(取中間 NT$ 3,800);⚠️ **不選 RS485 = 買到 BT-only,M4 LIVE row 死**;**不選**:☐ CANBus(STM32F411 沒 CAN peripheral)/ ☐ Display(省 USD 10-20)/ ☐ Heating(室溫 demo 不需);**指定 JK-B series**(不要 JK-DZ11 或 JK-PB1,parser offset 不同);出廠 terminal ID 需確認為 `0x00000000`(用藍牙 APP 連 BMS 看);RS485 default baud 115200(`scripts/jkbms.py` 預設值,若 timeout 改 `--baud 9600` for 舊版 firmware) |
 | 🎯 #4 | **JK-BMS GX12 → DuPont cable**(RS485 訊號線) | JK-B RS485 訊號出在 4-pin GX12 port(俗稱 "GPS port");需 cable 把 GX12 → DuPont 才能接 USB-RS485 dongle | 1 | 200 | 200 | **v1.6 補**:JK 賣家頁面明寫「RS485 Adapter Cable: Sold separately as optional add-on」;同店加購最方便,或 ICShop / 蝦皮 GX12-4pin 4-line 通用 cable 自焊 DuPont 端子 |
 | 🎯 #2 | 超級電容 | **Maxwell BMOD0058-E016-C02 × 2**(串聯 32V)| 2 | 5,304 | 10,608 | **v1.4 更新**:Heisener B02 通路缺貨(2026-05-17 查證),改 DigiKey 台 stock 26 pcs(part 11673898),隔日到貨;C02 datasheet 與 B02 同 family — 16V/58F/22mΩ ESR/IPEAK 190A/IDCMAX 14A(ΔT=15°C)或 23A(ΔT=40°C),M5 螺絲端子 4 Nm,9.3 A 工作點全條件下 ≥ 34 % 餘量;§1.3 gate 仍 PASS |
-| 🎯 #2 | 控制板 | STM32 Black Pill F411 | **1**(v1.2 是 2 顆) | 600 | 600 | Pi 5 兼 telemetry bridge,不需第 2 顆 |
-| 🎯 #2 | 功率切換 | **IRFB4115PBF × 5**(DigiKey 448-IRFB4115PBF-ND)+ 5°C/W TO-220 鰭片 × 5(蝦皮)+ 矽脂(Arctic MX-4) | 1 套 | 900 | 900 | **v1.7 通路確認**:MOSFET 走 DigiKey 真品(Infineon 原廠,IRFB4115 仿冒重災區);現貨 4,126 pcs,單價 USD $3.37 × 5 = $16.85 ≈ NT$ 540;**買 5 顆**(4 主 + 1 備品,DOA / 焊壞不用等再下單);鰭片 + 矽脂走蝦皮(DigiKey 散熱片貴 2×) |
-| 🎯 #2 | Gate driver | UCC27282 × 2 + bootstrap + carrier | 1 套 | 900 | 900 | (Fallback IR2110 NT$ 50/顆) |
+| 🎯 #2 | 控制板 | STM32 Black Pill F411 | **2**(1 用 + 1 備品)| 600 | 1,200 | **v1.10 加 1 備品**:控制大腦,學生 3.3V GPIO 接 32V 電力電路易 brick;W3 firmware τ 調參反覆燒錄 + 探針,死在 6/1-6/2 = M3 死線崩;備品手邊可當場換,免蝦皮重訂等 1-2 天 |
+| 🎯 #2 | 功率切換 | **IRFB4115PBF × 6**(DigiKey 448-IRFB4115PBF-ND)+ 5°C/W TO-220 鰭片(蝦皮)+ 矽脂(Arctic MX-4) | 1 套 | — | 1,008 | **v1.7 通路確認**:MOSFET 走 DigiKey 真品(Infineon 原廠,IRFB4115 仿冒重災區);現貨 4,126 pcs,單價 USD $3.37 ≈ NT$ 108;**v1.10 買 6 顆**(4 主 + **2 備品**;MOSFET 是電力電子頭號陣亡品,有時成對死)→ MOSFET NT$ 648 + 鰭片 + 矽脂 ≈ 360;鰭片 + 矽脂走蝦皮(DigiKey 散熱片貴 2×) |
+| 🎯 #2 | Gate driver | **UCC27282DR × 3**(2 用 + 1 備品)| 3 | 63 | 189 | **v1.10**:通路改 DigiKey UCC27282DR(part 13213543,6,570 現貨,**NT$ 63/顆**,SOIC-8 手焊可);qty 2 → 3 加 1 備品(gate driver 常陪 MOSFET 一起陣亡);**舊 Mouser 估 NT$ 900 過高 → DigiKey 實價修正(−711)**;bootstrap MLCC 見 §第二波;Fallback IR2110 |
 | 🎯 #2 | 電流量測 | **Adafruit INA228 breakout (#5832)** × 2(LFP path + supercap path) | 2 | 538 | 1,076 | **v1.5 升階**:從 INA226(16-bit / 36V)升 INA228(**20-bit / 85V**,supercap 32V bank 165% 餘量、4 mA 解析度);DigiKey 1528-5832-ND,現貨 671 pcs;onboard 15mΩ shunt → 量程 ±10.9A(supercap path 9.3A peak 直用);LFP path 若量 peak 25A 走外接 5mΩ shunt 或讀 JK-BMS 回報電流;**2 顆並掛 I²C 要設不同 address**(ADR0 跳線 0x40 / 0x41) |
-| 🎯 #2 | GB200 emulator | **ATORCH DL24M 600 W**(單機)USB 可程式 | 1 | 4,500 | 4,500 | **v1.4 修正**:品牌 RIDEN → ATORCH;**買單機 600 W 版**(jumper cap + 軟體切 150/300/450/600 W mode);避開賣家標「150 W × 4 並聯到 600 W」— 那是 DL24 (150W) 冒充 DL24M;**peak 650 W 略超 600 W cap ~8 %**,100 ms pulse 在 IPEAK 容差內可接受,簡報若見頂部削平標明 cap 限制不影響削峰 ratio |
+| 🎯 #2 | GB200 emulator | **ATORCH DL24M-H 600 W 套組**(master + 3 擴充模組)USB 可程式 | 1 | 4,500 | 4,500 | **v1.10 修正 v1.4**:無「單機 600W」DL24M —— 單一模組僅 150W,600W = DL24M-H 套組(master + 3 擴充模組,150W×4);下單須確認模組附齊,避開 DL24(150W)/ DL24P(180W);**peak 650 W 略超 600 W cap ~8 %**,100 ms pulse 在 IPEAK 容差內可接受,簡報若見頂部削平標明 cap 限制不影響削峰 ratio;套組實價待確認 |
 | 🎯 #3 | 邊緣推論板 | **Raspberry Pi 5 8GB**(DigiKey SC1432 / 2648-SC1432-ND)| 1 | 5,600 | 5,600 | **v1.7 通路確認**:DigiKey TW USD $175,現貨 11,513 pcs;**取代 STM32N6570-DK NT$ 9,000**;與 Maxwell + INA228 + IRFB4115 同單下訂省運費;Pi 5 配件(PSU + SD + HDMI)另列 NT$ 1,200;貴 RS TW ~NT$ 2,200 但**集中通路換時程確定性**(W1 下單即到貨確認) |
-| 🎯 #4 | 溫度感測 | DS18B20 × 4 | 1 套 | 200 | 200 | LIVE row 給 dashboard 用,4 顆夠 |
+| 🎯 #4 | 溫度感測 | DS18B20 防水 × 6(4 用 + 2 備品)| 6 | 50 | 300 | **v1.10 加 2 備品**:1-Wire 3 腳易接反燒;LIVE row 給 dashboard 用,4 顆工作 |
 | 🛡️ | LFP 側保護 | 80A blade fuse + 100A 接觸器 + E-stop | 1 套 | 1,500 | 1,500 | |
 | 🛡️ | Supercap 側保護 | Class T fast-blow 100A fuse + holder | 1 套 | 800 | 800 | supercap 短路峰值 ~5kA 需快斷 |
-| 🛡️ | **Supercap 預充電** | **5 Ω / 50 W wirewound resistor + 40A 5-pin automotive relay + driver MOSFET (2N7000)** | 1 套 | 250 | 250 | **v1.3 補(review B1)**:32V × 29F bank 直接接帶電 bus = 200+ A inrush 會炸 IRFB4115;此路徑為硬體第二防線,主防線是「手動 pre-charge supercap 到距 bus < 0.5V 才合主接觸器」(§4.5.5 SOP) |
+| 🛡️ | **Supercap 預充電** | **5 Ω / 50 W wirewound resistor + 40A 5-pin automotive relay + driver MOSFET (IRLZ44N logic-level)** | 1 套 | 220 | 220 | **v1.3 補(review B1)**:32V × 29F bank 直接接帶電 bus = 200+ A inrush 會炸 IRFB4115;此路徑為硬體第二防線,主防線是「手動 pre-charge supercap 到距 bus < 0.5V 才合主接觸器」(§4.5.5 SOP);**v1.9:driver 2N7000 → IRLZ44N**(Picker PC792A relay 線圈 133 mA);**v1.10:5Ω 電阻 80 → 50**(RX24 鋁殼繞線現貨款,認「現貨」賣家避開較長備貨)→ 套 250 → 220 |
 | 🛡️ | PPE | 1.5kV 絕緣手套 + 護目鏡 | 1 套 | 800 | 800 | **降階** v1.2 NT$ 2,000 — 噴罐獨立列 |
 | 🛡️ | 滅火 | Lith-Ex / F-500 鋰電池噴罐 | 1 | 1,200 | 1,200 | 蝦皮 / momo |
 | 🎯 #2 | 機械 | 開放式壓克力 400×250×150 + 鋁角材 | 1 套 | 1,800 | 1,800 | Maxwell 2 顆串聯需放大 |
@@ -295,9 +295,9 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 | 🛡️ | **30V/3A bench DC PSU**(或借學校 EE 系)| LFP 8S 0.5C CC/CV 充電 + supercap pre-charge SOP §4.5.5 L1 | 1 | 1,500 | 1,500 | v1.3 review H1;若借不到才買;主要候選 EVENTEK DPS3010 |
 | 🛡️ | **數位萬用表**(或借學校)| cell OCV 粗篩、ESR / V / I 量、debug | 1 | 800 | 800 | v1.3 review H1;若借不到才買;標稱 Fluke 17B+ 或 UNI-T UT139C |
 | 🛡️ | **ST-Link V2 clone** | Black Pill DFU brick 保險 / SWD debug | 1 | 300 | 300 | v1.3 review H1;主 flash 路徑是 USB-C DFU,此為 fallback |
-| **小計** | | | | | **~44,234** | |
+| **小計** | | | | | **~43,801** | |
 
-**Buffer:NT$ ~5,766**(50,000 − 44,234)。Lean BoM 預算收緊,**強烈建議借得到 bench PSU + 萬用表(buffer 回 NT$ 8,066)**。Buffer 主要吸收採購意外、補耗材、覆蓋失敗重做(MOSFET 燒、cell 退貨);**warning line NT$ 5,000,目前還有 NT$ 766 餘量 ⚠️ 接近警戒**(v1.8 LFP qty 8→12 +1,000 後);後續任何升級需明確「不可省」理由。
+**Buffer:NT$ ~6,199**(50,000 − 43,801)。**強烈建議借得到 bench PSU + 萬用表(buffer 回 NT$ 8,499)**。Buffer 主要吸收採購意外、補耗材、覆蓋失敗重做(MOSFET 燒、cell 退貨);**warning line NT$ 5,000,目前餘 NT$ 1,199**(v1.10 加備品 STM32/IRFB4115/DS18B20 但 holder 改單節 −500 + UCC27282 DigiKey 實價 −711 抵消,Buffer 反而比 v1.9 寬鬆)。
 
 > v1.3 review H1 補 6 項合計 NT$ 4,300:USB-RS485 dongle + USB hub + Pi 5 配件 + bench PSU + 萬用表 + ST-Link。其中 bench PSU 與萬用表若 Sysgration 或學校 EE 系可借,buffer 回升到 ~10,166。
 >
@@ -323,7 +323,7 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
 | INA226 線材 + DS18B20 從 NT$ 600 → 400 | **200** | 8 顆 → 4 顆溫度感測夠 |
 | 散熱風扇 4 → 2 | **200** | 開放式架構,2 顆足 |
 | PPE 簡化 | **1,200** | 噴罐獨立列,手套 + 護目鏡夠 |
-| **總計** | **~3,666** | v1.2 NT$ 47,900 → v1.8 NT$ ~44,234(含 B1 supercap pre-charge +NT$ 250 + H1 補 6 項 +NT$ 4,300 + v1.4 Maxwell 通路升 DigiKey C02 +NT$ 1,608 + v1.5 INA226 → INA228 +NT$ 876 + v1.6 JK-BMS RS485 + GX12 cable + RS485 dongle 升 +NT$ 1,400 + v1.7 Pi 5 通路鎖 DigiKey +NT$ 1,100 + v1.8 LFP qty 8→12 備品 +NT$ 1,000) |
+| **總計** | **~4,099** | v1.2 NT$ 47,900 → v1.10 NT$ ~43,801(含 B1 supercap pre-charge +NT$ 250 + H1 補 6 項 +NT$ 4,300 + v1.4 Maxwell 通路升 DigiKey C02 +NT$ 1,608 + v1.5 INA226 → INA228 +NT$ 876 + v1.6 JK-BMS RS485 + GX12 cable + RS485 dongle 升 +NT$ 1,400 + v1.7 Pi 5 通路鎖 DigiKey +NT$ 1,100 + v1.8 LFP qty 8→12 備品 +NT$ 1,000 + v1.9 2N7000→IRLZ44N +NT$ 0 + v1.10 備品 STM32/IRFB4115/DS18B20 +NT$ 808、holder 改單節 −NT$ 500、UCC27282 DigiKey 實價 −NT$ 711、5Ω −NT$ 30 = 淨 −NT$ 433) |
 
 ### 採購順序(下單優先級)
 
@@ -389,7 +389,7 @@ upstream: "商業企劃書 v2.2 + 技術白皮書 v1.1(`docs/whitepaper.md` / `w
                                      ▼
    ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
    │  Hybrid Control  │   │   8S LFP pack    │   │  Supercap bank   │
-   │  Board (STM32)   │◄──┤   (5-10 Ah / 2P) │   │  (LIC stand-in)  │
+   │  Board (STM32)   │◄──┤      (8S1P)      │   │  (LIC stand-in)  │
    │  • τ = 0.5 s     │   │   + JK-BMS       │   │  + 平衡網路       │
    │  • 互補濾波器     │   │   RS485 telem    │   │                  │
    │  • PWM duty 命令  │   └────────┬─────────┘   └────────┬─────────┘
@@ -692,10 +692,10 @@ SC+  ─[Tfuse 100A]─┤
                    │
                    └────[K1 40A relay NO]──── DC bus +       ← bypass path (when precharge done)
                                  ▲
-                                 │ STM32 GPIO via 2N7000
+                                 │ STM32 GPIO via IRLZ44N
 ```
 
-**Q3 IRFB4115 與 §4.5.2 主 switch 共用備品**(BoM × 4 中扣 1);K1 relay coil drive by 2N7000 small-signal MOSFET。
+**Q3 IRFB4115 與 §4.5.2 主 switch 共用備品**(BoM × 4 中扣 1);K1 relay coil drive by **IRLZ44N logic-level MOSFET**(v1.9 換掉 2N7000 — Picker PC792A relay 線圈 133 mA,2N7000 Id 200 mA 餘量不足;線圈為電感性,IRLZ44N 汲極跨接 UF4007 flyback 二極體)。
 
 **L3 韌體狀態機**(`STM32_main.c` 必須實作,**M3 critical path**):
 
@@ -970,20 +970,66 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 # Annex A · 規劃初期內部 self-review(v1.0 階段,2026-05-16)
 
-> 此 Annex 為**規劃 v1.0 時團隊自我審視紀錄**,所列 ⚠️ 項目已在後續 v1.1–v1.8 迭代中**全部解掉**(對應修補見 Annex B 修訂歷史)。保留此 Annex 作為**透明工程過程證據** — 規劃初期不藏短處,後續 7 輪迭代逐項回應。
+> 此 Annex 為**規劃 v1.0 時團隊自我審視紀錄**,所列 ⚠️ 項目已在後續 v1.1–v1.10 迭代中**全部解掉**(對應修補見 Annex B 修訂歷史)。保留此 Annex 作為**透明工程過程證據** — 規劃初期不藏短處,後續 9 輪迭代逐項回應。
 
 - ✅ **誠實揭露**:Part 0 就講「26 天 5 萬做不出 spec-grade」,沒拿幻想說服自己。
 - ✅ **對齊 v2.2 spec**:demonstrator 規格(τ=0.5 s、互補濾波器、INT8 LSTM)直接 link 到 `generate_twin_scenarios.py` 與既有 ONNX。Per-cell C-rate 工作點(6C peak / 1.5C 連續)與 spec 一致 — 這是「縮放但不違背」的關鍵論述。
-- ⚠️ **預算抓得緊**:46.5k / 50k 只剩 7 % buffer → **v1.3 lean BoM reframe 解決**(降到 33,700,buffer 升到 16,300);後續 v1.4–v1.8 採購通路升級 + LFP 備品回到 44,234,buffer NT$ 5,766(warning line 上方 NT$ 766)。
+- ⚠️ **預算抓得緊**:46.5k / 50k 只剩 7 % buffer → **v1.3 lean BoM reframe 解決**(降到 33,700,buffer 升到 16,300);後續 v1.4–v1.10 採購通路升級 + 備品到 43,801,buffer NT$ 6,199(warning line 上方 NT$ 1,199)。
 - ⚠️ **STM32N6 lead time 是最大未知** → **v1.3 critical-path-only mode 解決**:Pi 5 升 lean 預設,STM32N6 降 stretch goal。
 - ⚠️ **安全部分仍偏紙上**(Class D 滅火器台灣難買) → **v1.2 解決**:BoM 改用 Lith-Ex 噴罐(蝦皮現貨 NT$ 1,200)。
 - ⚠️ **未驗證的單一假設**(8S 縮放 5.7×/3.5× 能否成立) → **v1.3 §1.3 W1 Day 1 模擬 gate 解決**:`scripts/generate_scaled_8s_sim.py` 2026-05-17 跑出 5.72× / 3.52× **PASS,對齊 spec 到小數位內**。
 
 ---
 
-# Annex B · 修訂歷史(v1.0 → v1.8 迭代過程)
+# Annex B · 修訂歷史(v1.0 → v1.10 迭代過程)
 
-> 此 Annex 呈現規劃從 v1.0 草案到 v1.8 對齊提案 v2 的 8 輪迭代演進。每輪都有具體觸發(用戶 review / 採購查證 / 安規補充 / 提案對齊)+ 對應修補。**呈現工程過程的可驗證性 + 風險主動消解**,作為評審判斷團隊工程紀律的依據。
+> 此 Annex 呈現規劃從 v1.0 草案到 v1.10 的 10 輪迭代演進。每輪都有具體觸發(用戶 review / 採購查證 / 安規補充 / 提案對齊)+ 對應修補。**呈現工程過程的可驗證性 + 風險主動消解**,作為評審判斷團隊工程紀律的依據。
+
+## v1.10(2026-05-22,採購定案 — 備品數量 + holder 改單節 + 實價修正)
+
+**觸發**:W1 採購日(5/22)用戶逐項下單時 4 個發現:① 失敗風險 review — 學生手焊 + 首次接電力電路,需備品;② 台灣 26650 holder 市場主流只有 1/2 節,無 8 串整盒;③ UCC27282 / 5Ω 電阻查到實價,與舊估價差很大;④ DL24M 查證 — 市場主流 150/180W,v1.4「單機 600W DL24M」結論有誤,真品為 DL24M-H 套組。
+
+**對應修訂**:
+
+1. **備品數量(failure-risk 設計)**:
+   - **STM32 Black Pill 1 → 2**(+NT$ 600):控制大腦,學生 3.3V GPIO 接 32V 電路易 brick,W3 死在 M3 死線就崩
+   - **IRFB4115 5 → 6**(+NT$ 108):MOSFET 電力電子頭號陣亡品,2 備品
+   - **UCC27282 2 → 3**(+1 顆):gate driver 常陪 MOSFET 陣亡
+   - **DS18B20 4 → 6**(+NT$ 100):1-Wire 3 腳易接反燒
+   - **MLCC / UF4007 各 4 → 各 10**(+NT$ ~10):被動件銅板價,焊接必損耗
+   - LFP cell(12 = 8+4)、IRLZ44N(2 = 1+1)已內建備品,不動
+
+2. **holder 改單節**:台灣無 26650 8 串整盒 → 改 **廣華 BH-26650-1 單節電池盒 × 10**(8 用 + 2 備),NT$ 30/顆 = 300;原 BoM 估「8S holder 套 NT$ 800」**−500**;A123 平頭相容,Endrich 若答帶 tab 則 holder 當純機械座
+
+3. **實價修正(查證 DigiKey)**:
+   - **UCC27282**:舊 Mouser 估 NT$ 900 → DigiKey UCC27282DR 實價 NT$ 63/顆 × 3 = 189(**−711**)
+   - **5Ω 電阻**:NT$ 80 → RX24 鋁殼現貨款 NT$ 50(**−30**)
+
+4. **DL24M → DL24M-H(修正 v1.4 部品識別錯誤)**:查證 sigrok + ATORCH 資料 —— DL24 / DL24P / DL24M 單一模組僅 150 / 180 / 150 W,**無「單機 600W」機種**;600W = **DL24M-H 套組**(master 150W + 擴充模組 150W×3)。v1.4「真正 DL24M 是單機 600W」結論有誤,且把「150W×4 並聯到 600W」誤判為冒充 —— 實則那正是 DL24M-H 達成 600W 的合法架構。§2.1 BoM + §1A 品名改 `ATORCH DL24M-H 600W 套組`,備註改「下單確認 master + 3 擴充模組附齊」。**價暫維持 NT$ 4,500**(套組實價待 W1 下單確認;若高於此需重算 Buffer)。
+
+5. **總額 + Buffer**:NT$ 44,234 → **43,801**(淨 −433);Buffer 5,766 → **6,199**(借 PSU+萬用表 8,066 → 8,499);warning line 上方餘量 766 → **1,199** —— **加了備品 buffer 反而變寬鬆**,因 holder 改單節(−500)+ UCC27282 實價(−711)抵消備品支出(+808)
+
+**為什麼 buffer 不減反增**:備品 +808 看似花錢,但「holder 原估 800 過高 + UCC27282 原估 900 過高」兩個原始估價偏差被查證修正,共 −1,211,淨效果是總額下降。**這不是省錢,是把原本不準的估價校正到實價。**
+
+**未動**:Part 0 / 1 / 3 / 4 / 5 / 6 / 7 / 8 / 9 / 11;safety 配備 / SOP 不變。
+
+---
+
+## v1.9(2026-05-22,B1 relay driver 2N7000 → IRLZ44N)
+
+**觸發**:用戶 review DigiKey Picker Components PC792A-1C-C-12S-N-X(40A SPDT 汽車繼電器)規格頁,發現 **線圈電流 133.3 mA**。原 BoM B1 supercap pre-charge 用 2N7000 small-signal MOSFET 驅動 K1 relay 線圈 —— 2N7000 datasheet 連續 Id 上限 200 mA,133 mA 線圈電流 + 電感性 inrush 餘量太小(< 1.5×)。
+
+**對應修訂**:
+1. **§2.1 BoM**:Supercap 預充電列 driver MOSFET `2N7000` → `IRLZ44N logic-level`(Id 47 A、Vgs(th) 1-2 V STM32 3.3 V GPIO 直驅、Rds(on) 22 mΩ、TO-220)
+2. **§4.5.5 Part 6 ASCII art + Q3 caption**:K1 relay drive 標註改 IRLZ44N;補「線圈電感性 → IRLZ44N 汲極跨接 UF4007 flyback 二極體」
+3. **`firmware/stm32_hybrid_control/pin_map.md`**:PB0 K1 relay drive 註解 2N7000 → IRLZ44N
+4. **PURCHASE_LIST.md §1A**:`2N7000 × 2 NT$ 50` 改 `IRLZ44N × 2 NT$ 50`(IRLZ44N 蝦皮 ~NT$ 25/pc,2 pcs 同價 NT$ 50)—— **總額不變 NT$ 44,234**
+
+**為什麼同價**:IRLZ44N 是極常見 logic-level power MOSFET,蝦皮單顆 NT$ 10-25;2 顆 NT$ 50 與 2N7000 同價區間,**BoM 總額 / Buffer 不動**。
+
+**未動**:其餘所有章節;此為單一元件可靠度替換,非範圍 / 預算變更。
+
+---
 
 ## v1.8(2026-05-18,對齊 `out_pdf/BBU_PROPOSAL_v2.pdf` 繳交版)
 
@@ -1042,7 +1088,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 ## v1.0(2026-05-16,初稿)
 
-初稿建立 13 個 Part 結構:現實檢查、推薦 scope Tier B(8S 縮放)、BoM(NT$ ~46.5k)、系統架構、韌體實作清單、驗證流程、安全 SOP、26 天時程拆解、風險登錄、Fall-back Plan A-E 階梯、評審 next-steps。**初版即包含 Annex A 5 條 self-review 揭露,後續 v1.1-v1.8 逐項回應**。
+初稿建立 13 個 Part 結構:現實檢查、推薦 scope Tier B(8S 縮放)、BoM(NT$ ~46.5k)、系統架構、韌體實作清單、驗證流程、安全 SOP、26 天時程拆解、風險登錄、Fall-back Plan A-E 階梯、評審 next-steps。**初版即包含 Annex A 5 條 self-review 揭露,後續 v1.1-v1.10 逐項回應**。
 
 ## v1.1(2026-05-16,內部 review 第一輪)
 
