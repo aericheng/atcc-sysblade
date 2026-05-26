@@ -95,6 +95,66 @@ interface AgingScenario {
   stats: Record<string, number | null>;
 }
 
+// V3 (normal) + V4 (N-1 fault) rack-scale 60s sim with thermal model.
+// V4 extends V3 with fault_injection + n_bbu_active + pass_criteria.
+interface RackScenario {
+  validation_chain?: string;
+  title: string;
+  description: string;
+  duration_s?: number;
+  stages?: { peak_hold_s: number; ramp_s: number; peak_kw: number; continuous_kw: number };
+  topology?: Record<string, number | string | boolean>;
+  thermal_model?: {
+    t_warning_c?: number;
+    t_max_simulated_c?: number;
+    t_rise_above_ambient_c?: number;
+    passes_thermal_limit?: boolean;
+    t_ambient_c?: number;
+  };
+  fault_injection?: {
+    fault_time_s: number;
+    n_bbu_normal: number;
+    n_bbu_degraded: number;
+    fault_mode: string;
+  };
+  pass_criteria?: {
+    c_rate_continuous_post_limit?: number;
+    v_cell_swing_limit_v?: number;
+    t_cell_limit_c?: number;
+    pass_c_rate?: boolean;
+    pass_v_swing?: boolean;
+    pass_thermal?: boolean;
+    pass_lic_headroom?: boolean;
+    overall_pass?: boolean;
+  };
+  headline_verdict?: string;
+  series: Record<string, number[]>;
+  stats: {
+    v_cell_min?: number;
+    v_cell_max?: number;
+    v_cell_swing_v?: number;
+    v_lic_min?: number;
+    v_lic_droop_v?: number;
+    v_lic_headroom_to_uvlo_v?: number;
+    energy_delivered_kj?: number;
+    energy_capacity_kj?: number;
+    dod_pct?: number;
+    energy_headroom_ratio?: number;
+    p_peak_per_bbu_kw?: number;
+    p_continuous_per_bbu_kw?: number;
+    peak_c_rate_per_bbu?: number;
+    continuous_c_rate_per_bbu?: number;
+    t_cell_max_c?: number;
+    t_cell_rise_c?: number;
+    // V4-only
+    p_per_bbu_max_post_fault_kw?: number;
+    p_per_bbu_steady_post_fault_kw?: number;
+    c_rate_continuous_post_fault?: number;
+    c_rate_post_increase_pct?: number;
+    [k: string]: number | boolean | null | undefined;
+  };
+}
+
 interface ModelValidation {
   title: string;
   description: string;
@@ -424,16 +484,23 @@ export function TwinClient({
   lfpOnly,
   hybrid,
   mainsFail,
+  rackGraceful,
+  rackNMinus1,
   aging,
   modelValidation,
 }: {
   lfpOnly: Scenario;
   hybrid: Scenario;
   mainsFail: Scenario;
+  rackGraceful: RackScenario;
+  rackNMinus1: RackScenario;
   aging: AgingScenario;
   modelValidation: ModelValidation;
 }) {
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
+  // V3 (normal 8 BBU) vs V4 (N-1 fault) toggle for rack-scale section
+  const [rackMode, setRackMode] = useState<"normal" | "n-1">("normal");
+  const activeRack = rackMode === "n-1" ? rackNMinus1 : rackGraceful;
   const active = mode === "hybrid" ? hybrid : lfpOnly;
 
   // Full-resolution chart data lives here only to feed the scope component;
@@ -522,6 +589,55 @@ export function TwinClient({
     }
     return out;
   }, [mainsFail]);
+
+  // V3/V4 rack-scale charts. Use the active scenario (normal vs N-1) and
+  // decimate the same way as mains_fail above.
+  const rackPowerData = useMemo(() => {
+    const t = activeRack.series.t;
+    const pT = activeRack.series.p_total_kw;
+    const pL = activeRack.series.p_lfp_kw;
+    const pI = activeRack.series.p_lic_kw;
+    const out: Array<{ t: number; p_total: number; p_lfp: number; p_lic: number }> = [];
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] > 3 && i % 4 !== 0 && i !== t.length - 1) continue;
+      out.push({
+        t: Number(t[i].toFixed(3)),
+        p_total: Number(pT[i].toFixed(2)),
+        p_lfp: Number(pL[i].toFixed(2)),
+        p_lic: Number(pI[i].toFixed(2)),
+      });
+    }
+    return out;
+  }, [activeRack]);
+
+  const rackThermalData = useMemo(() => {
+    const t = activeRack.series.t;
+    const T = activeRack.series.t_cell_c;
+    if (!T) return [];
+    const out: Array<{ t: number; t_cell: number }> = [];
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] > 3 && i % 4 !== 0 && i !== t.length - 1) continue;
+      out.push({ t: Number(t[i].toFixed(3)), t_cell: Number(T[i].toFixed(3)) });
+    }
+    return out;
+  }, [activeRack]);
+
+  // Per-BBU power (V4 only has explicit `p_lfp_per_bbu_kw`; for V3 we derive
+  // it from p_lfp_kw / N_BBU_PER_RACK so the toggle stays comparable).
+  const rackPerBbuData = useMemo(() => {
+    const t = activeRack.series.t;
+    const perBbu = activeRack.series.p_lfp_per_bbu_kw;
+    const pLfp = activeRack.series.p_lfp_kw;
+    const N_BBU = 8;
+    const useDerived = !perBbu;
+    const out: Array<{ t: number; p_per_bbu: number }> = [];
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] > 3 && i % 4 !== 0 && i !== t.length - 1) continue;
+      const v = useDerived ? pLfp[i] / N_BBU : perBbu[i];
+      out.push({ t: Number(t[i].toFixed(3)), p_per_bbu: Number(v.toFixed(3)) });
+    }
+    return out;
+  }, [activeRack]);
 
   const stableLfp = lfpOnly.stats["v_cell_pp_stable"] as number;
   const stableHybrid = hybrid.stats["v_cell_pp_stable"] as number;
@@ -735,6 +851,250 @@ export function TwinClient({
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
+        </CardBody>
+      </Card>
+
+      {/* V3 (normal 8 BBU) + V4 (N-1 fault injection) rack-scale sim with thermal model */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <CardTitle>Rack-scale 60s graceful · normal vs N-1 fault injection</CardTitle>
+              <Disclosure summary="What you&apos;re seeing" className="mt-2">
+                {activeRack.description}
+              </Disclosure>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
+              V3 / V4 · Twin validation · SIMULATED
+            </span>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          {/* V3 vs V4 toggle */}
+          <div className="flex flex-wrap rounded-lg border border-border bg-surface/50 p-1 max-w-full sm:inline-flex sm:w-auto">
+            <button
+              type="button"
+              className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded transition-colors ${
+                rackMode === "normal"
+                  ? "bg-success/20 text-success"
+                  : "text-muted hover:text-foreground"
+              }`}
+              onClick={() => setRackMode("normal")}
+            >
+              V3 · Normal (8 BBU symmetric)
+            </button>
+            <button
+              type="button"
+              className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded transition-colors ${
+                rackMode === "n-1"
+                  ? "bg-warning/20 text-warning"
+                  : "text-muted hover:text-foreground"
+              }`}
+              onClick={() => setRackMode("n-1")}
+            >
+              V4 · N-1 fault @ t={activeRack.fault_injection?.fault_time_s ?? 15}s (7 BBU)
+            </button>
+          </div>
+
+          {/* Stats grid — same layout for both modes, V4 stats fall back when not present */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Stat
+              label={rackMode === "n-1" ? "Per-BBU C-rate post-fault" : "Per-BBU C-rate"}
+              value={
+                rackMode === "n-1"
+                  ? ((activeRack.stats.c_rate_continuous_post_fault as number | undefined) ?? 0).toFixed(2)
+                  : ((activeRack.stats.continuous_c_rate_per_bbu as number | undefined) ?? 0).toFixed(2)
+              }
+              unit="C continuous"
+              tone={
+                rackMode === "n-1"
+                  ? activeRack.pass_criteria?.pass_c_rate
+                    ? "success"
+                    : "danger"
+                  : "primary"
+              }
+              hint={
+                rackMode === "n-1"
+                  ? `+${((activeRack.stats.c_rate_post_increase_pct as number | undefined) ?? 0).toFixed(0)}% vs 8-BBU baseline · limit ${activeRack.pass_criteria?.c_rate_continuous_post_limit ?? 2.5}C automotive LFP continuous spec`
+                  : `${((activeRack.stats.p_continuous_per_bbu_kw as number | undefined) ?? 0).toFixed(2)} kW × 58 s continuous (inside 1-3 C automotive LFP spec)`
+              }
+            />
+            <Stat
+              label="T_cell rise vs ambient"
+              value={((activeRack.stats.t_cell_rise_c as number | undefined) ?? 0).toFixed(2)}
+              unit={`K (max ${((activeRack.stats.t_cell_max_c as number | undefined) ?? 25).toFixed(1)} °C)`}
+              tone={activeRack.thermal_model?.passes_thermal_limit ? "success" : "danger"}
+              hint={`Lumped cell thermal model · ambient ${activeRack.thermal_model?.t_ambient_c ?? 25} °C · warning ${activeRack.thermal_model?.t_warning_c ?? 50} °C · whitepaper §6.1`}
+            />
+            <Stat
+              label="LFP cell V swing"
+              value={(((activeRack.stats.v_cell_swing_v as number | undefined) ?? 0) * 1000).toFixed(0)}
+              unit="mV peak-to-peak"
+              tone={
+                rackMode === "n-1"
+                  ? activeRack.pass_criteria?.pass_v_swing
+                    ? "success"
+                    : "danger"
+                  : "default"
+              }
+              hint={
+                rackMode === "n-1"
+                  ? `Limit ${(((activeRack.pass_criteria?.v_cell_swing_limit_v as number | undefined) ?? 0.5) * 1000).toFixed(0)} mV (2× V3 budget for degraded mode)`
+                  : "LFP stays in plateau across the full 60 s ramp"
+              }
+            />
+            <Stat
+              label="LIC droop"
+              value={((activeRack.stats.v_lic_droop_v as number | undefined) ?? 0).toFixed(2)}
+              unit="V from nominal"
+              tone={activeRack.pass_criteria?.pass_lic_headroom !== false ? "success" : "danger"}
+              hint={`v_min ${((activeRack.stats.v_lic_min as number | undefined) ?? 0).toFixed(2)} V · ${((activeRack.stats.v_lic_headroom_to_uvlo_v as number | undefined) ?? 0).toFixed(2)} V headroom to UVLO 38 V · LIC bank unaffected by BBU loss`}
+            />
+          </div>
+
+          {/* Overall pass badge for V4 mode */}
+          {rackMode === "n-1" && activeRack.pass_criteria && (
+            <div
+              className={`rounded-lg border px-4 py-3 text-sm ${
+                activeRack.pass_criteria.overall_pass
+                  ? "border-success/40 bg-success/10 text-success"
+                  : "border-danger/40 bg-danger/10 text-danger"
+              }`}
+            >
+              <span className="font-medium">
+                {activeRack.pass_criteria.overall_pass ? "✓ N-1 redundancy PASS" : "✗ N-1 redundancy FAIL"}
+              </span>
+              {" — "}
+              {activeRack.headline_verdict}
+            </div>
+          )}
+
+          <ChartCard
+            title={
+              rackMode === "n-1"
+                ? `Rack power split · fault injection at t=${activeRack.fault_injection?.fault_time_s ?? 15}s`
+                : "Rack power split · 0–60 s (normal 8 BBU symmetric)"
+            }
+            subtitle={`Stage A ${(activeRack.stages?.peak_hold_s ?? 0.5).toFixed(1)} s peak hold · Stage B linear ramp ${(activeRack.stages?.peak_kw ?? 120).toFixed(0)} → ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW continuous`}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
+                <Tooltip content={<DarkTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                {rackMode === "n-1" && activeRack.fault_injection && (
+                  <ReferenceLine
+                    x={activeRack.fault_injection.fault_time_s}
+                    stroke="var(--danger)"
+                    strokeDasharray="4 4"
+                    label={{
+                      value: `Fault injection (BBU ${activeRack.fault_injection.n_bbu_normal}→${activeRack.fault_injection.n_bbu_degraded})`,
+                      position: "insideTopRight",
+                      fill: "var(--danger)",
+                      fontSize: 10,
+                    }}
+                  />
+                )}
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name="Rack total" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name="LFP pack" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name="LIC bank" isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard
+            title="Per-BBU LFP power"
+            subtitle={
+              rackMode === "n-1"
+                ? `Surviving BBUs share rack load after t=${activeRack.fault_injection?.fault_time_s ?? 15}s; step up reflects load redistribution`
+                : "8-BBU symmetric load — all BBUs see identical scaled current"
+            }
+          >
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={rackPerBbuData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
+                <Tooltip content={<DarkTooltip />} />
+                {rackMode === "n-1" && activeRack.fault_injection && (
+                  <ReferenceLine
+                    x={activeRack.fault_injection.fault_time_s}
+                    stroke="var(--danger)"
+                    strokeDasharray="4 4"
+                  />
+                )}
+                <Line
+                  type="stepAfter"
+                  dataKey="p_per_bbu"
+                  stroke="var(--success)"
+                  strokeWidth={1.8}
+                  dot={false}
+                  name="kW per BBU"
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {rackThermalData.length > 0 && (
+            <ChartCard
+              title="Cell thermal trace · lumped capacitance + convective cooling"
+              subtitle={`I²·R_int heating vs h·A·ΔT cooling · cell C_th 70 J/K · R_int 8 mΩ · ambient ${activeRack.thermal_model?.t_ambient_c ?? 25} °C`}
+            >
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={rackThermalData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                  <YAxis
+                    domain={[
+                      (activeRack.thermal_model?.t_ambient_c ?? 25) - 1,
+                      Math.max(
+                        (activeRack.thermal_model?.t_warning_c ?? 50) + 2,
+                        (activeRack.thermal_model?.t_max_simulated_c ?? 30) + 2,
+                      ),
+                    ]}
+                    stroke=""
+                    tickFormatter={(v) => `${v.toFixed(1)} °C`}
+                  />
+                  <Tooltip content={<DarkTooltip />} />
+                  <ReferenceLine
+                    y={activeRack.thermal_model?.t_warning_c ?? 50}
+                    stroke="var(--danger)"
+                    strokeDasharray="4 4"
+                    label={{
+                      value: `Warning ${activeRack.thermal_model?.t_warning_c ?? 50} °C (whitepaper §6.1)`,
+                      position: "insideTopRight",
+                      fill: "var(--danger)",
+                      fontSize: 10,
+                    }}
+                  />
+                  <ReferenceLine
+                    y={activeRack.thermal_model?.t_ambient_c ?? 25}
+                    stroke="var(--muted)"
+                    strokeDasharray="2 2"
+                  />
+                  {rackMode === "n-1" && activeRack.fault_injection && (
+                    <ReferenceLine
+                      x={activeRack.fault_injection.fault_time_s}
+                      stroke="var(--danger)"
+                      strokeDasharray="4 4"
+                    />
+                  )}
+                  <Line
+                    type="monotone"
+                    dataKey="t_cell"
+                    stroke="var(--warning)"
+                    strokeWidth={1.8}
+                    dot={false}
+                    name="T_cell"
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
         </CardBody>
       </Card>
 
