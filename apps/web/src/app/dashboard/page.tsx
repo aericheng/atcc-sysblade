@@ -37,10 +37,17 @@ function extractLicRcEnvelope(transientHybrid: {
 }
 
 export default async function DashboardPage() {
-  const [fleet, transientHybrid] = await Promise.all([
+  const [fleet, transientHybrid, rackNMinus1] = await Promise.all([
     loadJson("fleet_devices"),
     loadJson("transient_hybrid"),
+    loadJson("rack_n_minus_1"),
   ]);
   const licRcEnvelope = extractLicRcEnvelope(transientHybrid);
-  return <DashboardClient fleet={fleet} licRcEnvelope={licRcEnvelope} />;
+  return (
+    <DashboardClient
+      fleet={fleet}
+      licRcEnvelope={licRcEnvelope}
+      rackNMinus1={rackNMinus1}
+    />
+  );
 }
