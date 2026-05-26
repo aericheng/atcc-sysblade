@@ -1,17 +1,59 @@
-# 複賽 BBU Demonstrator 採購清單
+# 複賽 BBU 採購清單
 
-> **v1.10 凍結 · 2026-05-22**(採購定案:備品數量 + holder 單節 + 實價修正)
-> v1.5 → v1.6:JK-BMS RS485 customization + GX12 cable + USB-RS485 dongle 升 ICShop FT232+SP485EEN(+NT$ 1,400)
-> v1.6 → v1.7:Pi 5 通路鎖 DigiKey SC1432(USD $175,比 RS TW 貴 NT$ 1,100 換時程確定性);IRFB4115 通路鎖 DigiKey 真品(IRFB4115 仿冒重災區)
-> v1.7 → v1.8:**LFP cell qty 8 → 12**(對齊 proposal_v2:8 主用 + 4 備品 / cell-matching 池;+NT$ 1,000);**M1-M4 bench KPI Pass criteria 明文化**(§1.2 表 + §5.3 對應)
-> v1.8 → v1.9:**B1 relay driver 2N7000 → IRLZ44N**(Picker PC792A relay 線圈 133 mA,2N7000 餘量不足;IRLZ44N Id 47 A logic-level)
-> v1.9 → v1.10:**備品數量**(STM32 1→2、IRFB4115 5→6、UCC27282 2→3、DS18B20 4→6、MLCC/UF4007 各→10)+ **holder 改廣華單節 BH-26650-1×10**(台灣無 8 串整盒,−500)+ **UCC27282 / 5Ω DigiKey 實價修正**(−741)+ **DL24M → DL24M-H 600W 套組**(修正 v1.4:無單機 600W,真品 = master + 3 擴充模組;價暫不動,實價待確認);淨 −433
-> 對應 BoM:[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md)
-> 總額 **NT$ 43,801** / Buffer **6,199**(借得到 bench PSU + 萬用表 → **8,499**;**warning line NT$ 5,000**,目前餘 **NT$ 1,199**)
+> **v2.0 凍結 · 2026-05-26**(Twin-first pivot — v1.x 已下單部分列入 sunk cost / 可挽回標註,Wave 2-3 全部取消)
+> v1.x → v2.0:**整個硬體 demonstrator 路線 descope**;v2.0 critical path 是 6 條 twin validation chains(V1-V6,純軟體 / 純 sim),**增量採購 NT$ 0**。下方 v1.x 38 SKU 表保留為**已執行採購歷史 + 處置狀態**。
+> 對應 BoM(v1.x archive):[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md)(v1.10 凍結時的最終 BoM)
+> 對應 v2.0 計畫:[docs/BBU_IMPLEMENTATION_PLAN.md § 摘要 + § 0.5](BBU_IMPLEMENTATION_PLAN.md)
 
 ---
 
-## 採購時程(關鍵節點)
+## § 0 v2.0 sunk cost / 可挽回 / 取消(**新增,2026-05-26**)
+
+> **動作死線 2026-06-02**(7 天後)— 所有「可挽回」項目須於此日前決定退貨 / 二手出 / 轉用,逾期退換貨窗口關閉。
+
+| 項目 | NT$ | v1.x 用途 | v2.0 處置 | 動作死線 |
+|---|---:|---|---|---|
+| **Raspberry Pi 5 8GB**(DigiKey SC1432)| 5,600 | M2 邊緣推論 | ✅ **直接轉用**為 V5 推論平台 + Linux 開發機;RD reviewer 預期會看到的硬體 reference | 不退 |
+| Maxwell BMOD0058-E016-C02 × 2 | 10,608 | M3 LIC stand-in | 🟡 **暫存**:V2 LIC RC 驗證若 datasheet curve 不夠 → 自跑 characterization;否則 6/30 review 後 eBay 二手 ~50 % 殘值 | 6/30 review |
+| Adafruit INA228 breakout #5832 × 2 | 1,076 | M3 電流量測 | 🟡 **轉用**:可量 Pi 5 NPU 區段功耗,或捐學校 EE 系 | 6/30 review |
+| Infineon IRFB4115PBF × 6 | 648 | M3 MOSFET switch matrix | ❌ **sunk**:單價低,留庫存 / 捐學校 | — |
+| UCC27282DR × 3 | 189 | M3 gate driver | ❌ **sunk**:同上 | — |
+| LFP 26650 cell(Endrich ANR26650M1B × 12)| ~4,020 | M3 主電池 pack | 🟡 **可挽回**:**ENDRICH SOP 死線 2026-05-22 已過**,需確認電話 + 下單是否實際執行;若已下單 → 二手出(A123 系正品 ~NT$ 200/顆 殘值)| **立刻確認** |
+| JK-BMS JK-B 8S 100A + GX12 cable | 4,000 | M3 BMS telemetry | 🟡 **可挽回**:若未拆封蝦皮可退;已拆 → 二手 ~NT$ 1,500 殘值 | 7 天內 |
+| ATORCH DL24M-H 600 W 套組 | 4,500 | M3 GB200 emulator | 🟡 **可挽回**:若 AliExpress 還在運送 → 攔截退貨;已收 → 留學校 EE 實驗室 / 二手 ~70 % 殘值 | 立刻 |
+| STM32 Black Pill F411 × 2 | 1,200 | M3 控制板 | ❌ **sunk**:單價低,日後 STM32 專案用 | — |
+| 廣華 BH-26650-1 holder × 10 | 300 | 8S1P holder | ❌ **sunk** | — |
+| DS18B20 × 6 + RS485 dongle + 線材 + 小料 | ~2,000 | M3 / M4 周邊 | ❌ **sunk**:庫存 | — |
+| 5Ω 電阻 + 40A relay + IRLZ44N | 220 | B1 supercap pre-charge | ❌ **sunk** | — |
+| **Wave 2(安全)** — 80A blade fuse + Class T 100A fast-blow + 100A 接觸器 + E-stop + 1.5kV PPE + Lith-Ex + 矽膠線 + MLCC + UF4007 | **~6,400** | 接電前安全配備 | ❌ **取消下單**(twin-only 無 bench)| 立刻 |
+| **Wave 3(機械散熱)** — 壓克力盒 + 鋁角材 + 80mm fan × 2 + TO-220 鰭片 + 矽脂 | **~2,300** | 整機固定 + 散熱 | ❌ **取消下單** | 立刻 |
+| **Bench PSU + 萬用表**(若借不到)| **~2,300** | LFP 首充 / debug | ❌ **取消**(twin 不需要)| 立刻 |
+
+### 統計(v2.0 帳目)
+
+| 類別 | NT$ |
+|---|---:|
+| **已下單已收貨 sunk(無法挽回)** | ~17,165(Pi 5 5,600 + MOSFET 648 + UCC27282 189 + STM32 1,200 + 小料 ~9,528)|
+| **已下單可挽回 / 轉用**(若全二手出 50 % 殘值)| ~14,196 → 回收 ~12,102(實際殘值取決於 6 月閒置市場)|
+| **Wave 2-3 + 借設備 取消下單** | ~10,700(節省 100%) |
+| **v2.0 增量採購** | **0** |
+| **預算上限** | 50,000 |
+| **最壞情況 Buffer 剩餘**(全 14,196 拿回 0 殘值)| **~22,135**(= 50,000 − 17,165 − 14,196 − 0 + 殘值 0)|
+| **較佳情況 Buffer 剩餘**(可挽回 50 % 殘值)| **~30,741** |
+
+> 底線:**最壞 sunk 17,165 = 預算 34 %**;v2.0 純軟體不需新採購,Buffer 仍 22-30k 餘量。
+
+---
+
+## ⚠️ 以下為 v1.x archive(2026-05-22 v1.10 凍結時的採購清單)
+
+> v2.0 已 descope。**保留為 engineering process evidence**(評審看到 procurement
+> rigor + sourcing 防偽 SOP + datasheet 嚴謹化的軌跡是加分點),**但 v2.0
+> 階段不依此執行**。已執行的部分按 §0 處置 SOP 處理。
+
+---
+
+## 採購時程(關鍵節點 — v1.x archive)
 
 | 時間 | 動作 |
 |---|---|

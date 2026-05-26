@@ -1,8 +1,8 @@
 ---
 title: "Sysblade HyperBuffer 技術白皮書"
 subtitle: "ATCC 第 23 屆 · C13 系統電 · 學生組"
-version: "v1.2"
-date: "2026-05-24"
+version: "v1.3"
+date: "2026-05-26"
 authors:
   - 系統電 ATCC C13 學生競賽團隊
 abstract: |
@@ -27,7 +27,7 @@ abstract: |
 # Sysblade HyperBuffer 技術白皮書
 
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
-> 文件版本 v1.2 / 2026-05-24(新增 §8.3 複賽 BBU demonstrator;對齊 `BBU_IMPLEMENTATION_PLAN.md` v1.10 + `BBU_PROPOSAL.md` v1.8 + Endrich LFP 採購 SOP)
+> 文件版本 v1.3 / 2026-05-26(§8.3 改寫:複賽 BBU demonstrator → twin-first validation,對齊 `BBU_IMPLEMENTATION_PLAN.md` v2.0 + `RD_BRIEF.md` v0.1;v1.x 硬體 M1-M4 narrative descope 為 EVT 2026 Q3 路線圖)
 > Github: <https://github.com/aericheng/atcc-sysblade>
 > Live demo: <https://sysblade-atcc.vercel.app>
 
@@ -927,102 +927,80 @@ $$
 | 2027 Q1–Q2 | Tier-2 colo 客戶 PoC,真實 BBU duty 資料回流模型再校準 | 商業 |
 | 2027 Q3–Q4 | OCP 認證取得,進入北美 Tier-2/3 hyperscale 報價週期 | 認證 / 商業 |
 
-### 8.3 複賽 BBU demonstrator(2026-06-11 截止 · M1–M4 bench validation)
+### 8.3 複賽 twin-first validation(2026-06-11 截止 · V1–V6 chains)
 
-> 本節描述 ATCC 第 23 屆 C13 **複賽階段**(2026-06-11)交付物。初賽白皮書承諾的
-> hybrid LFP+LIC 拓樸、邊緣 INT8 LSTM 推論、Fleet Dashboard 三件套,在
-> 26 天 / NT$ 5 萬 / 學生實驗室約束下,以 **8S LFP scaled-down demonstrator**
-> 升級為「實機 bench validation」;對 colo 客戶的 spec-grade 15S 整機仍屬
-> §8.2 EVT 2026 Q3 路線圖,不在 26 天範圍。完整工程細節
-> `docs/BBU_IMPLEMENTATION_PLAN.md` v1.10、繳交版提案 `docs/BBU_PROPOSAL.md` v1.8、
-> 採購清單 `docs/PURCHASE_LIST.md` v1.10(34 SKU)。
+> 本節描述 ATCC 第 23 屆 C13 **複賽階段**(2026-06-11)交付物。**v1.2 → v1.3
+> 重大改寫**(2026-05-26):放棄 v1.x 的 8S LFP scaled-down 實機 demonstrator
+> 路線(M1-M4 硬體 milestone),改交付 **6 條 digital-twin validation chains
+> (V1-V6)**,target 科技業 RD / 顧問 / 投資人 — 受眾從 ATCC 評審(工業設計
+> / 商管)擴大到跨領域 RD,需要 GitHub `make verify` 30 分鐘 self-check 的
+> reproducibility,不是「來實驗室看 demonstrator」。對 colo 客戶的 spec-grade
+> 15S 整機仍屬 §8.2 EVT 2026 Q3 路線圖,不在 26 天範圍。
+>
+> 完整工程細節 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0、RD executive brief
+> `docs/RD_BRIEF.md` v0.1、1 頁 narrative `docs/INVESTOR_BRIEF.md` v0.1。v1.x
+> 硬體路線文獻 + sunk cost handling SOP 保留為 engineering process evidence。
 
-#### 8.3.1 範圍與 scaled-down 對位邏輯
+#### 8.3.1 為什麼 twin-first(對 RD reviewer 的論述)
 
-| 維度 | demonstrator | v2.2 spec | 對位 |
-|---|---|---|---|
-| 主電池串數 | **8S × 1P LFP**(25.6 V 標稱)| 15S(48 V)| 縮 ~1/2;per-cell 工作點 transferable |
-| 主電池 cell | **Lithium Werks ANR26650M1B**(A123 系 LiFePO4 Nanophosphate® 正品,Endrich 台灣總代理) | 車規 LFP(LG ESS B-series / Samsung SDI 高功率版,EVT 階段)| 化學系統一致;datasheet IPEAK 120 A(48C)/ 連續 50 A(20C),per-cell 工作點 ≥ 4.8× 餘量 |
-| Pack 能量 | ~64 Wh(8 × 2.5 Ah × 3.2 V)| 2.5 kWh / 台 | 縮 ~40×;demo 2 hr 餘量充足(64 Wh ÷ 2 A 連續 = 32 hr 額定;25 A peak pulse 跑 ~2.5 hr)|
-| 輔助瞬態 | **2× Maxwell BMOD0058-E016-C02 串聯 bank**(32 V / 29 F / 44 mΩ ESR;2× 16 V / 58 F / 22 mΩ 串)| **2× Eaton XLR-48-166 並聯 bank**(V_nominal 51.3 V / C 332 F / ESR 2.5 mΩ;§2.3.0 數值) | LIC 物理層 stand-in,RC anchor 邏輯沿用 §2.3.0;ESR × C 等效時間常數 demonstrator τ_sc ≈ 1.28 s vs spec bank 0.83 s 同數量級,皆顯著大於控制律 τ = 0.5 s → supercap 可吸收 high-pass 分量不飽和 |
-| Per-cell pulse 工作點 | **25 A peak × < 100 ms pulse**(demonstrator baseline 500 W ±30 %,受 Maxwell BMOD0058 IDCMAX 限制 → baseline 從 v1.1 1 kW 降至 500 W);ANR26650M1B datasheet **IPEAK 120 A(48C × 10 s pulse)→ ≥ 4.8× 餘量**;連續 50 A(20C)亦遠高於 burn-in 0.5C 充放電 | spec 6C × < 2 s pulse | pulse 與連續工作點皆落在 ANR26650M1B datasheet 對應條目允許區內 |
-| 控制律 | STM32F411 + 一階互補濾波器 τ = 0.5 s @ 1 kHz 控制環 | 完全同公式 | `scripts/hybrid_control_emulator.py` Python 鏡像,full-window ratio 對齊 §1.3 sim 5.72× |
-| 邊緣推論 | **Raspberry Pi 5 + onnxruntime + INT8 LSTM**(同 ONNX,63 KB) | STM32N6 Neural-ART NPU | 附錄 C 的 NPU 27–109 µs 仍是靜態圖估算;Pi 5 為 measured stand-in,STM32N6 實機 trace 留 W3+ EVT |
-| Dashboard | 既有 `/dashboard` + LIVE row(Python bridge atomic JSON write,client polling 5 s)| spec §2.6.3 同 | M4 證明 dashboard 可接真實 device,1000 row 中插 1 row 真實 telemetry,其餘 999 row 維持 SIMULATED watermark |
-
-#### 8.3.2 4 件 critical-path 證據(M1–M4)
-
-| # | Milestone | Artifact | Bench Pass 判準 | Sim 對照 | 狀態(2026-05-24)|
-|:--:|---|---|---|---|:--:|
-| **M1** | 8S scaled simulation gate | `data/processed/scaled_8s_sim.json` | power ratio ≥ 5× / voltage ratio ≥ 3× | **5.72× / 3.52×** | ✅ **PASS 2026-05-17** |
-| **M2** | 邊緣推論 latency histogram | `data/processed/lstm_latency_*.{json,png}` | Pi 5 p99 < 500 µs · INT8 vs FP32 ΔMAPE < 0.5 % | 笔电 INT8 baseline **p99 245 µs** | 🟡 partial(Pi 5 到貨後 swap)|
-| **M3** | Hybrid 削峰實機波形 | Oscilloscope 純 LFP vs hybrid 雙曲線 + 量測 JSON | LFP RMS ratio ≥ 3× · V_cell pp ratio ≥ 2× | sim 5.72× / 3.52× | 📋 soft 6/2 Tue / hard 6/3 Wed |
-| **M4** | Dashboard LIVE row E2E | dashboard 截圖 + 5 s 影片 | DL24M 增載 → dashboard 30 s 內看到 V 微降 / 溫度升 | — | ✅ 軟體 stack 完成 / W3 Wed 接 JK-BMS |
-
-**Bench 判準寬鬆於 sim 的理由**:sim 是 PyBaMM DFN 純物理模型,**無實機損耗**
-(MOSFET Rds(on) 隨溫升、shunt 量測延遲、firmware 1 kHz tick rate、寄生電感、
-PCB layout 走線)。Bench 嚴格達 5.7× / 3.5× 機率約 60–70 %,**3× / 2× 達標
-機率 > 90 %**;答辯句:「sim 是上界,bench 是工程目標下界,中間差距是實機
-損耗 budget」。
-
-#### 8.3.3 Lean BoM 帳目(NT$ 50,000 上限)
-
-| 項目 | NT$ |
-|---|---:|
-| 預算上限 | 50,000 |
-| **BoM 鎖定(v1.10,2026-05-22 採購定案)** | **43,801** |
-| **Buffer** | **6,199**(借得到 bench PSU + 萬用表 → 8,499)|
-| Warning line | 5,000(目前餘 1,199)|
-
-主要支出:DigiKey 同單下訂(Maxwell BMOD0058 × 2 + INA228 Adafruit 5832 × 2
-+ Infineon IRFB4115PBF × 6 + Raspberry Pi 5 8GB)= NT$ 17,932;LFP cell × 12
-(Endrich Lithium Werks ANR26650M1B,8 主用 + 4 cell-matching 備品)
-+ JK-BMS JK-B 8S 100A active balance(checkout **必勾 RS485 customization**,
-否則 M4 LIVE row 死)+ ATORCH DL24M-H 600 W 套組(GB200 emulator)+ 安全配備
-(Class T 100 A fast-blow fuse + Lith-Ex 鋰電池滅火噴罐 + 1.5 kV PPE 手套)。
-34 SKU 細目見 `docs/PURCHASE_LIST.md`。
-
-> **Endrich SOP**(`docs/ENDRICH_LFP_PURCHASE_SOP.md`,2026-05-20)是 LFP 採購
-> 防呆關鍵 — 蝦皮 / Alibaba 90 % 的「LFP 26650 5Ah」實測 4.2 V 充飽是 Li-ion
-> 偽裝。Endrich 是 Lithium Werks Asia 原廠代理,ANR26650M1B 規格全網交叉
-> 印證(3.3 V / 50 A 連續 / 6 mΩ / Nanophosphate LFP)。
-
-#### 8.3.4 三層安全 SOP(學生實驗室 800 W bench 工作)
-
-| 層 | SOP | 觸發場景 | 違反後果 |
-|---|---|---|---|
-| **§4.5.5 Supercap pre-charge 三層防線** | L1 手動 PSU 拉 supercap → bus 距 < 0.5 V → L2 5 Ω / 40 A automotive relay 旁路電阻 → L3 STM32 state machine 序列鎖(INIT → PRECHARGE → BYPASS → RAMP → RUN)| 主接觸器合閘前 | **32 V × 29 F bank 0→bus 瞬間 inrush ≈ 5–10 kA → 燒 MOSFET / 熔主匯流排 / 觸發 Class T fuse 但時間不夠快保護 die** |
-| **§4.2.1 LFP 首充 CC/CV** | 萬用表逐顆 OCV → ≤ 30 mV 偏差篩選(從 12 顆挑 8 顆組 8S1P)→ 0.5C CC → 3.65 V/cell CV → < 0.05C 收斂 → 1 hr burn-in | cell 收貨 → 組 8S1P pack 前 | **SOC 散布 > 50 mV → BMS 首充 5 min trip;cell 異常燃燒 / 鼓包則 E-stop + 拍照 + 放金屬桶** |
-| **§6 配備** | 1.5 kV PPE 手套 + 側護目鏡 + **Lith-Ex 鋰電池滅火噴罐**(ABC 一般滅火器不可用)+ E-stop + **Class T 100 A fast-blow fuse**(ANL 擋不住 supercap 5 kA 短路)+ DC 100 A 接觸器 + 2 人在場 / 攝影機開錄 | 整個 bench 操作期間 | 熱失控 ABC 無效 → HF 氣體 + 火勢蔓延 |
-
-#### 8.3.5 Plan A → Plan E fallback 階梯
-
-| Plan | 規格 | 觸發 |
+| 維度 | bench-first(v1.x 舊路線)| twin-first(v2.0 新路線)|
 |---|---|---|
-| **A(預設)** | 完整 demonstrator:8S LFP pack + 2× Maxwell + STM32 + Pi 5 + LIVE row(4 件證據齊全) | 預設執行 |
-| A+ stretch | 同 A,Pi 5 → STM32N6N570-DK | W2 結束時 NPU 板可取得 + buffer 仍夠 |
-| **C 降階** | 4S LFP + 1 顆 supercap PoC,只 prove 控制律 + Pi 5 latency,不接 dashboard | M3 ratio < 3× / 6/3 Wed hard deadline miss |
-| D | 元件單獨展示 + 既有 SaaS;系統整合留 W3+ 路線圖 | LIVE row 接不通 |
-| E | 純 SaaS demo(等同初賽)| 絕對最後路徑 |
+| 主要受眾 | ATCC 評審(工業設計 / 商管)| 科技業 RD / 顧問 / 投資人 |
+| 迭代速度 | 6-12 週 / 次(燒實機)| 1 小時 / 次(改 PyBaMM 重跑)|
+| 失敗成本 | 10-30 萬 / 次 | 趨近 0 |
+| 跨化學 / N-1 / 整 rack 60 s 驗證 | 學生實驗室幾乎不可能 | sim 層 trivial(V3+V4 直接做)|
+| Reproducibility for reviewer | 「來實驗室看一下」 | GitHub `make verify`(V6)|
+| EVT 2026 Q3 仍會做實機嗎 | — | **會**,但**先用 twin 把證據鏈跑齊才知道實機要驗哪幾條**,避免燒實機驗錯題 |
 
-> 每週 review 對照 Plan A → E,**不可拖到複賽日才降階**。Plan B 跳號(v1.3
-> 重新框定時 Pi 5 升 lean 預設後 B 失去獨立意義);完整 13 條風險登錄
-> + Plan A→E 觸發詳細邏輯見 `docs/BBU_IMPLEMENTATION_PLAN.md` §8 + §9。
+> **核心論點**:SpaceX / Tesla / Rivian 早期都先把 twin 跑 close-loop 再 commit
+> 到 silicon;Sysblade 在 GB200-class 高功率 BBU 領域沿用此工程順序。
 
-#### 8.3.6 與本白皮書 §1–§7 數字一致性(self-check)
+#### 8.3.2 6 條 critical-path validation chains(V1–V6)
 
-| 既有承諾 | demonstrator 對應 | 是否衝突 |
+| # | Validation chain | 證據 artifact | 對齊 spec | 狀態(2026-05-26)|
+|:--:|---|---|---|:--:|
+| **V1** | PyBaMM Prada2013 對公開車規 LFP 量測 fit error | `data/processed/pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| §2.2 物理模擬引擎可信度 | 📋 W2 |
+| **V2** | LIC RC closed-form 對真實 datasheet curve fit error | `data/processed/lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| §2.3.0 RC anchor model 可信度 | 📋 W2 |
+| **V3** | 整 rack 60 s graceful 整合 sim(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型)| `apps/web/public/scenarios/rack_60s_graceful.json` + `/twin` 新 row | §2.1.1 整 rack 60 s 承諾 | 📋 W3 |
+| **V4** | N-1 BBU failure redundancy sim(t=15 s 1 台 offline,剩 7 台撐 60 s)| `apps/web/public/scenarios/rack_n_minus_1.json` + dashboard fault-inject toggle | §2.1.1 N+1 容錯主張 | 📋 W3 |
+| **V5** | Severson → PyBaMM-generated GB200 duty cell transfer test(100 個 physics-grounded synthetic cell 至 80 % SOH,測 Severson MAPE)| `data/processed/severson_transfer_mape.json` | §3.3.5 cross-regime 誠實 transfer 證據 | 📋 W3 |
+| **V6** | `make verify` 一鍵 reproducibility gate(re-run twin + Severson + INT8 quant + cross-check,output PASS/FAIL JSON)| `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 對 RD reviewer 的 30 分鐘 self-check 承諾 | 📋 W4 |
+
+**V1-V6 全到位 = twin-first 完整論述**:
+- **V1+V2 物理層**:PyBaMM DFN + LIC RC 兩個模型都對齊到 measured 量測,fit error 量化,**不是「我們假設這個模型對」**
+- **V3+V4 系統層**:整 rack 60 s graceful + N-1 容錯都在 sim 完成;**這兩條實機學生階段做不到,正是 twin 比 hardware 強的點**
+- **V5 ML 層**:把 Severson 訓練模型放在 PyBaMM 生的 BBU-duty synthetic cells 上測,**physics-grounded synthetic test set 不是 analytic regularizer**;cross-regime MAPE 是給的而非藏的
+- **V6 reproducibility**:RD reviewer 跑一條命令 30 分鐘 verify 全部 headline 數字
+
+#### 8.3.3 已落地 v1.x 證據(v2.0 直接沿用)
+
+| 來自 v1.x 但 v2.0 接著用 | 角色 |
+|---|---|
+| **PyBaMM DFN 4 scenario**(`transient_lfp_only` / `transient_hybrid` / `aging_lfp` / `aging_rainflow_validation`)| V3 整 rack sim 直接 scale-up;V5 BBU-duty cell 生成器 reference |
+| **Severson bagged-GBT MAPE 8.38 %**(R² = 0.89,Severson 138 cells, 10-seed random split)| V5 transfer test 的 source model |
+| **INT8 LSTM measured ΔMAPE +0.10 pp · 3.49× 壓縮 · CPU INT8 p50 1.11× 加速** | V5 推論側量化證據(沿用)|
+| **STM32N6 X-CUBE-AI 靜態圖分析 NPU latency 27-109 µs** | 沿用為 estimated baseline;實機 trace 留 EVT |
+| **8S scaled sim gate 5.72× / 3.52×** | V3 整 rack sim 的 reference baseline(scaled-down 對 full-scale 的 transfer 已 PASS)|
+| **`hybrid_control_emulator.py` Python 控制律 emulator** | V3 控制律 sim 的核心(STM32 韌體規格的 reference implementation)|
+| **Dashboard SaaS 三件套 + LIVE row UI** | V3/V4 sim 出來的 scenario JSON 直接餵新 row,不需重寫 UI |
+
+#### 8.3.4 與本白皮書 §1–§7 數字一致性(self-check)
+
+| 既有承諾 | v2.0 twin validation 對應 | 是否衝突 |
 |---|---|---|
-| §2.1.1 / `/dashboard` headline「**8 BBU per rack** · 60 s graceful · GB200 NVL72 整 rack ~120 kW」 | demonstrator 是 **per-GPU 0.5 kW pulse profile scaled-down**,非整 rack,簡報明標 | ✅ 範圍誠實標註 |
-| §2.3 / `/twin` 5.7× LFP RMS 削峰 · 3.5× V_cell pp 收斂 | M1 sim 5.72× / 3.52× 對齊到小數位內;M3 bench 寬鬆判準 ≥ 3× / ≥ 2×(實機損耗 budget) | ✅ |
-| §3.3.3 / 附錄 A bagged-GBT (K=24) + xstrict cell filter random split MAPE **8.38 %** | 不變(無實機資料前不重訓);M2 推論側 INT8 onnx 為同一個 model | ✅ |
-| 附錄 C INT8 LSTM measured ΔMAPE +0.10 pp · 63 KB · 3.49× 壓縮 | M2 直接拿同 ONNX 跑 Pi 5,measured 對 ARM CPU 而非笔电 x86 | ✅ |
-| §2.6.3 / `/dashboard` 1000 台 SIMULATED + watermark | M4 LIVE row 在 1000 row 中插 1 真實 row,其餘 999 row SIMULATED watermark **未弱化**(對齊 CLAUDE.md house rule)| ✅ |
-| LFP **15S**(v2.2 §修訂 #4 commitment) | demonstrator 改 8S 為 scaled-down,**不修訂 spec**;EVT 階段 15S 仍是承諾 | ✅ |
-| 「不承諾 MAPE < 5 %」(v2.2 附件 B)| demonstrator 不重訓 RUL 模型,沿用 8.38 %;M2 ΔMAPE < 0.5 % 是 INT8 量化精度,非 RUL 點精度承諾 | ✅ |
+| §2.1.1 / `/dashboard` headline「**8 BBU per rack** · 60 s graceful · GB200 NVL72 整 rack ~120 kW」 | **V3 整 rack 60 s graceful sim** 直接把這條曲線跑出來(原本只是承諾,v2.0 變成 sim artifact)| ✅ **強化** |
+| §2.3 / `/twin` 5.7× LFP RMS 削峰 · 3.5× V_cell pp 收斂 | sim 數字不變;V1 PyBaMM 對車規 LFP fit error 量化後給「sim 對 reality 的可信度區間」 | ✅ |
+| §3.3.3 / 附錄 A bagged-GBT (K=24) + xstrict cell filter random split MAPE **8.38 %** | 不變;V5 在 PyBaMM-generated BBU-duty cells 上加一個 transfer MAPE 數字(誠實揭露 cross-regime degradation) | ✅ **強化** |
+| 附錄 C INT8 LSTM measured ΔMAPE +0.10 pp · 63 KB · 3.49× 壓縮 | 不變;Pi 5 + STM32N6 仍為 estimated / measured 分軌 | ✅ |
+| §2.6.3 / `/dashboard` 1000 台 SIMULATED + watermark | **V3/V4 sim 餵新 row 仍標 SIMULATED**(不是 real device telemetry);watermark **不弱化** | ✅ |
+| LFP **15S**(v2.2 §修訂 #4 commitment) | v2.0 不修訂 spec;EVT 階段 15S 仍是承諾;V3 整 rack sim 直接用 15S 配置 | ✅ **更直接** |
+| 「不承諾 MAPE < 5 %」(v2.2 附件 B) | V5 transfer test 出來的 cross-regime MAPE 若 ≥ 10 % 仍誠實寫進報告,**不修飾數字**;v2.2 < 10 % 承諾仍是針對 random split | ✅ |
+| §6.1 PyBaMM 用 Prada2013 generic LFP 未對齊車規 cell 之邊界揭露 | **V1 把這條邊界量化為 fit error % 數字**;原本「未對齊」現在變「對齊到 X % RMS V error 內」 | ✅ **強化** |
+| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values 未對齊 measured | **V2 把這條邊界量化為 droop RMS error %**;原本「typical 假設」現在變「對齊到 X % droop error」 | ✅ **強化** |
 
-**沒有任何 demonstrator 結果會改寫本白皮書既有 spec / 數字承諾**;M1–M4
-是「對 spec 主張的 bench 重現」,不是 spec 的修訂。
+**v2.0 沒有任何結果會改寫本白皮書既有 spec / 數字承諾**;V1-V6 是「對 spec
+主張的 sim 重現 + 對 spec 邊界的量化揭露」,不是 spec 的修訂。**反而 V1+V2
+把原本只是 anchor / typical 的物理假設升級為 measured fit error 的硬數字**。
 
 ---
 
