@@ -1,18 +1,24 @@
 ---
-title: "Sysblade HyperBuffer · 單顆 BBU Demonstrator 實作企劃"
+title: "Sysblade HyperBuffer · Twin-first Validation 實作企劃"
 team: "ATCC 第 23 屆 C13 系統電工業菁英賽 學生競賽團隊"
-date: "2026-05-19 · 複賽繳交版 v1.8"
+date: "2026-05-26 · 複賽繳交版 v2.0(Twin-first pivot)"
 deadline: "2026-06-11(複賽日)"
-upstream: "商業企劃書 v2.2 · 技術白皮書 v1.1"
-detail_doc: "docs/BBU_IMPLEMENTATION_PLAN.md v1.8(完整技術細節 + 14 章節 + Annex)"
-budget: "NT$ 50,000 上限 · BoM v1.8 鎖定 NT$ 44,234 · Buffer NT$ 5,766(借 PSU+萬用表 → 8,066)"
+upstream: "商業企劃書 v2.2 · 技術白皮書 v1.3"
+detail_doc: "docs/BBU_IMPLEMENTATION_PLAN.md v2.0 · docs/RD_BRIEF.md v0.1"
+budget: "NT$ 50,000 上限 · v1.x 已下單 sunk cost ~17 k(可挽回 ~14 k)· v2.0 增量採購 NT$ 0"
 sponsor: "Sysgration 贊助金 + 元件採購通路(無 EE 顧問 / BMS reference design / 韌體工程師指導)"
-commit_baseline: "GitHub aericheng/atcc-sysblade,本提案對應 commit `9a6314a`(2026-05-19)"
+commit_baseline: "GitHub aericheng/atcc-sysblade,本提案 v2.0 對應 main HEAD"
+prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)— v2.0 已 descope 為 engineering process evidence"
 ---
 
-# Sysblade HyperBuffer 單顆 BBU Demonstrator 實作企劃
+# Sysblade HyperBuffer Twin-first Validation 實作企劃 (v2.0)
 
-> 26 天 · NT$ 5 萬 · 4 件可驗證證據 · 證實 v2.2 spec 可實現
+> 26 天 · NT$ 5 萬 · **6 條 digital-twin validation chains** · 證實 v2.2 spec 在物理/控制/ML/商業四層皆 close-loop 驗證
+
+> **v1.8 → v2.0 重大改寫**(2026-05-26):受眾從 ATCC 評審改為**科技業 RD / 顧問 / 投資人**(電池 / ML / 系統 / 商業 4 領域)。
+> 原 8S LFP scaled-down 實機 demonstrator(M1-M4 硬體 milestone)**descope** 為 EVT 2026 Q3 任務;改交付 **6 條 digital-twin
+> validation chains(V1-V6)**,所有結果 GitHub 公開可重跑(`make verify` 30 分鐘 self-check)。完整工程細節
+> `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 + RD executive brief `docs/RD_BRIEF.md`。
 
 ---
 
@@ -30,29 +36,53 @@ commit_baseline: "GitHub aericheng/atcc-sysblade,本提案對應 commit `9a6314a
 
 ---
 
-## 4 件 Critical-path 證據(M1–M4)
+## 6 條 Critical-path Validation Chains(V1–V6)
 
-| # | Milestone | 證據 artifact | 對應 spec | 狀態 |
+對齊 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 § 摘要 V1-V6,2026-05-26 全部 PASS,執行時間 75 秒(`make verify` 6/6 chains)。
+
+| # | Validation chain | 證據 artifact | Pass criteria | 狀態 |
 |---:|---|---|---|:--:|
-| **M1** | **8S scaled simulation gate** | `scaled_8s_sim.json`:**power ratio 5.72× / voltage ratio 3.52×** | spec 5.7× / 3.5×,**對齊到小數位** | ✅ **2026-05-17 PASS** |
-| **M2** | **邊緣推論 latency histogram** | `lstm_latency_*.{json,png}`:笔电 baseline **p99 245 µs INT8** | **白皮書 §C 靜態圖估算 27-109 µs(STM32N6 NPU,non-measured)**;Pi 5 為 measured stand-in | 🟡 partial(Pi 5 到貨後 swap)|
-| **M3** | **Hybrid 削峰實機波形** | Oscilloscope 2 張波形圖 + 量測 JSON | **bench 削峰因子 ≥ 3×(LFP RMS 降至 ≤ 1/3)+ V_cell pp ≥ 2×(降至 ≤ 1/2)**,寬鬆於 sim 5.7× / 3.5×(預留實機損耗 budget) | 📋 **soft target 6/2 Tue / hard 6/3 Wed**(1 天 buffer 給 τ tuning)|
-| **M4** | **Dashboard LIVE row E2E** | dashboard 截圖 + 5 秒影片 LIVE row 隨 e-load 變化 | spec §2.6.3 fleet dashboard 可接真實設備 | ✅ **軟體 stack 完成**(mock 已 E2E),W3 Wed 接真實 BMS |
+| **V1** | **PyBaMM Prada2013 vs Severson LFP fit** | `pybamm_lfp_fit_error.json`(3 cells,cycle_life 534-1227)| V RMS error ≤ 5% of plateau | ✅ **PASS** 2.15% RMS |
+| **V2** | **LIC RC vs Maxwell datasheet + nonlinear extensions** | `lic_rc_fit_error.json`(simple RC vs 4 ext + datasheet IPEAK 190A pulse)| max droop error ≤ 10% | ✅ **PASS** 2.93% max err · datasheet 0.000% err |
+| **V3** | **整 rack 60s graceful 整合 sim** | `rack_60s_graceful.json`(8 BBU + LIC + 控制律 + GPU ramp + 熱模型)| T_cell rise < 25K · per-BBU 6C/1.5C 對齊 spec | ✅ **PASS** T_rise 0.10K |
+| **V4** | **N-1 BBU failure redundancy** | `rack_n_minus_1.json`(t=15s 1 台 offline,7 台撐 60s)| per-BBU 連續 ≤ 2.5C · V_cell swing ≤ 500 mV · T_cell ≤ 50°C · LIC headroom > 0 | ✅ **PASS** 4/4 criteria |
+| **V5** | **Severson → BBU duty transfer MAPE** | `severson_transfer_mape.json`(K=24 bagged-GBT,50 BBU 合成 cells) | informational(揭露 cross-regime degradation) | ✅ **Severson 9.04% → BBU 80.20%**(8.9× degradation honestly disclosed)|
+| **V6** | **`make verify` reproducibility gate** | `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 6/6 chains PASS in CI | ✅ **6/6 PASS in 74.7s** |
 
-**4 件全到位 = 完整可行性論述閉環**。M1 證明設計縮放可行,M2 證明邊緣推論可部署,M3 證明硬體可運作,M4 證明軟體可整合。
+**6 條到位 = 完整 close-loop 論述**:V1+V2 物理模型 fit error 量化、V3+V4 系統整合 + N+1 容錯(實機學生階段做不到,正是 twin > hardware 的賣點)、V5 ML pipeline cross-regime 誠實揭露(deployment SOP 的 quantitative justification)、V6 reviewer 30 分鐘 self-check 重跑。
 
-### KPI Pass criteria(複賽 review 用)
+### Twin-first 工程論述(對 RD reviewer)
 
-| # | Bench Pass 判準 | sim 對照 | 為何寬鬆於 sim |
-|:--:|---|---|---|
-| M1 | power ratio ≥ 5× / voltage ratio ≥ 3× | 5.72× / 3.52× ✅ | (已 PASS,無寬鬆需求)|
-| M2 | **Pi 5 p99 < 500 µs** + **INT8 vs FP32 ΔMAPE < 0.5%** | 笔电 INT8 p99 245 µs | INT8 量化 measured ΔMAPE +0.10 pp;500 µs 為實機保守上界 |
-| M3 | **bench LFP RMS ratio ≥ 3×** + **V_cell pp ratio ≥ 2×** | sim 5.7× / 3.5× | MOSFET Rds(on) + shunt 量測延遲 + firmware tick rate + 寄生電感 + PCB layout 損耗 budget |
-| M4 | DL24M 增載 → dashboard **30 秒內**看到 V 微降 / 溫度升 | (純整合,無 sim 對照)| 5 秒 polling × 6 cycles 容差 |
+> bench-first 燒實機迭代週期 6-12 週 / 次,失敗成本 10-30 萬;twin-first 1 小時 / 次,失敗成本趨近 0。**SpaceX / Tesla / Rivian 早期都先 twin close-loop 才 commit silicon**;Sysblade 在 GB200-class 高功率 BBU 領域沿用此工程順序。EVT 2026 Q3 仍會做實機,**但先用 twin 把證據鏈跑齊才知道實機要驗哪幾條,避免燒實機驗錯題**。
+
+### 沿用 v1.x 的關鍵軟體交付(v2.0 不重做)
+
+| 來自 v1.x 但 v2.0 直接接著用 | 角色 |
+|---|---|
+| **8S scaled sim gate 5.72× / 3.52×**(2026-05-17 PASS)| V3 整 rack sim 的 reference baseline |
+| **PyBaMM DFN 4 scenario**(transient/aging/rainflow) | V3 / V5 PyBaMM 共用基底 |
+| **Severson bagged-GBT MAPE 8.38%**(v2.2 §B 達標)| V5 transfer test 的 source model |
+| **INT8 LSTM measured ΔMAPE +0.10 pp / 3.49× 壓縮**(白皮書 §C.5)| V5 推論側量化證據沿用 |
+| **`/dashboard` 1000-node fleet SaaS + LIVE row UI**(v1.x M4 軟體 stack)| V3/V4 sim JSON 直接餵新 row + V4 fleet-level fault toggle |
+| **`hybrid_control_emulator.py` Python 控制律**(對齊 sim 5.72×)| V3 控制律 sim 核心 |
 
 ---
 
-## 系統規格(對應 v2.2 spec 縮放)
+---
+
+## ⚠️ 以下為 v1.8 archive · v2.0 已 descope
+
+> 下方 v1.x 內容(系統規格 scaled-down / 帳目 BoM v1.8 / 4 週硬體時程 / Plan A→E
+> 硬體 fallback / 安全 SOP / 4 大頭條 / 已落地軟體)是 2026-05-19 v1.8 凍結時的
+> 硬體 demonstrator 路線敘述。**v2.0 已 descope 為 EVT 2026 Q3 任務**;保留為
+> **engineering process evidence**(評審看到「先做完整硬體規劃才 pivot 到
+> twin-first」的工程紀律是加分點)。**完整 v2.0 spec 與時程在
+> `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0**;Sunk cost 處置 SOP 在
+> `docs/PURCHASE_LIST.md` v2.0 §0(動作死線 2026-06-02)。
+
+---
+
+## 系統規格(v1.8 scaled-down spec · v2.0 archive)
 
 | 層 | demonstrator | v2.2 spec | 對位邏輯 |
 |---|---|---|---|
