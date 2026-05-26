@@ -1,0 +1,80 @@
+name: verify
+
+# V6 — Twin-first validation chain reproducibility gate.
+#
+# Run a subset of V1-V6 chains that don't require the 8 GB Severson dataset.
+# V1 (PyBaMM vs Severson LFP fit) needs raw .mat files in data/raw/severson/
+# which are gitignored, so we skip it in CI and run V2-V5 + xcheck.
+#
+# Local dev with full data:  make verify  (runs V1-V6 + cross-check, ~5 min)
+# CI lane (no Severson):     this workflow runs V2-V5 + xcheck (~50s)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  twin-validation:
+    name: V2-V5 twin sim + xcheck (V1 needs Severson .mat, runs locally only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python deps (battery-twin + scientific stack)
+        run: |
+          python -m pip install --upgrade pip
+          pip install "numpy>=1.26,<2.0" pandas pyarrow scipy h5py loguru
+          pip install matplotlib pybamm scikit-learn
+
+      - name: Check existing BBU duty cell pickle is reachable
+        run: |
+          if [ ! -f data/processed/bbu_duty_cells.pkl ]; then
+            echo "::warning::data/processed/bbu_duty_cells.pkl missing; regenerating"
+            python scripts/generate_bbu_duty_cells.py
+          fi
+
+      - name: Run V2 — LIC RC nonlinear extension fit
+        run: python scripts/eval_lic_rc_fit.py
+
+      - name: Run V3 — Rack 60s graceful integrated sim
+        run: python scripts/generate_full_rack_60s_sim.py
+
+      - name: Run V4 — N-1 BBU failure redundancy
+        run: python scripts/generate_n_minus_1_sim.py
+
+      - name: Run V5 — Severson cross-regime transfer MAPE
+        # V5 needs severson_cells_features.parquet which depends on parsing the
+        # 8 GB Severson dataset that isn't in git. If parquet is absent we
+        # skip (don't fail CI) and rely on local `make verify` for full V5.
+        run: |
+          if [ -f data/processed/severson_cells_features.parquet ]; then
+            python scripts/eval_severson_transfer.py
+          else
+            echo "::notice::severson_cells_features.parquet missing — skipped in CI; run locally"
+          fi
+
+      - name: Run whitepaper number cross-check (38 assertions)
+        run: python scripts/check_whitepaper_numbers.py
+
+      - name: Upload twin artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twin-validation-artifacts
+          path: |
+            data/processed/lic_rc_fit_error.json
+            data/processed/rack_60s_graceful.png
+            data/processed/rack_n_minus_1.png
+            data/processed/severson_transfer_mape.json
+            apps/web/public/scenarios/rack_60s_graceful.json
+            apps/web/public/scenarios/rack_n_minus_1.json
+          if-no-files-found: warn
