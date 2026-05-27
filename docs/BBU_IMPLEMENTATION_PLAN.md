@@ -4,7 +4,7 @@ version: "v2.0(2026-05-26 pivot:hardware track descoped,改 twin-only RD pitch)"
 date: "2026-05-26"
 deadline: "2026-06-11(複賽日)"
 scope: "Twin-only — 6 條 digital-twin validation chains(V1-V6);硬體 demonstrator descoped 為 EVT 2026 Q3 任務"
-budget: "NT$ 5 萬上限;v1.x 已下單 sunk cost ~NT$ 32 k(細目見 §0.5);v2.0 增量採購 NT$ 0(twin 工作純軟體)"
+budget: "NT$ 5 萬上限;v1.x 已下單採購 2026-05-27 全數退貨完成,sunk ~NT$ 0-1k(僅退貨手續費);v2.0 增量採購 NT$ 0(twin 工作純軟體)"
 team: "ATCC C13 系統電工業菁英賽 學生競賽團隊(4 人)"
 upstream: "商業企劃書 v2.2 + 技術白皮書 v1.2(`docs/whitepaper.md` / `whitepaper_restructured.md`)+ RD Brief `docs/RD_BRIEF.md`"
 prior_version: "v1.10(2026-05-22 採購定案)— Part 3-6 為 v1.x 硬體路線文獻,v2.0 已 descope,保留為 engineering process evidence"
@@ -78,21 +78,17 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 | Dashboard | 1000-node fleet + Tier-1/2/3 替換隊列 SaaS | 沿用 v1.x;V3/V4 sim 輸出 `rack_60s_graceful.json` / `rack_n_minus_1.json` 餵新 row |
 | ML pipeline | RUL MAPE < 10 %(v2.2 §B 承諾)| V5 PyBaMM-generated GB200-duty cells 上重測 Severson MAPE |
 
-## 帳目(v2.0 增量採購 NT$ 0)
+## 帳目(v2.0 最終版,2026-05-27 全數退貨完成)
 
 | 項目 | NT$ |
 |---|---:|
 | 預算上限 | 50,000 |
-| **v1.x 已下單 sunk cost(細目見 §0.5)** | **~32,000** |
-| **v1.x 已下單但可挽回 / 可轉用(細目見 §0.5)** | **~10,000** |
-| **v2.0 增量採購** | **0**(twin 純軟體,用既有 .venv + GitHub repo) |
-| Buffer 剩餘(從 v1.10 6,199 + 取消 Wave 2-3 ~9,710 = 約)| **~15,909** |
+| v1.x 採購全數退貨 sunk(僅退貨手續費 / 不可回收運費) | **~0-1,000** |
+| v2.0 增量採購 | **0**(twin 純軟體,用既有 .venv + GitHub repo) |
+| **Buffer 剩餘** | **~49,000-50,000** |
 
-> ⚠️ **Sunk cost 是現實**:DigiKey Wave 1B(Maxwell + INA228 + IRFB4115 + Pi 5
-> + UCC27282)+ 蝦皮 Wave 1A(LFP cell + JK-BMS + STM32 + DL24M-H + 等)大約
-> 5/18-5/22 期間已下單,目前(2026-05-26)多數應已收貨,**退貨機率低**。
-> **Pi 5 可直接轉用為 V5 推論平台 stand-in**,其餘元件列入 Sysgration 贊助金
-> 學習成本,或轉手出售。完整處置 SOP § 0.5。
+> 2026-05-27 團隊決議全數退貨 v1.x 採購(細目見 §0.5),不留任何硬體轉用。
+> v2.0 不依賴硬體,沒有 sunk cost legacy 牽絆。
 
 ## 風險摘要(v2.0 已大幅簡化 — 無實機 = 無燃燒 / 短路 / 電擊風險)
 
@@ -180,37 +176,32 @@ twin 跑 close-loop 再 commit 到 silicon。Sysblade 在這條時間軸上仍�
 **只是延後到 EVT 2026 Q3**(對齊 v2.2 §F.1 18 個月里程碑) —— v2.0 階段先把
 twin 證據鏈做齊,才知道實機要驗哪幾條,**避免燒實機驗錯題**。
 
-## 0.5.2 v1.x 已下單 sunk cost 處置 SOP
+## 0.5.2 v1.x 已下單採購處置(2026-05-27 已完成)
 
-下表是 v1.x 階段已下單(2026-05-18 至 2026-05-22 期間)元件的 v2.0 處置決議。
-**所有「可挽回」項目須 7 天內(2026-06-02)決定退貨 / 二手出 / 轉用**,逾期
-退換貨窗口關閉。
+團隊 2026-05-27 決議:v1.x 階段已下單元件 **全數退貨 / 取消**,不留任何硬體
+轉用作 V2/V3 校驗或 EVT 將來重啟。理由:twin-only 路線徹底不依賴硬體,留著
+反而增加倉儲 + 心理負擔(會被看為「還想做硬體」混訊),清空 v1.x procurement
+讓 v2.0 故事更乾淨。
 
-| 項目 | NT$ | v1.x 用途 | v2.0 處置 | 動作死線 |
-|---|---:|---|---|---|
-| **Raspberry Pi 5 8GB**(DigiKey SC1432) | 5,600 | M2 邊緣推論 | ✅ **直接轉用**為 V5 推論平台 + Linux 開發機;Pi 5 是 RD reviewer 預期會看到的硬體 reference,留著 | 不退 |
-| Maxwell BMOD0058-E016-C02 × 2 | 10,608 | M3 LIC stand-in | 🟡 **暫存**:V2 LIC RC 驗證若 datasheet curve 不夠,可拿來自跑 characterization(可選);若不需要 → 2026 Q3 eBay 二手出 ~50 % 殘值 | 6/30 review |
-| Adafruit INA228 breakout #5832 × 2 | 1,076 | M3 電流量測 | 🟡 **轉用**:可拿來量測 Pi 5 INT8 推論時 NPU 區段功耗(若 V6 reviewer ask),或捐學校 EE 系 | 6/30 review |
-| Infineon IRFB4115PBF × 6 | 648 | M3 MOSFET switch matrix | ❌ **sunk**:單價低,留庫存或捐學校 | — |
-| UCC27282DR × 3 | 189 | M3 gate driver | ❌ **sunk**:同上 | — |
-| LFP 26650 cell(Endrich ANR26650M1B × 12)| ~4,020 | M3 主電池 pack | 🟡 **可挽回**:**ENDRICH SOP 死線 2026-05-22 已過**,需確認電話 + 下單是否實際執行;若已下單 → 二手出(A123 系正品 ~NT$ 200/顆 殘值) | **立刻確認** |
-| JK-BMS JK-B 8S 100A + GX12 cable | 4,000 | M3 BMS telemetry | 🟡 **可挽回**:若未拆封蝦皮可退;已拆 → 二手 ~NT$ 1,500 殘值 | 7 天內 |
-| ATORCH DL24M-H 600 W 套組 | 4,500 | M3 GB200 emulator | 🟡 **可挽回**:若 AliExpress 還在運送 → 攔截退貨;已收 → 留學校 EE 實驗室 / 二手 ~70 % 殘值 | 立刻 |
-| STM32 Black Pill F411 × 2 | 1,200 | M3 控制板 | ❌ **sunk**:單價低,日後做其他 STM32 專案用 | — |
-| 廣華 BH-26650-1 holder × 10 | 300 | 8S1P holder | ❌ **sunk** | — |
-| DS18B20 × 6 + RS485 dongle + 線材 + 小料 | ~2,000 | M3 / M4 周邊 | ❌ **sunk**:庫存 | — |
-| 5Ω 電阻 + 40A relay + IRLZ44N | 220 | B1 supercap pre-charge | ❌ **sunk** | — |
-| **Wave 2-3 未下單**(80A fuse + Class T fuse + 接觸器 + E-stop + Lith-Ex + 1.5kV PPE + 壓克力盒 + 風扇 + 鋁角材 + 矽脂 + 散熱片 + MLCC/UF4007 + bench PSU / 萬用表(若借)) | **~9,710** | 安全 / 機械 / 散熱 | ❌ **全部取消下單**(twin-only 不需 bench 安全裝備)| 立刻 |
+**已執行的處置**(無需追蹤動作死線):
+- Wave 1A 蝦皮 / 露天 — 全數退貨流程啟動
+- Wave 1B DigiKey 同單(Maxwell × 2 + INA228 × 2 + IRFB4115 × 6 + Pi 5)— 全數退貨流程啟動
+- Wave 1C UCC27282 — 退貨流程啟動
+- Wave 1D Pi 5 配件(PSU + SD + HDMI)— 退貨流程啟動
+- ENDRICH LFP cell(若有下單)— 取消 / 退貨流程啟動
+- Wave 2 安全 / Wave 3 機構散熱 / 借設備 — 從未下單,自動取消
 
-**統計**:
-- **已下單已收貨 sunk(無法挽回)**:~17,165(Pi 5 5,600 + MOSFET 648 + UCC27282 189 + STM32 1,200 + 小料 ~9,528)
-- **已下單可挽回 / 轉用**:~14,196(Maxwell 10,608 + INA228 1,076 + LFP ~4,020 + JK-BMS 4,000 + DL24M-H 4,500;若全二手出 50 % 殘值 → 回收 ~12,102)
-- **Wave 2-3 未下單取消**:~9,710
-- **v2.0 增量採購**:0
-- **總 Buffer 回流**:50,000 − 17,165 − (14,196 − 12,102) − 0 = 50,000 − 17,165 − 2,094 = **~30,741**(理論上;實務上 14,196 是否真能 50 % 殘值取決於 6 月閒置市場)
+**v2.0 帳目最終版**:
 
-**底線**:**最壞情況也只 sunk 17,165(預算 34 %),Buffer 仍 30 k+ 餘量**;
-v2.0 純軟體工作不需要新採購。
+| 類別 | NT$ |
+|---|---:|
+| 預算上限 | 50,000 |
+| v1.x 採購全數退貨 sunk(僅含退貨手續費 / 運費不可回收部分) | ~0-1,000(實際以退款入帳後確認)|
+| v2.0 增量採購 | **0** |
+| **Buffer 剩餘** | **~49,000-50,000** |
+
+> 底線:**v1.x 沒有 sunk cost legacy 拖累 v2.0**;5 萬預算近乎全額保留,
+> 若後續 W3+ EVT 階段重啟硬體採購完全不受 v1.x 牽絆。
 
 ## 0.5.3 v1.x Part 3-6 為什麼保留為 engineering process evidence
 

@@ -1,5 +1,25 @@
 # ⏭ 後續待辦(換裝置接手用)
 
+> **v2.0 update (2026-05-27)**:本檔原為 2026-05-23 commit `dc7b04d`(化解 48C
+> 誤讀 + §2.1.1 動態 graceful ramp 防禦)的 internal handover note。**2026-05-26
+> twin-first pivot 後,handover focus 已轉移**:
+>
+> 1. **目前接手第一件事不是「跑 pnpm install 視覺驗證 48C 防禦」**(那已 ship),
+>    而是 `make verify-fast`(70 秒 5/5 chains PASS)+ Vercel `sysblade-atcc.vercel.app`
+>    `/twin` V3/V4 toggle + `/dashboard` V4 fleet toggle 視覺驗證。
+> 2. **v1.x 硬體採購全數退貨完成**(2026-05-27 決議,§0.5.2 BBU_IMPLEMENTATION_PLAN.md),
+>    不需要再追蹤 sunk cost / Endrich / DigiKey 退貨進度。
+> 3. **複賽 demo path 改 twin-only 5 步驟**(`PRESENTATION_GUIDE.md` v2.0 demo SOP,
+>    不再有「20 分鐘前置 + 3 個 terminal 同跑 + bench demonstrator 上電」依賴)。
+>
+> 以下 §1-§6 為 v1.x 階段 handover 紀錄,**仍可供「v1.x 工程紀律證據」答辯用**,
+> 但不再是接手第一順位。v2.0 接手清單 → 看 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0
+> 摘要 + § 0.5 + `PRESENTATION_GUIDE.md` v2.0 demo SOP。
+
+---
+
+## v1.x 接手 (archive · 仍 informative,2026-05-23 commit dc7b04d)
+
 > 本節是 internal handover note。**這個 commit(化解 48C 誤讀 + §2.1.1 動態
 > graceful ramp 防禦)在原機沒辦法跑 `pnpm install`(node_modules 不存在),
 > 所有改動都是 markdown / 文字層,JSX 改的也只是字串 prop,不太可能打到
