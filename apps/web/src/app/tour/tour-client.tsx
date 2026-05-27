@@ -31,24 +31,27 @@ interface Scenario {
 
 // One row per slide. Timings are tuned so a chart-heavy slide gets a beat
 // longer than a single-number slide.
+// Per-slide auto-play duration (ms). Tuned to ~2.5 s baseline per user request,
+// with chart-heavy slides + the closing CTA getting slightly more breathing room.
+// Total auto-play: ~46 s for the full 17-slide tour.
 const SLIDES = [
-  { id: "hero",          label: "Intro",         ms: 4500 },
-  { id: "pain",          label: "Pain",          ms: 5500 },
-  { id: "solution",      label: "Solution",      ms: 4500 },
-  { id: "arch",          label: "Architecture",  ms: 5000 },
-  { id: "v1",            label: "V1 物理",       ms: 4500 },
-  { id: "v2",            label: "V2 datasheet",  ms: 4500 },
-  { id: "v3-chart",      label: "V3 60s",        ms: 6500 },
-  { id: "v3-thermal",    label: "V3 熱",         ms: 4000 },
-  { id: "v4-chart",      label: "V4 N-1",        ms: 6500 },
-  { id: "v4-crate",      label: "V4 C-rate",     ms: 4000 },
-  { id: "v5-mape",       label: "V5 MAPE",       ms: 4500 },
-  { id: "v5-honest",     label: "V5 揭露",       ms: 6000 },
-  { id: "edge",          label: "Edge AI",       ms: 4500 },
-  { id: "tco-headline",  label: "TCO",           ms: 4500 },
-  { id: "tco-scenarios", label: "TCO scenarios", ms: 6500 },
-  { id: "verify",        label: "Reproduce",     ms: 6000 },
-  { id: "cta",           label: "CTA",           ms: 8000 },
+  { id: "hero",          label: "Intro",         ms: 2800 },
+  { id: "pain",          label: "Pain",          ms: 2800 },
+  { id: "solution",      label: "Solution",      ms: 2200 },
+  { id: "arch",          label: "Architecture",  ms: 2800 },
+  { id: "v1",            label: "V1 物理",       ms: 2200 },
+  { id: "v2",            label: "V2 datasheet",  ms: 2200 },
+  { id: "v3-chart",      label: "V3 60s",        ms: 3000 },
+  { id: "v3-thermal",    label: "V3 熱",         ms: 2200 },
+  { id: "v4-chart",      label: "V4 N-1",        ms: 3000 },
+  { id: "v4-crate",      label: "V4 C-rate",     ms: 2200 },
+  { id: "v5-mape",       label: "V5 MAPE",       ms: 2200 },
+  { id: "v5-honest",     label: "V5 揭露",       ms: 3000 },
+  { id: "edge",          label: "Edge AI",       ms: 2200 },
+  { id: "tco-headline",  label: "TCO",           ms: 2200 },
+  { id: "tco-scenarios", label: "TCO scenarios", ms: 3000 },
+  { id: "verify",        label: "Reproduce",     ms: 3000 },
+  { id: "cta",           label: "CTA",           ms: 4500 },
 ] as const;
 
 const N_SLIDES = SLIDES.length;
@@ -310,7 +313,7 @@ export function TourClient({
                 <div
                   key={i}
                   className="w-14 h-20 sm:w-16 sm:h-24 rounded-md border border-primary/40 bg-primary/10 flex flex-col items-center justify-center anim-slide-up"
-                  style={{ animationDelay: `${0.1 + i * 0.08}s` }}
+                  style={{ animationDelay: `${0.05 + i * 0.05}s` }}
                 >
                   <span className="text-[9px] text-muted uppercase tracking-wider">BBU</span>
                   <span className="text-xs font-mono text-primary mt-1">{i + 1}</span>
@@ -663,9 +666,10 @@ function BigNumberSlide({
   caption: string;
   tone?: "success" | "primary" | "warning" | "default";
 }) {
-  // Count up over 1.2 s. Useful because keyframe transitions only fire on
-  // active→active, but text content needs JS-driven interpolation.
-  const val = useCountUp(target, 1200, active);
+  // Count up over 0.8 s. Tuned shorter than 1.2 s so the number stops moving
+  // well before the 2.2 s slide auto-advance, leaving ~1.4 s of stable
+  // read-time on the final value.
+  const val = useCountUp(target, 800, active);
 
   const toneClass: Record<string, string> = {
     success: "text-success",

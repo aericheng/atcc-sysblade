@@ -109,18 +109,18 @@ body {
   100% { background-position: 200% 0; }
 }
 
-[data-tour-section][data-active="true"] .anim-slide-up    { animation: tour-slide-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-[data-tour-section][data-active="true"] .anim-slide-left  { animation: tour-slide-left 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-[data-tour-section][data-active="true"] .anim-slide-right { animation: tour-slide-right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-[data-tour-section][data-active="true"] .anim-scale-in    { animation: tour-scale-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-[data-tour-section][data-active="true"] .anim-fade-in     { animation: tour-fade-in 0.8s ease-out both; }
-[data-tour-section][data-active="true"] .anim-pulse-glow  { animation: tour-pulse-glow 2.6s ease-in-out infinite; animation-delay: 0.8s; }
+[data-tour-section][data-active="true"] .anim-slide-up    { animation: tour-slide-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-slide-left  { animation: tour-slide-left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-slide-right { animation: tour-slide-right 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-scale-in    { animation: tour-scale-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-fade-in     { animation: tour-fade-in 0.5s ease-out both; }
+[data-tour-section][data-active="true"] .anim-pulse-glow  { animation: tour-pulse-glow 2.2s ease-in-out infinite; animation-delay: 0.5s; }
 
-[data-tour-section][data-active="true"] .anim-stagger-1 { animation-delay: 0.10s; }
-[data-tour-section][data-active="true"] .anim-stagger-2 { animation-delay: 0.25s; }
-[data-tour-section][data-active="true"] .anim-stagger-3 { animation-delay: 0.40s; }
-[data-tour-section][data-active="true"] .anim-stagger-4 { animation-delay: 0.55s; }
-[data-tour-section][data-active="true"] .anim-stagger-5 { animation-delay: 0.70s; }
+[data-tour-section][data-active="true"] .anim-stagger-1 { animation-delay: 0.06s; }
+[data-tour-section][data-active="true"] .anim-stagger-2 { animation-delay: 0.16s; }
+[data-tour-section][data-active="true"] .anim-stagger-3 { animation-delay: 0.26s; }
+[data-tour-section][data-active="true"] .anim-stagger-4 { animation-delay: 0.36s; }
+[data-tour-section][data-active="true"] .anim-stagger-5 { animation-delay: 0.46s; }
 
 /* Inactive sections stay invisible (no animation), so when they become active
    the keyframes run from scratch. */
