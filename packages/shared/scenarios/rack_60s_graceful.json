@@ -8073,7 +8073,7 @@
     "t_cell_rise_c": 0.09518050502579456
   },
   "_meta": {
-    "generated_at": "2026-05-26T12:25:40+00:00",
+    "generated_at": "2026-05-27T07:22:23+00:00",
     "generator": "scripts/generate_full_rack_60s_sim.py",
     "v2_validation_chain": "V3"
   }
