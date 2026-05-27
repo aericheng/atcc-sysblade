@@ -108,6 +108,43 @@ body {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes tour-zoom-in {
+  from { opacity: 0; transform: scale(0.45); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes tour-rotate-in {
+  from { opacity: 0; transform: rotate(-8deg) translateY(30px); }
+  to   { opacity: 1; transform: rotate(0) translateY(0); }
+}
+@keyframes tour-flip-in {
+  from { opacity: 0; transform: perspective(1200px) rotateY(70deg); }
+  to   { opacity: 1; transform: perspective(1200px) rotateY(0); }
+}
+@keyframes tour-blur-in {
+  from { opacity: 0; filter: blur(14px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+@keyframes tour-bounce-in {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes tour-draw-bar {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes tour-draw-bar-y {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes tour-marker-flash {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+@keyframes tour-stroke-draw {
+  from { stroke-dashoffset: var(--draw-length, 1000); }
+  to   { stroke-dashoffset: 0; }
+}
 
 [data-tour-section][data-active="true"] .anim-slide-up    { animation: tour-slide-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 [data-tour-section][data-active="true"] .anim-slide-left  { animation: tour-slide-left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
@@ -115,6 +152,14 @@ body {
 [data-tour-section][data-active="true"] .anim-scale-in    { animation: tour-scale-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 [data-tour-section][data-active="true"] .anim-fade-in     { animation: tour-fade-in 0.5s ease-out both; }
 [data-tour-section][data-active="true"] .anim-pulse-glow  { animation: tour-pulse-glow 2.2s ease-in-out infinite; animation-delay: 0.5s; }
+[data-tour-section][data-active="true"] .anim-zoom-in     { animation: tour-zoom-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+[data-tour-section][data-active="true"] .anim-rotate-in   { animation: tour-rotate-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-flip-in     { animation: tour-flip-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: center center; }
+[data-tour-section][data-active="true"] .anim-blur-in     { animation: tour-blur-in 0.6s ease-out both; }
+[data-tour-section][data-active="true"] .anim-bounce-in   { animation: tour-bounce-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+[data-tour-section][data-active="true"] .anim-draw-bar    { animation: tour-draw-bar 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: left center; }
+[data-tour-section][data-active="true"] .anim-draw-bar-y  { animation: tour-draw-bar-y 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: bottom center; }
+[data-tour-section][data-active="true"] .anim-marker-flash { animation: tour-marker-flash 1.2s ease-in-out infinite; }
 
 [data-tour-section][data-active="true"] .anim-stagger-1 { animation-delay: 0.06s; }
 [data-tour-section][data-active="true"] .anim-stagger-2 { animation-delay: 0.16s; }
@@ -128,9 +173,16 @@ body {
 [data-tour-section][data-active="false"] .anim-slide-left,
 [data-tour-section][data-active="false"] .anim-slide-right,
 [data-tour-section][data-active="false"] .anim-scale-in,
-[data-tour-section][data-active="false"] .anim-fade-in {
+[data-tour-section][data-active="false"] .anim-fade-in,
+[data-tour-section][data-active="false"] .anim-zoom-in,
+[data-tour-section][data-active="false"] .anim-rotate-in,
+[data-tour-section][data-active="false"] .anim-flip-in,
+[data-tour-section][data-active="false"] .anim-blur-in,
+[data-tour-section][data-active="false"] .anim-bounce-in {
   opacity: 0;
 }
+[data-tour-section][data-active="false"] .anim-draw-bar    { transform: scaleX(0); }
+[data-tour-section][data-active="false"] .anim-draw-bar-y  { transform: scaleY(0); }
 
 /* Big focal-number element styling — used by tour count-up numbers. */
 .tour-bignum {
