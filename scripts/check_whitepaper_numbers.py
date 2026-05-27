@@ -50,12 +50,12 @@ SCENARIOS_PUB = REPO / "apps" / "web" / "public" / "scenarios"
 SCENARIOS_SHARED = REPO / "packages" / "shared" / "scenarios"
 
 # Frontend-only scenarios that intentionally live in apps/web/public/scenarios/
-# without a packages/shared/ counterpart. These are bridge-fed telemetry
-# mirrors (the frontend reads them, but they're not part of the reproducible
-# offline-physics pipeline), so the double-sink sync invariant doesn't apply.
-SINGLE_SINK_SCENARIOS_FRONTEND_ONLY: set[str] = {
-    "live_demonstrator.json",  # written by scripts/live_demonstrator_bridge.py
-}
+# without a packages/shared/ counterpart. Empty after the 2026-05-27 v2.0 cleanup
+# removed the live_demonstrator.json bridge feed (no hardware = no live bench
+# telemetry); the V3/V4 rack scenarios are double-written like other physics
+# artifacts. Set kept (not deleted) so the double-sink sync invariant logic
+# can still skip future single-sink additions without code churn.
+SINGLE_SINK_SCENARIOS_FRONTEND_ONLY: set[str] = set()
 
 SEVERSON_EVAL = REPO / "data" / "processed" / "severson_model_eval.json"
 QUANT_REPORT = REPO / "data" / "processed" / "lstm_quantization_report.json"

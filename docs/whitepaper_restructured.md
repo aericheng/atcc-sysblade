@@ -613,13 +613,12 @@ V6 reviewer 可獨立重跑。
 | §2.2 PyBaMM Prada2013 generic LFP | **V1 把這條邊界量化為 V RMS error %** | ✅ **強化** |
 | 「不承諾 MAPE < 5 %」(v2.2 附件 B)| V5 cross-regime MAPE 若 ≥ 10 % 仍誠實寫,不修飾 | ✅ |
 
-### 帳目 + v1.x sunk cost
+### 帳目
 
-v1.x 已下單 sunk cost ~NT$ 17,165(預算 34 %)+ 可挽回 / 轉用 ~14,196
-(Pi 5 直接轉 V5 平台,Maxwell / INA228 / DL24M-H / JK-BMS 7-30 天內決定退貨
-或二手出)+ Wave 2-3 + 借設備 全部取消下單 ~10,700。**v2.0 增量採購 NT$ 0**
-(純軟體 / 純 sim)。完整處置 SOP `docs/PURCHASE_LIST.md` § 0(2026-06-02 動作
-死線)+ `docs/BBU_IMPLEMENTATION_PLAN.md` § 0.5.2。
+v1.x 採購 2026-05-27 全數退貨完成,無項目轉用、無項目暫存;預算 NT$ 5 萬上限
+近乎全額保留(僅退貨手續費 / 不可回收運費 ~NT$ 0-1k)。**v2.0 增量採購 NT$ 0**
+(純軟體 / 純 sim,用既有 .venv + GitHub repo)。完整處置詳
+`docs/BBU_IMPLEMENTATION_PLAN.md` § 0.5.2。
 
 ---
 

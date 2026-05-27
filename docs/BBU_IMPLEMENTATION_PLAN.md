@@ -59,7 +59,7 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 |---|:--:|
 | 8S scaled sim gate(power ratio 5.72× / voltage ratio 3.52×)| ✅ M1 PASS 2026-05-17,v2.0 升級為 V3 整 rack sim 的 reference baseline |
 | 笔电 INT8 LSTM latency p99 245 µs | ✅ v1.x M2 partial 已達,v2.0 接續 cross-platform 量測 |
-| Dashboard SaaS 三件套 + `/dashboard` LIVE row UI | ✅ v1.x 軟體 stack 完成,v2.0 直接餵 V3/V4 sim 出來的 scenario JSON |
+| Dashboard SaaS 三件套(`/twin` `/tco` `/dashboard`) | ✅ v1.x 軟體 stack 完成,v2.0 加 `/twin` V3/V4 toggle + `/dashboard` V4 fleet fault toggle;v1.x LiveDemonstratorCard 已隨硬體退貨於 2026-05-27 移除 |
 | Hybrid 控制律 Python emulator(對齊 sim 5.72×)| ✅ 沿用 |
 | Severson 13-feat bagged-GBT MAPE 8.38 % / INT8 ΔMAPE +0.10 pp / 3.49× 壓縮 | ✅ 沿用,V5 在這基礎上加 transfer test |
 
@@ -133,9 +133,7 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 | `scripts/hybrid_control_emulator.py` | 一階互補濾波器 τ=0.5s Python emulator | ✅ |
 | `scripts/eval_severson_models.py` | bagged-GBT MAPE 8.38 % 重訓 | ✅ |
 | `scripts/quantize_lstm_onnx.py` | INT8 量化 + measured ΔMAPE | ✅ |
-| `scripts/atomic_json.py` | atomic JSON write helper | ✅ |
-| `scripts/check_whitepaper_numbers.py` | 38/38 headline 數字 cross-check | ✅ |
-| `apps/web/src/components/live-demonstrator-card.tsx` | dashboard LIVE row 卡(V3/V4 sim 直接餵)| ✅ |
+| `scripts/check_whitepaper_numbers.py` | 39/39 headline 數字 cross-check | ✅ |
 | `data/processed/scaled_8s_sim.json` | M1 sim 證據 | ✅ |
 | `data/processed/lstm_latency_laptop_cpu.{json,png}` | INT8 latency baseline | ✅ |
 | `data/processed/severson_model_eval.json` | MAPE 8.38 % artifact | ✅ |

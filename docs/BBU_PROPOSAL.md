@@ -215,14 +215,14 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 | `scripts/generate_scaled_8s_sim.py` | M1 sim gate | ✅ PASS |
 | `scripts/measure_lstm_latency.py` | M2 device-agnostic latency 量測 | ✅(laptop baseline 已測)|
 | `scripts/hybrid_control_emulator.py` | STM32 控制律 Python 鏡像 | ✅(對齊 §1.3 sim 5.72×)|
-| `scripts/jkbms.py` | JK-BMS RS485 parser | ✅(checksum + 8S 自測 PASS)|
-| `scripts/live_demonstrator_bridge.py` | bench telemetry bridge | ✅(mock + bench 雙模式)|
-| `scripts/eload_gb200_profile.py` | ATORCH DL24M 控制 | ✅(PX100 protocol,4 編碼測例驗證)|
-| `scripts/atomic_json.py` | atomic write helper | ✅ |
-| `apps/web/src/components/live-demonstrator-card.tsx` | dashboard LIVE 卡 | ✅ |
-| `apps/web/src/lib/types.ts` | `LiveDemonstratorSnapshot` 型別 | ✅ |
-| `apps/web/vercel.json` | LIVE JSON no-cache header | ✅ |
-| `firmware/stm32_hybrid_control/{main.c, pin_map.md, README.md}` | STM32F411 韌體 skeleton | ✅ skeleton |
+| ~~`scripts/jkbms.py`~~ | ~~JK-BMS RS485 parser~~ | 🗑️ 2026-05-27 隨硬體退貨刪除(checksum + 8S 自測 PASS 是 v1.x 完成歷史)|
+| ~~`scripts/live_demonstrator_bridge.py`~~ | ~~bench telemetry bridge~~ | 🗑️ 2026-05-27 同上(mock + bench 雙模式為 v1.x 完成歷史)|
+| ~~`scripts/eload_gb200_profile.py`~~ | ~~ATORCH DL24M 控制~~ | 🗑️ 2026-05-27 同上(PX100 protocol,4 編碼測例驗證為 v1.x 完成歷史)|
+| ~~`scripts/atomic_json.py`~~ | ~~atomic write helper~~ | 🗑️ 2026-05-27 隨 live bridge 同步刪除 |
+| ~~`apps/web/src/components/live-demonstrator-card.tsx`~~ | ~~dashboard LIVE 卡~~ | 🗑️ 2026-05-27 隨硬體退貨刪除(v2.0 dashboard 改 V4 fleet fault toggle 動態 UI)|
+| ~~`apps/web/src/lib/types.ts` `LiveDemonstratorSnapshot`~~ | ~~LiveDemonstratorSnapshot 型別~~ | 🗑️ 2026-05-27 隨 card 同步移除;types.ts 保留其他 Device / LicRcEnvelope types |
+| ~~`apps/web/vercel.json` LIVE no-cache header~~ | ~~LIVE JSON no-cache header~~ | 🗑️ 2026-05-27 隨 card 同步移除;vercel.json 保留 framework / buildCommand |
+| ~~`firmware/stm32_hybrid_control/{main.c, pin_map.md, README.md}`~~ | ~~STM32F411 韌體 skeleton~~ | 🗂️ v1.x archive 保留(README banner 已加;EVT 2026 Q3 重啟硬體時可接手)|
 | `data/processed/scaled_8s_sim.json` | M1 證據 artifact | ✅ |
 | `data/processed/lstm_latency_laptop_cpu.{json,png}` | M2 笔电 baseline 證據 | ✅ |
 

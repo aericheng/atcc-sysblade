@@ -1,6 +1,14 @@
 # STM32 Hybrid Control Firmware Skeleton
 
-Target: **STM32F411CEU6 "Black Pill"** (per `docs/BBU_IMPLEMENTATION_PLAN.md` §2.1 Lean BoM).
+> ⚠️ **v1.x archive · v2.0 已 descope**(2026-05-26 twin-first pivot;2026-05-27
+> STM32 Black Pill 控制板隨硬體全數退貨)。本 skeleton **不再 W2 開發**,
+> 保留為 v1.x firmware design rigor 工程紀律證據(完整狀態機 + LPF math +
+> pin map + dead-time 互鎖 + 預充電序列)。**v2.0 控制律以
+> `scripts/hybrid_control_emulator.py` Python 版本為 reference implementation**,
+> sim 層直接整合進 V3 整 rack 60s graceful sim。EVT 2026 Q3 若重啟硬體 firmware
+> 可從此 skeleton 接手。
+
+Target: **STM32F411CEU6 "Black Pill"** (per `docs/BBU_IMPLEMENTATION_PLAN.md` §2.1 Lean BoM,v1.x archive).
 
 This is a **skeleton, not production firmware** — gives the team a starting point
 for W2 that already contains the right state machine, LPF math, and pin map.

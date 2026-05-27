@@ -6,7 +6,6 @@ import { Disclosure } from "@/components/ui/disclosure";
 import { Stat } from "@/components/ui/stat";
 import { USFleetMap } from "@/components/us-fleet-map";
 import { DeviceDrilldown } from "@/components/device-drilldown";
-import { LiveDemonstratorCard } from "@/components/live-demonstrator-card";
 import { type Device, type DeviceStatus, type LicRcEnvelope, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
 import { Activity, AlertTriangle, MapPin, Shield, Zap } from "lucide-react";
 
@@ -126,12 +125,6 @@ export function DashboardClient({
 
   return (
     <div className="space-y-10">
-      {/* LIVE bench demonstrator — polled client-side every 5 s from the
-          bridge script. Sits at the top because it's the one piece of
-          non-simulated data on this page; everything below carries the
-          SIMULATED watermark by design. */}
-      <LiveDemonstratorCard />
-
       {/* V4 fleet-level fault toggle. Reads rack_n_minus_1.json (cell-level
           per-BBU sim) and projects it across the 1000-device fleet. When
           enabled, a deterministic ~6 % of devices are visually marked as
