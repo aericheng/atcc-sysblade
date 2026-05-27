@@ -982,7 +982,7 @@ $$
 | **STM32N6 X-CUBE-AI 靜態圖分析 NPU latency 27-109 µs** | 沿用為 estimated baseline;實機 trace 留 EVT |
 | **8S scaled sim gate 5.72× / 3.52×** | V3 整 rack sim 的 reference baseline(scaled-down 對 full-scale 的 transfer 已 PASS)|
 | **`hybrid_control_emulator.py` Python 控制律 emulator** | V3 控制律 sim 的核心(STM32 韌體規格的 reference implementation)|
-| **Dashboard SaaS 三件套 + LIVE row UI** | V3/V4 sim 出來的 scenario JSON 直接餵新 row,不需重寫 UI |
+| **Dashboard SaaS 三件套**(`/twin` `/tco` `/dashboard`) | v2.0 加 `/twin` V3/V4 toggle + `/dashboard` V4 fleet fault toggle;v1.x LiveDemonstratorCard 已隨硬體退貨於 2026-05-27 移除 |
 
 #### 8.3.4 與本白皮書 §1–§7 數字一致性(self-check)
 

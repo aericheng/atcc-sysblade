@@ -290,7 +290,7 @@ atcc/
 | [`docs/BBU_PROPOSAL.md`](docs/BBU_PROPOSAL.md) | 對外繳交提案 **v2.0** — Twin-first Validation 實作企劃 |
 | [`docs/RD_BRIEF.md`](docs/RD_BRIEF.md) | RD / 顧問 2 頁 executive brief — 跨領域 entry point + Twin-first 工程論述 |
 | [`docs/INVESTOR_BRIEF.md`](docs/INVESTOR_BRIEF.md) | 投資人 1 頁 narrative — 三大廠 strategic moat + 商業含義 |
-| [`docs/PURCHASE_LIST.md`](docs/PURCHASE_LIST.md) | 採購清單 **v2.0** § 0 sunk cost / 可挽回 / 取消處置 SOP(action deadline 2026-06-02) |
+| [`docs/PURCHASE_LIST.md`](docs/PURCHASE_LIST.md) | 採購清單 **v2.0** — v1.x 採購 2026-05-27 全數退貨完成,v2.0 不依賴硬體 |
 | [`docs/MIRROR_SETUP.md`](docs/MIRROR_SETUP.md) | Standby GitLab/Codeberg mirror SOP(GitHub 帳號 contingency)|
 | [`docs/BINDER_README.md`](docs/BINDER_README.md) | 複賽日紙本 PDF binder 印刷順序 + packing checklist + fallback 階梯 |
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
