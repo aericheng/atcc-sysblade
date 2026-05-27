@@ -1,11 +1,22 @@
 # Sysblade BBU Demonstrator 代辦清單 v1.7
 
+> ⚠️ **v1.x archive · v2.0 已 descope**(2026-05-26 twin-first pivot;2026-05-27
+> 全數退貨完成 v1.x 採購)。本檔 77 項代辦清單是 v1.x bench-first 路線(5/18 BoM
+> v1.7 NT$ 43,234)的工作展開,**已不在 v2.0 critical path**。
+>
+> **保留為 engineering process evidence** — 評審看到「先做完整 77 項代辦的工程
+> 紀律才 pivot」是加分點;但 v2.0 接手者**不依此打勾**,真正的 v2.0 代辦清單
+> 在 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 摘要 4-week 時程(V1-V6)。
+
+---
+
 > **2026-05-18 generated** · 對應 BoM v1.7(NT$ 43,234 / Buffer 6,766)· 複賽日 2026-06-11
 >
 > **圖例**:✅ 完成 · 🟡 partial · 🔄 進行中 · 📋 待辦 · ⏸️ blocked(等外部)
 > **急迫**:🔴 今天(5/18)· 🟠 明天(5/19)· 🟡 本週 W1(5/22)· 🟢 W2(5/23-29)· 🔵 W3(5/30-6/5)· ⚪ W4(6/6-11)
 >
-> **使用法**:Print 出來逐項打勾;每天 standup 看 🔴 / 🟠 完成度。
+> **使用法**(v1.x):Print 出來逐項打勾;每天 standup 看 🔴 / 🟠 完成度。
+> **使用法**(v2.0):當作 archive 翻閱;真正的 v2.0 工作項看 BBU_IMPLEMENTATION_PLAN.md v2.0。
 
 ---
 
