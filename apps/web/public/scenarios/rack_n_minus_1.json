@@ -9675,7 +9675,7 @@
   },
   "headline_verdict": "V4 PASS — N-1 failure 後 per-BBU 持續 1.71C 在 2.5C 連續上限內,V_cell swing 277 mV < 500 mV,T_cell max 25.1°C < 50.0°C,LIC headroom 8.91V > 0",
   "_meta": {
-    "generated_at": "2026-05-26T12:25:43+00:00",
+    "generated_at": "2026-05-27T07:22:27+00:00",
     "generator": "scripts/generate_n_minus_1_sim.py",
     "v2_validation_chain": "V4"
   }
