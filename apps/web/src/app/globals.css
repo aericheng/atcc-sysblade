@@ -74,3 +74,71 @@ body {
     text-wrap: balance;
   }
 }
+
+/* ============================================================================
+   /tour scrollytelling animations (consumed by tour-client.tsx via data-active).
+   Each section element on /tour carries data-active="true" when it is the
+   current slide. CSS keyframes below run once on transition into active.
+   ============================================================================ */
+@keyframes tour-slide-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tour-slide-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes tour-slide-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes tour-scale-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes tour-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes tour-pulse-glow {
+  0%, 100% { text-shadow: 0 0 0 rgba(99, 102, 241, 0); }
+  50%      { text-shadow: 0 0 28px rgba(99, 102, 241, 0.55); }
+}
+@keyframes tour-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+[data-tour-section][data-active="true"] .anim-slide-up    { animation: tour-slide-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-slide-left  { animation: tour-slide-left 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-slide-right { animation: tour-slide-right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-scale-in    { animation: tour-scale-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+[data-tour-section][data-active="true"] .anim-fade-in     { animation: tour-fade-in 0.8s ease-out both; }
+[data-tour-section][data-active="true"] .anim-pulse-glow  { animation: tour-pulse-glow 2.6s ease-in-out infinite; animation-delay: 0.8s; }
+
+[data-tour-section][data-active="true"] .anim-stagger-1 { animation-delay: 0.10s; }
+[data-tour-section][data-active="true"] .anim-stagger-2 { animation-delay: 0.25s; }
+[data-tour-section][data-active="true"] .anim-stagger-3 { animation-delay: 0.40s; }
+[data-tour-section][data-active="true"] .anim-stagger-4 { animation-delay: 0.55s; }
+[data-tour-section][data-active="true"] .anim-stagger-5 { animation-delay: 0.70s; }
+
+/* Inactive sections stay invisible (no animation), so when they become active
+   the keyframes run from scratch. */
+[data-tour-section][data-active="false"] .anim-slide-up,
+[data-tour-section][data-active="false"] .anim-slide-left,
+[data-tour-section][data-active="false"] .anim-slide-right,
+[data-tour-section][data-active="false"] .anim-scale-in,
+[data-tour-section][data-active="false"] .anim-fade-in {
+  opacity: 0;
+}
+
+/* Big focal-number element styling — used by tour count-up numbers. */
+.tour-bignum {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  background: linear-gradient(135deg, var(--foreground) 0%, var(--primary) 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

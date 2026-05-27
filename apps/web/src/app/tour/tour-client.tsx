@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -13,33 +12,76 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Pause, Play, ChevronDown, ExternalLink } from "lucide-react";
+import {
+  Pause,
+  Play,
+  ChevronDown,
+  ExternalLink,
+  Activity,
+  Zap,
+  Network,
+} from "lucide-react";
 
 interface Scenario {
-  title?: string;
   series: Record<string, number[]>;
   stats?: Record<string, number | boolean | null | undefined>;
   thermal_model?: Record<string, number | boolean | undefined>;
   fault_injection?: { fault_time_s: number; n_bbu_normal: number; n_bbu_degraded: number };
 }
 
-const SECONDS_PER_SECTION = 10;
-
-const SECTIONS = [
-  { id: "hero", label: "Intro" },
-  { id: "problem", label: "Problem" },
-  { id: "architecture", label: "Architecture" },
-  { id: "physics", label: "V1+V2" },
-  { id: "rack", label: "V3 60s" },
-  { id: "fault", label: "V4 N-1" },
-  { id: "rul", label: "V5 RUL" },
-  { id: "edge", label: "Edge AI" },
-  { id: "tco", label: "TCO" },
-  { id: "verify", label: "Reproduce" },
+// One row per slide. Timings are tuned so a chart-heavy slide gets a beat
+// longer than a single-number slide.
+const SLIDES = [
+  { id: "hero",          label: "Intro",         ms: 4500 },
+  { id: "pain",          label: "Pain",          ms: 5500 },
+  { id: "solution",      label: "Solution",      ms: 4500 },
+  { id: "arch",          label: "Architecture",  ms: 5000 },
+  { id: "v1",            label: "V1 物理",       ms: 4500 },
+  { id: "v2",            label: "V2 datasheet",  ms: 4500 },
+  { id: "v3-chart",      label: "V3 60s",        ms: 6500 },
+  { id: "v3-thermal",    label: "V3 熱",         ms: 4000 },
+  { id: "v4-chart",      label: "V4 N-1",        ms: 6500 },
+  { id: "v4-crate",      label: "V4 C-rate",     ms: 4000 },
+  { id: "v5-mape",       label: "V5 MAPE",       ms: 4500 },
+  { id: "v5-honest",     label: "V5 揭露",       ms: 6000 },
+  { id: "edge",          label: "Edge AI",       ms: 4500 },
+  { id: "tco-headline",  label: "TCO",           ms: 4500 },
+  { id: "tco-scenarios", label: "TCO scenarios", ms: 6500 },
+  { id: "verify",        label: "Reproduce",     ms: 6000 },
+  { id: "cta",           label: "CTA",           ms: 8000 },
 ] as const;
 
-const N_SECTIONS = SECTIONS.length;
+const N_SLIDES = SLIDES.length;
 
+// ============================================================================
+// Hook — Count up from 0 to `target` over `ms` ms, only when `active` is true.
+// Returns the current value; caller is responsible for formatting (decimals,
+// unit suffix, percent vs raw, etc.). Resets to 0 when active flips false.
+// ============================================================================
+function useCountUp(target: number, ms: number, active: boolean): number {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      setVal(0);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / ms);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setVal(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms, active]);
+  return val;
+}
+
+// ============================================================================
+// Main component
+// ============================================================================
 export function TourClient({
   rackGraceful,
   rackNMinus1,
@@ -50,14 +92,13 @@ export function TourClient({
   const [active, setActive] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
-  const userInteractedRef = useRef(false);
 
-  const scrollToSection = useCallback((idx: number) => {
+  const scrollToSlide = useCallback((idx: number) => {
     const el = sectionRefs.current[idx];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  // IntersectionObserver — set `active` based on which section is in view.
+  // IntersectionObserver — keeps `active` in sync with the slide in view.
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -68,58 +109,53 @@ export function TourClient({
           }
         });
       },
-      { threshold: 0.45, rootMargin: "0px 0px -10% 0px" },
+      { threshold: 0.55, rootMargin: "0px 0px -5% 0px" },
     );
     sectionRefs.current.forEach((s) => s && observer.observe(s));
     return () => observer.disconnect();
   }, []);
 
-  // Auto-play: advance one section every SECONDS_PER_SECTION seconds.
+  // Auto-play: advance to the next slide after the current slide's `ms`.
   useEffect(() => {
     if (!isPlaying) return;
-    const id = window.setInterval(() => {
+    const ms = SLIDES[active]?.ms ?? 5000;
+    const id = window.setTimeout(() => {
       setActive((cur) => {
         const next = cur + 1;
-        if (next >= N_SECTIONS) {
+        if (next >= N_SLIDES) {
           setIsPlaying(false);
           return cur;
         }
-        scrollToSection(next);
+        scrollToSlide(next);
         return next;
       });
-    }, SECONDS_PER_SECTION * 1000);
-    return () => window.clearInterval(id);
-  }, [isPlaying, scrollToSection]);
+    }, ms);
+    return () => window.clearTimeout(id);
+  }, [isPlaying, active, scrollToSlide]);
 
-  // If the user scrolls manually while playing, stop auto-play.
+  // User scroll / touch while playing → auto-pause.
   useEffect(() => {
     if (!isPlaying) return;
-    const onWheel = () => {
-      if (userInteractedRef.current) return;
-      userInteractedRef.current = true;
-      setIsPlaying(false);
-    };
-    window.addEventListener("wheel", onWheel, { passive: true, once: true });
-    window.addEventListener("touchmove", onWheel, { passive: true, once: true });
+    const stop = () => setIsPlaying(false);
+    window.addEventListener("wheel", stop, { passive: true, once: true });
+    window.addEventListener("touchmove", stop, { passive: true, once: true });
     return () => {
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchmove", onWheel);
-      userInteractedRef.current = false;
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchmove", stop);
     };
   }, [isPlaying]);
 
   const togglePlay = () => {
-    if (!isPlaying && active === N_SECTIONS - 1) {
-      // restart from the top if we're at the end
+    if (!isPlaying && active === N_SLIDES - 1) {
       setActive(0);
-      scrollToSection(0);
+      scrollToSlide(0);
     }
     setIsPlaying((p) => !p);
   };
 
-  const progressPct = ((active + 1) / N_SECTIONS) * 100;
+  const progressPct = ((active + 1) / N_SLIDES) * 100;
 
-  // Pre-compute chart data for V3 (rack 60s graceful) and V4 (N-1)
+  // Pre-compute V3 / V4 chart data once.
   const rackPowerData = useMemo(() => {
     const t = rackGraceful.series.t;
     const pT = rackGraceful.series.p_total_kw;
@@ -150,15 +186,12 @@ export function TourClient({
     return out;
   }, [rackNMinus1]);
 
-  const t_cell_rise = rackGraceful.thermal_model?.t_rise_above_ambient_c as number | undefined;
-  const t_warning = rackGraceful.thermal_model?.t_warning_c as number | undefined;
-  const c_rate_post = rackNMinus1.stats?.c_rate_continuous_post_fault as number | undefined;
   const fault_t = rackNMinus1.fault_injection?.fault_time_s ?? 15;
 
   return (
     <div className="-mx-4 sm:-mx-6 -my-8 sm:-my-10">
-      {/* Top progress + play controls */}
-      <div className="sticky top-14 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
+      {/* === Sticky top control bar ============================================ */}
+      <div className="sticky top-14 z-30 border-b border-border bg-background/90 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             type="button"
@@ -167,15 +200,9 @@ export function TourClient({
             aria-label={isPlaying ? "Pause auto-play" : "Play tour"}
           >
             {isPlaying ? (
-              <>
-                <Pause className="h-4 w-4" />
-                <span>Pause</span>
-              </>
+              <><Pause className="h-4 w-4" /><span>Pause</span></>
             ) : (
-              <>
-                <Play className="h-4 w-4" />
-                <span>{active === N_SECTIONS - 1 ? "Replay" : "Play"}</span>
-              </>
+              <><Play className="h-4 w-4" /><span>{active === N_SLIDES - 1 ? "Replay" : "Play"}</span></>
             )}
           </button>
           <div className="flex-1 h-1.5 rounded-full bg-surface overflow-hidden">
@@ -185,347 +212,321 @@ export function TourClient({
             />
           </div>
           <span className="text-xs text-muted whitespace-nowrap tabular-nums">
-            {active + 1} / {N_SECTIONS}
+            {active + 1} / {N_SLIDES}
           </span>
         </div>
-        {/* Section dots */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-2 flex items-center gap-1 overflow-x-auto">
-          {SECTIONS.map((s, i) => (
+          {SLIDES.map((s, i) => (
             <button
               key={s.id}
               type="button"
               onClick={() => {
                 setIsPlaying(false);
-                setActive(i);
-                scrollToSection(i);
+                scrollToSlide(i);
               }}
-              className={`rounded-full px-2.5 py-0.5 text-[10px] uppercase tracking-wider whitespace-nowrap transition-colors ${
+              className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider whitespace-nowrap transition-colors ${
                 i === active
                   ? "bg-primary text-primary-foreground"
                   : "bg-surface/60 text-muted hover:text-foreground"
               }`}
             >
-              {i + 1}. {s.label}
+              {i + 1}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Section 1 — Hero */}
-      <SectionWrap
-        idx={0}
-        active={active === 0}
-        refCb={(el) => (sectionRefs.current[0] = el)}
-        first
-      >
+      {/* === Slides ============================================================ */}
+
+      {/* 1 — Hero */}
+      <Slide idx={0} active={active === 0} refCb={(el) => (sectionRefs.current[0] = el)}>
         <div className="text-center max-w-3xl mx-auto px-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted mb-6">
-            ATCC C13 · Sysblade HyperBuffer · v2.0
+          <p className="text-xs uppercase tracking-[0.4em] text-muted anim-fade-in anim-stagger-1">
+            ATCC C13 · Sysblade HyperBuffer
           </p>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight">
-            AI 機房需要新的<br />
-            電池備援。
+          <h1 className="mt-8 text-5xl sm:text-6xl md:text-7xl font-semibold tracking-tight leading-[0.95] anim-scale-in">
+            <span className="block">AI 機房需要</span>
+            <span className="block text-primary anim-pulse-glow">新的電池備援</span>
           </h1>
-          <p className="mt-8 text-lg sm:text-xl text-muted leading-relaxed">
-            <span className="text-foreground font-medium">LFP + LIC 混合 BBU</span>
-            {" · "}
-            <span className="text-foreground font-medium">PyBaMM 物理孿生</span>
-            {" · "}
-            <span className="text-foreground font-medium">Severson MAPE 8.38 %</span>
-            <br />
-            一次解掉 GB200 毫秒瞬態、±400 V HVDC 換代、1000+ 節 fleet 維運三大痛點。
-          </p>
-          <div className="mt-12 inline-flex flex-col items-center gap-2 text-muted">
-            <span className="text-xs uppercase tracking-widest">Press play or scroll</span>
+          <div className="mt-14 flex flex-col items-center gap-2 text-muted anim-fade-in anim-stagger-4">
+            <span className="text-xs uppercase tracking-widest">Play or scroll</span>
             <ChevronDown className="h-5 w-5 animate-bounce" />
           </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 2 — Three pain points */}
-      <SectionWrap
-        idx={1}
-        active={active === 1}
-        refCb={(el) => (sectionRefs.current[1] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>痛點</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            北美 Tier-2/3 AI 機房,目前沒有整合方案。
+      {/* 2 — Pain points (3 icon cards stagger animate-in) */}
+      <Slide idx={1} active={active === 1} refCb={(el) => (sectionRefs.current[1] = el)}>
+        <div className="max-w-5xl mx-auto px-6 w-full">
+          <Tag>痛點</Tag>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
+            北美 Tier-2/3 AI 機房,沒有整合方案。
           </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            JLL 2025 在建容量 35 GW · 德州 + 維吉尼亞 33 %。Tier-1 hyperscale 自研,
-            Tier-2/3 colo 必依賴外採 BBU,但三大廠 Eaton / Vertiv / Schneider 都有
-            strategic moat 不會做我們在做的事。
-          </p>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <PainCard
-              kicker="毫秒級瞬態"
-              title="GB200 ±30 % dV/dt > 50 V/s"
-              body="純電池 BBU 撐不住 50–200 ms 壓降,下游 PSU 重啟。Eaton 賣 LIC 模組,但控制律要客戶自己寫。"
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            <PainIconCard
+              icon={<Zap className="h-7 w-7" />}
+              kicker="毫秒瞬態"
+              title="GB200 ±30 % dV/dt"
+              className="anim-slide-up anim-stagger-1"
             />
-            <PainCard
+            <PainIconCard
+              icon={<Network className="h-7 w-7" />}
               kicker="HVDC 換代"
-              title="48 V → ±400 V (2025–2028)"
-              body="Vertiv 等只賣 48 V 單一規格,客戶 2027 後須 forklift 換代。沒人同時相容兩階段。"
+              title="48 V → ±400 V"
+              className="anim-slide-up anim-stagger-2"
             />
-            <PainCard
+            <PainIconCard
+              icon={<Activity className="h-7 w-7" />}
               kicker="Fleet 維運"
-              title="1000+ 節 RUL 預測 + 替換隊列"
-              body="人工巡檢 hit-rate 低,業界無公開 SaaS 提供 BBU-level RUL 與三層替換隊列。"
+              title="1000+ 節 RUL 預測"
+              className="anim-slide-up anim-stagger-3"
             />
           </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 3 — Architecture */}
-      <SectionWrap
-        idx={2}
-        active={active === 2}
-        refCb={(el) => (sectionRefs.current[2] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>解法</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            LFP + LIC 混合拓樸 + AI 數位孿生 SaaS
+      {/* 3 — Solution headline */}
+      <Slide idx={2} active={active === 2} refCb={(el) => (sectionRefs.current[2] = el)}>
+        <div className="text-center max-w-4xl mx-auto px-6">
+          <Tag>解法</Tag>
+          <h2 className="mt-4 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight anim-scale-in">
+            <span className="block">LFP + LIC</span>
+            <span className="block text-primary anim-pulse-glow">混合拓樸</span>
+            <span className="block text-3xl sm:text-4xl text-muted mt-3">+ AI 數位孿生 SaaS</span>
           </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            一階互補濾波器 τ = 0.5 s 把高頻瞬態交給 LIC、低頻持續放電交給 LFP。
-            每 rack 8 台 BBU 並聯,N+1 容錯 + 60 秒 graceful。
-          </p>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <ArchCard
-              title="硬體拓樸(per rack)"
-              rows={[
-                ["BBU 數量", "8 台 並聯"],
-                ["主電池", "LFP 15S × 2.5 kWh / 台"],
-                ["輔助瞬態", "2× Eaton XLR-48-166 LIC bank"],
-                ["控制律", "STM32F411 + τ = 0.5 s LPF"],
-                ["Rack 總能量", "20 kWh / 120 kW peak"],
-              ]}
-            />
-            <ArchCard
-              title="軟體三件套"
-              rows={[
-                ["/twin", "PyBaMM DFN + LIC RC,V3/V4 toggle"],
-                ["/tco", "10-yr TCO calculator,33 % saving baseline"],
-                ["/dashboard", "1000-node fleet · Tier-1/2/3 · N+1 toggle"],
-                ["邊緣推論", "INT8 LSTM 63 KiB,STM32N6 NPU 目標"],
-                ["重現性", "make verify-fast 5/5 PASS in 70 s"],
-              ]}
-            />
-          </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 4 — V1 + V2 Physics */}
-      <SectionWrap
-        idx={3}
-        active={active === 3}
-        refCb={(el) => (sectionRefs.current[3] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>V1 + V2 · 物理基礎</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            我們的物理模型對齊公開實測 + 廠商 datasheet 公式。
+      {/* 4 — Architecture diagram */}
+      <Slide idx={3} active={active === 3} refCb={(el) => (sectionRefs.current[3] = el)}>
+        <div className="max-w-3xl mx-auto px-6 w-full">
+          <Tag>架構</Tag>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
+            8 BBU 並聯 per rack,N+1 容錯
           </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            數位孿生最常被問:你怎麼知道你的 sim 是 faithful 的?V1 對齊 Severson
-            2019 公開量測,V2 對齊 Maxwell datasheet 物理公式。兩條都是 measured-vs-model
-            硬數字,不是空想。
-          </p>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <BigNumberCard
-              kicker="V1 · PyBaMM Prada2013 vs Severson A123 LFP"
-              value="2.15"
-              unit="% V RMS"
-              caption="3 cells × cycle_life 534–1227;target ≤ 5 %"
-              detail="discharge V(Qd) curve 對齊到 plateau 的 100-pt 內插網格 RMS error。"
-              tone="success"
-            />
-            <BigNumberCard
-              kicker="V2 · LIC RC vs Maxwell BMOD0058 datasheet"
-              value="0.000"
-              unit="% IPEAK err"
-              caption="190 A × 1.16 s pulse formula 完全自洽"
-              detail="加 4 個 nonlinear extension(pseudo-cap / self-discharge / T-ESR)最大 droop error 2.93 % < 10 % target。"
-              tone="success"
-            />
+          <div className="mt-10 rounded-2xl border border-border bg-surface/40 p-6 sm:p-10 anim-scale-in">
+            <div className="flex flex-wrap justify-center gap-2.5">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-14 h-20 sm:w-16 sm:h-24 rounded-md border border-primary/40 bg-primary/10 flex flex-col items-center justify-center anim-slide-up"
+                  style={{ animationDelay: `${0.1 + i * 0.08}s` }}
+                >
+                  <span className="text-[9px] text-muted uppercase tracking-wider">BBU</span>
+                  <span className="text-xs font-mono text-primary mt-1">{i + 1}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+              <Mini value="8" label="BBU / rack" />
+              <Mini value="20" unit="kWh" label="Rack 總能量" />
+              <Mini value="60" unit="秒" label="graceful" />
+            </div>
           </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 5 — V3 Rack 60s graceful */}
-      <SectionWrap
+      {/* 5 — V1 big number 2.15 % */}
+      <BigNumberSlide
         idx={4}
         active={active === 4}
         refCb={(el) => (sectionRefs.current[4] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>V3 · 整 rack 60 秒 graceful</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            120 kW peak → 30 kW 連續,T_cell 升溫 0.10 K。
+        tag="V1 · 物理基礎"
+        title="PyBaMM Prada2013 對齊 Severson 公開實測"
+        target={2.15}
+        decimals={2}
+        unit="% V RMS"
+        targetText="≤ 5 %"
+        caption="3 cells × cycle_life 534–1227,paper-aligned discharge V curve fit"
+      />
+
+      {/* 6 — V2 big number 0.000 % */}
+      <BigNumberSlide
+        idx={5}
+        active={active === 5}
+        refCb={(el) => (sectionRefs.current[5] = el)}
+        tag="V2 · Datasheet 自洽"
+        title="LIC RC 與 Maxwell 公布的 IPEAK 公式完全對齊"
+        target={0}
+        decimals={3}
+        unit="% pulse err"
+        targetText="190 A × 1.16 s pulse"
+        caption="加 4 個 nonlinear extension(pseudo-cap / self-discharge / T-ESR)max droop err 2.93 % < 10 %"
+      />
+
+      {/* 7 — V3 chart: rack power split */}
+      <Slide idx={6} active={active === 6} refCb={(el) => (sectionRefs.current[6] = el)}>
+        <div className="max-w-5xl mx-auto px-6 w-full">
+          <Tag>V3 · 整 rack 60 秒</Tag>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
+            120 kW peak → 30 kW continuous,LIC 吃瞬態
           </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            8 BBU + LIC bank + 互補濾波器 + GPU power-cap ramp + 集總熱模型,單一 sim
-            把白皮書 §2.1.1 的 60 秒承諾直接跑成 artifact。
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <MiniStat label="T_cell rise" value={`${(t_cell_rise ?? 0.1).toFixed(2)} K`} sub={`limit ${t_warning ?? 50} °C`} tone="success" />
-            <MiniStat label="能量餘量" value="38×" sub="2.66 % DoD / 20 kWh rack capacity" tone="success" />
-            <MiniStat label="Per-BBU C-rate" value="6C / 1.5C" sub="peak 0.5 s · continuous 58 s" tone="primary" />
-          </div>
-          <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4">
-            <p className="text-xs text-muted mb-2">Rack power split · 0–60 s</p>
-            <ResponsiveContainer width="100%" height={240}>
+          <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-scale-in">
+            <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
                 <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
-                <YAxis stroke="" tickFormatter={(v) => `${v}`} />
+                <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
-                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name="Rack" isAnimationActive={false} />
-                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name="LFP" isAnimationActive={false} />
-                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name="LIC" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name="Rack" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lfp"   stroke="var(--success)" strokeWidth={2} dot={false} name="LFP"  isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lic"   stroke="var(--primary)" strokeWidth={1.6} dot={false} name="LIC" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 6 — V4 N-1 fault */}
-      <SectionWrap
-        idx={5}
-        active={active === 5}
-        refCb={(el) => (sectionRefs.current[5] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>V4 · N-1 容錯</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            t = {fault_t} s 時 1 台 BBU offline,剩 7 台撐到 60 秒。
+      {/* 8 — V3 thermal: T_cell rise 0.10 K */}
+      <BigNumberSlide
+        idx={7}
+        active={active === 7}
+        refCb={(el) => (sectionRefs.current[7] = el)}
+        tag="V3 · 熱模型"
+        title="60 秒 graceful 全程,cell 升溫"
+        target={0.1}
+        decimals={2}
+        unit="K"
+        targetText="vs limit 50 °C"
+        caption="lumped thermal model · I²R heating vs convective cooling · 熱失控風險近乎零"
+        tone="success"
+      />
+
+      {/* 9 — V4 chart: per-BBU power with fault marker */}
+      <Slide idx={8} active={active === 8} refCb={(el) => (sectionRefs.current[8] = el)}>
+        <div className="max-w-5xl mx-auto px-6 w-full">
+          <Tag>V4 · N-1 容錯</Tag>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
+            t = {fault_t} s 時 1 台 BBU offline,剩 7 台撐到 60 s
           </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            這在學生實驗室實機**物理上不可能驗證**,sim 層只要動 1 個陣列就能做。
-            **這正是 twin {">"} hardware 的賣點** —— per-BBU 連續 C-rate 從 1.50C → 1.71C,
-            仍在 2.5C 連續安全上限內,service continuity 100 %。
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <MiniStat label="Per-BBU post-fault" value={`${(c_rate_post ?? 1.71).toFixed(2)} C`} sub="limit 2.5 C continuous" tone="success" />
-            <MiniStat label="V_cell swing" value="277 mV" sub="limit 500 mV degraded budget" tone="success" />
-            <MiniStat label="Service continuity" value="100 %" sub="60 s graceful 仍完成" tone="success" />
-          </div>
-          <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4">
-            <p className="text-xs text-muted mb-2">Per-BBU LFP power · fault @ t={fault_t}s</p>
-            <ResponsiveContainer width="100%" height={220}>
+          <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-scale-in">
+            <ResponsiveContainer width="100%" height={260}>
               <LineChart data={faultPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
                 <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
-                <ReferenceLine x={fault_t} stroke="var(--danger)" strokeDasharray="4 4" label={{ value: "BBU 8 → 7", position: "insideTopRight", fill: "var(--danger)", fontSize: 10 }} />
-                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={1.8} dot={false} name="kW per BBU" isAnimationActive={false} />
+                <ReferenceLine
+                  x={fault_t}
+                  stroke="var(--danger)"
+                  strokeDasharray="4 4"
+                  label={{ value: "BBU 8 → 7", position: "insideTopRight", fill: "var(--danger)", fontSize: 11 }}
+                />
+                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="kW per BBU" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 7 — V5 RUL */}
-      <SectionWrap
-        idx={6}
-        active={active === 6}
-        refCb={(el) => (sectionRefs.current[6] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>V5 · RUL 預測 · ML pipeline</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            Severson MAPE 8.38 %,**比 paper baseline 9.1 % 更準**。
-          </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            13-feature bagged-GBT (K = 24) + xstrict cell filter,134 cells 上 10-seed
-            median MAPE 8.38 %、R² = 0.89。**達 v2.2 §B 「&lt; 10 %」承諾,且超越
-            Severson 2019 paper 自身 baseline**。
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <MiniStat label="Random split MAPE" value="8.38 %" sub="vs Severson paper 9.1 %" tone="success" />
-            <MiniStat label="R² (Severson self)" value="0.89" sub="K=24 bagged-GBT" tone="primary" />
-            <MiniStat label="Cross-regime MAPE" value="80.20 %" sub="BBU duty transfer (8.9× degradation)" tone="warning" />
-          </div>
-          <div className="mt-6 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-foreground/90 leading-relaxed">
-            <span className="font-semibold text-warning">誠實揭露:</span>
-            {" "}
-            cross-regime 80.20 % degradation 是 OOD by design — Severson cells cycle_life
-            &lt; 2200,BBU duty cells 4000–13000。**這個數字的存在,正好是 v2.2 §B
-            「新 protocol fall back bagged-OLS、新 chemistry 客戶 PoC 重訓」deployment SOP
-            的 quantitative justification**。
-          </div>
-        </div>
-      </SectionWrap>
+      {/* 10 — V4 C-rate big number */}
+      <BigNumberSlide
+        idx={9}
+        active={active === 9}
+        refCb={(el) => (sectionRefs.current[9] = el)}
+        tag="V4 · post-fault"
+        title="剩 7 台撐起 8 台的負載,per-BBU 持續 C-rate"
+        target={1.71}
+        decimals={2}
+        unit="C"
+        targetText="< 2.5 C 連續上限"
+        caption="實機學生階段物理上不可能驗證 · sim 層 trivial — 這正是 twin {'>'} hardware 的賣點"
+        tone="success"
+      />
 
-      {/* Section 8 — Edge inference */}
-      <SectionWrap
-        idx={7}
-        active={active === 7}
-        refCb={(el) => (sectionRefs.current[7] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>邊緣推論 · INT8 LSTM</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            3.49× 壓縮,精度退化僅 +0.10 pp。
-          </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            PyTorch → ONNX (opset 17) → INT8 dynamic quant,**measured ΔMAPE +0.10 pp,
-            FP32 219 KiB → INT8 63 KiB**。STM32N6 Neural-ART NPU 估算 27–109 µs。**本地
-            推論,客戶不為 per-inference 付費**。
-          </p>
-          <div className="mt-10 grid gap-4 md:grid-cols-4">
-            <MiniStat label="Compression" value="3.49×" sub="219 → 63 KiB" tone="primary" />
-            <MiniStat label="ΔMAPE (INT8 vs FP32)" value="+0.10 pp" sub="measured 134-cell re-eval" tone="success" />
-            <MiniStat label="STM32N6 NPU" value="27–109 µs" sub="static graph estimate" tone="default" />
-            <MiniStat label="Laptop INT8 p99" value="245 µs" sub="measured baseline" tone="default" />
-          </div>
-        </div>
-      </SectionWrap>
+      {/* 11 — V5 MAPE 8.38 % */}
+      <BigNumberSlide
+        idx={10}
+        active={active === 10}
+        refCb={(el) => (sectionRefs.current[10] = el)}
+        tag="V5 · RUL 預測"
+        title="Severson 134 cells 上 random split MAPE"
+        target={8.38}
+        decimals={2}
+        unit="%"
+        targetText="超越 paper baseline 9.1 %"
+        caption="13-feature bagged-GBT (K = 24) + xstrict filter · R² 0.89 · 達 v2.2 §B 「< 10 %」承諾"
+        tone="success"
+      />
 
-      {/* Section 9 — TCO */}
-      <SectionWrap
-        idx={8}
-        active={active === 8}
-        refCb={(el) => (sectionRefs.current[8] = el)}
-      >
-        <div className="max-w-5xl mx-auto px-6">
-          <SectionTag>客戶價值 · TCO</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
-            10 年 TCO 節省 33 %,Payback 2.3 年。
+      {/* 12 — V5 honest disclosure 80.20 % */}
+      <BigNumberSlide
+        idx={11}
+        active={active === 11}
+        refCb={(el) => (sectionRefs.current[11] = el)}
+        tag="V5 · 誠實揭露"
+        title="同模型放在 BBU duty regime,MAPE 退化到"
+        target={80.20}
+        decimals={2}
+        unit="%"
+        targetText="8.9× 退化"
+        caption="OOD by design — Severson cycle_life < 2200,BBU duty 4000–13000。這個數字的存在正好是 v2.2 §B 「新 protocol fall back OLS、新 chemistry 客戶 PoC 重訓」deployment SOP 的 quantitative justification。"
+        tone="warning"
+      />
+
+      {/* 13 — Edge AI 3.49× */}
+      <BigNumberSlide
+        idx={12}
+        active={active === 12}
+        refCb={(el) => (sectionRefs.current[12] = el)}
+        tag="邊緣推論"
+        title="ONNX INT8 量化,LSTM 從 219 KiB 壓到 63 KiB"
+        target={3.49}
+        decimals={2}
+        unit="× 壓縮"
+        targetText="精度退化僅 +0.10 pp"
+        caption="STM32N6 Neural-ART NPU 估算 27–109 µs · 本地推論,客戶不為 per-inference 付費"
+      />
+
+      {/* 14 — TCO 33 % saving */}
+      <BigNumberSlide
+        idx={13}
+        active={active === 13}
+        refCb={(el) => (sectionRefs.current[13] = el)}
+        tag="客戶價值"
+        title="10 年 TCO 節省"
+        target={33}
+        decimals={0}
+        unit="%"
+        targetText="Payback 2.3 年"
+        caption="hyperscale 500-rack Virginia 場景,客戶年省 USD 482.9 k"
+        tone="success"
+      />
+
+      {/* 15 — TCO scenarios 3 cards */}
+      <Slide idx={14} active={active === 14} refCb={(el) => (sectionRefs.current[14] = el)}>
+        <div className="max-w-5xl mx-auto px-6 w-full">
+          <Tag>三個客戶 persona</Tag>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
+            Payback 全部落在 2.3 – 2.6 年
           </h2>
-          <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-            Hyperscale 500-rack Virginia 場景,客戶年省 USD 482.9 k。Mid-tier 50-rack /
-            Edge AI 10-rack 也 payback 在 2.4–2.6 年內。
-          </p>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <BigNumberCard
-              kicker="Hyperscale (Virginia · 500 racks)"
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            <PersonaCard
+              kicker="Hyperscale"
+              location="Virginia · 500 racks"
               value="USD 482.9 k"
-              unit="/yr"
-              caption="33.2 % TCO saving · payback 2.3 yr"
+              caption="33.2 % saving · 2.3 yr"
               tone="success"
+              className="anim-slide-up anim-stagger-1"
             />
-            <BigNumberCard
-              kicker="Mid-tier (Texas · 50 racks)"
+            <PersonaCard
+              kicker="Mid-tier colo"
+              location="Texas · 50 racks"
               value="USD 44.6 k"
-              unit="/yr"
-              caption="31.8 % TCO saving · payback 2.4 yr"
+              caption="31.8 % saving · 2.4 yr"
               tone="primary"
+              className="anim-slide-up anim-stagger-2"
             />
-            <BigNumberCard
-              kicker="Edge AI (Pacific NW · 10 racks)"
+            <PersonaCard
+              kicker="Edge AI"
+              location="Pacific NW · 10 racks"
               value="USD 8.0 k"
-              unit="/yr"
-              caption="29.9 % TCO saving · payback 2.6 yr"
+              caption="29.9 % saving · 2.6 yr"
               tone="default"
+              className="anim-slide-up anim-stagger-3"
             />
           </div>
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center anim-fade-in anim-stagger-4">
             <Link
               href="/tco"
               className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-4 py-2 text-sm font-medium hover:bg-primary/25 transition-colors"
@@ -535,199 +536,238 @@ export function TourClient({
             </Link>
           </div>
         </div>
-      </SectionWrap>
+      </Slide>
 
-      {/* Section 10 — Reproducibility + CTA */}
-      <SectionWrap
-        idx={9}
-        active={active === 9}
-        refCb={(el) => (sectionRefs.current[9] = el)}
-        last
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <SectionTag>V6 · 一鍵重現</SectionTag>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-3">
+      {/* 16 — V6 verify terminal */}
+      <Slide idx={15} active={active === 15} refCb={(el) => (sectionRefs.current[15] = el)}>
+        <div className="max-w-3xl mx-auto px-6 w-full text-center">
+          <Tag>V6 · 一鍵重現</Tag>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             RD reviewer 30 分鐘 self-check
           </h2>
-          <p className="mt-4 text-muted leading-relaxed">
-            所有 V1–V6 chains + 39 個 headline 數字 cross-check,一條 make 命令搞定。
-          </p>
-          <div className="mt-8 rounded-xl border border-border bg-surface/50 px-6 py-5 text-left font-mono text-sm">
-            <div className="text-muted text-xs mb-2 uppercase tracking-wider">terminal</div>
-            <div>
-              <span className="text-success">$</span> git clone https://github.com/aericheng/atcc-sysblade.git
+          <div className="mt-10 rounded-xl border border-border bg-surface/80 px-6 py-5 text-left font-mono text-sm anim-scale-in">
+            <div className="text-muted text-xs mb-3 uppercase tracking-wider">terminal</div>
+            <div className="anim-fade-in anim-stagger-1">
+              <span className="text-success">$</span> git clone github.com/aericheng/atcc-sysblade
             </div>
-            <div>
+            <div className="anim-fade-in anim-stagger-2">
               <span className="text-success">$</span> make verify-fast
             </div>
-            <div className="text-muted text-xs mt-3">[V6] V2 PASS · V3 PASS · V4 PASS · V5 PASS · XCHECK PASS</div>
-            <div className="text-success font-medium">5/5 chains PASS in 70 s · overall PASS</div>
+            <div className="text-muted text-xs mt-3 anim-fade-in anim-stagger-3">
+              [V6] V2 PASS · V3 PASS · V4 PASS · V5 PASS · XCHECK PASS
+            </div>
+            <div className="text-success font-medium anim-fade-in anim-stagger-4">
+              5/5 chains PASS in 70 s · overall PASS
+            </div>
           </div>
-          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+        </div>
+      </Slide>
+
+      {/* 17 — CTA */}
+      <Slide idx={16} active={active === 16} refCb={(el) => (sectionRefs.current[16] = el)} last>
+        <div className="text-center max-w-4xl mx-auto px-6">
+          <Tag>下一步</Tag>
+          <h2 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight anim-scale-in">
+            <span className="block">看 sim 跑、</span>
+            <span className="block text-primary anim-pulse-glow">查 source、</span>
+            <span className="block">問問題</span>
+          </h2>
+          <div className="mt-12 flex flex-col sm:flex-row gap-3 justify-center anim-fade-in anim-stagger-3">
             <a
               href="https://github.com/aericheng/atcc-sysblade"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-foreground text-background px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-foreground text-background px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              <ExternalLink className="h-4 w-4" />
               GitHub repo
+              <ExternalLink className="h-4 w-4" />
             </a>
             <Link
               href="/twin"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-4 py-2.5 text-sm font-medium hover:bg-surface transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors"
             >
               開 /twin V3/V4 toggle
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-4 py-2.5 text-sm font-medium hover:bg-surface transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors"
             >
-              開 /dashboard fleet toggle
+              開 /dashboard fleet
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <p className="mt-10 text-xs text-muted">
+          <p className="mt-12 text-xs text-muted anim-fade-in anim-stagger-5">
             ATCC 第 23 屆 C13 系統電 Sysgration · v2.0 twin-first validation
           </p>
         </div>
-      </SectionWrap>
+      </Slide>
     </div>
   );
 }
 
 // ============================================================================
-// Helpers
+// Slide wrappers + helpers
 // ============================================================================
 
-function SectionWrap({
+function Slide({
   idx,
   active,
   refCb,
-  first,
   last,
   children,
 }: {
   idx: number;
   active: boolean;
   refCb: (el: HTMLElement | null) => void;
-  first?: boolean;
   last?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <section
       ref={refCb}
-      data-section={idx}
+      data-tour-section
       data-active={active}
-      className={`min-h-[90vh] flex items-center py-12 sm:py-16 transition-opacity duration-700 ${
-        active ? "opacity-100" : "opacity-50"
-      } ${first ? "border-t border-border/30" : ""} ${last ? "border-b border-border/30" : ""}`}
+      data-section={idx}
+      className={`min-h-[88vh] flex items-center justify-center py-12 sm:py-16 transition-opacity duration-500 ${
+        active ? "opacity-100" : "opacity-30"
+      } ${last ? "border-b border-border/30" : ""}`}
     >
       <div className="w-full">{children}</div>
     </section>
   );
 }
 
-function SectionTag({ children }: { children: React.ReactNode }) {
+function BigNumberSlide({
+  idx,
+  active,
+  refCb,
+  tag,
+  title,
+  target,
+  decimals,
+  unit,
+  targetText,
+  caption,
+  tone = "primary",
+}: {
+  idx: number;
+  active: boolean;
+  refCb: (el: HTMLElement | null) => void;
+  tag: string;
+  title: string;
+  target: number;
+  decimals: number;
+  unit: string;
+  targetText: string;
+  caption: string;
+  tone?: "success" | "primary" | "warning" | "default";
+}) {
+  // Count up over 1.2 s. Useful because keyframe transitions only fire on
+  // active→active, but text content needs JS-driven interpolation.
+  const val = useCountUp(target, 1200, active);
+
+  const toneClass: Record<string, string> = {
+    success: "text-success",
+    primary: "tour-bignum",
+    warning: "text-warning",
+    default: "text-foreground",
+  };
+
   return (
-    <p className="text-xs uppercase tracking-[0.25em] text-primary font-semibold">
+    <Slide idx={idx} active={active} refCb={refCb}>
+      <div className="max-w-4xl mx-auto px-6 text-center w-full">
+        <Tag>{tag}</Tag>
+        <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">{title}</h2>
+        <div className="mt-10 flex items-baseline justify-center gap-3 anim-scale-in">
+          <span className={`text-7xl sm:text-8xl md:text-9xl font-semibold tracking-tighter tabular-nums leading-none ${toneClass[tone]}`}>
+            {val.toFixed(decimals)}
+          </span>
+          <span className={`text-2xl sm:text-3xl font-medium ${tone === "primary" ? "text-primary" : toneClass[tone]}`}>
+            {unit}
+          </span>
+        </div>
+        <p className="mt-6 text-base sm:text-lg text-foreground/90 anim-fade-in anim-stagger-3">
+          {targetText}
+        </p>
+        <p className="mt-4 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
+          {caption}
+        </p>
+      </div>
+    </Slide>
+  );
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold anim-fade-in">
       {children}
     </p>
   );
 }
 
-function PainCard({ kicker, title, body }: { kicker: string; title: string; body: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface/40 p-5">
-      <p className="text-xs uppercase tracking-wider text-warning font-semibold">{kicker}</p>
-      <h3 className="mt-2 text-lg font-medium leading-snug">{title}</h3>
-      <p className="mt-3 text-sm text-muted leading-relaxed">{body}</p>
-    </div>
-  );
-}
-
-function ArchCard({
+function PainIconCard({
+  icon,
+  kicker,
   title,
-  rows,
+  className,
 }: {
+  icon: React.ReactNode;
+  kicker: string;
   title: string;
-  rows: Array<[string, string]>;
+  className?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-surface/40 p-5">
-      <h3 className="text-lg font-medium">{title}</h3>
-      <dl className="mt-4 divide-y divide-border/60">
-        {rows.map(([k, v]) => (
-          <div key={k} className="py-2.5 flex items-center justify-between gap-4">
-            <dt className="text-sm text-muted">{k}</dt>
-            <dd className="text-sm font-medium text-right">{v}</dd>
-          </div>
-        ))}
-      </dl>
+    <div className={`rounded-xl border border-border bg-surface/40 p-6 text-center ${className ?? ""}`}>
+      <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-warning/15 text-warning mb-3">
+        {icon}
+      </div>
+      <p className="text-xs uppercase tracking-wider text-warning font-semibold">{kicker}</p>
+      <h3 className="mt-2 text-lg font-medium">{title}</h3>
     </div>
   );
 }
 
-function BigNumberCard({
+function Mini({ value, unit, label }: { value: string; unit?: string; label: string }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-center gap-1">
+        <span className="text-2xl sm:text-3xl font-semibold tabular-nums tracking-tight">{value}</span>
+        {unit && <span className="text-sm text-muted">{unit}</span>}
+      </div>
+      <p className="mt-1 text-xs text-muted uppercase tracking-wider">{label}</p>
+    </div>
+  );
+}
+
+function PersonaCard({
   kicker,
+  location,
   value,
-  unit,
   caption,
-  detail,
   tone = "default",
+  className,
 }: {
   kicker: string;
+  location: string;
   value: string;
-  unit: string;
   caption: string;
-  detail?: string;
-  tone?: "success" | "primary" | "warning" | "default";
+  tone?: "success" | "primary" | "default";
+  className?: string;
 }) {
   const toneClass: Record<string, string> = {
     success: "text-success",
     primary: "text-primary",
-    warning: "text-warning",
     default: "text-foreground",
   };
   return (
-    <div className="rounded-xl border border-border bg-surface/40 p-6">
+    <div className={`rounded-xl border border-border bg-surface/40 p-5 text-center ${className ?? ""}`}>
       <p className="text-xs uppercase tracking-wider text-muted">{kicker}</p>
-      <div className={`mt-3 flex items-baseline gap-1.5 ${toneClass[tone]}`}>
-        <span className="text-4xl sm:text-5xl font-semibold tabular-nums tracking-tight">{value}</span>
-        <span className="text-base sm:text-lg font-medium">{unit}</span>
-      </div>
-      <p className="mt-2 text-sm text-foreground/90">{caption}</p>
-      {detail && <p className="mt-2 text-xs text-muted leading-relaxed">{detail}</p>}
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  sub,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: "success" | "primary" | "warning" | "default";
-}) {
-  const toneClass: Record<string, string> = {
-    success: "text-success",
-    primary: "text-primary",
-    warning: "text-warning",
-    default: "text-foreground",
-  };
-  return (
-    <div className="rounded-lg border border-border bg-surface/30 p-4">
-      <p className="text-xs uppercase tracking-wider text-muted">{label}</p>
-      <p className={`mt-1.5 text-2xl font-semibold tabular-nums tracking-tight ${toneClass[tone]}`}>
+      <p className="mt-0.5 text-xs text-foreground/80">{location}</p>
+      <p className={`mt-4 text-2xl sm:text-3xl font-semibold tabular-nums tracking-tight ${toneClass[tone]}`}>
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-muted">{sub}</p>}
+      <p className="mt-2 text-xs text-muted">{caption}</p>
     </div>
   );
 }
