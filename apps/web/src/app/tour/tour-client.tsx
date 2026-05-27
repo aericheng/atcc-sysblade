@@ -907,13 +907,19 @@ function ArcGauge({
             ["--draw-length" as never]: cir,
           }}
         />
-        {/* Limit marker at max */}
+        {/* Limit marker at max (right end of the arc) — label sits to the LEFT
+            of the dashed line with textAnchor="end" so it stays inside the
+            200×120 viewBox even when {max}{unit} grows past 4 chars. */}
         <line
-          x1={180} y1={100} x2={180} y2={86}
+          x1={180} y1={100} x2={180} y2={82}
           stroke="var(--danger)" strokeWidth="2" strokeDasharray="3 2"
         />
-        <text x={184} y={94} fill="var(--danger)" fontSize="9" fontFamily="ui-monospace">
-          {max} {unit}
+        <text
+          x={176} y={78}
+          fill="var(--danger)" fontSize="10" fontWeight="600"
+          textAnchor="end" fontFamily="ui-monospace"
+        >
+          {max} {unit} limit
         </text>
       </svg>
       <div className="-mt-2 text-center">
