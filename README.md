@@ -2,7 +2,9 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
-[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📑 企劃書 v2.2 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.1**](docs/whitepaper.md) · [**📕 精煉版 v1.1**](docs/whitepaper_restructured.md) · [**🔧 複賽 BBU 實作計畫 v1.3**](docs/BBU_IMPLEMENTATION_PLAN.md)
+[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📑 企劃書 v2.2 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.3**](docs/whitepaper.md) · [**📕 精煉版 v1.3**](docs/whitepaper_restructured.md) · [**🔧 實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**🎯 RD Brief**](docs/RD_BRIEF.md) · [**💼 Investor Brief**](docs/INVESTOR_BRIEF.md)
+
+> **v2.0 update (2026-05-27)**:複賽路線從 8S 實機 demonstrator(v1.x M1-M4)pivot 到 **6 條 digital-twin validation chains(V1-V6)**,target 科技業 RD / 顧問 / 投資人。`make verify` 5-6/6 chains PASS in 75s,GitHub `make verify-fast` 一鍵 CI gate。完整 pivot rationale 見 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 § 0.5。
 
 ---
 
@@ -69,11 +71,12 @@ datasheet 不同規格條目允許區內。
 (含拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師預期追問與答辯六層完整防禦)。
 
 > **Status**:ATCC 2026 提交版本 — **企劃書 v2.2 修訂版**(2026-05-06)+
-> **技術白皮書 v1.1** + `/dashboard` per-device drilldown 已 ship。本 repo
-> 公開展示供競賽評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀表板
-> 與孿生情境中的客戶 / 機房名稱**全為示意 persona**,非實際部署資料
-> (`fleet_devices.json` 的 disclaimer 欄位 + UI 上 SIMULATED DATA 浮水印
-> 雙重標註)。
+> **技術白皮書 v1.3**(2026-05-26 §8.3 加複賽 twin-first validation V1-V6
+> chains)+ **實作計畫 v2.0**(twin-first pivot)+ `/twin` V3/V4 toggle +
+> `/dashboard` V4 fleet-level fault toggle 已 ship。本 repo 公開展示供競賽
+> 評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀表板與孿生情境中的
+> 客戶 / 機房名稱**全為示意 persona**,非實際部署資料(`fleet_devices.json`
+> 的 disclaimer 欄位 + UI 上 SIMULATED DATA 浮水印雙重標註)。
 
 ---
 
@@ -224,8 +227,11 @@ atcc/
 ├── docs/
 │   ├── proposal_v2.2_additions/
 │   │   └── Sysblade_HyperBuffer_Proposal_v2.2.docx  企劃書 v2.2(2026-05-06,主要繳交版本)
-│   ├── whitepaper.md                            技術白皮書 v1.1(完整版)
-│   ├── whitepaper_restructured.md               精煉版 v1.1(三段式)
+│   ├── whitepaper.md                            技術白皮書 v1.3(完整版)
+│   ├── whitepaper_restructured.md               精煉版 v1.3(三段式)
+│   ├── RD_BRIEF.md / INVESTOR_BRIEF.md           跨領域 RD / 投資人 brief(v2.0)
+│   ├── BBU_IMPLEMENTATION_PLAN.md               實作計畫 v2.0(twin-first)
+│   ├── MIRROR_SETUP.md / BINDER_README.md        contingency + 複賽日紙本 binder
 │   ├── severson_download.md                     Severson 2019 .mat v7.3 下載 SOP
 │   ├── x_cube_ai_install_sop.md                 STM32N6 X-CUBE-AI 安裝 SOP
 │   └── figures/                                 架構圖 + 截圖 + 業務模型 canvas
@@ -278,8 +284,15 @@ atcc/
 | 文件 | 用途 |
 |---|---|
 | [`docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx`](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) | **競賽企劃書 v2.2 修訂版**(2026-05-06,主要繳交版本)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
-| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.1** — 完整證據 + 局限討論(2026-05-06 加 citation 校正、TCO 對稱性 footnote、`/dashboard` drilldown 揭露)|
-| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.1**(Part 1 速覽 / Part 2 細節 / Part 3 競品)|
+| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.3**(2026-05-26)— 完整證據 + 局限討論 + §8.3 複賽 twin-first validation(V1-V6 chains 取代 v1.x M1-M4)|
+| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.3**(Part 1 速覽 / Part 2 細節 / Part 3 競品)+ §2.8 twin-first validation |
+| [`docs/BBU_IMPLEMENTATION_PLAN.md`](docs/BBU_IMPLEMENTATION_PLAN.md) | 實作計畫 **v2.0**(2026-05-26)— twin-first 6 條 V1-V6 chains;v1.x 硬體路線保留為 archive(engineering process evidence)|
+| [`docs/BBU_PROPOSAL.md`](docs/BBU_PROPOSAL.md) | 對外繳交提案 **v2.0** — Twin-first Validation 實作企劃 |
+| [`docs/RD_BRIEF.md`](docs/RD_BRIEF.md) | RD / 顧問 2 頁 executive brief — 跨領域 entry point + Twin-first 工程論述 |
+| [`docs/INVESTOR_BRIEF.md`](docs/INVESTOR_BRIEF.md) | 投資人 1 頁 narrative — 三大廠 strategic moat + 商業含義 |
+| [`docs/PURCHASE_LIST.md`](docs/PURCHASE_LIST.md) | 採購清單 **v2.0** § 0 sunk cost / 可挽回 / 取消處置 SOP(action deadline 2026-06-02) |
+| [`docs/MIRROR_SETUP.md`](docs/MIRROR_SETUP.md) | Standby GitLab/Codeberg mirror SOP(GitHub 帳號 contingency)|
+| [`docs/BINDER_README.md`](docs/BINDER_README.md) | 複賽日紙本 PDF binder 印刷順序 + packing checklist + fallback 階梯 |
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
 | [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP |
