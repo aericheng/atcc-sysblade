@@ -288,6 +288,7 @@ atcc/
 | [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.3**(Part 1 速覽 / Part 2 細節 / Part 3 競品)+ §2.8 twin-first validation |
 | [`docs/BBU_IMPLEMENTATION_PLAN.md`](docs/BBU_IMPLEMENTATION_PLAN.md) | 實作計畫 **v2.0**(2026-05-26)— twin-first 6 條 V1-V6 chains;v1.x 硬體路線保留為 archive(engineering process evidence)|
 | [`docs/BBU_PROPOSAL.md`](docs/BBU_PROPOSAL.md) | 對外繳交提案 **v2.0** — Twin-first Validation 實作企劃 |
+| [`docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx`](docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx) | 複賽實作企劃 **v3.1**(2026-05-28)— 四大面向(軟體深化 + 技術背書 + 商業論證 + IP 法律佈局),取代原 8S 實機 demonstrator 路線;v3.0 → v3.1 校正 KPI #1 LSTM latency 目標、Dashboard 互動模式改 scenario preset switcher、移除已 descope 的 LIVE 元件殘留條目 |
 | [`docs/RD_BRIEF.md`](docs/RD_BRIEF.md) | RD / 顧問 2 頁 executive brief — 跨領域 entry point + Twin-first 工程論述 |
 | [`docs/INVESTOR_BRIEF.md`](docs/INVESTOR_BRIEF.md) | 投資人 1 頁 narrative — 三大廠 strategic moat + 商業含義 |
 | [`docs/PURCHASE_LIST.md`](docs/PURCHASE_LIST.md) | 採購清單 **v2.0** — v1.x 採購 2026-05-27 全數退貨完成,v2.0 不依賴硬體 |
