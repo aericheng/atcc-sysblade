@@ -163,7 +163,7 @@ export function TcoClient() {
   }, [result]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 reveal-stagger">
       <header className="space-y-3">
         <div className="text-xs uppercase tracking-[0.2em] text-muted">TCO Calculator · 10-year horizon</div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">How much does the transient gap cost you?</h1>
@@ -363,17 +363,18 @@ export function TcoClient() {
             Sources & assumptions
           </CardTitle>
           <p className="mt-1.5 text-[11px] text-muted">
-            Each TCO line item below is pinned to <span className="text-foreground">v2.2 §G.3 Table 6</span>{" "}
-            (the canonical source for this proposal); the &ldquo;industry anchor&rdquo; column
-            names the <em>category</em> of organisation that publishes in each area, NOT a
-            verified citation to a specific document. The team replaces these with concrete
-            report IDs + page numbers in production sales conversations. Surfaced here so a
-            reviewer can audit the directional assumptions end-to-end without flipping back to
-            the PDF.
+            Every TCO line is pinned to <span className="text-foreground">v2.2 §G.3 Table 6</span>.
+            Expand below for the auditable line-by-line breakdown.
           </p>
         </CardHeader>
         <CardBody>
-          <div className="overflow-x-auto">
+          <Disclosure summary="Show line-by-line sources and assumptions">
+            <p className="mb-3 text-[11px] leading-relaxed text-muted">
+              The &ldquo;industry anchor&rdquo; column names the <em>category</em> of organisation that
+              publishes in each area, not a verified citation to a specific document — the team
+              replaces these with concrete report IDs + page numbers in production sales conversations.
+            </p>
+            <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted text-[10px] uppercase tracking-wider">
@@ -396,7 +397,8 @@ export function TcoClient() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </Disclosure>
           <Disclosure summary="Sensitivity notes" className="mt-4">
             <ul className="ml-4 list-disc space-y-1 text-[11px] leading-relaxed text-muted">
               <li>

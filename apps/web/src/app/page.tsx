@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/card";
 import { Activity, BarChart3, Cpu, ArrowRight, Zap } from "lucide-react";
+import { Disclosure } from "@/components/ui/disclosure";
+import { CountUp } from "@/components/motion";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -21,12 +23,12 @@ async function loadModelValidation(): Promise<ModelValidationLite | null> {
 export default async function HomePage() {
   const mv = await loadModelValidation();
   return (
-    <div className="space-y-16 sm:space-y-24">
+    <div className="space-y-16 sm:space-y-24 reveal-stagger">
       {/* Hero */}
       <section className="pt-12 pb-4">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs text-muted mb-6">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
-          OCP Mt. Diablo 400 spec aligned · LFP + LIC hybrid · 2026 Q4 design freeze target
+          OCP Mt. Diablo 400 spec aligned · LFP + LIC hybrid · 2026 Q3 design freeze target
         </div>
         <h1 className="text-3xl sm:text-4xl md:text-6xl font-semibold tracking-tight leading-[1.1] md:leading-[1.05] max-w-4xl text-balance">
           Hybrid energy buffer for{" "}
@@ -62,46 +64,40 @@ export default async function HomePage() {
           Headline results · PyBaMM DFN simulation
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {([
+          {[
             {
-              v: "3.5×",
+              value: 3.5, decimals: 1, prefix: "", suffix: "×",
               label: (<>Lower <span className="text-foreground font-medium">cell-voltage swing</span> under GB200 transient</>),
               tone: "from-primary to-accent",
             },
             {
-              v: "5.7×",
+              value: 5.7, decimals: 1, prefix: "", suffix: "×",
               label: (<>Lower <span className="text-foreground font-medium">power-stress to LFP</span> after LIC split</>),
               tone: "from-accent to-primary",
             },
             {
-              v: "~25 %",
+              value: 25, decimals: 0, prefix: "~", suffix: " %",
               label: (
                 <>
-                  <span className="text-foreground font-medium">
-                    LFP service-life advantage · BBU low-duty schedule
-                  </span>
-                  {" "}· §G.3 duty_factor 0.33 (~50 cyc/yr vs Severson 1C/1C) ·{" "}
-                  10-yr replacements 1.5 → 1 ·{" "}
-                  <span className="text-muted">
-                    hybrid-topology rainflow Δ separate ~5 % on worst-case
-                  </span>
+                  <span className="text-foreground font-medium">LFP service-life advantage</span> ·
+                  BBU low-duty schedule (proposal §G.3)
                 </>
               ),
               tone: "from-success to-accent",
             },
             {
-              v: "10 yr",
+              value: 10, decimals: 0, prefix: "", suffix: " yr",
               label: (<><span className="text-foreground font-medium">BBU service life</span> at &gt;80 % SOH (Severson-fit)</>),
               tone: "from-primary to-accent",
             },
             {
-              v: "≈33 %",
+              value: 33, decimals: 0, prefix: "≈", suffix: " %",
               label: (<><span className="text-foreground font-medium">10-year TCO reduction</span> · proposal §G.3 baseline</>),
               tone: "from-accent to-primary",
             },
             mv
               ? {
-                  v: `${mv.latency.p99_ms.toFixed(2)} ms`,
+                  value: mv.latency.p99_ms, decimals: 2, prefix: "", suffix: " ms",
                   label: (
                     <>
                       <span className="text-foreground font-medium">ONNX p99</span> on laptop CPU · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× under spec</span>{" "}
@@ -111,15 +107,15 @@ export default async function HomePage() {
                   tone: "from-primary to-accent",
                 }
               : {
-                  v: "<50 ms",
+                  value: 50, decimals: 0, prefix: "<", suffix: " ms",
                   label: (<><span className="text-foreground font-medium">Edge inference latency target</span> · STM32N6 ONNX path (run <code>export_lstm_onnx.py</code> to populate)</>),
                   tone: "from-primary to-accent",
                 },
-          ] as const).map((s, i) => (
+          ].map((s, i) => (
             <Card key={i}>
               <CardBody>
                 <div className={`text-3xl sm:text-4xl md:text-5xl font-semibold tabular-nums bg-gradient-to-br ${s.tone} bg-clip-text text-transparent`}>
-                  {s.v}
+                  <CountUp value={s.value} decimals={s.decimals} prefix={s.prefix} suffix={s.suffix} />
                 </div>
                 <div className="text-sm text-muted mt-2 leading-relaxed">{s.label}</div>
               </CardBody>
@@ -169,9 +165,8 @@ export default async function HomePage() {
             title="TCO Calculator"
             body={
               <>
-                B2B lead-gen: feed rack count, electricity price, and current BBU spec — get{" "}
+                Feed in rack count, electricity price, and your current BBU spec — get{" "}
                 <span className="text-foreground font-medium">10-year TCO, ROI, and CO₂ savings</span> out the other side.
-                Drives LinkedIn ad funnel.
               </>
             }
             cta="Calculate savings"
@@ -218,32 +213,36 @@ export default async function HomePage() {
                 The 5 kJ / rack rule
               </div>
               <p className="text-sm text-muted leading-relaxed">
-                One GB200 NVL72 rack pulls <span className="text-foreground font-medium">120 kW</span>{" "}
-                across <span className="text-foreground font-medium">8 BBUs in parallel</span>{" "}
-                (15 kW &amp; 6C peak per BBU); a &plusmn;30 %
-                swing over 100 ms costs about <span className="text-foreground font-medium">3.6 kJ</span> in
-                buffered energy. With 30 % margin and back-to-back triggers, the design target is{" "}
-                <span className="text-foreground font-medium">~5 kJ/rack</span>.
-              </p>
-              <p className="text-sm text-muted leading-relaxed">
-                We over-provision to <span className="text-foreground font-medium">345 kJ</span> via{" "}
-                <span className="text-foreground font-medium">2× off-the-shelf Eaton XLR 48 V LIC modules</span>.
-                The <span className="text-success font-medium">69× headroom</span> is deliberate: lower ESR,{" "}
-                <span className="text-foreground">low DoD (1.5 %)</span> extends LIC life to{" "}
-                <span className="text-foreground">10⁷ cycles</span>, N+1 redundancy, and avoids a{" "}
-                <span className="text-foreground">USD 50k+ NRE</span> for a custom 5 kJ pack.
+                A GB200 NVL72 rack&rsquo;s &plusmn;30 % swing over 100 ms needs about{" "}
+                <span className="text-foreground font-medium">5 kJ/rack</span> of buffered energy. We
+                configure <span className="text-foreground font-medium">345 kJ</span> with{" "}
+                <span className="text-foreground font-medium">2× off-the-shelf Eaton XLR 48 V LIC modules</span>{" "}
+                — a deliberate <span className="text-success font-medium">69× headroom</span>, no custom pack.
               </p>
               <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
                 <Mini label="Need" value="5 kJ" />
                 <Mini label="Configured" value="345 kJ" />
                 <Mini label="Headroom" value="69×" tone="text-success" />
               </div>
-              <p className="text-[10px] text-muted/80 leading-relaxed pt-1">
-                <span className="text-muted">Headroom 69×</span> = configured capacity ÷ §E.1 5 kJ design need.
-                The <span className="text-muted">/twin</span> page reports a separate <span className="text-muted">~26×</span>{" "}
-                ratio = capacity ÷ <em>actual</em> cumulative excursion under the demo waveform (13.3 kJ).
-                Two denominators, both correct — landing shows structural over-provision, /twin shows operational margin.
-              </p>
+              <Disclosure summary="Why 5 kJ, why 69× headroom?">
+                <p className="leading-relaxed">
+                  One GB200 NVL72 rack pulls <span className="text-foreground">120 kW</span> across{" "}
+                  <span className="text-foreground">8 BBUs in parallel</span> (15 kW &amp; 6C peak per
+                  BBU); a &plusmn;30 % swing over 100 ms costs about{" "}
+                  <span className="text-foreground">3.6 kJ</span>. With 30 % margin and back-to-back
+                  triggers, the design target is <span className="text-foreground">~5 kJ/rack</span>.
+                </p>
+                <p className="mt-2 leading-relaxed">
+                  The 69× over-provision is deliberate: lower ESR, low DoD (1.5 %) extends LIC life to
+                  10⁷ cycles, N+1 redundancy, and avoids a USD 50k+ NRE for a custom 5 kJ pack.
+                </p>
+                <p className="mt-2 leading-relaxed opacity-80">
+                  Headroom 69× = configured capacity ÷ §E.1 5 kJ design need. /twin reports a separate
+                  ~26× ratio = capacity ÷ <em>actual</em> cumulative excursion under the demo waveform
+                  (13.3 kJ). Two denominators, both correct — landing shows structural over-provision,
+                  /twin shows operational margin.
+                </p>
+              </Disclosure>
             </CardBody>
           </Card>
         </div>
@@ -265,7 +264,8 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <Disclosure summary="See the full 5-layer competitive landscape (incumbents by layer)">
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 mt-2">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="text-muted text-[10px] uppercase tracking-wider border-b border-border">
@@ -354,6 +354,7 @@ export default async function HomePage() {
           vendors with single-chemistry packs) and the RUL software layer (against generic
           anomaly-detection SaaS), and partner with the UPS layer above us.
         </p>
+        </Disclosure>
       </section>
     </div>
   );
