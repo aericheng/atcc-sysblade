@@ -6,11 +6,11 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const links = [
-  { href: "/", label: "Home" },
-  { href: "/tour", label: "Tour" },
-  { href: "/twin", label: "Battery Twin" },
-  { href: "/tco", label: "TCO Calculator" },
-  { href: "/dashboard", label: "Fleet Dashboard" },
+  { href: "/", label: "首頁" },
+  { href: "/tour", label: "導覽" },
+  { href: "/twin", label: "電池數位孿生" },
+  { href: "/tco", label: "TCO 計算器" },
+  { href: "/dashboard", label: "機隊儀表板" },
 ];
 
 export function SiteNav() {
@@ -55,12 +55,12 @@ export function SiteNav() {
         <div className="ml-auto flex items-center gap-2 text-xs text-muted">
           <span className="hidden lg:inline">ATCC C13 · v2.2</span>
           <span className="rounded-full bg-warning/20 text-warning px-2 py-0.5 text-[10px] font-semibold tracking-wider">
-            DEMO
+            展示
           </span>
           {/* Mobile hamburger */}
           <button
             type="button"
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? "關閉選單" : "開啟選單"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
             className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-border bg-surface/60 text-foreground"

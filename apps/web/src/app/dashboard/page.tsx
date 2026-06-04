@@ -1,9 +1,9 @@
 import { DashboardClient } from "./dashboard-client";
 
 export const metadata = {
-  title: "Fleet Dashboard · Sysblade",
+  title: "機隊儀表板 · Sysblade",
   description:
-    "1000-device synthetic Sysblade fleet — real-time monitoring, proactive maintenance, predictive ops.",
+    "1000 台設備合成 Sysblade 機隊 — 即時監測、主動式維護、預測性維運。",
 };
 
 async function loadJson(name: string) {

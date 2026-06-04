@@ -1,9 +1,9 @@
 import { TourClient } from "./tour-client";
 
 export const metadata = {
-  title: "Tour · Sysblade HyperBuffer",
+  title: "導覽 · Sysblade HyperBuffer",
   description:
-    "10-section scrollytelling walkthrough of Sysblade HyperBuffer — LFP+LIC hybrid topology, V1-V6 twin validation chains, RUL prediction, and customer TCO. Press play or scroll.",
+    "Sysblade HyperBuffer 的 10 段式捲動敘事導覽 — LFP+LIC 混合拓樸、V1-V6 孿生驗證鏈、RUL 預測,以及客戶 TCO。請按播放或捲動。",
 };
 
 async function loadScenario(name: string) {

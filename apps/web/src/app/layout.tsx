@@ -3,9 +3,9 @@ import "./globals.css";
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
-  title: "Sysblade HyperBuffer — AI-rack hybrid BBU + Digital Twin",
+  title: "Sysblade HyperBuffer — AI 機架混合式 BBU + 電池數位孿生",
   description:
-    "LFP + LIC hybrid energy buffer with embedded battery digital twin. Solving GB200/GB300 millisecond-scale power transients for North-American AI data centers.",
+    "LFP + LIC 混合式能量緩衝,內嵌電池數位孿生。為北美 AI 資料中心解決 GB200/GB300 毫秒級電源瞬變。",
 };
 
 export default function RootLayout({
@@ -14,15 +14,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-Hant">
       <body className="antialiased min-h-screen">
         <SiteNav />
         <main className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-10">{children}</main>
         <footer className="mx-auto max-w-7xl px-4 sm:px-6 py-10 text-xs text-muted border-t border-border mt-20">
           <p>
-            Sysblade HyperBuffer™ is an ATCC 23rd-edition competition concept (議題 C13 · Sysgration). Demo data is generated from PyBaMM
-            DFN simulation (Prada2013 LFP) and analytic Severson-calibrated aging models. Production deployment, customer logos, and
-            performance numbers are illustrative.
+            Sysblade HyperBuffer™ 為 ATCC 第 23 屆競賽概念(議題 C13 · Sysgration)。展示資料由 PyBaMM
+            DFN 模擬(Prada2013 LFP)與解析式 Severson 校準老化模型產生。實際部署、客戶標誌與
+            效能數字僅供示意。
           </p>
         </footer>
       </body>
