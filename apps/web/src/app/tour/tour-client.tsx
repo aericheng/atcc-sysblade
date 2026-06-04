@@ -215,12 +215,12 @@ export function TourClient({
             type="button"
             onClick={togglePlay}
             className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-sm font-medium hover:bg-primary/25 transition-colors"
-            aria-label={isPlaying ? "Pause auto-play" : "Play tour"}
+            aria-label={isPlaying ? "暫停自動播放" : "播放導覽"}
           >
             {isPlaying ? (
-              <><Pause className="h-4 w-4" /><span>Pause</span></>
+              <><Pause className="h-4 w-4" /><span>暫停</span></>
             ) : (
-              <><Play className="h-4 w-4" /><span>{active === N_SLIDES - 1 ? "Replay" : "Play"}</span></>
+              <><Play className="h-4 w-4" /><span>{active === N_SLIDES - 1 ? "重播" : "播放"}</span></>
             )}
           </button>
           <div className="flex-1 h-1.5 rounded-full bg-surface overflow-hidden">
@@ -262,7 +262,7 @@ export function TourClient({
             <span className="block text-primary anim-pulse-glow">新的電池備援</span>
           </h1>
           <div className="mt-14 flex flex-col items-center gap-2 text-muted anim-fade-in anim-stagger-4">
-            <span className="text-xs uppercase tracking-widest">Play or scroll</span>
+            <span className="text-xs uppercase tracking-widest">播放或捲動</span>
             <ChevronDown className="h-5 w-5 animate-bounce" />
           </div>
         </div>
@@ -282,7 +282,7 @@ export function TourClient({
             <PainIconCard icon={<Network className="h-7 w-7" />} kicker="HVDC 換代"
               title="48 V → ±400 V"
               className="anim-rotate-in anim-stagger-2" />
-            <PainIconCard icon={<Activity className="h-7 w-7" />} kicker="Fleet 維運"
+            <PainIconCard icon={<Activity className="h-7 w-7" />} kicker="機隊維運"
               title="1000+ 節 RUL 預測"
               className="anim-rotate-in anim-stagger-3" />
           </div>
@@ -324,7 +324,7 @@ export function TourClient({
             <div className="mt-8 grid grid-cols-3 gap-4 text-center anim-fade-in anim-stagger-4">
               <Mini value="8" label="BBU / rack" />
               <Mini value="20" unit="kWh" label="總能量" />
-              <Mini value="60" unit="秒" label="graceful" />
+              <Mini value="60" unit="秒" label="優雅關機" />
             </div>
           </div>
         </div>
@@ -342,11 +342,11 @@ export function TourClient({
             ≤ 5 % 目標
           </p>
           <BarGauge
-            value={2.15} max={5.0} label="2.15 / 5.0 %" targetLabel="target 5 %"
+            value={2.15} max={5.0} label="2.15 / 5.0 %" targetLabel="目標 5 %"
             tone="success" className="mt-8 anim-slide-left anim-stagger-3"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            3 cells × cycle_life 534–1227 · paper-aligned discharge V(Qd) curve fit
+            3 顆電芯 × cycle_life 534–1227 · 對齊論文的放電 V(Qd) 曲線擬合
           </p>
         </div>
       </Slide>
@@ -358,14 +358,14 @@ export function TourClient({
           <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
             LIC RC 與 Maxwell 廠商 IPEAK 公式完全對齊
           </h2>
-          <CountUpNumber active={active === 5} target={0} decimals={3} unit="% pulse err" />
+          <CountUpNumber active={active === 5} target={0} decimals={3} unit="% 脈衝誤差" />
           <FormulaCard className="mt-8 anim-slide-right anim-stagger-3"
             formula="IPEAK = (V_R / 2) ÷ (Δt/C + R)"
             substitution="190 A = 8 V / (1.16 s / 58 F + 22 mΩ)"
-            check="model V drop @ Δt=1.16s = 8.00 V · datasheet 8.00 V"
+            check="模型 V drop @ Δt=1.16s = 8.00 V · 規格書 8.00 V"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            加 4 個 nonlinear extension(pseudo-cap / self-discharge / T-ESR)max droop err 2.93 % &lt; 10 %
+            加 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降誤差 2.93 % &lt; 10 %
           </p>
         </div>
       </Slide>
@@ -375,7 +375,7 @@ export function TourClient({
         <div className="max-w-5xl mx-auto px-6 w-full">
           <Tag>V3 · 整 rack 60 秒</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            120 kW peak → 30 kW continuous,LIC 吃瞬態
+            120 kW 峰值 → 30 kW 連續,LIC 吃瞬態
           </h2>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={300}>
@@ -385,7 +385,7 @@ export function TourClient({
                 <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
-                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name="Rack"
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name="機架"
                   isAnimationActive={active === 6} animationDuration={1500} />
                 <Line type="monotone" dataKey="p_lfp"   stroke="var(--success)" strokeWidth={2} dot={false} name="LFP"
                   isAnimationActive={active === 6} animationDuration={1500} animationBegin={300} />
@@ -403,7 +403,7 @@ export function TourClient({
           <div className="text-center">
             <Tag>V3 · 熱模型</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              60 秒 graceful 全程,cell 升溫
+              60 秒優雅關機全程,電芯升溫
             </h2>
             <CountUpNumber active={active === 7} target={0.10} decimals={2} unit="K" tone="success" />
           </div>
@@ -412,7 +412,7 @@ export function TourClient({
             className="mt-8 anim-slide-up anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            lumped thermal model · I²R heating vs convective cooling · 熱失控風險近乎零
+            集總熱模型 · I²R 發熱 vs 對流散熱 · 熱失控風險近乎零
           </p>
         </div>
       </Slide>
@@ -422,7 +422,7 @@ export function TourClient({
         <div className="max-w-5xl mx-auto px-6 w-full">
           <Tag>V4 · N-1 容錯</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            t = {fault_t} s 時 1 台 BBU offline,剩 7 台撐到 60 s
+            t = {fault_t} s 時 1 台 BBU 離線,剩 7 台撐到 60 s
           </h2>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={260}>
@@ -440,7 +440,7 @@ export function TourClient({
                   label={{ value: "BBU 8 → 7", position: "insideTopRight", fill: "var(--danger)", fontSize: 11 }}
                   className="anim-marker-flash"
                 />
-                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="kW per BBU"
+                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="每 BBU kW"
                   isAnimationActive={active === 8} animationDuration={1500} />
               </LineChart>
             </ResponsiveContainer>
@@ -451,17 +451,17 @@ export function TourClient({
       {/* 10 — V4 c-rate: arc gauge */}
       <Slide idx={9} active={active === 9} refCb={(el) => (sectionRefs.current[9] = el)}>
         <div className="max-w-4xl mx-auto px-6 text-center w-full">
-          <Tag>V4 · post-fault</Tag>
+          <Tag>V4 · 故障後</Tag>
           <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-            剩 7 台撐起 8 台的負載,per-BBU 持續 C-rate
+            剩 7 台撐起 8 台的負載,每 BBU 連續 C-rate
           </h2>
           <ArcGauge
             value={1.71} max={2.5} unit="C"
-            limitLabel="datasheet 2.5 C 連續上限"
+            limitLabel="廠商規格書 2.5 C 連續上限"
             className="mt-8 anim-zoom-in anim-stagger-2"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            整 rack N-1 容錯在實體上極難重現,孿生層卻能直接驗證 — 這正是 twin {">"} hardware 的價值
+            整機架 N-1 容錯在實體上極難重現,孿生層卻能直接驗證 — 這正是 twin {">"} hardware 的價值
           </p>
         </div>
       </Slide>
@@ -472,21 +472,21 @@ export function TourClient({
           <div className="text-center">
             <Tag>V5 · RUL 預測</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              Severson 134 cells random split MAPE
+              Severson 134 顆電芯隨機切分 MAPE
             </h2>
             <CountUpNumber active={active === 10} target={8.38} decimals={2} unit="%" tone="success" />
           </div>
           <TwoBar
             items={[
               { label: "Sysblade bagged-GBT", value: 8.38, color: "var(--success)" },
-              { label: "Paper baseline", value: 9.10, color: "var(--muted)" },
+              { label: "論文基準", value: 9.10, color: "var(--muted)" },
             ]}
             maxValue={10}
             unit="% MAPE"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            13-feature K = 24 bagged-GBT + xstrict filter · R² 0.89 · 超越 Severson 2019 paper 自身 baseline
+            13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 超越 Severson 2019 論文自身基準
           </p>
         </div>
       </Slide>
@@ -497,22 +497,22 @@ export function TourClient({
           <div className="text-center">
             <Tag>V5 · 誠實揭露</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              同模型放在 BBU 浮充 regime,MAPE 退化到
+              同模型放在 BBU 浮充工況,MAPE 退化到
             </h2>
             <CountUpNumber active={active === 11} target={80.20} decimals={2} unit="%" tone="warning" />
           </div>
           <TwoBar
             items={[
-              { label: "Severson self-test", value: 9.04, color: "var(--success)" },
-              { label: "BBU duty cross-regime", value: 80.20, color: "var(--warning)" },
+              { label: "Severson 自我測試", value: 9.04, color: "var(--success)" },
+              { label: "BBU duty 跨工況", value: 80.20, color: "var(--warning)" },
             ]}
             maxValue={100}
             unit="% MAPE"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <div className="mt-6 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-foreground/90 leading-relaxed anim-blur-in anim-stagger-4">
-            OOD by design — Severson cycle_life &lt; 2200,BBU duty 4000–13000。
-            這個數字的存在正好是 deployment SOP「新 protocol fall back OLS、新 chemistry 客戶 PoC 重訓」的 quantitative justification。
+            OOD 是刻意設計 — Severson cycle_life &lt; 2200,BBU duty 4000–13000。
+            這個數字的存在正好是部署 SOP「新 protocol 退回 OLS、新化學體系客戶 PoC 重訓」的量化依據。
           </div>
         </div>
       </Slide>
@@ -530,13 +530,13 @@ export function TourClient({
           <BoxComparison
             items={[
               { label: "FP32", value: 219, color: "var(--muted)" },
-              { label: "INT8 quantized", value: 63, color: "var(--primary)" },
+              { label: "INT8 量化", value: 63, color: "var(--primary)" },
             ]}
             unit="KiB"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            ΔMAPE +0.10 pp · STM32N6 Neural-ART NPU 估算 27–109 µs · 本地推論,客戶不為 per-inference 付費
+            ΔMAPE +0.10 pp · STM32N6 Neural-ART NPU 估算 27–109 µs · 本地推論,客戶不為每次推論付費
           </p>
         </div>
       </Slide>
@@ -547,21 +547,21 @@ export function TourClient({
           <div className="text-center">
             <Tag>客戶價值</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              10 年 per-rack TCO
+              10 年每機架 TCO
             </h2>
-            <CountUpNumber active={active === 13} target={33} decimals={0} unit="% saving" tone="success" />
+            <CountUpNumber active={active === 13} target={33} decimals={0} unit="% 節省" tone="success" />
           </div>
           <TwoBar
             items={[
-              { label: "Baseline BBU + LFP", value: 29.0, color: "var(--muted)" },
-              { label: "Sysblade hybrid", value: 19.4, color: "var(--success)" },
+              { label: "基準 BBU + LFP", value: 29.0, color: "var(--muted)" },
+              { label: "Sysblade 混合", value: 19.4, color: "var(--success)" },
             ]}
             maxValue={32}
             unit="k USD / rack / 10 yr"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            Payback 2.3 年 · Hyperscale 500-rack 場景客戶年省 USD 482.9 k
+            回收期 2.3 年 · Hyperscale 500-rack 場景客戶年省 USD 482.9 k
           </p>
         </div>
       </Slide>
@@ -569,19 +569,19 @@ export function TourClient({
       {/* 15 — TCO 3 personas (rotate-in stagger) */}
       <Slide idx={14} active={active === 14} refCb={(el) => (sectionRefs.current[14] = el)}>
         <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>三個客戶 persona</Tag>
+          <Tag>三個客戶人物誌</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            Payback 全部落在 2.3 – 2.6 年
+            回收期全部落在 2.3 – 2.6 年
           </h2>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
-            <PersonaCard kicker="Hyperscale" location="Virginia · 500 racks"
-              value="USD 482.9 k" caption="33.2 % saving · 2.3 yr" tone="success"
+            <PersonaCard kicker="Hyperscale" location="Virginia · 500 機架"
+              value="USD 482.9 k" caption="33.2 % 節省 · 2.3 年" tone="success"
               className="anim-rotate-in anim-stagger-1" />
-            <PersonaCard kicker="Mid-tier colo" location="Texas · 50 racks"
-              value="USD 44.6 k" caption="31.8 % saving · 2.4 yr" tone="primary"
+            <PersonaCard kicker="中階託管商" location="Texas · 50 機架"
+              value="USD 44.6 k" caption="31.8 % 節省 · 2.4 年" tone="primary"
               className="anim-rotate-in anim-stagger-2" />
-            <PersonaCard kicker="Edge AI" location="Pacific NW · 10 racks"
-              value="USD 8.0 k" caption="29.9 % saving · 2.6 yr" tone="default"
+            <PersonaCard kicker="Edge AI" location="Pacific NW · 10 機架"
+              value="USD 8.0 k" caption="29.9 % 節省 · 2.6 年" tone="default"
               className="anim-rotate-in anim-stagger-3" />
           </div>
           <div className="mt-8 text-center anim-fade-in anim-stagger-4">
@@ -611,15 +611,15 @@ export function TourClient({
           </div>
           <TwoBar
             items={[
-              { label: "新品 backup runtime", value: 600, color: "var(--muted)" },
+              { label: "新品備援續航時間", value: 600, color: "var(--muted)" },
               { label: "用 7 年後(EOL · 80% SOH)", value: 480, color: "var(--success)" },
             ]}
             maxValue={640}
-            unit="秒 @ rack peak power"
+            unit="秒 @ 機架峰值功率"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒 graceful 承諾的 8 倍餘量;
+            就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒優雅關機承諾的 8 倍餘量;
             峰值功率能力仍保 67%(毫秒尖峰由 LIC 扛)。客戶買的不是新電池規格,是「老化後還能用」。
           </p>
           <div className="mt-6 text-center anim-fade-in anim-stagger-5">
@@ -639,19 +639,19 @@ export function TourClient({
         <div className="max-w-3xl mx-auto px-6 w-full text-center">
           <Tag>V6 · 一鍵重現</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            RD reviewer 30 分鐘 self-check
+            RD 審查者 30 分鐘自我檢查
           </h2>
           <TypewriterTerminal active={active === 16} className="mt-10" />
         </div>
       </Slide>
 
-      {/* 17 — CTA (bounce-in buttons) */}
+      {/* 18 — CTA (bounce-in buttons) */}
       <Slide idx={17} active={active === 17} refCb={(el) => (sectionRefs.current[17] = el)} last>
         <div className="text-center max-w-4xl mx-auto px-6">
           <Tag>下一步</Tag>
           <h2 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight anim-scale-in">
-            <span className="block">看 sim 跑、</span>
-            <span className="block text-primary anim-pulse-glow">查 source、</span>
+            <span className="block">看模擬跑、</span>
+            <span className="block text-primary anim-pulse-glow">查原始碼、</span>
             <span className="block">問問題</span>
           </h2>
           <div className="mt-12 flex flex-col sm:flex-row gap-3 justify-center">
@@ -666,7 +666,7 @@ export function TourClient({
               href="/dashboard"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-2"
             >
-              看 fleet 健康儀表板 → /dashboard
+              看機隊健康儀表板 → /dashboard
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <a
@@ -680,7 +680,7 @@ export function TourClient({
             </a>
           </div>
           <p className="mt-12 text-xs text-muted anim-fade-in anim-stagger-5">
-            ATCC 第 23 屆 C13 系統電 Sysgration · v2.0 twin-first validation
+            ATCC 第 23 屆 C13 系統電 Sysgration · v2.0 twin-first 驗證
           </p>
         </div>
       </Slide>
@@ -896,12 +896,12 @@ function Thermometer({
         <div className="flex items-center gap-2">
           <ThermoIcon className="h-5 w-5 text-success" />
           <span className="text-2xl font-semibold tabular-nums">{value.toFixed(2)}</span>
-          <span className="text-muted">°C max</span>
+          <span className="text-muted">°C 最大</span>
         </div>
         <div className="text-xs text-muted">
-          ambient {ambient}°C → max {value.toFixed(2)}°C
+          環境 {ambient}°C → 最大 {value.toFixed(2)}°C
           <br />
-          headroom to warning <span className="text-success font-medium">{(warning - value).toFixed(1)} K</span>
+          距警戒餘量 <span className="text-success font-medium">{(warning - value).toFixed(1)} K</span>
         </div>
       </div>
     </div>
@@ -958,7 +958,7 @@ function ArcGauge({
           fill="var(--danger)" fontSize="10" fontWeight="600"
           textAnchor="end" fontFamily="ui-monospace"
         >
-          {max} {unit} limit
+          {max} {unit} 上限
         </text>
       </svg>
       <div className="-mt-2 text-center">
@@ -966,7 +966,7 @@ function ArcGauge({
           {value.toFixed(2)}
         </div>
         <div className="text-sm text-muted mt-1">
-          {unit} continuous
+          {unit} 連續
         </div>
         {limitLabel && (
           <div className="text-xs text-muted mt-2 max-w-xs">{limitLabel}</div>
@@ -986,7 +986,7 @@ function FormulaCard({
     <div className={`max-w-xl mx-auto rounded-xl border border-border bg-surface/40 p-5 text-left font-mono text-sm ${className ?? ""}`}>
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted mb-3">
         <Cpu className="h-3.5 w-3.5" />
-        Maxwell BMOD0058 datasheet
+        Maxwell BMOD0058 規格書
       </div>
       <div className="text-foreground/90 leading-relaxed">{formula}</div>
       <div className="mt-3 text-accent leading-relaxed">{substitution}</div>
@@ -1002,7 +1002,7 @@ function TypewriterTerminal({ active, className }: { active: boolean; className?
   const showOutput = active;
   return (
     <div className={`rounded-xl border border-border bg-surface/80 px-6 py-5 text-left font-mono text-sm ${className ?? ""}`}>
-      <div className="text-muted text-xs mb-3 uppercase tracking-wider">terminal</div>
+      <div className="text-muted text-xs mb-3 uppercase tracking-wider">終端機</div>
       <div>
         <span className="text-success">$ </span>
         <span>{line1}</span>
@@ -1019,7 +1019,7 @@ function TypewriterTerminal({ active, className }: { active: boolean; className?
             [V6] V2 PASS · V3 PASS · V4 PASS · V5 PASS · XCHECK PASS
           </div>
           <div className="text-success font-medium anim-fade-in" style={{ animationDelay: "1.5s" }}>
-            5/5 chains PASS in 70 s · overall PASS
+            5/5 條驗證鏈 PASS · 耗時 70 s · 整體 PASS
           </div>
         </>
       )}
