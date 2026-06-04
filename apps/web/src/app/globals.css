@@ -217,4 +217,63 @@ body {
   /* Subtle hover-lift for cards/links opted in via the class. */
   .hover-lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
   .hover-lift:hover { transform: translateY(-2px); }
+
+  /* reveal-stagger continued (deeper grids / longer sections). */
+  .reveal-stagger > *:nth-child(7) { animation-delay: 0.42s; }
+  .reveal-stagger > *:nth-child(8) { animation-delay: 0.49s; }
+  .reveal-stagger > *:nth-child(9) { animation-delay: 0.56s; }
 }
+
+/* ============================================================================
+   Bold redesign (大改版) — static visual-identity utilities. Deliberately
+   pure CSS with NO scroll-linked JS, so every element renders correctly under
+   static export / no-JS. Entrance motion reuses .reveal-stagger above
+   (load-staggered fade-up, guarded by prefers-reduced-motion).
+   ============================================================================ */
+
+/* Generalised gradient text (tour-bignum is the /tour-specific big-number variant). */
+.gradient-text {
+  background: linear-gradient(120deg, var(--foreground) 0%, var(--primary) 58%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gradient-text-accent {
+  background: linear-gradient(120deg, var(--accent) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Faint grid texture for hero / section bands. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Section band — breaks the flat dark stack with a soft surface + corner glows.
+   Full-bleed friendly: pair with negative-margin + padding on the wrapper. */
+.section-band {
+  position: relative;
+  background:
+    radial-gradient(ellipse 70% 60% at 100% 0%, rgba(34, 211, 238, 0.06), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 0% 100%, rgba(99, 102, 241, 0.08), transparent 70%),
+    var(--surface);
+}
+
+/* Short coloured bar above section headings (set color via inline style/var). */
+.accent-rule { height: 3px; width: 2.75rem; border-radius: 9999px; }
+
+/* Soft glow halos for focal panels. */
+.glow-primary { box-shadow: 0 28px 90px -40px rgba(99, 102, 241, 0.6); }
+.glow-accent { box-shadow: 0 28px 90px -40px rgba(34, 211, 238, 0.5); }
+
+/* Accent-tinted panel fills. Explicit rgba (the theme tokens are hex CSS vars,
+   so Tailwind's /opacity modifier can't reliably alpha them) — these guarantee
+   a soft tint instead of a full-saturation block. Pair with `border`. */
+.tint-primary { background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.03)); border-color: rgba(99, 102, 241, 0.3); }
+.tint-accent { background: linear-gradient(135deg, rgba(34, 211, 238, 0.14), rgba(34, 211, 238, 0.03)); border-color: rgba(34, 211, 238, 0.28); }
+.tint-success { background: linear-gradient(135deg, rgba(52, 211, 153, 0.14), rgba(52, 211, 153, 0.03)); border-color: rgba(52, 211, 153, 0.28); }
+.tint-warning { background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(251, 191, 36, 0.03)); border-color: rgba(251, 191, 36, 0.28); }
