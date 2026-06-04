@@ -529,6 +529,35 @@ def _build_mains_fail_profile(
     return t, p
 
 
+# ---------------------------------------------------------------------------
+# Aged-state power capability — internal-resistance (DCIR) growth with SOH
+# ---------------------------------------------------------------------------
+# The customer's real KPI (mentor 2026-06-04): after 5–7 yr of aging, when mains
+# drops NOW, how much power can the pack still deliver and for how long? Two aged
+# effects: (1) capacity fade → backup ENERGY/runtime ∝ SOH; (2) DCIR growth →
+# deliverable PEAK power shrinks (larger I·R sag eats the cutoff headroom). DCIR
+# rise at 80 % SOH for LFP is ~30–60 % (literature-typical; Naumann 2019 cycle
+# aging J. Power Sources 451; Schmalstieg 2014); we use +50 % at EOL as a
+# representative figure — a calibration constant, NOT a project measurement.
+EOL_SOH = 0.80
+DCIR_GROWTH_AT_EOL = 0.50
+
+
+def _dcir_growth(soh):
+    """Fractional internal-resistance rise at a given SOH (0 at BoL=1.0)."""
+    soh = np.asarray(soh, dtype=float)
+    return DCIR_GROWTH_AT_EOL * (1.0 - soh) / (1.0 - EOL_SOH)
+
+
+def _peak_power_retention(soh):
+    """Deliverable peak-power retention vs BoL (DCIR-limited at the voltage floor).
+
+    At a fixed cutoff voltage, max deliverable power ∝ 1/R; with
+    R(SOH) = R0·(1 + dcir_growth), retention = 1/(1 + dcir_growth).
+    """
+    return 1.0 / (1.0 + _dcir_growth(soh))
+
+
 def scenario_mains_fail(
     duration_s: float = MAINS_FAIL_DURATION_S,
     dt: float = MAINS_FAIL_DT,
@@ -626,6 +655,45 @@ def scenario_mains_fail(
             "lic_passes_cutoff": lic_rc["passes_cutoff"],
         },
     }
+
+    # ----- Aged-state backup capability (mentor 2026-06-04) --------------------
+    # Answers "after 5–7 yr aging, when mains drops NOW, how much power / how long?"
+    # using the DCIR-growth + capacity-fade model. All BoL stats above are on a
+    # FRESH pack; this block is the EOL (80 % SOH) counterpart.
+    energy_retention = EOL_SOH                               # capacity ∝ SOH
+    peak_power_ret = float(_peak_power_retention(EOL_SOH))
+    energy_capacity_kj_eol = energy_capacity_kj * energy_retention
+    runtime_s_bol_peakbasis = energy_capacity_kj / RACK_POWER_KW       # 600 s @ 120 kW
+    runtime_s_eol_peakbasis = energy_capacity_kj_eol / RACK_POWER_KW   # 480 s @ 120 kW
+    payload["aged"] = {
+        "aged_soh": EOL_SOH,
+        "aged_label": "EOL · 80% SOH (~year 10, calendar-bound · aging_lfp.json)",
+        "dcir_growth": float(_dcir_growth(EOL_SOH)),
+        "energy_retention": energy_retention,
+        "peak_power_retention": peak_power_ret,
+        "backup_runtime_s_bol_peakbasis": runtime_s_bol_peakbasis,
+        "backup_runtime_s_eol_peakbasis": runtime_s_eol_peakbasis,
+        "runtime_margin_vs_commitment_eol": runtime_s_eol_peakbasis / 60.0,
+        "continuous_c_rate_at_eol": continuous_c_rate,       # 1.5 C unchanged
+        "model": {
+            "dcir_growth_at_eol": DCIR_GROWTH_AT_EOL,
+            "eol_soh": EOL_SOH,
+            "form": "R(SOH)=R0·(1+0.50·(1-SOH)/(1-0.80)); peak_power_retention=1/(1+ΔR/R0); backup_energy∝SOH",
+            "reference": (
+                "LFP DCIR rise ~30–60 % at 80 % SOH (literature-typical; Naumann "
+                "2019 cycle aging / Schmalstieg 2014) — representative, not a "
+                "project measurement."
+            ),
+            "note": (
+                "Continuous survival power is 1.5 C — modest, stays above cutoff at "
+                "EOL, so continuous backup runtime is ENERGY-limited not power-limited "
+                "(still 8× the 60 s commitment at EOL). The 6 C peak is a sub-100 ms "
+                "LIC-led pulse (transient_hybrid.json), so the LFP's aged peak-power "
+                "retention does NOT gate the system peak; it is reported for "
+                "transparency on the LFP cell alone."
+            ),
+        },
+    }
     _save("mains_fail_profile.json", payload)
 
 
@@ -651,6 +719,77 @@ def _soh_full_cycling(cycles: np.ndarray) -> np.ndarray:
     # smooth fade rather than the cliff a higher exponent would produce.
     accel = np.exp(-(np.maximum(cycles - knee, 0) / 1500.0))
     return np.clip(gentle * accel, 0.30, 1.0)
+
+
+# ---------------------------------------------------------------------------
+# 3a. Calendar / storage fade — the mechanism that actually binds DC-backup life
+# ---------------------------------------------------------------------------
+# Cycle aging (_soh_full_cycling) is NOT the binding constraint for a BBU. In
+# float-charge backup service the pack sits mostly idle at high SOC, where
+# *calendar* (pure-storage) aging dominates — the mentor's 2026-06-04 point that
+# a DC backup pack is "純儲" not "循環". We model calendar fade with the standard
+# semi-empirical square-root-of-time law (Naumann 2018 J. Energy Storage
+# 17:153-169; Grolleau 2014 J. Power Sources 255:450): capacity loss ∝
+# k_cal(T, SOC)·√t, Arrhenius in T and monotone in SOC (high SOC ages faster).
+#
+# Absolute scale is CALIBRATED so reference DC-float conditions cross 80 % SOH at
+# CAL_LIFE_YEARS_AT_80, inside v2.2 附件 C's cited "LFP 浮充 8–12 年" literature
+# life. So the headline calendar life is anchored to 附件 C while the FORM
+# (Naumann √t × Arrhenius × SOC) supplies the T/SOC sensitivity. Ea is a
+# literature-range representative value (Ea ≈ 58 kJ/mol → Ea/R ≈ 6976 K); because
+# k_ref is back-calibrated to 附件 C, the Ea choice sets only the slope of the
+# temperature sensitivity, NOT the headline life. This is NOT a measured value
+# from this project.
+CAL_T_REF_K = 298.15            # 25 °C — reference for Arrhenius + k_ref
+CAL_EA_OVER_R_K = 6976.0        # Ea/R ≈ 6976 K (Ea ≈ 58 kJ/mol), LFP-calendar literature range
+CAL_SOC_REF = 0.50             # SOC at which the SOC factor is normalised to 1.0
+CAL_FLOAT_SOC = 0.90           # DC-backup float SOC (held near full for instant readiness)
+CAL_FLOAT_T_K = 303.15         # ~30 °C rack-ambient float temperature
+CAL_LIFE_YEARS_AT_80 = 10.0    # calibration target (inside 附件 C 8–12 yr)
+CAL_CYCLES_PER_YEAR = 50.0     # BBU float duty cycles/yr (same anchor as fleet RUL + §G.3)
+CAL_SOH_FLOOR = 0.30
+
+
+def _cal_temp_factor(t_k):
+    """Arrhenius temperature stress factor, normalised to 1.0 at CAL_T_REF_K."""
+    t_k = np.asarray(t_k, dtype=float)
+    return np.exp(-CAL_EA_OVER_R_K * (1.0 / t_k - 1.0 / CAL_T_REF_K))
+
+
+def _cal_soc_factor(soc):
+    """Monotone SOC stress factor, normalised to 1.0 at CAL_SOC_REF.
+
+    Calendar fade worsens with storage SOC (high-SOC float is worst — the
+    mentor's '滿充靜置老化快'). Linear monotone shape (Naumann's measured trend
+    is increasing with SOC); normalised so the factor is 1.0 at CAL_SOC_REF.
+    At SOC 0.9 this is ~1.5× the SOC 0.5 rate; at SOC 0.1, ~0.5×.
+    """
+    soc = np.asarray(soc, dtype=float)
+    return (0.4 + 1.2 * soc) / (0.4 + 1.2 * CAL_SOC_REF)
+
+
+def _cal_k_ref() -> float:
+    """Back-calibrate k_ref so float conditions hit 80 % SOH at CAL_LIFE_YEARS_AT_80."""
+    k_float = (1.0 - 0.80) / np.sqrt(CAL_LIFE_YEARS_AT_80)
+    return float(
+        k_float / (_cal_temp_factor(CAL_FLOAT_T_K) * _cal_soc_factor(CAL_FLOAT_SOC))
+    )
+
+
+def _soh_calendar(years, t_k=CAL_FLOAT_T_K, soc=CAL_FLOAT_SOC) -> np.ndarray:
+    """Calendar/storage SOH vs wall-clock years at storage temperature t_k and SOC.
+
+    SOH_cal(t) = 1 − k_ref · f_T(T) · f_SOC(SOC) · √t  (Naumann √t form).
+    """
+    years = np.asarray(years, dtype=float)
+    k = _cal_k_ref() * _cal_temp_factor(t_k) * _cal_soc_factor(soc)
+    return np.clip(1.0 - k * np.sqrt(np.maximum(years, 0.0)), CAL_SOH_FLOOR, 1.0)
+
+
+def _cal_life_years_at_80(t_k=CAL_FLOAT_T_K, soc=CAL_FLOAT_SOC) -> float:
+    """Closed-form calendar life (years to 80 % SOH) at given T, SOC."""
+    k = _cal_k_ref() * _cal_temp_factor(t_k) * _cal_soc_factor(soc)
+    return float((0.20 / k) ** 2) if k > 0 else float("inf")
 
 
 def scenario_aging_lfp(n_cycles: int = 3000) -> None:
@@ -682,6 +821,33 @@ def scenario_aging_lfp(n_cycles: int = 3000) -> None:
         below = np.where(soh_arr < threshold)[0]
         return float(cycles_ext[below[0]]) if len(below) else float(cycles_ext[-1])
 
+    # ----- Calendar / storage fade overlay (mentor 2026-06-04) -----------------
+    # Map the cycle axis to wall-clock years at BBU float duty (CAL_CYCLES_PER_YEAR
+    # cyc/yr — same anchor as the fleet RUL elapsed-cycle calc and §G.3). The
+    # calendar curve is evaluated at DC-float storage conditions (high SOC, rack
+    # ambient); the *binding* SOH a customer actually sees is min(cycle, calendar).
+    years_ds = cycles_ds / CAL_CYCLES_PER_YEAR
+    soh_cal_ds = _soh_calendar(years_ds)                      # float conditions
+    soh_binding_ds = np.minimum(soh_bbu_ds, soh_cal_ds)
+
+    calendar_life_yr = _cal_life_years_at_80()
+    cycle_life_yr = _cycle_at_threshold(soh_bbu_ext, 0.80) / CAL_CYCLES_PER_YEAR
+    binding_life_yr = min(calendar_life_yr, cycle_life_yr)
+    binding_mechanism = "calendar" if calendar_life_yr <= cycle_life_yr else "cycle"
+
+    # T × SOC sensitivity — shows the mentor's point directly: a pack held hotter
+    # and at higher SOC has a SHORTER calendar life. The previous cycle-only model
+    # could not express this; this is the value-add of the calendar overlay.
+    calendar_sensitivity = [
+        {
+            "soc": soc,
+            "temp_c": round(t_k - 273.15, 1),
+            "calendar_life_years_at_80": round(_cal_life_years_at_80(t_k, soc), 1),
+        }
+        for soc in (0.50, 0.70, 0.90)
+        for t_k in (298.15, 303.15, 308.15)
+    ]
+
     payload = {
         "title": f"LFP State-of-Health under BBU duty ({n_cycles}-cycle horizon)",
         "description": (
@@ -690,12 +856,25 @@ def scenario_aging_lfp(n_cycles: int = 3000) -> None:
             "pack has accumulated N × 0.33 effective full-cycle equivalents, so "
             "an 80 % SOH calendar age maps to a much later wall-clock date than "
             "the equivalent 1C/1C bench test. Halved replacement frequency is one "
-            "of several lines that together produce the §G.3 10-year TCO delta."
+            "of several lines that together produce the §G.3 10-year TCO delta. "
+            "NOTE: cycle fade is NOT the binding constraint for DC-backup duty — "
+            "the pack sits mostly idle at high SOC, where calendar/storage fade "
+            "dominates. soh_calendar overlays the Naumann-2018 √t calendar model "
+            "(Arrhenius T × monotone SOC) at DC-float conditions, calibrated so "
+            "80 % SOH lands at ~10 yr inside v2.2 附件 C's cited 8–12 yr LFP float "
+            "life; soh_binding = min(cycle, calendar) is what a customer sees. "
+            "binding_mechanism states which limit binds (see stats.calendar_model)."
         ),
         "series": {
             "cycle": cycles_ds.tolist(),
             "soh_full_cycling": soh_ds.tolist(),
             "soh_bbu_duty": soh_bbu_ds.tolist(),
+            # Calendar overlay on the same plotted axis (x still = cycle; the
+            # wall-clock mapping is years = cycle / CAL_CYCLES_PER_YEAR).
+            # soh_binding is the customer-facing SOH (min of the two mechanisms).
+            "years": years_ds.tolist(),
+            "soh_calendar": soh_cal_ds.tolist(),
+            "soh_binding": soh_binding_ds.tolist(),
         },
         "stats": {
             "knee_cycle": 800.0,
@@ -704,6 +883,33 @@ def scenario_aging_lfp(n_cycles: int = 3000) -> None:
             "soh_at_3000_bbu_cycles": float(np.interp(3000, cycles_ext, soh_bbu_ext)),
             "cycle_at_80pct_soh_full": _cycle_at_threshold(soh_ext, 0.80),
             "cycle_at_80pct_soh_bbu": _cycle_at_threshold(soh_bbu_ext, 0.80),
+            # ----- Calendar / binding-life stats (mentor 2026-06-04) -----
+            "calendar_life_years_at_80": round(calendar_life_yr, 1),
+            "cycle_life_years_at_80": round(cycle_life_yr, 1),
+            "binding_life_years_at_80": round(binding_life_yr, 1),
+            "binding_mechanism": binding_mechanism,
+            "cycles_per_year": CAL_CYCLES_PER_YEAR,
+            "calendar_model": {
+                "form": "Q_loss = k_ref · exp(-Ea/R·(1/T - 1/T_ref)) · f_SOC(SOC) · sqrt(t_years)",
+                "reference": "Naumann 2018 J. Energy Storage 17:153-169 (√t form); Grolleau 2014",
+                "ea_over_r_k": CAL_EA_OVER_R_K,
+                "k_ref_per_sqrt_year": round(_cal_k_ref(), 5),
+                "t_ref_k": CAL_T_REF_K,
+                "soc_ref": CAL_SOC_REF,
+                "float_conditions": {"t_k": CAL_FLOAT_T_K, "soc": CAL_FLOAT_SOC},
+                "calibration": {
+                    "target_years_at_80pct": CAL_LIFE_YEARS_AT_80,
+                    "anchor": "v2.2 附件 C cited LFP float life 8–12 yr",
+                    "note": (
+                        "Absolute k_ref back-calibrated to the 附件 C anchor; the "
+                        "Naumann form + literature-range Ea supply only the T/SOC "
+                        "sensitivity slope, not the headline life. Ea≈58 kJ/mol is "
+                        "representative of LFP-calendar literature, not a measured "
+                        "value from this project."
+                    ),
+                },
+            },
+            "calendar_sensitivity": calendar_sensitivity,
         },
     }
     _save("aging_lfp.json", payload)
@@ -1128,6 +1334,182 @@ def scenario_aging_rainflow_validation(duration_s: float = 60.0, dt: float = 0.0
 
 
 # ---------------------------------------------------------------------------
+# 3c. Pack-level imbalance (V7) — what a single-cell model cannot express
+# ---------------------------------------------------------------------------
+# The mentor (2026-06-04) flagged that our aging engine is a single representative
+# cell, missing two real pack-level effects: (1) the weakest cell in a series
+# string drags the whole string (series cells share current → the string is
+# capacity-limited by its weakest member and ages around its hottest member);
+# (2) intra-cabinet thermal non-uniformity accelerates local aging. He also
+# suggested A/B-testing a 2-cell + capacitor topology (series-then-parallel vs
+# parallel-then-series) as a possible balancing selling point. This scenario adds
+# all three as a first-order screening study (NOT full electrochemistry; EVT
+# validates). It composes the §3a calendar model for per-cell thermal aging.
+IMBALANCE_N_SERIES = 15            # 15S LFP string (house rule: LFP 15S)
+IMBALANCE_SEED = 11
+IMBALANCE_CAP_SIGMA = 0.025        # cell-to-cell capacity spread (manufacturing + aging)
+IMBALANCE_R_SIGMA = 0.06           # internal-resistance spread
+IMBALANCE_SOC_SIGMA = 0.02         # initial-SOC spread
+GRAD_T_INLET_C = 28.0              # rack cold-aisle inlet
+GRAD_T_OUTLET_C = 40.0             # rack hot-aisle outlet (12 °C gradient)
+# 2-cell + cap A/B topology study
+AB_R_CELL_NOM_OHM = 0.008          # representative LFP cell DCIR
+AB_WEAK_R_FACTOR = 1.5             # weak cell 1.5× resistance
+AB_R_CAP_OHM = 0.003               # per-cap ESR
+AB_TRANSIENT_A = 20.0              # transient current step into the 2-cell unit
+
+
+def scenario_pack_imbalance() -> None:
+    """V7 — pack-level imbalance + thermal-gradient aging + 2-cell+cap A/B."""
+    logger.info("=== Scenario V7: pack imbalance + thermal gradient + topology A/B ===")
+    rng = np.random.default_rng(IMBALANCE_SEED)
+    n = IMBALANCE_N_SERIES
+
+    # ---- (1) 15S string with cell-to-cell spread + thermal gradient ----------
+    cap_rel = np.clip(rng.normal(1.0, IMBALANCE_CAP_SIGMA, n), 0.92, 1.06)
+    r_rel = np.clip(rng.normal(1.0, IMBALANCE_R_SIGMA, n), 0.85, 1.35)
+    soc0 = np.clip(rng.normal(CAL_FLOAT_SOC, IMBALANCE_SOC_SIGMA, n), 0.80, 0.98)
+    temp_c = GRAD_T_INLET_C + (GRAD_T_OUTLET_C - GRAD_T_INLET_C) * np.arange(n) / (n - 1)
+    temp_k = temp_c + 273.15
+
+    # Per-cell calendar life (yr to 80 % SOH) at its position temperature + float SOC,
+    # and per-cell calendar SOH at a 7-year service checkpoint (composes §3a model).
+    cell_life_yr = np.array([_cal_life_years_at_80(temp_k[i], CAL_FLOAT_SOC) for i in range(n)])
+    soh_7yr = np.array([float(_soh_calendar(7.0, temp_k[i], CAL_FLOAT_SOC)) for i in range(n)])
+
+    # Series discharge stops when the first cell empties: limited by min(cap·soc).
+    first_empty = cap_rel * soc0
+    usable_unbalanced = float(np.min(first_empty) / CAL_FLOAT_SOC)
+    usable_balanced = float(np.mean(cap_rel))  # active balance lets every cell contribute
+    imbalance_penalty_pct = (1.0 - usable_unbalanced / usable_balanced) * 100.0
+    balance_recovery_pct = (usable_balanced / usable_unbalanced - 1.0) * 100.0
+
+    weakest_idx = int(np.argmin(first_empty))
+    hottest_idx = int(np.argmax(temp_c))
+    string_soh_7yr = float(np.min(soh_7yr))      # weakest (hottest) cell drags string
+    mean_soh_7yr = float(np.mean(soh_7yr))
+
+    cells = [
+        {
+            "idx": i,
+            "capacity_rel": round(float(cap_rel[i]), 4),
+            "r_rel": round(float(r_rel[i]), 4),
+            "soc0": round(float(soc0[i]), 4),
+            "temp_c": round(float(temp_c[i]), 1),
+            "calendar_life_yr": round(float(cell_life_yr[i]), 1),
+            "soh_at_7yr": round(float(soh_7yr[i]), 4),
+        }
+        for i in range(n)
+    ]
+
+    # ---- (2) thermal-gradient calendar-life spread ---------------------------
+    life_cold = float(_cal_life_years_at_80(GRAD_T_INLET_C + 273.15, CAL_FLOAT_SOC))
+    life_hot = float(_cal_life_years_at_80(GRAD_T_OUTLET_C + 273.15, CAL_FLOAT_SOC))
+    life_spread_pct = (1.0 - life_hot / life_cold) * 100.0
+
+    # ---- (3) 2-cell + cap A/B topology (mentor's suggested study) -------------
+    r_s, r_w, r_c, di = AB_R_CELL_NOM_OHM, AB_R_CELL_NOM_OHM * AB_WEAK_R_FACTOR, AB_R_CAP_OHM, AB_TRANSIENT_A
+    # parallel-then-series: each cell has its own cap; a fast step divides by
+    # conductance, so the high-R (weak) cell sheds MORE to its local cap.
+    ps_weak = di * r_c / (r_w + r_c)
+    ps_strong = di * r_c / (r_s + r_c)
+    # series-then-parallel: 2 caps in series (2·ESR) across the 2-cell series
+    # branch; the two series cells carry identical current — no per-cell relief.
+    sp_both = di * (2 * r_c) / ((r_s + r_w) + 2 * r_c)
+    weak_reduction_pct = (sp_both - ps_weak) / sp_both * 100.0
+
+    payload = {
+        "title": "Pack-level imbalance · 15S string + thermal gradient + 2-cell/cap A/B",
+        "validation_chain": "V7",
+        "description": (
+            "First-order screening of the pack-level effects a single-cell aging "
+            "model cannot express (mentor 2026-06-04): (1) a 15S series string with "
+            "cell-to-cell capacity/resistance/SOC spread — the weakest cell limits "
+            "string usable capacity and the hottest cell limits string life; "
+            "(2) a rack inlet→outlet thermal gradient driving Arrhenius local-"
+            "accelerated calendar aging (composes the §3a calendar model); and "
+            "(3) the mentor's suggested 2-cell+capacitor A/B — parallel-then-series "
+            "(per-cell cap) vs series-then-parallel (shared cap branch). NOT full "
+            "electrochemistry; a screening study to scope EVT. The single "
+            "representative-cell DFN remains the primary aging engine."
+        ),
+        "string": {
+            "n_series": n,
+            "cells": cells,
+            "weakest_idx": weakest_idx,
+            "hottest_idx": hottest_idx,
+            "usable_capacity_unbalanced_rel": round(usable_unbalanced, 4),
+            "usable_capacity_balanced_rel": round(usable_balanced, 4),
+            "imbalance_penalty_pct": round(imbalance_penalty_pct, 2),
+            "balance_recovery_pct": round(balance_recovery_pct, 2),
+            "string_soh_at_7yr": round(string_soh_7yr, 4),
+            "mean_soh_at_7yr": round(mean_soh_7yr, 4),
+            "note": (
+                "Series cells share current, so the string is capacity-limited by its "
+                "weakest member (drags the whole string) and ages around its hottest. "
+                "Active balancing (JK-BMS 8S active-balance, BBU_IMPLEMENTATION_PLAN "
+                "BoM) recovers the imbalance penalty by letting every cell contribute."
+            ),
+        },
+        "thermal_gradient": {
+            "t_inlet_c": GRAD_T_INLET_C,
+            "t_outlet_c": GRAD_T_OUTLET_C,
+            "calendar_life_cold_yr": round(life_cold, 1),
+            "calendar_life_hot_yr": round(life_hot, 1),
+            "life_spread_pct": round(life_spread_pct, 1),
+            "note": (
+                f"A {GRAD_T_OUTLET_C - GRAD_T_INLET_C:.0f} °C inlet→outlet gradient "
+                f"shortens the hot-end cell's calendar life from {life_cold:.1f} to "
+                f"{life_hot:.1f} yr (Arrhenius, §3a model). The string ages at the hot "
+                "end — a reason to manage rack thermal UNIFORMITY, not just mean T."
+            ),
+        },
+        "topology_ab": {
+            "weak_cell_r_factor": AB_WEAK_R_FACTOR,
+            "transient_a": di,
+            "r_cell_strong_ohm": r_s,
+            "r_cell_weak_ohm": r_w,
+            "r_cap_ohm": r_c,
+            "parallel_then_series": {
+                "weak_cell_transient_a": round(float(ps_weak), 3),
+                "strong_cell_transient_a": round(float(ps_strong), 3),
+                "self_balancing": True,
+                "note": "Per-cell cap; weak (high-R) cell sheds MORE to its local cap → self-balancing.",
+            },
+            "series_then_parallel": {
+                "weak_cell_transient_a": round(float(sp_both), 3),
+                "strong_cell_transient_a": round(float(sp_both), 3),
+                "self_balancing": False,
+                "note": "Shared cap branch; series cells carry identical current → no per-cell relief.",
+            },
+            "weak_cell_transient_reduction_pct": round(float(weak_reduction_pct), 1),
+            "verdict": (
+                "parallel-then-series (per-cell cap) cuts the weak cell's transient "
+                f"stress ~{weak_reduction_pct:.0f}% vs series-then-parallel AND self-"
+                "balances (cap sheds more from the high-R cell), at the same 2-cap "
+                "count but per-cell placement. A candidate imbalance-mitigation "
+                "selling point to validate at EVT."
+            ),
+        },
+        "model": {
+            "imbalance_seed": IMBALANCE_SEED,
+            "spreads": {
+                "capacity_sigma": IMBALANCE_CAP_SIGMA,
+                "resistance_sigma": IMBALANCE_R_SIGMA,
+                "soc_sigma": IMBALANCE_SOC_SIGMA,
+            },
+            "method": (
+                "Seeded cell-to-cell spread + linear thermal gradient; per-cell "
+                "calendar aging via §3a Naumann √t model; topology A/B via fast-"
+                "transient conductance split (caps as ESR at the step). First-order "
+                "screening, not full electrochemistry — EVT validates."
+            ),
+        },
+    }
+    _save("pack_imbalance.json", payload)
+
+
+# ---------------------------------------------------------------------------
 # 4. Synthetic fleet of 1000 BBU devices for the /dashboard page
 # ---------------------------------------------------------------------------
 SITES = [
@@ -1355,5 +1737,6 @@ if __name__ == "__main__":
     scenario_mains_fail()
     scenario_aging_lfp()
     scenario_aging_rainflow_validation()
+    scenario_pack_imbalance()
     scenario_fleet_devices()
     logger.success("All scenarios written to packages/shared/scenarios/")
