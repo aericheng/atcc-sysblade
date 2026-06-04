@@ -70,7 +70,7 @@ function BreakdownBars({ rows, isNarrow }: { rows: BreakdownRow[]; isNarrow: boo
             <div className="space-y-1.5 min-w-0">
               <div
                 className="relative h-2.5 w-full rounded bg-surface/40"
-                title={`Traditional NMC BBU · $${row.traditional.toLocaleString()}`}
+                title={`傳統 NMC BBU · $${row.traditional.toLocaleString()}`}
               >
                 <div
                   className="absolute inset-y-0 left-0 rounded"
@@ -97,13 +97,13 @@ function BreakdownBars({ rows, isNarrow }: { rows: BreakdownRow[]; isNarrow: boo
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3 mt-2 border-t border-border text-xs text-muted">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(251,191,36,0.85)" }} />
-          Traditional NMC BBU
+          傳統 NMC BBU
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(99,102,241,0.9)" }} />
           Sysblade HyperBuffer
         </span>
-        <span className="ml-auto">Bar widths normalised to the largest line item.</span>
+        <span className="ml-auto">長條寬度以最大的成本項目為基準正規化。</span>
       </div>
     </div>
   );
@@ -154,24 +154,31 @@ export function TcoClient() {
     const t = result.perRack.traditional;
     const s = result.perRack.sysblade;
     return [
-      { item: "Initial purchase", short: "Purchase", traditional: t.initial, sysblade: s.initial },
-      { item: "Replacements", short: "Replace", traditional: t.replacements, sysblade: s.replacements },
-      { item: "Transient losses", short: "Transient", traditional: t.transient, sysblade: s.transient },
-      { item: "Ops labor", short: "Ops", traditional: t.ops, sysblade: s.ops },
-      { item: "HVDC transition", short: "HVDC", traditional: t.hvdc, sysblade: s.hvdc },
+      { item: "初始採購", short: "採購", traditional: t.initial, sysblade: s.initial },
+      { item: "更換", short: "更換", traditional: t.replacements, sysblade: s.replacements },
+      { item: "瞬變損失", short: "瞬變", traditional: t.transient, sysblade: s.transient },
+      { item: "維運人力", short: "維運", traditional: t.ops, sysblade: s.ops },
+      { item: "HVDC 轉換", short: "HVDC", traditional: t.hvdc, sysblade: s.hvdc },
     ];
   }, [result]);
 
   return (
-    <div className="space-y-10 reveal-stagger">
-      <header className="space-y-3">
-        <div className="text-xs uppercase tracking-[0.2em] text-muted">TCO Calculator · 10-year horizon</div>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">How much does the transient gap cost you?</h1>
-        <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          <span className="text-foreground font-medium">Proposal §G.3 cost model</span> — reference baseline{" "}
+    <div className="space-y-12 reveal-stagger">
+      <header className="relative">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-6 right-0 -z-10 h-48 w-48 rounded-full bg-accent/10 blur-[100px]"
+        />
+        <div className="text-xs uppercase tracking-[0.22em] text-accent font-medium">TCO 計算器 · 10 年期間</div>
+        <div className="accent-rule bg-accent mt-3 mb-4" />
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] max-w-3xl text-balance">
+          瞬變缺口讓您<span className="gradient-text-accent">付出多少成本</span>？
+        </h1>
+        <p className="mt-4 text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
+          <span className="text-foreground font-medium">提案 §G.3 成本模型</span> — 參考基準{" "}
           (<span className="text-foreground">$0.10/kWh</span>,{" "}
-          <span className="text-foreground">PUE 1.4</span>) gives the{" "}
-          <span className="text-success font-medium">headline 33 % saving</span>. Adjust the sliders for your scenario.
+          <span className="text-foreground">PUE 1.4</span>) 得出{" "}
+          <span className="text-success font-medium">主要的 33 % 節省</span>。請依您的情境調整滑桿。
         </p>
       </header>
 
@@ -179,11 +186,11 @@ export function TcoClient() {
         {/* Inputs */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Inputs</CardTitle>
+            <CardTitle>輸入參數</CardTitle>
           </CardHeader>
           <CardBody className="space-y-5">
             <div>
-              <label className="text-xs text-muted uppercase tracking-wider">Quick preset</label>
+              <label className="text-xs text-muted uppercase tracking-wider">快速預設組</label>
               <select
                 value={presetName}
                 onChange={(e) => {
@@ -194,7 +201,7 @@ export function TcoClient() {
                 }}
                 className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               >
-                <option value="custom" disabled hidden>Custom</option>
+                <option value="custom" disabled hidden>自訂</option>
                 {Object.keys(PRESETS).map((k) => (
                   <option key={k} value={k}>
                     {k}
@@ -204,7 +211,7 @@ export function TcoClient() {
             </div>
 
             <NumberField
-              label="Rack count"
+              label="機架數量"
               value={inputs.racks}
               min={1}
               max={5000}
@@ -212,7 +219,7 @@ export function TcoClient() {
               onChange={(v) => setInputs((s) => ({ ...s, racks: v }))}
             />
             <NumberField
-              label="Electricity price (USD / kWh)"
+              label="電價 (USD / kWh)"
               value={inputs.electricityPriceUsdPerKwh}
               min={0.04}
               max={0.25}
@@ -229,7 +236,7 @@ export function TcoClient() {
               onChange={(v) => setInputs((s) => ({ ...s, pue: v }))}
             />
             <NumberField
-              label="Grid carbon (kg CO₂ / kWh)"
+              label="電網碳排 (kg CO₂ / kWh)"
               value={inputs.gridCarbonKgPerKwh}
               min={0.05}
               max={0.8}
@@ -243,19 +250,19 @@ export function TcoClient() {
         <div className="lg:col-span-2 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
-              label="Fleet 10-year saving"
+              label="機隊 10 年節省"
               value={formatUsd(result.fleet.savingUsd)}
               tone="success"
-              hint={`${(result.fleet.savingPct * 100).toFixed(1)} % below traditional BBU`}
+              hint={`較傳統 BBU 低 ${(result.fleet.savingPct * 100).toFixed(1)} %`}
             />
             <Stat
-              label="Per-rack saving"
+              label="每機架節省"
               value={formatUsd(result.perRack.saving)}
               tone="primary"
-              hint={`${(result.perRack.savingPct * 100).toFixed(1)} % per rack`}
+              hint={`每機架 ${(result.perRack.savingPct * 100).toFixed(1)} %`}
             />
             <Stat
-              label="Payback period"
+              label="回收期"
               value={formatPayback(result.fleet.paybackYears)}
               tone={
                 Number.isFinite(result.fleet.paybackYears) && result.fleet.paybackYears > 0
@@ -268,14 +275,14 @@ export function TcoClient() {
               }
               hint={
                 Number.isFinite(result.fleet.paybackYears) && result.fleet.paybackYears > 0
-                  ? `extra CAPEX recovered via predictive ops + transient + replacement-frequency savings · ${(result.perRack.savingPct * 100).toFixed(1)} % TCO saving anchors the model`
+                  ? `額外 CAPEX 透過預測性維運 + 瞬變 + 更換頻率的節省回收 · ${(result.perRack.savingPct * 100).toFixed(1)} % TCO 節省為模型的依據`
                   : inputs.racks === 0
-                    ? "Set rack count > 0 to compute payback"
-                    : "Operating savings ≤ 0 under this scenario — see line-item table for what's driving it"
+                    ? "請設定機架數量 > 0 以計算回收期"
+                    : "在此情境下營運節省 ≤ 0 — 詳見成本項目表了解原因"
               }
             />
             <Stat
-              label="CO₂ avoided · 10y"
+              label="CO₂ 減量 · 10 年"
               value={formatTons(result.fleet.co2SavedKg)}
               tone="default"
               hint={
@@ -283,7 +290,7 @@ export function TcoClient() {
                   {/* EPA average passenger vehicle ≈ 4.6 t CO₂/yr (10y → 46 t).
                       Dividing fleet 10-year savings by 46 t gives the
                       "passenger cars taken off the road for a year" headline. */}
-                  <Leaf className="h-3 w-3" /> ≈ {Math.max(0, result.fleet.co2SavedKg / 1000 / 4.6 / 10).toFixed(0)} cars / yr equivalent
+                  <Leaf className="h-3 w-3" /> ≈ 相當於 {Math.max(0, result.fleet.co2SavedKg / 1000 / 4.6 / 10).toFixed(0)} 輛車 / 年
                 </span>
               }
             />
@@ -291,7 +298,7 @@ export function TcoClient() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Cost breakdown · per rack · 10 year horizon</CardTitle>
+              <CardTitle>成本分解 · 每機架 · 10 年期間</CardTitle>
             </CardHeader>
             <CardBody>
               <BreakdownBars rows={breakdown} isNarrow={isNarrow} />
@@ -303,15 +310,15 @@ export function TcoClient() {
       {/* Per-rack table */}
       <Card>
         <CardHeader>
-          <CardTitle>Line-item detail · single rack · USD</CardTitle>
+          <CardTitle>成本項目明細 · 單一機架 · USD</CardTitle>
         </CardHeader>
         <CardBody>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted text-xs uppercase tracking-wider">
-                  <th className="text-left py-2">Cost line</th>
-                  <th className="text-right py-2">Traditional</th>
+                  <th className="text-left py-2">成本項目</th>
+                  <th className="text-right py-2">傳統</th>
                   <th className="text-right py-2">Sysblade</th>
                   <th className="text-right py-2">Δ</th>
                 </tr>
@@ -335,7 +342,7 @@ export function TcoClient() {
                   );
                 })}
                 <tr className="border-t border-border font-semibold">
-                  <td className="py-3">Total</td>
+                  <td className="py-3">總計</td>
                   <td className="py-3 text-right tabular-nums text-warning">
                     ${result.perRack.traditional.total.toLocaleString()}
                   </td>
@@ -360,27 +367,25 @@ export function TcoClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary" />
-            Sources & assumptions
+            來源與假設
           </CardTitle>
           <p className="mt-1.5 text-[11px] text-muted">
-            Every TCO line is pinned to <span className="text-foreground">v2.2 §G.3 Table 6</span>.
-            Expand below for the auditable line-by-line breakdown.
+            每一條 TCO 項目都對應 <span className="text-foreground">v2.2 §G.3 Table 6</span>。
+            展開下方可查看可稽核的逐項分解。
           </p>
         </CardHeader>
         <CardBody>
-          <Disclosure summary="Show line-by-line sources and assumptions">
+          <Disclosure summary="顯示逐項來源與假設">
             <p className="mb-3 text-[11px] leading-relaxed text-muted">
-              The &ldquo;industry anchor&rdquo; column names the <em>category</em> of organisation that
-              publishes in each area, not a verified citation to a specific document — the team
-              replaces these with concrete report IDs + page numbers in production sales conversations.
+              「業界依據」為方向性的組織<em>類別</em>標示，非已驗證引用；正式銷售時將補上具體報告編號 + 頁碼。
             </p>
             <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted text-[10px] uppercase tracking-wider">
-                  <th className="text-left py-2 pr-3 whitespace-nowrap">Line item</th>
-                  <th className="text-left py-2 pr-3 whitespace-nowrap">v2.2 anchor</th>
-                  <th className="text-left py-2">Why this number (directional industry context)</th>
+                  <th className="text-left py-2 pr-3 whitespace-nowrap">成本項目</th>
+                  <th className="text-left py-2 pr-3 whitespace-nowrap">v2.2 依據</th>
+                  <th className="text-left py-2">為何是這個數字（方向性業界脈絡）</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,34 +404,32 @@ export function TcoClient() {
             </table>
             </div>
           </Disclosure>
-          <Disclosure summary="Sensitivity notes" className="mt-4">
+          <Disclosure summary="敏感度說明" className="mt-4">
             <ul className="ml-4 list-disc space-y-1 text-[11px] leading-relaxed text-muted">
               <li>
-                <span className="text-foreground">Electricity price &amp; PUE</span> scale only
-                the <em>transient</em> and <em>ops</em> lines (factor{" "}
-                <code className="text-foreground">k = (price / 0.10) × (PUE / 1.4)</code>);{" "}
-                <em>initial purchase</em>, <em>replacements</em>, and <em>HVDC</em> are
-                fixed-cost assumptions independent of energy cost.
+                <span className="text-foreground">電價與 PUE</span> 只會縮放
+                <em>瞬變</em>與<em>維運</em>兩條項目（係數{" "}
+                <code className="text-foreground">k = (price / 0.10) × (PUE / 1.4)</code>）；{" "}
+                <em>初始採購</em>、<em>更換</em>與 <em>HVDC</em> 屬於
+                與能源成本無關的固定成本假設。
               </li>
               <li>
-                <span className="text-foreground">CO₂ delta</span> uses a per-rack/yr energy
-                overhead estimate (2400 kWh traditional → 1700 kWh Sysblade) × grid carbon
-                intensity. Clamped at zero to avoid showing negative CO₂ savings under edge
-                inputs.
+                <span className="text-foreground">CO₂ 差值</span> 採用每機架/年的能源
+                額外耗用估計值（傳統 2400 kWh → Sysblade 1700 kWh）× 電網碳排
+                強度。並夾限於零，以避免在邊界輸入下顯示負的 CO₂ 節省。
               </li>
               <li>
-                <span className="text-foreground">Payback period</span> annualises{" "}
-                <em>all</em> recurring deltas (transient + ops + replacements + HVDC) over 10
-                years; numerator is the one-time CAPEX premium (Sysblade − Traditional initial).
-                Returns <code className="text-foreground">N/A</code> when the saving direction
-                makes payback undefined (racks = 0, negative CAPEX delta, or operating savings
-                ≤ 0).
+                <span className="text-foreground">回收期</span> 將{" "}
+                <em>所有</em>經常性差值（瞬變 + 維運 + 更換 + HVDC）以 10
+                年攤平年化；分子為一次性的 CAPEX 溢價（Sysblade − 傳統初始）。
+                當節省方向使回收期無法定義時（機架數 = 0、CAPEX 差值為負，或營運節省
+                ≤ 0），會回傳 <code className="text-foreground">N/A</code>。
               </li>
               <li>
-                <span className="text-foreground">All numbers are baseline references</span>{" "}
-                from v2.2 §G.3. Production deals replace each with customer-specific quotes;
-                the elasticity model lets you stress-test the baseline without losing
-                traceability to the source row.
+                <span className="text-foreground">所有數字皆為基準參考值</span>{" "}
+                取自 v2.2 §G.3。實際成交時會以客戶專屬報價逐項取代；
+                彈性模型讓您能對基準進行壓力測試，同時不失去
+                對來源列的可追溯性。
               </li>
             </ul>
           </Disclosure>
@@ -434,23 +437,23 @@ export function TcoClient() {
       </Card>
 
       {/* CTA */}
-      <Card>
+      <Card className="tint-accent glow-accent">
         <CardBody className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold">Want this report on your letterhead?</h3>
+            <h3 className="text-lg font-semibold">想要這份報告印上貴公司抬頭嗎？</h3>
             <p className="text-muted mt-1 text-sm">
-              The lead-gen path: drop your email, we send a PDF with line-item assumptions, FTO references, and a quote
-              for your specific rack count.
+              潛在客戶開發流程：留下您的電子郵件，我們將寄送一份 PDF，內含成本項目假設、FTO 參考資料，以及
+              針對您特定機架數量的報價。
             </p>
           </div>
           <button
             type="button"
             disabled
             aria-disabled="true"
-            title="Lead-gen form is illustrative only for the ATCC demo"
+            title="潛在客戶開發表單僅為 ATCC 展示用途的示意"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition cursor-not-allowed opacity-80"
           >
-            Email me the report <ArrowRight className="h-4 w-4" />
+            將報告寄到我的信箱 <ArrowRight className="h-4 w-4" />
           </button>
         </CardBody>
       </Card>
