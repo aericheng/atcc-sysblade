@@ -126,7 +126,10 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
    說明 LFP 對 NMC 的成本優勢與 BBU 採購可承受度。供應集中亞洲產能但已有
    北美在地化擴產,北美客戶需求亦為「去 China-NMC」。
 
-輔助元件:**鋰離子電容(LIC)** 並聯。以 Eaton **XLR-48-166** 模組為錨
+輔助元件:**鋰離子電容(LIC)**,與 LFP 共用 rack DC bus,但**不是被動併接
+在 LFP 端子上**——LIC 經一組 MOSFET half-bridge(UCC27282 gate driver +
+IRFB4115)由 STM32 主動換流,依即時負載做功率分配(主動分頻 ≠ 被動濾波的
+論述見 §3.2.0)。以 Eaton **XLR-48-166** 模組為錨
 (48.6 V、166 F、容量 54 Wh、ESR ≈ 5 mΩ,per Eaton XLR-48R6167-R datasheet),
 LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULTIMO
 3300F datasheet),負責吸收 < 100 ms 的瞬態尖峰(對應 §3.2 高通濾波器
@@ -194,7 +197,7 @@ MW/s ramp + 頻域規範,未直接給 cell-level 數值**),SPM 會低估 solid-p
 |------|------|-----------|
 | `transient_lfp_only.json` | 80 kW baseline ±30 % swing(GB200 NVL72 級),純 LFP 應對 | 電壓震盪 ΔV ≈ 62 mV (steady-state pp) |
 | `transient_hybrid.json` | 同負載,LFP+LIC 混合應對(τ = 0.5 s 一階互補濾波器)| ΔV ≈ 18 mV (steady-state pp,3.5× 改善) |
-| `aging_lfp.json` | 3000 cycle BBU duty 下 SOH 衰減 | 80 % SOH @ ~3000 cycles |
+| `aging_lfp.json` | 3000 cycle BBU duty cycle-fade + **Naumann √t calendar/storage fade overlay**(§3.1.1)| cycle-fade 80 % SOH @ ~3360 cyc(≈67 yr);**calendar binds ≈10 yr**(校準 v2.2 附件 C) |
 | `aging_rainflow_validation.json` | Rainflow + Wang 2011 對 hybrid 與 LFP-only 各自的 LFP cell 電流跑 cycle-aging 預測,獨立交叉驗證 `aging_lfp.json` 的 hybrid-vs-solo 排序(見 §3.2.1) | demo 波形 hybrid/LFP-only damage ratio = 1.012,worst-case (10C peaks) ratio = 0.945 |
 | `model_validation.json` | LSTM 推論逐 cycle trajectory + actual | 9 個 curated cells |
 
@@ -202,6 +205,31 @@ MW/s ramp + 頻域規範,未直接給 cell-level 數值**),SPM 會低估 solid-p
 > 雙寫一致(generator 同一時間戳寫到 `packages/shared/` 與
 > `apps/web/public/`)。`aging_rainflow_validation.json` 不被 UI 消費,
 > 純粹是後端交叉驗證的可追溯產物。
+
+#### 3.1.1 Calendar / 純儲老化 overlay(業師 2026-06-04 質疑回應)
+
+循環老化(cycle-fade)**不是 DC 備援電池的 binding 限制**——備援包大部分時間
+高 SOC 靜置,主導的是 **calendar / 純儲老化**(業師指出的「滿充靜置老化快」)。
+`aging_lfp.json` 在 cycle-fade 之外疊加一條 **Naumann 2018(J. Energy Storage
+17:153-169)√t 半經驗 calendar 模型**:
+
+$$ Q_{\text{loss,cal}}(t) = k_{\text{ref}} \cdot e^{-E_a/R\,(1/T - 1/T_{\text{ref}})} \cdot f_{\text{SOC}}(\text{SOC}) \cdot \sqrt{t} $$
+
+* **絕對尺度回校到 v2.2 附件 C**「LFP 浮充 8–12 年」:DC-float 條件(SOC 0.9、
+  ~30 °C)下 80 % SOH 落在 **≈10 年**,因此首頁「10 yr 服役壽命」headline 由
+  原本的純文獻引用**升級為模型輸出**。
+* **形式(√t × Arrhenius × SOC)由文獻提供**,$E_a \approx 58$ kJ/mol 為 LFP
+  calendar 文獻區間代表值(**非本專案實測**);因 $k_{\text{ref}}$ 已回校,
+  $E_a$ 只決定 T/SOC 敏感度斜率,不決定 headline 壽命。
+* **binding life = min(cycle, calendar) = calendar ≈ 10 yr**
+  (`aging_lfp.json::stats.binding_mechanism = "calendar"`)。
+* **T × SOC 敏感度**(`stats.calendar_sensitivity`,`/twin` 老化卡可展開):
+  SOC 0.9 / 35 °C → **4.7 yr**、SOC 0.5 / 25 °C → **47.4 yr**——量化「越熱、
+  越滿,calendar 老化越快」,這是 cycle-only 模型表達不出來的。
+
+> **誠實邊界**:這是半經驗 calendar 模型,非電化學 SEI 生長模擬;production
+> 以客戶實機 calendar 數據校正。但它把「calendar 才是 binding」從口頭主張
+> 變成有 √t 模型 + 敏感度表背書的可追溯數字,直接回應業師質疑。
 
 ### 3.2 混合控制律 — LFP / LIC 頻譜分頻
 
@@ -226,6 +254,41 @@ power-swing 主能量帶 0.05–10 Hz 的低頻段給 LFP、高頻段給 LIC;τ 
 兩個數字直接對應首頁的 `5.7×` 與 `3.5×` 頭條。注意:這兩個數字描述的是
 LFP 看到的**訊號乾淨度**,不是壽命延長倍數。壽命層面的獨立交叉驗證
 見 §3.2.1。
+
+#### 3.2.0 主動分頻 ≠ 被動併聯濾波(業師 2026-06-04 質疑回應)
+
+業界把超級電容放在**系統輸入端**做輸入電壓穩定(NVIDIA / Schneider 的
+input-side ride-through 設計);Sysblade 把 LIC 放在**電池端(BBU 內)**,
+目的不同——不是穩住系統輸入電壓,而是**把 LFP 從毫秒級瞬態中卸載以延壽**。
+業師正確指出:**若只是把電容被動併接在電池上,效果僅止於弱濾波**。我們的
+拓樸不是被動併接,有兩個關鍵區別:
+
+1. **上面的互補濾波器是「控制目標」,不是物理接線。** 實際由 STM32 讀取
+   即時負載、算 LPF、對 MOSFET half-bridge 下 PWM duty,**主動**把高頻電流
+   導向 LIC、低頻留給 LFP(`firmware/stm32_hybrid_control/main.c:184-207`
+   `ST_RUNNING` 狀態機;`scripts/hybrid_control_emulator.py` 為同一控制律的
+   Python 鏡像;BoM 見 `docs/BBU_IMPLEMENTATION_PLAN.md:474-475`,UCC27282
+   isolated half-bridge driver + 雙路 high-side N-MOS switch matrix)。
+2. **分頻點 τ = 0.5 s 是「設計參數」,不是被動 RC 的自然時間常數。** 可主動
+   收緊到比電容被動吸收更多的頻段——`_split_with_lic` docstring 明寫刻意取
+   τ < 電容本徵 τ ≈ 0.83 s,讓 DC-DC 把比被動併接更多的瞬態內容推到 LIC。
+
+**放電池端 vs 系統端的取捨**(回應「概念上不太一樣」):
+
+| 維度 | 系統輸入端(NVIDIA / Schneider) | 電池端 / BBU 內(Sysblade) |
+|------|--------------------------------|----------------------------|
+| 目的 | 穩住系統輸入電壓、ride-through | **卸載 LFP 毫秒瞬態以延壽 + 削峰** |
+| 受益對象 | 下游整個 PDU / rack | **LFP 電芯本身**(降 per-Ah 電極應力) |
+| 失效半徑 | 單點電容失效影響整條輸入匯流排 | **per-BBU 隔離**,8 台並聯為 N+1 容錯 |
+| 與壽命 KPI 關係 | 不直接延長電池壽命 | **直接對應 calendar / cycle 壽命 KPI(§3.1)** |
+
+**誠實邊界(scope 邊界,答辯主動講)**:本 demo 的 sim 層把 LIC 以一階
+R_esr × C_bulk 等效模型直接掛在 48 V bus 上算 droop(`_simulate_lic_rc`),
+**尚未模真正的雙向 DC-DC 變流器前級**;8S scaled sim 還刻意選 32 V 串聯讓
+bank 電壓粗略 match bus 以規避 DC-DC(`scripts/generate_scaled_8s_sim.py`)。
+真正的雙向 DC-DC 前級設計與 in-the-loop 驗證是 **EVT(2026 Q3)deliverable**。
+換言之:**控制律與主動換流拓樸已在韌體 / sim 層成立;DC-DC 變流器本身的
+物理模型留 EVT**——不要讓業師以為我們宣稱已模完整 DC-DC。
 
 #### 3.2.1 獨立交叉驗證 — Rainflow + Wang 2011
 
@@ -858,6 +921,13 @@ $$
 > 答案不會與 v2.2 PDF 衝突。每一行如果業師深挖 → repo 對應檔案路徑
 > 都查得到。
 
+> **供應鏈 / 聯合採購策略**(業師 2026-06-04 訪談指出 canonical proposal
+> 缺此機制論述):補充文件見 `docs/JOINT_PROCUREMENT_STRATEGY.md`——同型電芯
+> 標準化(安規把電芯當關鍵組件 → 換型須重認證)、配給局年量框約議價、
+> 多源不綁單一 source 政策、策略聯盟後雙方供應商清單互通。定價維持
+> **溢價而非殺價**(ASP USD 1,080 vs 行業均 720),與既有商業敘事一致;待
+> 併入 canonical proposal §F。
+
 ---
 
 ## 第七章 風險分析
@@ -965,12 +1035,14 @@ $$
 | **V4** | N-1 BBU failure redundancy sim(t=15 s 1 台 offline,剩 7 台撐 60 s)| `apps/web/public/scenarios/rack_n_minus_1.json` + dashboard fault-inject toggle | §2.1.1 N+1 容錯主張 | 📋 W3 |
 | **V5** | Severson → PyBaMM-generated GB200 duty cell transfer test(100 個 physics-grounded synthetic cell 至 80 % SOH,測 Severson MAPE)| `data/processed/severson_transfer_mape.json` | §3.3.5 cross-regime 誠實 transfer 證據 | 📋 W3 |
 | **V6** | `make verify` 一鍵 reproducibility gate(re-run twin + Severson + INT8 quant + cross-check,output PASS/FAIL JSON)| `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 對 RD reviewer 的 30 分鐘 self-check 承諾 | 📋 W4 |
+| **V7** | **Pack-level imbalance screening**(15S 串 cell-to-cell spread + 熱梯度 Arrhenius 局部老化 + 2 芯+電容 串並 A/B)| `apps/web/public/scenarios/pack_imbalance.json` + `/twin` 新 V7 card | 業師 2026-06-04:單顆模型抓不到整串最弱 cell + 櫃內熱不均 | ✅ 已生成(**screening,非 make-verify gate**)|
 
 **V1-V6 全到位 = twin-first 完整論述**:
 - **V1+V2 物理層**:PyBaMM DFN + LIC RC 兩個模型都對齊到 measured 量測,fit error 量化,**不是「我們假設這個模型對」**
 - **V3+V4 系統層**:整 rack 60 s graceful + N-1 容錯都在 sim 完成;**這兩條實機學生階段做不到,正是 twin 比 hardware 強的點**
 - **V5 ML 層**:把 Severson 訓練模型放在 PyBaMM 生的 BBU-duty synthetic cells 上測,**physics-grounded synthetic test set 不是 analytic regularizer**;cross-regime MAPE 是給的而非藏的
 - **V6 reproducibility**:RD reviewer 跑一條命令 30 分鐘 verify 全部 headline 數字
+- **V7 pack-level imbalance(業師 2026-06-04 新增)**:回應「你們模型是單顆,抓不到整串最弱 cell 拖累 + 櫃內熱不均」。`scenario_pack_imbalance` 生成 15S 串不均勻(最弱 cell 把 string SOH@7yr 拉到 **0.65** vs mean 0.77)、熱梯度(28→40 °C 使 hot-end calendar life 從 **13.6 → 2.3 yr**)、業師建議的 2 芯+電容 A/B(parallel→series per-cell cap **自平衡**,弱 cell 瞬態 **↓13 %**)。**定位 screening 非 make-verify gate**(單顆 DFN 仍是主 aging engine,§3.1);可於 EVT 升格為驗證鏈
 
 #### 8.3.3 已落地 v1.x 證據(v2.0 直接沿用)
 

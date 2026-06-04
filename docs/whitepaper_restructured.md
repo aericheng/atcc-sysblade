@@ -266,6 +266,7 @@ control plane API(NVIDIA `nvml`、IPMI Power Capping Spec 1.0、Redfish
 | 「具體選哪一顆車規 LFP cell?」 | LG ESS B-series 與 Samsung SDI 高功率版均為候選,具體 cell selection 在 W3 EVT 階段(2026 Q3)依 datasheet 5–10C pulse + 1–3C 連續規格涵蓋本工作點為 GO 條件 |
 | 「GPU power-cap 怎麼實作?延遲多少?」 | W3 EVT 階段交付,候選 API 已列(nvml / IPMI / Redfish);本層為設計承諾與 power profile commit,**不是已驗證實作**,對齊 v2.2 §F.1 18 個月里程碑 |
 | 「客戶 inference workload 不能被中斷怎辦?」 | facility UPS 接手長時備援是 v2.2 §E 共同設計前提;Sysblade 60 秒 graceful 是給 **checkpoint + graceful drain**,不是無中斷服務(若客戶站缺 facility UPS,走 v2.2 §E.5 Tier-A 擴大版規格)|
+| 「電池老化 5–7 年後,斷電當下還能輸出多少功率、撐多久?」(**客戶最在乎,業師 2026-06-04**)| **EOL(80 % SOH、≈第 10 年)直接算**:backup runtime 600 s → **480 s**(能量限制 ∝SOH,仍 **8×** 於 60 s 承諾);連續 1.5C **維持不變**(能量限制非功率限制);LFP 峰值功率能力 → **67 %**(DCIR +50 %),但 6C 峰值是 <100 ms LIC-led pulse、LIC 扛,系統峰值不被 LFP 老化卡住。模型在 `mains_fail_profile.json::aged`,`/twin` mains-fail 卡有 BoL vs EOL 對照表、`/dashboard` drilldown 顯示 per-device 老化後功率/runtime。DCIR +50 % 為文獻代表值非本專案實測 |
 | 「為什麼不用更大 BBU 例如 25 kWh × 1 台?」 | **單點故障 blast radius**:per-rack 8 台並聯允許 N+1 容錯(任一台失效不影響 rack);整合單台 25 kWh 違反 v2.2 §E.1 12U OCP ORV3 機械形狀因子 + 失效範圍擴大 |
 | 「複賽 demonstrator 是 8S × 5C peak / 1C 連續,跟 spec 6C/1.5C 不一致?」 | **是 scaled-down,per-cell 工作點 transferable**:demonstrator 因預算 + 26 天時程 + 學生實驗室安全考量,容量縮 ~10×、串數縮 1/2、cell C-rate peak 5C / 連續 ~1C(因 Maxwell BMOD0058 Ioper 19A 限制)。**控制律 τ=0.5s、互補濾波器、5.72×/3.52× 削峰物理 chemistry-agnostic 且 sim 驗過**(`scripts/generate_scaled_8s_sim.py` PASS)。Spec 6C/1.5C 仍是 EVT(2026 Q3)目標,對齊 v2.2 §F.1。詳 `docs/BBU_IMPLEMENTATION_PLAN.md` §1.1 demonstrator spec |
 
