@@ -53,6 +53,7 @@ const SLIDES = [
   { id: "edge",          label: "Edge AI",       ms: 4300 },
   { id: "tco-headline",  label: "TCO",           ms: 3200 },
   { id: "tco-scenarios", label: "TCO scenarios", ms: 3600 },
+  { id: "ride",          label: "Ride-through",  ms: 3800 },
   { id: "verify",        label: "Reproduce",     ms: 4500 },
   { id: "cta",           label: "CTA",           ms: 3500 },
 ] as const;
@@ -460,7 +461,7 @@ export function TourClient({
             className="mt-8 anim-zoom-in anim-stagger-2"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            實機學生階段物理上不可能驗證 · sim 層 trivial — 這正是 twin {">"} hardware 的賣點
+            整 rack N-1 容錯在實體上極難重現,孿生層卻能直接驗證 — 這正是 twin {">"} hardware 的價值
           </p>
         </div>
       </Slide>
@@ -595,19 +596,57 @@ export function TourClient({
         </div>
       </Slide>
 
-      {/* 16 — V6 verify (typewriter terminal) */}
+      {/* 16 — Ride-through: backup hold-time, new vs aged (customer reliability climax).
+          Numbers sourced from mains_fail_profile.json aged block (BoL 600s @ rack peak →
+          EOL 480s at 80% SOH = 8× the 60s commitment; peak-power retention 67%). Hardcoded
+          to match the deck's curated-number style; see /twin for the live interactive model. */}
       <Slide idx={15} active={active === 15} refCb={(el) => (sectionRefs.current[15] = el)}>
+        <div className="max-w-4xl mx-auto px-6 w-full">
+          <div className="text-center">
+            <Tag>客戶最在乎</Tag>
+            <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
+              斷電當下,機櫃還能撐多久 —— 用了 7 年也一樣?
+            </h2>
+            <CountUpNumber active={active === 15} target={8} decimals={0} unit="× 於 60s 承諾" tone="success" />
+          </div>
+          <TwoBar
+            items={[
+              { label: "新品 backup runtime", value: 600, color: "var(--muted)" },
+              { label: "用 7 年後(EOL · 80% SOH)", value: 480, color: "var(--success)" },
+            ]}
+            maxValue={640}
+            unit="秒 @ rack peak power"
+            className="mt-8 anim-fade-in anim-stagger-3"
+          />
+          <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
+            就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒 graceful 承諾的 8 倍餘量;
+            峰值功率能力仍保 67%(毫秒尖峰由 LIC 扛)。客戶買的不是新電池規格,是「老化後還能用」。
+          </p>
+          <div className="mt-6 text-center anim-fade-in anim-stagger-5">
+            <Link
+              href="/twin"
+              className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-4 py-2 text-sm font-medium hover:bg-primary/25 transition-colors"
+            >
+              拖 SOH slider 自己看 → /twin
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </Slide>
+
+      {/* 17 — V6 verify (typewriter terminal) */}
+      <Slide idx={16} active={active === 16} refCb={(el) => (sectionRefs.current[16] = el)}>
         <div className="max-w-3xl mx-auto px-6 w-full text-center">
           <Tag>V6 · 一鍵重現</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             RD reviewer 30 分鐘 self-check
           </h2>
-          <TypewriterTerminal active={active === 15} className="mt-10" />
+          <TypewriterTerminal active={active === 16} className="mt-10" />
         </div>
       </Slide>
 
       {/* 17 — CTA (bounce-in buttons) */}
-      <Slide idx={16} active={active === 16} refCb={(el) => (sectionRefs.current[16] = el)} last>
+      <Slide idx={17} active={active === 17} refCb={(el) => (sectionRefs.current[17] = el)} last>
         <div className="text-center max-w-4xl mx-auto px-6">
           <Tag>下一步</Tag>
           <h2 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight anim-scale-in">
@@ -616,29 +655,29 @@ export function TourClient({
             <span className="block">問問題</span>
           </h2>
           <div className="mt-12 flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="https://github.com/aericheng/atcc-sysblade"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-foreground text-background px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity anim-bounce-in anim-stagger-1"
-            >
-              GitHub repo
-              <ExternalLink className="h-4 w-4" />
-            </a>
             <Link
               href="/twin"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-2"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-5 py-3 text-sm font-medium hover:bg-primary/90 transition-colors anim-bounce-in anim-stagger-1"
             >
-              開 /twin V3/V4 toggle
+              看斷電當下能撐多久 → /twin
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-3"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-2"
             >
-              開 /dashboard fleet
+              看 fleet 健康儀表板 → /dashboard
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
+            <a
+              href="https://github.com/aericheng/atcc-sysblade"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-3"
+            >
+              GitHub repo(工程審查)
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
           <p className="mt-12 text-xs text-muted anim-fade-in anim-stagger-5">
             ATCC 第 23 屆 C13 系統電 Sysgration · v2.0 twin-first validation

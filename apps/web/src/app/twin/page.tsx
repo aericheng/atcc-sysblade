@@ -22,6 +22,7 @@ export default async function TwinPage() {
     rackGraceful,
     rackNMinus1,
     aging,
+    packImbalance,
     modelValidation,
   ] = await Promise.all([
     loadScenario("transient_lfp_only"),
@@ -30,6 +31,7 @@ export default async function TwinPage() {
     loadScenario("rack_60s_graceful"),
     loadScenario("rack_n_minus_1"),
     loadScenario("aging_lfp"),
+    loadScenario("pack_imbalance"),
     loadScenario("model_validation"),
   ]);
   return (
@@ -40,6 +42,7 @@ export default async function TwinPage() {
       rackGraceful={rackGraceful}
       rackNMinus1={rackNMinus1}
       aging={aging}
+      packImbalance={packImbalance}
       modelValidation={modelValidation}
     />
   );

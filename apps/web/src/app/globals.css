@@ -194,3 +194,27 @@ body {
   background-clip: text;
   color: transparent;
 }
+
+/* ============================================================================
+   Landing / general page motion — load-staggered fade-up (pure CSS, JS-safe:
+   the animation always runs to completion, so content can never get stuck
+   invisible). Applied via `reveal-stagger` on a container; its direct children
+   fade up in sequence. Guarded by prefers-reduced-motion. The headline number
+   count-up is handled separately by components/motion.tsx (CountUp).
+   ============================================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes sb-fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .reveal-stagger > * { animation: sb-fade-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .reveal-stagger > *:nth-child(2) { animation-delay: 0.07s; }
+  .reveal-stagger > *:nth-child(3) { animation-delay: 0.14s; }
+  .reveal-stagger > *:nth-child(4) { animation-delay: 0.21s; }
+  .reveal-stagger > *:nth-child(5) { animation-delay: 0.28s; }
+  .reveal-stagger > *:nth-child(6) { animation-delay: 0.35s; }
+
+  /* Subtle hover-lift for cards/links opted in via the class. */
+  .hover-lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+  .hover-lift:hover { transform: translateY(-2px); }
+}

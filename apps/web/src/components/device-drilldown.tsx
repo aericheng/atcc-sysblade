@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { X, ArrowUpRight, Zap } from "lucide-react";
 import { type Device, type LicRcEnvelope, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
+import { backupRuntimeSeconds, peakPowerRetention, dcirGrowth } from "@/lib/aging";
 
 interface Props {
   device: Device;
@@ -148,6 +149,51 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           </p>
         </section>
 
+        {/* Backup capability at this device's current age — the customer's first
+            question, so it leads. Derived client-side from soh_lfp via @/lib/aging
+            (mirror of the Python DCIR-growth model). */}
+        <section className="space-y-3 border-b border-border p-5">
+          <h3 className="text-xs uppercase tracking-wider text-muted">
+            If mains drops now — backup capability
+          </h3>
+          <p className="text-sm text-foreground leading-relaxed">
+            This unit delivers{" "}
+            <span className="font-semibold tabular-nums">
+              {Math.round(peakPowerRetention(device.soh_lfp) * 100)}%
+            </span>{" "}
+            peak power for{" "}
+            <span className="font-semibold tabular-nums">
+              {Math.round(backupRuntimeSeconds(device.soh_lfp))} s
+            </span>{" "}
+            —{" "}
+            <span className="font-semibold tabular-nums">
+              {(backupRuntimeSeconds(device.soh_lfp) / 60).toFixed(1)}×
+            </span>{" "}
+            the 60-second graceful-shutdown commitment, at its current{" "}
+            {Math.round(device.soh_lfp * 100)}% SOH.
+          </p>
+          <div className="grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3">
+            <Metric
+              label="Backup runtime @ rack peak"
+              value={`${Math.round(backupRuntimeSeconds(device.soh_lfp))} s`}
+            />
+            <Metric
+              label="… margin vs 60 s commitment"
+              value={`${(backupRuntimeSeconds(device.soh_lfp) / 60).toFixed(1)}×`}
+            />
+            <Metric
+              label="LFP peak-power capability"
+              value={`${Math.round(peakPowerRetention(device.soh_lfp) * 100)} %`}
+            />
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted">
+            What a Data Center buyer asks first — deliverable power + runtime after aging, not just
+            SOH/RUL. Runtime is energy-limited (∝&nbsp;SOH); peak-power capability dips with
+            internal-resistance rise (+{Math.round(dcirGrowth(device.soh_lfp) * 100)}% here), but the
+            millisecond peak is handled by the capacitor, so it doesn&rsquo;t gate the rack.
+          </p>
+        </section>
+
         {/* RUL */}
         <section className="space-y-3 border-b border-border p-5">
           <div className="flex items-center justify-between">
@@ -191,27 +237,13 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           )}
 
           <p className="text-[11px] leading-relaxed text-muted">
-            Point estimate from the same LSTM deployed on /twin (one model, two views;
-            ΔMAPE +0.10 pp INT8). 90 % conformal PI bands are calibrated only on the 9
-            walkthrough cells in /twin; per-device fleet PI bands would require
-            per-device PyBaMM trajectories.
-          </p>
-          <p className="text-[11px] leading-relaxed text-muted">
-            <span className="text-warning font-medium">⚠ Cycle-fade headroom only:</span>{" "}
-            the &ldquo;{bbuYrs >= 15 ? "≫ 10 yr" : `${bbuYrs.toFixed(1)} yr`}&rdquo;
-            figure is <span className="text-foreground">cycles ÷ 50 cyc/yr</span> assuming
-            BBU low-duty cadence — LSTM-predicted long cycle-fade life can read in the
-            tens-to-hundreds of years on raw division, which is why we cap the display at
-            ≫ 10 yr. <span className="text-foreground font-medium">Calendar life binds at
-            ~8–12 yr</span> (v2.1 §G.3 footnote + §E.1 Tier-B: LFP 浮充壽命 + thermal/SEI
-            growth), so the headline{" "}
-            <span className="text-foreground">10-yr service target</span> is calendar-bound,
-            not cycle-bound. Tier-3 admission in this LSTM-driven path triggers almost
-            exclusively on <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span>;
-            the <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> branch in
-            the admission rule is the safety net for the{" "}
-            <code className="text-foreground">synthetic_decay</code> fallback path (when
-            the LSTM checkpoint isn&rsquo;t available at generation time).
+            Point estimate from the same LSTM deployed on{" "}
+            <span className="text-foreground">/twin</span> (one model, two views). The ≫&nbsp;10&nbsp;yr
+            figure is cycle-fade headroom (cycles&nbsp;÷&nbsp;50&nbsp;cyc/yr); the real limit is{" "}
+            <span className="text-foreground">calendar/storage life ~8–12&nbsp;yr</span> (proposal §G.3 /
+            附件 C), so Tier-3 admission triggers almost entirely on{" "}
+            <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span>, with{" "}
+            <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> as the fallback-path safety net.
           </p>
         </section>
 
@@ -329,7 +361,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             datasheet&rsquo;s rated pulse current. Typical 48 V LIC modules at this size
             handle 500–1500 A briefly under 30 s, so the 100 ms pulse should be inside
             spec — but production must verify on Eaton&rsquo;s lot-specific datasheet
-            before EVT (see <code className="text-foreground">docs/citations_audit.md</code>).
+            before design freeze (see <code className="text-foreground">docs/citations_audit.md</code>).
           </p>
         </section>
 

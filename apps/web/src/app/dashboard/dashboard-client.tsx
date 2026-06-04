@@ -124,7 +124,7 @@ export function DashboardClient({
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 reveal-stagger">
       {/* V4 fleet-level fault toggle. Reads rack_n_minus_1.json (cell-level
           per-BBU sim) and projects it across the 1000-device fleet. When
           enabled, a deterministic ~6 % of devices are visually marked as
@@ -135,8 +135,8 @@ export function DashboardClient({
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>V4 fleet-level fault toggle · N+1 redundancy</CardTitle>
-              <Disclosure summary="What you&apos;re seeing" className="mt-2">
+              <CardTitle>A backup unit can fail with zero service interruption · N+1 redundancy</CardTitle>
+              <Disclosure summary="What you&apos;re seeing (fault-injection sim detail)" className="mt-2">
                 Twin sim artifact `apps/web/public/scenarios/rack_n_minus_1.json` is the cell-level
                 proof that a rack with 1 BBU offline (8 → 7) still keeps per-BBU continuous C-rate
                 inside the 2.5 C automotive LFP limit. This toggle projects that result onto the
@@ -195,7 +195,7 @@ export function DashboardClient({
           </div>
           {showFaultToggle && (
             <div className="rounded-md border border-warning/30 bg-warning/5 px-4 py-3 text-xs text-foreground/90 leading-relaxed">
-              <span className="font-semibold text-warning">V4 sim verdict: </span>
+              <span className="font-semibold text-warning">Fault-scenario verdict: </span>
               {rackNMinus1.headline_verdict ??
                 `N-1 failure post-fault per-BBU stays inside automotive LFP continuous spec; V_cell swing and T_cell within limit; LIC headroom preserved.`}
             </div>
@@ -362,9 +362,11 @@ export function DashboardClient({
                   service remaining. The 800-cycle threshold is the &ldquo;needs replacement
                   within ~16 years&rdquo; gate, not 800 days. Under the LSTM-driven path,
                   cycle-fade headroom is typically much larger than calendar life —{" "}
-                  <span className="text-foreground">calendar life binds at ~8-12 yr</span> per
-                  v2.2 附件 C, so cycle-fade is rarely the binding constraint for replacement
-                  decisions.
+                  <span className="text-foreground">calendar/storage fade binds at ~10 yr</span>{" "}
+                  (now modeled: Naumann √t calendar curve on{" "}
+                  <span className="text-foreground">/twin</span>, calibrated to v2.2 附件 C&rsquo;s
+                  8–12 yr LFP float life), so cycle-fade is rarely the binding constraint for
+                  replacement decisions.
                 </Disclosure>
                 <Disclosure summary="Where rul_cycles, soh_lfp, soh_lic come from">
                   {rulFromLstm ? (

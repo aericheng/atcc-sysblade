@@ -24,6 +24,7 @@ import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Stat } from "@/components/ui/stat";
 import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
+import { CalendarWidget, AgedPowerWidget, PackThermalWidget } from "@/components/model-widgets";
 
 // Per-cycle feature definitions for the walkthrough chart. These mirror
 // packages/battery-twin/data_loaders/severson_parser.py and must stay in
@@ -60,6 +61,25 @@ interface Scenario {
     peak_kw: number;
     continuous_kw: number;
   };
+  // Aged-state backup capability (mains-fail scenario only, mentor 2026-06-04).
+  aged?: {
+    aged_soh: number;
+    aged_label: string;
+    dcir_growth: number;
+    energy_retention: number;
+    peak_power_retention: number;
+    backup_runtime_s_bol_peakbasis: number;
+    backup_runtime_s_eol_peakbasis: number;
+    runtime_margin_vs_commitment_eol: number;
+    continuous_c_rate_at_eol: number;
+    model?: {
+      dcir_growth_at_eol?: number;
+      eol_soh?: number;
+      form?: string;
+      reference?: string;
+      note?: string;
+    };
+  };
   series: Record<string, number[]>;
   stats: {
     v_cell_min?: number;
@@ -91,8 +111,75 @@ interface Scenario {
 interface AgingScenario {
   title: string;
   description: string;
-  series: { cycle: number[]; soh_full_cycling: number[]; soh_bbu_duty: number[] };
+  series: {
+    cycle: number[];
+    soh_full_cycling: number[];
+    soh_bbu_duty: number[];
+    // Calendar/storage fade overlay (mentor 2026-06-04). Optional so the UI
+    // still renders against an older aging_lfp.json that lacks these.
+    years?: number[];
+    soh_calendar?: number[];
+    soh_binding?: number[];
+  };
   stats: Record<string, number | null>;
+}
+
+// Calendar T×SOC sensitivity rows emitted in aging_lfp.json stats.
+interface CalendarSensitivityRow {
+  soc: number;
+  temp_c: number;
+  calendar_life_years_at_80: number;
+}
+
+// V7 pack-level imbalance scenario (pack_imbalance.json).
+interface PackImbalanceCell {
+  idx: number;
+  capacity_rel: number;
+  r_rel: number;
+  soc0: number;
+  temp_c: number;
+  calendar_life_yr: number;
+  soh_at_7yr: number;
+}
+interface TopologyArm {
+  weak_cell_transient_a: number;
+  strong_cell_transient_a: number;
+  self_balancing: boolean;
+  note: string;
+}
+interface PackImbalanceScenario {
+  title: string;
+  description: string;
+  validation_chain?: string;
+  string: {
+    n_series: number;
+    cells: PackImbalanceCell[];
+    weakest_idx: number;
+    hottest_idx: number;
+    usable_capacity_unbalanced_rel: number;
+    usable_capacity_balanced_rel: number;
+    imbalance_penalty_pct: number;
+    balance_recovery_pct: number;
+    string_soh_at_7yr: number;
+    mean_soh_at_7yr: number;
+    note: string;
+  };
+  thermal_gradient: {
+    t_inlet_c: number;
+    t_outlet_c: number;
+    calendar_life_cold_yr: number;
+    calendar_life_hot_yr: number;
+    life_spread_pct: number;
+    note: string;
+  };
+  topology_ab: {
+    weak_cell_r_factor: number;
+    transient_a: number;
+    parallel_then_series: TopologyArm;
+    series_then_parallel: TopologyArm;
+    weak_cell_transient_reduction_pct: number;
+    verdict: string;
+  };
 }
 
 // V3 (normal) + V4 (N-1 fault) rack-scale 60s sim with thermal model.
@@ -487,6 +574,7 @@ export function TwinClient({
   rackGraceful,
   rackNMinus1,
   aging,
+  packImbalance,
   modelValidation,
 }: {
   lfpOnly: Scenario;
@@ -495,6 +583,7 @@ export function TwinClient({
   rackGraceful: RackScenario;
   rackNMinus1: RackScenario;
   aging: AgingScenario;
+  packImbalance: PackImbalanceScenario;
   modelValidation: ModelValidation;
 }) {
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
@@ -554,9 +643,27 @@ export function TwinClient({
         cycle: Math.round(c),
         soh_full: Number(aging.series.soh_full_cycling[i].toFixed(4)),
         soh_bbu: Number(aging.series.soh_bbu_duty[i].toFixed(4)),
+        // Calendar/storage fade plotted on the same cycle axis (years = cycle/50).
+        soh_calendar:
+          aging.series.soh_calendar != null
+            ? Number(aging.series.soh_calendar[i].toFixed(4))
+            : undefined,
       })),
     [aging],
   );
+
+  // Calendar T×SOC sensitivity table (optional; present once aging_lfp.json
+  // carries the calendar overlay). Shows the mentor's point: hotter + higher
+  // SOC ⇒ shorter calendar life.
+  const calendarSensitivity = useMemo(
+    () =>
+      (aging.stats["calendar_sensitivity"] as unknown as CalendarSensitivityRow[] | undefined) ??
+      [],
+    [aging],
+  );
+
+  // V7 pack-level imbalance scenario (mentor 2026-06-04).
+  const pi = packImbalance;
 
   // Mains-fail 60s ramp data. Keep full resolution in [0, 3] s (where the
   // peak-hold + exponential decay + early settling all happen) and decimate
@@ -647,7 +754,7 @@ export function TwinClient({
   const pReduction = pStdLfp / pStdHybrid;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 reveal-stagger">
       <header className="space-y-3">
         <div className="text-xs uppercase tracking-[0.2em] text-muted">Battery Digital Twin · PyBaMM DFN (LFP) + first-order LIC equivalent</div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Solving the GB200 millisecond transient.</h1>
@@ -777,6 +884,19 @@ export function TwinClient({
           </div>
         </CardHeader>
         <CardBody className="space-y-6">
+          {mainsFail.aged && (
+            <div>
+              <div className="text-sm font-medium text-foreground mb-1">
+                If mains drops, how long does the rack ride through — now and after years of aging?
+              </div>
+              <p className="text-xs text-muted mb-3">
+                The single question a Data Center buyer asks first. Drag the pack&rsquo;s health —
+                backup runtime stays well above the 60-second graceful-shutdown commitment all the way
+                to end-of-life.
+              </p>
+              <AgedPowerWidget />
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
               label="Energy used vs rack capacity"
@@ -807,6 +927,65 @@ export function TwinClient({
               hint={`v_min ${((mainsFail.stats.v_cell_min as number) ?? 0).toFixed(3)} V → v_max ${((mainsFail.stats.v_cell_max as number) ?? 0).toFixed(3)} V · LFP stays in plateau across the full 60 s ramp`}
             />
           </div>
+
+          {mainsFail.aged && (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
+              <div className="text-sm font-medium text-foreground mb-1">
+                New vs end-of-life backup, in detail
+              </div>
+              <p className="text-xs text-muted mb-3">
+                The four stats above are a <span className="text-foreground">fresh</span> pack. The
+                customer&rsquo;s real question is year-7/EOL: when mains drops after years of aging,
+                how much power and runtime remain? Modeled via DCIR growth (+
+                {Math.round((mainsFail.aged.dcir_growth ?? 0.5) * 100)}% at{" "}
+                {Math.round((mainsFail.aged.aged_soh ?? 0.8) * 100)}% SOH) + capacity fade.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="text-xs border-collapse w-full max-w-lg">
+                  <thead>
+                    <tr className="text-muted">
+                      <th className="px-2 py-1 text-left font-medium">Metric</th>
+                      <th className="px-2 py-1 text-right font-medium">BoL (new)</th>
+                      <th className="px-2 py-1 text-right font-medium">{mainsFail.aged.aged_label}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="tabular-nums text-foreground">
+                    <tr className="border-t border-border/40">
+                      <td className="px-2 py-1 text-left">Backup runtime @ rack peak</td>
+                      <td className="px-2 py-1 text-right">
+                        {Math.round(mainsFail.aged.backup_runtime_s_bol_peakbasis)} s
+                      </td>
+                      <td className="px-2 py-1 text-right text-warning">
+                        {Math.round(mainsFail.aged.backup_runtime_s_eol_peakbasis)} s
+                      </td>
+                    </tr>
+                    <tr className="border-t border-border/40">
+                      <td className="px-2 py-1 text-left">… margin vs 60 s commitment</td>
+                      <td className="px-2 py-1 text-right">
+                        {(mainsFail.aged.backup_runtime_s_bol_peakbasis / 60).toFixed(0)}×
+                      </td>
+                      <td className="px-2 py-1 text-right">
+                        {(mainsFail.aged.runtime_margin_vs_commitment_eol ?? 8).toFixed(0)}×
+                      </td>
+                    </tr>
+                    <tr className="border-t border-border/40">
+                      <td className="px-2 py-1 text-left">LFP peak-power capability</td>
+                      <td className="px-2 py-1 text-right">100%</td>
+                      <td className="px-2 py-1 text-right text-warning">
+                        {Math.round((mainsFail.aged.peak_power_retention ?? 0.667) * 100)}%
+                      </td>
+                    </tr>
+                    <tr className="border-t border-border/40">
+                      <td className="px-2 py-1 text-left">Continuous survival (1.5 C)</td>
+                      <td className="px-2 py-1 text-right">maintained</td>
+                      <td className="px-2 py-1 text-right">maintained</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted mt-2">{mainsFail.aged.model?.note}</p>
+            </div>
+          )}
 
           <ChartCard
             title="Rack power split · 0-60 s"
@@ -1120,7 +1299,7 @@ export function TwinClient({
               value={Math.round((aging.stats["cycle_at_80pct_soh_bbu"] as number) ?? 0)}
               unit="cycles"
               tone="primary"
-              hint="50 cyc/yr engineering estimate (anchored to v2.1 §G.3 + §E.1 Tier-B 8-12 yr LFP 浮充 life) → ≈ 67 yr cycle-fade life · 10-yr design target met with margin (calendar life binds, not cycle-fade)"
+              hint="Cycle-fade alone would last ~67 yr — but calendar/storage fade binds first (red dashed curve below). Drag the interactive calendar model to see how heat and charge level change it."
             />
             <Stat
               label="Knee point (full-cycle reference)"
@@ -1134,7 +1313,7 @@ export function TwinClient({
               <LineChart data={agingData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="cycle" type="number" stroke="" tickFormatter={(v) => `${v}`} />
-                <YAxis domain={[0.55, 1.0]} stroke="" tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                <YAxis domain={[0.45, 1.0]} stroke="" tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
                 <Tooltip content={<DarkTooltip percent />} />
                 <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
                 <Line
@@ -1152,12 +1331,225 @@ export function TwinClient({
                   stroke="var(--success)"
                   strokeWidth={1.8}
                   dot={false}
-                  name="BBU float duty (proposal §G.3)"
+                  name="BBU float duty cycle-fade (proposal §G.3)"
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="soh_calendar"
+                  stroke="var(--danger)"
+                  strokeWidth={1.8}
+                  strokeDasharray="5 3"
+                  dot={false}
+                  name="Calendar/storage fade @ float SOC (years = cycle ÷ 50)"
                   isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
+          {calendarSensitivity.length > 0 && (
+            <Disclosure summary="Calendar vs cycle — which limit actually binds" className="mt-1">
+              <CalendarWidget />
+              <p className="mt-4 mb-3">
+                Cycle-fade under BBU float duty crosses 80&nbsp;% SOH at ~
+                {Math.round((aging.stats["cycle_life_years_at_80"] as number) ?? 0)}&nbsp;yr.
+                But a backup pack sits mostly idle at high SOC, where{" "}
+                <span className="text-foreground">calendar/storage fade dominates</span> —
+                the red dashed curve is the Naumann-2018 √t calendar model (Arrhenius&nbsp;T ×
+                monotone&nbsp;SOC) at DC-float conditions, calibrated so 80&nbsp;% SOH lands at{" "}
+                <span className="text-foreground">
+                  {(aging.stats["calendar_life_years_at_80"] as number) ?? 0}&nbsp;yr
+                </span>{" "}
+                — inside v2.2 附件&nbsp;C&rsquo;s cited 8–12&nbsp;yr LFP float life. So{" "}
+                <span className="text-foreground">
+                  binding life = min(cycle, calendar) = calendar ≈
+                  {" "}
+                  {(aging.stats["binding_life_years_at_80"] as number) ?? 0}&nbsp;yr
+                </span>
+                . Absolute scale is anchored to 附件&nbsp;C; the Naumann form + literature-range
+                Ea (≈58&nbsp;kJ/mol) supply only the T/SOC sensitivity slope, not the headline life.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="text-xs border-collapse">
+                  <thead>
+                    <tr className="text-muted">
+                      <th className="px-2 py-1 text-left font-medium">Calendar life (yr to 80% SOH)</th>
+                      {[25, 30, 35].map((t) => (
+                        <th key={t} className="px-2 py-1 text-right font-medium">
+                          {t} °C
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[0.5, 0.7, 0.9].map((soc) => (
+                      <tr key={soc} className="border-t border-border/40">
+                        <td className="px-2 py-1 text-left">
+                          SOC {Math.round(soc * 100)}%{soc === 0.9 ? " (float)" : ""}
+                        </td>
+                        {[25, 30, 35].map((t) => {
+                          const row = calendarSensitivity.find(
+                            (r) => r.soc === soc && Math.round(r.temp_c) === t,
+                          );
+                          return (
+                            <td key={t} className="px-2 py-1 text-right tabular-nums text-foreground">
+                              {row ? row.calendar_life_years_at_80.toFixed(1) : "—"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Disclosure>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* V7 Pack-level imbalance — mentor 2026-06-04: weakest cell drags string + thermal gradient + 2-cell/cap A/B */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <CardTitle>Cell-to-cell imbalance &amp; thermal aging · {pi.string.n_series}S string</CardTitle>
+              <Disclosure summary="Why a single representative cell isn't the whole story" className="mt-2">
+                {pi.description}
+              </Disclosure>
+            </div>
+            <span className="shrink-0 rounded-full bg-warning/15 text-warning px-3 py-1 text-xs font-medium">
+              Reliability · screening
+            </span>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-6">
+          {/* (1) per-cell SOH @ 7 yr — the weakest cell drags the string */}
+          <div>
+            <div className="mb-2 text-xs text-muted">
+              Per-cell SOH after 7 yr across the {pi.string.n_series}S string (rack inlet→outlet
+              gradient {pi.thermal_gradient.t_inlet_c}→{pi.thermal_gradient.t_outlet_c} °C). The{" "}
+              <span className="text-danger">hottest / weakest cell</span> drags the whole series string.
+            </div>
+            <div className="relative flex items-end gap-1 h-36 border-b border-border/40">
+              {/* 80 % replacement gate line */}
+              <div
+                className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-warning/60"
+                style={{ bottom: `${((0.8 - 0.55) / (0.85 - 0.55)) * 100}%` }}
+              >
+                <span className="absolute -top-4 right-0 text-[10px] text-warning">80% gate</span>
+              </div>
+              {pi.string.cells.map((c) => {
+                const h = ((c.soh_at_7yr - 0.55) / (0.85 - 0.55)) * 100;
+                const isWeak = c.idx === pi.string.weakest_idx;
+                const hotFrac =
+                  (c.temp_c - pi.thermal_gradient.t_inlet_c) /
+                  Math.max(1e-6, pi.thermal_gradient.t_outlet_c - pi.thermal_gradient.t_inlet_c);
+                return (
+                  <div
+                    key={c.idx}
+                    className="relative flex-1 self-stretch flex flex-col items-center justify-end"
+                    title={`cell ${c.idx} · ${c.temp_c}°C · SOH@7yr ${(c.soh_at_7yr * 100).toFixed(1)}% · calendar life ${c.calendar_life_yr} yr`}
+                  >
+                    <div
+                      className="w-full rounded-t"
+                      style={{
+                        height: `${Math.max(4, Math.min(100, h))}%`,
+                        background: isWeak ? "var(--danger)" : "var(--success)",
+                        opacity: isWeak ? 1 : 0.35 + 0.5 * (1 - hotFrac),
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-1 flex justify-between text-[10px] text-muted">
+              <span>cell 0 · {pi.thermal_gradient.t_inlet_c}°C (cold inlet)</span>
+              <span>
+                cell {pi.string.n_series - 1} · {pi.thermal_gradient.t_outlet_c}°C (hot outlet)
+              </span>
+            </div>
+          </div>
+
+          {/* string + thermal stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Stat
+              label="String SOH @ 7 yr (weakest)"
+              value={(pi.string.string_soh_at_7yr * 100).toFixed(1)}
+              unit="%"
+              tone="danger"
+              hint={`vs ${(pi.string.mean_soh_at_7yr * 100).toFixed(1)}% mean — the weakest cell defines the string`}
+            />
+            <Stat
+              label="Imbalance capacity penalty"
+              value={pi.string.imbalance_penalty_pct.toFixed(1)}
+              unit="%"
+              tone="warning"
+              hint={`active balancing recovers +${pi.string.balance_recovery_pct.toFixed(1)}% usable (JK-BMS 8S active-balance)`}
+            />
+            <Stat
+              label="Hot-end calendar life"
+              value={pi.thermal_gradient.calendar_life_hot_yr.toFixed(1)}
+              unit="yr"
+              tone="danger"
+              hint={`vs ${pi.thermal_gradient.calendar_life_cold_yr.toFixed(1)} yr cold end — ${pi.thermal_gradient.life_spread_pct.toFixed(0)}% spread from the ${(pi.thermal_gradient.t_outlet_c - pi.thermal_gradient.t_inlet_c).toFixed(0)}°C gradient`}
+            />
+            <Stat
+              label="Weakest cell"
+              value={`#${pi.string.weakest_idx}`}
+              tone="default"
+              hint="series cells share current → the string is capacity-limited by this cell"
+            />
+          </div>
+
+          <PackThermalWidget nSeries={pi.string.n_series} />
+
+          {/* 2-cell + capacitor arrangement study */}
+          <div className="rounded-lg border border-border bg-surface/40 p-4">
+            <div className="text-sm font-medium text-foreground mb-1">
+              2-cell + capacitor arrangement — a balancing study
+            </div>
+            <p className="text-xs text-muted mb-3">
+              Two cells (weak = {pi.topology_ab.weak_cell_r_factor}× R) + two caps, two arrangements,
+              under a {pi.topology_ab.transient_a} A transient. Which better protects the weak cell?
+            </p>
+            <div className="overflow-x-auto">
+              <table className="text-xs border-collapse w-full max-w-2xl">
+                <thead>
+                  <tr className="text-muted">
+                    <th className="px-2 py-1 text-left font-medium">Topology</th>
+                    <th className="px-2 py-1 text-right font-medium">Weak-cell transient</th>
+                    <th className="px-2 py-1 text-right font-medium">Strong-cell transient</th>
+                    <th className="px-2 py-1 text-right font-medium">Self-balancing?</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums text-foreground">
+                  <tr className="border-t border-border/40">
+                    <td className="px-2 py-1 text-left">Parallel→Series (per-cell cap)</td>
+                    <td className="px-2 py-1 text-right text-success">
+                      {pi.topology_ab.parallel_then_series.weak_cell_transient_a.toFixed(2)} A
+                    </td>
+                    <td className="px-2 py-1 text-right">
+                      {pi.topology_ab.parallel_then_series.strong_cell_transient_a.toFixed(2)} A
+                    </td>
+                    <td className="px-2 py-1 text-right text-success">yes</td>
+                  </tr>
+                  <tr className="border-t border-border/40">
+                    <td className="px-2 py-1 text-left">Series→Parallel (shared cap)</td>
+                    <td className="px-2 py-1 text-right">
+                      {pi.topology_ab.series_then_parallel.weak_cell_transient_a.toFixed(2)} A
+                    </td>
+                    <td className="px-2 py-1 text-right">
+                      {pi.topology_ab.series_then_parallel.strong_cell_transient_a.toFixed(2)} A
+                    </td>
+                    <td className="px-2 py-1 text-right text-muted">no</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted mt-2">{pi.topology_ab.verdict}</p>
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-muted">{pi.string.note}</p>
         </CardBody>
       </Card>
 
