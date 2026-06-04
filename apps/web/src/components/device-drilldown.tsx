@@ -86,7 +86,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             <button
               onClick={onClose}
               className="rounded-md p-1 text-muted transition-colors hover:bg-surface/60 hover:text-foreground"
-              aria-label="Close drilldown"
+              aria-label="關閉詳情面板"
             >
               <X className="h-4 w-4" />
             </button>
@@ -95,11 +95,11 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
         {/* SOH bars */}
         <section className="space-y-4 border-b border-border p-5">
-          <h3 className="text-xs uppercase tracking-wider text-muted">State of Health</h3>
+          <h3 className="text-xs uppercase tracking-wider text-muted">健康狀態</h3>
 
           <div>
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-muted">SOH (LFP main)</span>
+              <span className="text-muted">SOH（LFP 主電池）</span>
               <span className="font-mono font-medium tabular-nums">{sohPct.toFixed(1)} %</span>
             </div>
             <div className="relative h-2 overflow-hidden rounded-full bg-border">
@@ -123,7 +123,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
                 className="absolute top-0"
                 style={{ left: `calc(${sohWarnBarPct}% - 1.5rem)` }}
               >
-                85 % gate
+                85 % 閾值
               </span>
               <span>{sohBarRange.max} %</span>
             </div>
@@ -131,7 +131,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           <div>
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-muted">SOH (LIC supercap)</span>
+              <span className="text-muted">SOH（LIC 超級電容）</span>
               <span className="font-mono font-medium tabular-nums">{licPct.toFixed(1)} %</span>
             </div>
             <div className="relative h-2 overflow-hidden rounded-full bg-border">
@@ -143,9 +143,8 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           </div>
 
           <p className="text-[11px] leading-relaxed text-muted">
-            <span className="text-foreground">soh_lic</span> is datasheet-derived (LIC ≥ 100 k cycles
-            per Eaton XLR / JM Energy specs). LIC public cycling data is too scarce for ML;
-            BBU duty doesn&rsquo;t push LIC near its limits (whitepaper §6.2).
+            <span className="text-foreground">soh_lic</span> 由資料表推導（依 Eaton XLR / JM Energy 規格,LIC ≥ 100 k cycles）。LIC 公開循環資料對 ML 而言過於稀少;
+            BBU 工作負載不會將 LIC 推近其極限（whitepaper §6.2）。
           </p>
         </section>
 
@@ -154,14 +153,14 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             (mirror of the Python DCIR-growth model). */}
         <section className="space-y-3 border-b border-border p-5">
           <h3 className="text-xs uppercase tracking-wider text-muted">
-            If mains drops now — backup capability
+            若市電此刻中斷 — 備援能力
           </h3>
           <p className="text-sm text-foreground leading-relaxed">
-            This unit delivers{" "}
+            本設備可提供{" "}
             <span className="font-semibold tabular-nums">
               {Math.round(peakPowerRetention(device.soh_lfp) * 100)}%
             </span>{" "}
-            peak power for{" "}
+            峰值功率,持續{" "}
             <span className="font-semibold tabular-nums">
               {Math.round(backupRuntimeSeconds(device.soh_lfp))} s
             </span>{" "}
@@ -169,40 +168,40 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             <span className="font-semibold tabular-nums">
               {(backupRuntimeSeconds(device.soh_lfp) / 60).toFixed(1)}×
             </span>{" "}
-            the 60-second graceful-shutdown commitment, at its current{" "}
-            {Math.round(device.soh_lfp * 100)}% SOH.
+            於 60 秒優雅關機承諾之上,在其目前的{" "}
+            {Math.round(device.soh_lfp * 100)}% SOH 下達成。
           </p>
           <div className="grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3">
             <Metric
-              label="Backup runtime @ rack peak"
+              label="機架峰值下的備援續航時間"
               value={`${Math.round(backupRuntimeSeconds(device.soh_lfp))} s`}
             />
             <Metric
-              label="… margin vs 60 s commitment"
+              label="… 相對 60 s 承諾的餘量"
               value={`${(backupRuntimeSeconds(device.soh_lfp) / 60).toFixed(1)}×`}
             />
             <Metric
-              label="LFP peak-power capability"
+              label="LFP 峰值功率能力"
               value={`${Math.round(peakPowerRetention(device.soh_lfp) * 100)} %`}
             />
           </div>
           <p className="text-[11px] leading-relaxed text-muted">
-            What a Data Center buyer asks first — deliverable power + runtime after aging, not just
-            SOH/RUL. Runtime is energy-limited (∝&nbsp;SOH); peak-power capability dips with
-            internal-resistance rise (+{Math.round(dcirGrowth(device.soh_lfp) * 100)}% here), but the
-            millisecond peak is handled by the capacitor, so it doesn&rsquo;t gate the rack.
+            這是資料中心採購方最先詢問的問題 — 老化後的可交付功率 + 續航時間,而不只是
+            SOH/RUL。續航時間受能量限制(∝&nbsp;SOH);峰值功率能力會隨
+            內阻上升而下降(此處 +{Math.round(dcirGrowth(device.soh_lfp) * 100)}%),但
+            毫秒級峰值由電容器處理,因此不會成為機架的瓶頸。
           </p>
         </section>
 
         {/* RUL */}
         <section className="space-y-3 border-b border-border p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs uppercase tracking-wider text-muted">RUL prediction</h3>
+            <h3 className="text-xs uppercase tracking-wider text-muted">RUL 預測</h3>
             <a
               href="/twin"
               className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
             >
-              See conformal PI bands on /twin <ArrowUpRight className="h-3 w-3" />
+              於 /twin 查看 conformal PI 區間帶 <ArrowUpRight className="h-3 w-3" />
             </a>
           </div>
 
@@ -214,9 +213,9 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             <span className="ml-auto text-xs text-muted">
               {bbuYrs >= 15 ? (
                 <>
-                  cycle-fade headroom{" "}
+                  循環衰減餘量{" "}
                   <span className="font-mono text-foreground">≫ 10 yr</span>{" "}
-                  <span className="text-muted/70">(calendar-life binds first)</span>
+                  <span className="text-muted/70">（日曆壽命先到限制）</span>
                 </>
               ) : (
                 <>
@@ -224,7 +223,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
                   <span className="font-mono text-foreground tabular-nums">
                     {bbuYrs.toFixed(1)}
                   </span>{" "}
-                  yr <span className="text-muted/70">(cycle-fade only)</span>
+                  yr <span className="text-muted/70">（僅計循環衰減）</span>
                 </>
               )}
             </span>
@@ -232,27 +231,27 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           {device.rul_cycles < rulWarnCycles && (
             <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-              ⚠ RUL below 800-cycle gate · admission rule triggers Tier-3 replacement queue
+              ⚠ RUL 低於 800-cycle 閾值 · 納入規則觸發 Tier-3 汰換佇列
             </div>
           )}
 
           <p className="text-[11px] leading-relaxed text-muted">
-            Point estimate from the same LSTM deployed on{" "}
-            <span className="text-foreground">/twin</span> (one model, two views). The ≫&nbsp;10&nbsp;yr
-            figure is cycle-fade headroom (cycles&nbsp;÷&nbsp;50&nbsp;cyc/yr); the real limit is{" "}
-            <span className="text-foreground">calendar/storage life ~8–12&nbsp;yr</span> (proposal §G.3 /
-            附件 C), so Tier-3 admission triggers almost entirely on{" "}
-            <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span>, with{" "}
-            <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> as the fallback-path safety net.
+            點估計來自部署於{" "}
+            <span className="text-foreground">/twin</span> 的同一個 LSTM(一個模型,兩種視角)。≫&nbsp;10&nbsp;yr
+            這個數字是循環衰減餘量(cycles&nbsp;÷&nbsp;50&nbsp;cyc/yr);真正的限制是{" "}
+            <span className="text-foreground">日曆/儲存壽命 ~8–12&nbsp;yr</span>(proposal §G.3 /
+            附件 C),因此 Tier-3 納入幾乎完全由{" "}
+            <span className="text-foreground">SOH&nbsp;&lt;&nbsp;0.85</span> 觸發,而{" "}
+            <code className="text-foreground">RUL&nbsp;&lt;&nbsp;800</code> 作為 fallback-path 的安全網。
           </p>
         </section>
 
         {/* Operational metrics */}
         <section className="grid grid-cols-2 gap-x-5 gap-y-4 border-b border-border p-5 sm:grid-cols-4">
-          <Metric label="Age" value={`${device.age_months.toFixed(1)} mo`} />
-          <Metric label="Transients (24 h)" value={device.transient_events_24h.toLocaleString()} />
-          <Metric label="Temp LFP" value={`${device.temp_lfp_c.toFixed(1)} °C`} />
-          <Metric label="Temp LIC" value={`${device.temp_lic_c.toFixed(1)} °C`} />
+          <Metric label="使用時間" value={`${device.age_months.toFixed(1)} mo`} />
+          <Metric label="瞬變事件（24 h）" value={device.transient_events_24h.toLocaleString()} />
+          <Metric label="LFP 溫度" value={`${device.temp_lfp_c.toFixed(1)} °C`} />
+          <Metric label="LIC 溫度" value={`${device.temp_lic_c.toFixed(1)} °C`} />
         </section>
 
         {/* LIC bank RC envelope — system-level reference, not per-device
@@ -265,13 +264,13 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           <div className="flex items-center justify-between">
             <h3 className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted">
               <Zap className="h-3 w-3 text-primary" />
-              LIC bank envelope · system-level RC
+              LIC 電容組包絡 · 系統層級 RC
             </h3>
             <a
               href="/twin"
               className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
             >
-              See v_lic(t) curve on /twin <ArrowUpRight className="h-3 w-3" />
+              於 /twin 查看 v_lic(t) 曲線 <ArrowUpRight className="h-3 w-3" />
             </a>
           </div>
 
@@ -288,10 +287,10 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             return (
               <div>
                 <div className="mb-1 flex items-baseline justify-between text-xs">
-                  <span className="text-muted">v_min observed</span>
+                  <span className="text-muted">v_min 觀測值</span>
                   <span className="font-mono font-medium tabular-nums">
                     {licRcEnvelope.v_min.toFixed(2)} V
-                    <span className="ml-1 text-muted">/ {hi.toFixed(1)} V nominal</span>
+                    <span className="ml-1 text-muted">/ {hi.toFixed(1)} V 額定</span>
                   </span>
                 </div>
                 <div className="relative h-2 overflow-hidden rounded-full bg-border">
@@ -308,7 +307,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
                 </div>
                 <div className="mt-1 flex justify-between text-[10px] text-muted">
                   <span>UVLO {lo.toFixed(0)} V</span>
-                  <span>nominal {hi.toFixed(1)} V</span>
+                  <span>額定 {hi.toFixed(1)} V</span>
                 </div>
               </div>
             );
@@ -317,61 +316,61 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           {/* Four-up metric tiles for the actual numbers. */}
           <div className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4">
             <Metric
-              label="Droop (worst-case)"
+              label="壓降（最壞情況）"
               value={`${licRcEnvelope.v_droop_v.toFixed(2)} V`}
             />
             <Metric
-              label="Headroom to UVLO"
+              label="至 UVLO 的餘量"
               value={`${licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V`}
             />
             <Metric
-              label="Bank C"
+              label="電容組 C"
               value={`${licRcEnvelope.c_f.toFixed(0)} F`}
             />
             <Metric
-              label="Bank ESR"
+              label="電容組 ESR"
               value={`${(licRcEnvelope.esr_ohm * 1000).toFixed(2)} mΩ`}
             />
           </div>
 
           {licRcEnvelope.passes_cutoff ? (
             <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[11px] text-success">
-              ✓ Passes Eaton XLR UVLO ({licRcEnvelope.v_min_datasheet.toFixed(0)} V) under the
-              v2.2 §B.1 demo transient waveform — {licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V
-              margin to cutoff.
+              ✓ 在 v2.2 §B.1 展示瞬態波形下通過 Eaton XLR UVLO（{licRcEnvelope.v_min_datasheet.toFixed(0)} V）
+              — 至截止點尚有 {licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V
+              餘量。
             </div>
           ) : (
             <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-[11px] text-danger">
-              ✗ LIC v_min falls below datasheet UVLO — production design fails for this waveform.
+              ✗ LIC v_min 低於資料表 UVLO — 量產設計在此波形下不通過。
             </div>
           )}
 
           <p className="text-[11px] leading-relaxed text-muted">
-            <span className="font-medium text-warning">System-level reference</span>, not
-            per-device telemetry — the LIC bank topology (Eaton XLR-48-166 × 2 parallel) is
-            common to all rack-level Sysblade BBUs per v2.2 §E.1. Per-device LIC voltage
-            telemetry lands with the FastAPI backend (W3+). Droop is ESR-dominated
-            (~95 % at 926 A peak), so production scaling beyond 8 BBU/rack would mainly add
-            parallel modules to drop ESR rather than additional capacitance.
+            <span className="font-medium text-warning">系統層級參考值</span>,而非
+            單一設備遙測 — LIC 電容組拓樸（Eaton XLR-48-166 × 2 並聯）依 v2.2 §E.1
+            為所有機架層級 Sysblade BBU 所共用。單一設備的 LIC 電壓
+            遙測將隨 FastAPI 後端（W3+）一併推出。壓降由 ESR 主導
+            (926 A 峰值下約 95 %),因此超過 8 BBU/rack 的量產擴充主要會增加
+            並聯模組以降低 ESR,而非增加電容。
           </p>
           <p className="text-[11px] leading-relaxed text-muted">
-            <span className="font-medium text-warning">⚠ Current-rating gate not modelled:</span>{" "}
-            the RC model verifies voltage envelope (v_min &gt; 38 V) but does NOT check the
-            463 A per-module peak (926 A across 2 parallel) against the Eaton XLR-48-166
-            datasheet&rsquo;s rated pulse current. Typical 48 V LIC modules at this size
-            handle 500–1500 A briefly under 30 s, so the 100 ms pulse should be inside
-            spec — but production must verify on Eaton&rsquo;s lot-specific datasheet
-            before design freeze (see <code className="text-foreground">docs/citations_audit.md</code>).
+            <span className="font-medium text-warning">⚠ 電流額定閾值尚未建模:</span>{" "}
+            RC 模型驗證電壓包絡（v_min &gt; 38 V),但並未針對 Eaton XLR-48-166
+            資料表的額定脈衝電流,檢查每模組 463 A 峰值(2 並聯共 926 A)。
+            此尺寸的典型 48 V LIC 模組可在 30 s 內短暫
+            承受 500–1500 A,因此 100 ms 脈衝應在
+            規格範圍內 — 但量產前須在 Eaton 特定批次的資料表上
+            完成驗證,再進行設計凍結（見 <code className="text-foreground">docs/citations_audit.md</code>)。
           </p>
         </section>
 
         {/* Disclaimer footer */}
         <footer className="bg-surface/60 px-5 py-3 text-[11px] leading-relaxed text-muted">
-          <span className="font-medium text-warning">Synthetic device.</span> Generated by a seeded
-          RNG simulator (<span className="font-mono text-foreground">scripts/generate_twin_scenarios.py</span>);
-          no production deployment. Fleet site names are fictional personas (TenantCo / ColoOp /
-          DataCo / HyperscaleCo / CarrierHotel) — no real-brand commercial relationship is
-          implied or claimed.
+          <span className="font-medium text-warning">合成設備。</span>由帶種子的
+          RNG 模擬器(<span className="font-mono text-foreground">scripts/generate_twin_scenarios.py</span>)產生;
+          並非量產部署。機隊站點名稱為虛構角色（TenantCo / ColoOp /
+          DataCo / HyperscaleCo / CarrierHotel）— 未暗示或宣稱與任何真實品牌
+          存在商業關係。
         </footer>
       </div>
     </div>

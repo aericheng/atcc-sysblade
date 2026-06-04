@@ -30,9 +30,9 @@ export const STATUS_COLOR: Record<DeviceStatus, string> = {
 };
 
 export const STATUS_LABEL: Record<DeviceStatus, string> = {
-  healthy: "Healthy",
-  thermal_warn: "Thermal warning",
-  early_aging: "Early aging",
+  healthy: "健康",
+  thermal_warn: "熱警示",
+  early_aging: "早期老化",
 };
 
 /**

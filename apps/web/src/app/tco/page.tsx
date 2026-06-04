@@ -1,9 +1,9 @@
 import { TcoClient } from "./tco-client";
 
 export const metadata = {
-  title: "TCO Calculator · Sysblade",
+  title: "TCO 計算器 · Sysblade",
   description:
-    "10-year total cost of ownership and CO₂ savings for switching from a traditional NMC BBU to Sysblade HyperBuffer.",
+    "從傳統 NMC BBU 切換至 Sysblade HyperBuffer 的 10 年總持有成本與 CO₂ 排放節省。",
 };
 
 export default function TcoPage() {

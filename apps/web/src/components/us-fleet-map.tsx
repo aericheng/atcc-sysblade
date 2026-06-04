@@ -207,15 +207,15 @@ export function USFleetMap({ devices, height = 380 }: Props) {
       {effectiveAgg && (
         <>
           <div className="absolute top-3 left-3 rounded-md border border-border bg-background/85 backdrop-blur px-3 py-1.5 text-xs flex items-center gap-2">
-            <span className="text-muted">Viewing</span>
+            <span className="text-muted">檢視中</span>
             <span className="font-semibold text-foreground">{effectiveAgg.name}</span>
             <span className="text-muted">·</span>
-            <span className="tabular-nums">{effectiveAgg.count} devices</span>
+            <span className="tabular-nums">{effectiveAgg.count} 台設備</span>
             {effectiveAgg.early_aging > 0 && (
               <>
                 <span className="text-muted">·</span>
                 <span className="tabular-nums" style={{ color: STATUS_COLOR.early_aging }}>
-                  {effectiveAgg.early_aging} aging
+                  {effectiveAgg.early_aging} 台老化
                 </span>
               </>
             )}
@@ -223,7 +223,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
               <>
                 <span className="text-muted">·</span>
                 <span className="tabular-nums" style={{ color: STATUS_COLOR.thermal_warn }}>
-                  {effectiveAgg.thermal_warn} warn
+                  {effectiveAgg.thermal_warn} 台警示
                 </span>
               </>
             )}
@@ -232,7 +232,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
             onClick={backToFleet}
             className="absolute top-3 right-3 rounded-md border border-border bg-background/85 backdrop-blur px-3 py-1.5 text-xs hover:bg-background"
           >
-            ← Back to fleet
+← 返回機隊
           </button>
         </>
       )}
@@ -240,7 +240,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
       {/* Empty hint when filter removed every device */}
       {!effectiveAgg && cities.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted pointer-events-none">
-          No devices match the current filter.
+          沒有設備符合目前的篩選條件。
         </div>
       )}
 
@@ -251,13 +251,13 @@ export function USFleetMap({ devices, height = 380 }: Props) {
           className={`pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 ${effectiveAgg ? "top-12" : "top-3"} rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5 min-w-[180px]`}
         >
           <div className="font-semibold text-foreground">{hovered.c.name}</div>
-          <div className="text-muted">{hovered.c.count} devices · click to drill in</div>
+          <div className="text-muted">{hovered.c.count} 台設備 · 點擊以深入檢視</div>
           <div className="pt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5">
-            <span style={{ color: STATUS_COLOR.healthy }}>Healthy</span>
+            <span style={{ color: STATUS_COLOR.healthy }}>健康</span>
             <span className="text-right tabular-nums">{hovered.c.healthy}</span>
-            <span style={{ color: STATUS_COLOR.thermal_warn }}>Thermal warn</span>
+            <span style={{ color: STATUS_COLOR.thermal_warn }}>熱警示</span>
             <span className="text-right tabular-nums">{hovered.c.thermal_warn}</span>
-            <span style={{ color: STATUS_COLOR.early_aging }}>Early aging</span>
+            <span style={{ color: STATUS_COLOR.early_aging }}>早期老化</span>
             <span className="text-right tabular-nums">{hovered.c.early_aging}</span>
           </div>
         </div>
@@ -273,10 +273,10 @@ export function USFleetMap({ devices, height = 380 }: Props) {
             <span className="text-muted">SOH LFP</span>
             <span className="text-right tabular-nums">{(hovered.d.soh_lfp * 100).toFixed(1)}%</span>
             <span className="text-muted">RUL</span>
-            <span className="text-right tabular-nums">{hovered.d.rul_cycles} cycles</span>
-            <span className="text-muted">Temp LFP</span>
+            <span className="text-right tabular-nums">{hovered.d.rul_cycles} 次循環</span>
+            <span className="text-muted">LFP 溫度</span>
             <span className="text-right tabular-nums">{hovered.d.temp_lfp_c}°C</span>
-            <span className="text-muted">Status</span>
+            <span className="text-muted">狀態</span>
             <span className="text-right font-medium" style={{ color: STATUS_COLOR[hovered.d.status] }}>
               {STATUS_LABEL[hovered.d.status]}
             </span>

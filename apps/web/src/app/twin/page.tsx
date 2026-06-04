@@ -1,9 +1,9 @@
 import { TwinClient } from "./twin-client";
 
 export const metadata = {
-  title: "Battery Digital Twin · Sysblade",
+  title: "電池數位孿生 · Sysblade",
   description:
-    "PyBaMM DFN simulation of LFP cell response to GB200 millisecond-scale power transients, with and without LIC hybrid buffer.",
+    "PyBaMM DFN 模擬 LFP 電芯對 GB200 毫秒級功率瞬變的響應,比較有無 LIC 混合緩衝的差異。",
 };
 
 async function loadScenario(name: string) {
