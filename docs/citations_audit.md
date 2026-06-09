@@ -1,7 +1,7 @@
 # Citation backing — verification audit
 
 **Audit date**: 2026-05-12
-**Method**: Read `docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf` (18 pages) via
+**Method**: Read the v2.1 proposal PDF (18 pages; 已自 repo 移除,現行 spec 為 v2.2) via
 `pypdf`, grep for each cited §-anchor and verify the referenced text exists
 verbatim with the claimed numbers. External citations (Severson Nature paper,
 NVIDIA arXiv, Eaton datasheet, etc.) require WebFetch and are listed under
@@ -12,7 +12,7 @@ This audit closes part of the deferred work flagged in the
 
 ---
 
-## ✅ Verified — citation IS present and number matches
+## [v] Verified — citation IS present and number matches
 
 | Claim in our repo | v2.1 PDF location | Verified text |
 |---|---|---|
@@ -31,11 +31,11 @@ This audit closes part of the deferred work flagged in the
 
 ---
 
-## ⚠️ Citation needs rewording — text exists but claim attribution is off
+## (!) Citation needs rewording — text exists but claim attribution is off
 
 | Original claim | What's actually in v2.1 PDF | Fix |
 |---|---|---|
-| 「BBU duty averages ~50 cycles/yr (**v2.2 §B.2**)」(dashboard SOH Disclosure + drilldown text + /twin aging hint) | v2.1 §B.2 (p3) covers market positioning + 5% market share goal, NOT duty cadence. Search of full 18-page PDF for 「年循環」/「cycles per year」/「每年循環」returns **zero hits**. The 「50 cycles/yr」 is an engineering estimate not stated in §B.2. | ✅ Fixed in commit (this audit run): reword to 「engineering estimate anchored to v2.1 §G.3 footnote + §E.1 Tier-B 『LFP BBU 浮充 8-12 yr life』」 instead of citing §B.2 verbatim. |
+| 「BBU duty averages ~50 cycles/yr (**v2.2 §B.2**)」(dashboard SOH Disclosure + drilldown text + /twin aging hint) | v2.1 §B.2 (p3) covers market positioning + 5% market share goal, NOT duty cadence. Search of full 18-page PDF for 「年循環」/「cycles per year」/「每年循環」returns **zero hits**. The 「50 cycles/yr」 is an engineering estimate not stated in §B.2. | [v] Fixed in commit (this audit run): reword to 「engineering estimate anchored to v2.1 §G.3 footnote + §E.1 Tier-B 『LFP BBU 浮充 8-12 yr life』」 instead of citing §B.2 verbatim. |
 
 ---
 
@@ -44,7 +44,7 @@ This audit closes part of the deferred work flagged in the
 Attempted WebFetch on 8 external citations. Results below; **2 fully verified,
 2 partially verified, 4 blocked by paywall / vendor-page timeout / authentication**.
 
-### ✅ Fully verified
+### [v] Fully verified
 
 | # | Citation | Verification |
 |---|---|---|
@@ -52,14 +52,14 @@ Attempted WebFetch on 8 external citations. Results below; **2 fully verified,
 | 7 | **arXiv:2508.14318** — Choukse et al. Microsoft+NVIDIA 2025 "Power Stabilization for AI Training Datacenters" | Verified 2026-05-04 via earlier WebFetch (see memory) |
 | extra | Severson 2019 paper identity + Variance/Discharge model methodology | Fetched Nature SI PDF directly (4.6 MB, 62 pages, pypdf-parsed locally). Confirmed title/authors/journal/year exact match; "Variance" model exists (as classifier), "Discharge" model exists (as regression); paper uses "Mean Percent Error" terminology (not "MAPE"). Supplementary Table 4 lists regression MPE values: Constant 29.6/34.9/36.1, Discharge@100 25.0/26.4/45.3, Slope@91-100 25.1/26.1/33.7, Multivariate@100 18.8/78.5/50.0, Multivariate@300 12.5/(26.9)/45.5. |
 
-### 🟡 Partially verified — identity confirmed, headline numbers paywalled
+### (黃) Partially verified — identity confirmed, headline numbers paywalled
 
 | # | Citation | Verification |
 |---|---|---|
 | 2 | **Severson 2019** main-paper "9.1%" Discharge test error headline | **Not verifiable from SI alone** — the Nature SI PDF (62 pages) doesn't include the abstract or main results section; "9.1" string is zero hits in SI text. Main paper text is behind Nature paywall (idp.nature.com auth redirect). The "9.1%" headline is widely cited externally and likely correct, but cannot verbatim-confirm via WebFetch. **Recommendation**: team gets Nature subscription / interlibrary loan to confirm before 複賽. Closest SI-verifiable models report 12.5–78.5% MPE across feature sets — well-known headline is the elastic-net 5-feature "Discharge" model. |
 | 5 | **NASA PCoE Battery Data Set** | Dataset existence + download link confirmed on NASA page. **README + B0005-B0018 / 2.0 Ah / 2.5 V specs in the dataset ZIP** (not on the index page); requires download + extraction to verify verbatim. |
 
-### ❌ Blocked — could not verify this round
+### [x] Blocked — could not verify this round
 
 | # | Citation | Block reason |
 |---|---|---|
@@ -82,8 +82,8 @@ Attempted WebFetch on 8 external citations. Results below; **2 fully verified,
 The 2026-05-12 round consumed ~30 minutes of WebFetch budget and verified 3
 of 9 line items, partially verified 2 more, leaving 4 blocked. The remaining
 4 should be hit during the dedicated 複賽 prep week (4–6 h budget per the
-[memory note](../.claude/projects/.../memory/project_citation_verification_pre_rematch.md))
-using a browser with manual paywall / vendor portal access — not WebFetch.
+team's internal citation-verification note) using a browser with manual
+paywall / vendor portal access — not WebFetch.
 
 ---
 
@@ -105,9 +105,9 @@ numbers stayed blocked. Summary:
 | **JM Energy ULTIMO 3300F** | Wikipedia Lithium-ion capacitor article references "ULTIMO Li-ion hybrid capacitor Spec Sheet" archive link (unavailable). TDK acquired JM Energy 2017 (general LIC article context — TDK press release URL timed out). **Existence verified, specific 3300F numbers still need TDK direct datasheet**. |
 | **Wang 2019 thermal runaway** | ScienceDirect 403, PubMed zero results, Google Scholar showed 100+ citing works but not the original. Paper exists (per citing-works traffic) but specific LFP 230–270 °C / NMC 150–210 °C onset values need Elsevier subscription. |
 | **ST AN5354 / RM0498** | Multiple URL pattern attempts to st.com all timed out (60s budget). Likely ST account login required for full PDF download. |
-| Reuters BNEF coverage | Tool config blocked Claude Code from fetching reuters.com. |
+| Reuters BNEF coverage | Tool config blocked automated fetching of reuters.com. |
 | Bloomberg article | 403 Forbidden. |
-| Wayback Machine | Tool config blocked Claude Code from fetching web.archive.org. |
+| Wayback Machine | Tool config blocked automated fetching of web.archive.org. |
 
 ### Net status after second round
 
@@ -151,8 +151,7 @@ specifically).
 
 ## Memory note discrepancy resolution
 
-The original [memory](../.claude/projects/.../memory/project_citation_verification_pre_rematch.md)
-flagged §1.4 STM32N6 as 「此編號最可能錯」. **This audit found §1.4 IS not a
+The original internal note flagged §1.4 STM32N6 as 「此編號最可能錯」. **This audit found §1.4 IS not a
 real section in v2.1** — STM32N6 references in v2.1 PDF appear in §C.2 (54V
 context, p4), §E.1 Tier-C (BMS + Edge AI MCU), and the architecture
 discussion in §E.3 / §F. None of those are 「§1.4」. Any whitepaper /

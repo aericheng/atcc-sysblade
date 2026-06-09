@@ -19,11 +19,11 @@ upstream: "docs/BBU_IMPLEMENTATION_PLAN.md v2.0"
 4. 距 2026-06-11 複賽日 < 7 天,且 GitHub-side recovery 無進展
 
 **目前狀態**(2026-05-27 22:00 UTC+8):
-- ✅ Anonymous clone works(`/tmp/atcc-clone-test` 測過)
-- ✅ Vercel `sysblade-atcc.vercel.app` live
-- ✅ `git push` works(用戶 PAT/SSH path)
-- ❌ Actions runner GITHUB_TOKEN rejected("Your account is suspended")
-- ⏳ 用戶 GitHub login + inbox 診斷待回報
+- [v] Anonymous clone works(`/tmp/atcc-clone-test` 測過)
+- [v] Vercel `sysblade-atcc.vercel.app` live
+- [v] `git push` works(用戶 PAT/SSH path)
+- [x] Actions runner GITHUB_TOKEN rejected("Your account is suspended")
+- 用戶 GitHub login + inbox 診斷待回報
 
 → **目前不需要執行 mirror**。此 SOP 為 standby contingency,本機已加好空 remote(`git remote -v` 可見 `gitlab` / `codeberg`)。
 
@@ -33,9 +33,9 @@ upstream: "docs/BBU_IMPLEMENTATION_PLAN.md v2.0"
 
 | Host | URL | 帳號建立 | Repo 上限 | 對 ATCC 評審的可信度 | LFS 支援 | CI 替代 | 評分 |
 |---|---|---|---|---|---|---|---|
-| **GitLab.com** | <https://gitlab.com> | email 即可 | 公開無上限 | ⭐⭐⭐⭐⭐(廣為人知) | ✅ 10 GB free | GitLab CI yaml(可直接抄 .github/workflows/ 轉換)| **首選** |
-| **Codeberg.org** | <https://codeberg.org> | email,需手動審核 ~24hr | 公開無上限 | ⭐⭐⭐(較小眾,但用 Gitea 開源好) | ✅ 1 GB free | Codeberg CI(Woodpecker)| **次選** |
-| **SourceHut** | <https://sr.ht> | 付費 \$2/月起 | — | ⭐⭐(極小眾,但工程師圈口碑佳) | ❌ | builds.sr.ht | 不推 |
+| **GitLab.com** | <https://gitlab.com> | email 即可 | 公開無上限 | (廣為人知) | [v] 10 GB free | GitLab CI yaml(可直接抄 .github/workflows/ 轉換)| **首選** |
+| **Codeberg.org** | <https://codeberg.org> | email,需手動審核 ~24hr | 公開無上限 | (較小眾,但用 Gitea 開源好) | [v] 1 GB free | Codeberg CI(Woodpecker)| **次選** |
+| **SourceHut** | <https://sr.ht> | 付費 \$2/月起 | — | (極小眾,但工程師圈口碑佳) | [x] | builds.sr.ht | 不推 |
 
 **建議走 GitLab.com**:評審 ATCC 業師應該都知道 GitLab,clone instructions 不用解釋。Codeberg 是 GitLab 出問題的二線備援。
 
@@ -52,7 +52,7 @@ upstream: "docs/BBU_IMPLEMENTATION_PLAN.md v2.0"
 2. 登入後 → New project → Create blank project
    - Project name: atcc-sysblade
    - Visibility: Public(評審要能 clone)
-   - Initialize with README: ❌ unchecked(我們已有本地 main)
+   - Initialize with README: [x] unchecked(我們已有本地 main)
 3. 拿到 repo URL,例如 https://gitlab.com/aericheng/atcc-sysblade
 ```
 
@@ -183,7 +183,7 @@ Vercel 對 GitLab 是 first-class 支援。
 新 banner 加到 docs 頂:
 
 ```markdown
-> ⚠️ **GitHub mirror notice (2026-05-2X)**: Due to GitHub account-level access
+> (!) **GitHub mirror notice (2026-05-2X)**: Due to GitHub account-level access
 > restrictions on `aericheng`, this repository's canonical home is now
 > https://gitlab.com/aericheng/atcc-sysblade. The original GitHub URL may
 > still resolve to the same content but is no longer the authoritative source.
@@ -233,7 +233,7 @@ git push -u gitlab main
 | GitHub OK(現況)| Demo 走原路,mirror standby 不執行 |
 | GitHub `aericheng` 完全 suspended,Vercel 仍 work | Mirror Step 1-3 必執行(30 min);Step 4-5 看時間 |
 | GitHub + Vercel 都掛 | Mirror Step 1-5 全執行(50 min);demo path 改 `gitlab.com/aericheng/atcc-sysblade` + 本機 `npx next dev` (port 3000) screen-share |
-| 帳號活,只 Actions 掛(目前)| ❌ 不執行 mirror;CI badge 紅但不影響 demo |
+| 帳號活,只 Actions 掛(目前)| [x] 不執行 mirror;CI badge 紅但不影響 demo |
 
 ---
 

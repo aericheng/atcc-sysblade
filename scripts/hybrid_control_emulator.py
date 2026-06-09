@@ -240,11 +240,11 @@ def main() -> int:
     print(f"[ctl-em]   ratio (steady state, post 5τ warmup)  = {result['ratio_power_steady_state']:.2f}×")
     print(f"[ctl-em] spec target = 5.7× (whitepaper)")
     if result["ratio_power"] >= 5.0:
-        print("[ctl-em] ✅ control law math reproduces spec headline")
+        print("[ctl-em] [v] control law math reproduces spec headline")
     elif result["ratio_power"] >= 3.0:
-        print("[ctl-em] 🟡 marginal — check τ")
+        print("[ctl-em] (黃) marginal — check τ")
     else:
-        print("[ctl-em] ❌ control law fails to reproduce spec headline")
+        print("[ctl-em] [x] control law fails to reproduce spec headline")
         return 1
 
     # Drop the heavy series before saving to keep JSON small

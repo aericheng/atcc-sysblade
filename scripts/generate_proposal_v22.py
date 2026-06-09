@@ -235,10 +235,10 @@ def edit_appendix(doc):
     _ins_before(anchor, "D.6 Citation 實證進度", style="Heading 2", bold=True)
     _ins_before(anchor, "v2.1 引用之外部來源於 v2.2 期間逐條核實:")
     bullets_d6 = [
-        "✅ Choukse 2025 (Microsoft + NVIDIA) arXiv:2508.14318 — 標題、作者、§III/§IV-B 內容定位均經 arxiv.org 全文確認(原 v2.1 引述為「NVIDIA reference」需修正為 Microsoft + NVIDIA collaboration)",
-        "✅ Eaton XLR-48-166 module datasheet — 規格 48.6 V / 166 F / 54 Wh / ESR 5 mΩ 經 eaton.com 官方 datasheet 確認,正式 SKU XLR-48R6167-R",
-        "✅ 三家競品 2024 年財報基準 — Eaton USD 24.9 B / Vertiv USD 8.012 B / Schneider EUR 38.15 B,均經公開 annual report 與 marketscreener 交叉確認",
-        "⚠️ 仍待手動實證(複賽前 1 週逐條核實):Severson 2019 Figure 2c / Table 1 具體 panel 編號、Wang 2019 Prog. Energy Combust. Sci. §2.1 Table 2 LFP 230–270 °C / NMC 150–210 °C、Bandhauer 2011 §3、NASA PCoE B0005-B0018 cell rated 規格、Marquis 2019 §benchmark、ST AN5354 §Performance、BloombergNEF Lithium-Ion Battery Price Survey LFP 價格基準",
+        "[v] Choukse 2025 (Microsoft + NVIDIA) arXiv:2508.14318 — 標題、作者、§III/§IV-B 內容定位均經 arxiv.org 全文確認(原 v2.1 引述為「NVIDIA reference」需修正為 Microsoft + NVIDIA collaboration)",
+        "[v] Eaton XLR-48-166 module datasheet — 規格 48.6 V / 166 F / 54 Wh / ESR 5 mΩ 經 eaton.com 官方 datasheet 確認,正式 SKU XLR-48R6167-R",
+        "[v] 三家競品 2024 年財報基準 — Eaton USD 24.9 B / Vertiv USD 8.012 B / Schneider EUR 38.15 B,均經公開 annual report 與 marketscreener 交叉確認",
+        "(!) 仍待手動實證(複賽前 1 週逐條核實):Severson 2019 Figure 2c / Table 1 具體 panel 編號、Wang 2019 Prog. Energy Combust. Sci. §2.1 Table 2 LFP 230–270 °C / NMC 150–210 °C、Bandhauer 2011 §3、NASA PCoE B0005-B0018 cell rated 規格、Marquis 2019 §benchmark、ST AN5354 §Performance、BloombergNEF Lithium-Ion Battery Price Survey LFP 價格基準",
     ]
     for b in bullets_d6:
         _ins_before(anchor, "• " + b)

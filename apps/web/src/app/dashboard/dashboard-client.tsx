@@ -154,7 +154,7 @@ export function DashboardClient({
                   : "bg-surface/50 text-muted border border-border hover:text-foreground"
               }`}
             >
-              {showFaultToggle ? "✓ 故障情境 ON" : "顯示故障情境"}
+              {showFaultToggle ? "故障情境 ON" : "顯示故障情境"}
             </button>
           </div>
         </CardHeader>
@@ -213,7 +213,7 @@ export function DashboardClient({
         className="rounded-md border-l-4 border-red-500 bg-red-500/10 px-4 py-3 text-xs sm:text-sm text-foreground"
       >
         <div className="font-semibold text-red-400 uppercase tracking-wider mb-1">
-          ⚠ 虛構展示 — 僅供學術說明
+          虛構展示 — 僅供學術說明
         </div>
         <p className="leading-relaxed text-muted">
           所有站點名稱皆為<span className="text-foreground font-medium">虛構人物角色</span>，與任何真實公司、客戶或商業關係無關;
@@ -245,7 +245,7 @@ export function DashboardClient({
           </p>
         </div>
         <span className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-warning whitespace-normal">
-          ⚠ 模擬資料 · 僅供展示用的合成機隊
+          模擬資料 · 僅供展示用的合成機隊
         </span>
       </header>
 

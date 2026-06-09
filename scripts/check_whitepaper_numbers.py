@@ -163,7 +163,7 @@ def check_lic_rc_invariants(report: Report) -> None:
     # PyBaMM-side floating-point noise. Whitepaper currently quotes 2.32 V.
     #
     # PRESENTATION_GUIDE.md is in .gitignore (local-only cheat sheet, per
-    # global CLAUDE.md), so on CI runners the file is absent. Make the PG
+    # the global ignore rules), so on CI runners the file is absent. Make the PG
     # check soft: only verified when the file exists; whitepaper claim is
     # mandatory because that doc IS committed.
     wp = _read(WHITEPAPER)
@@ -204,7 +204,7 @@ def check_lic_rc_invariants(report: Report) -> None:
 def check_mains_fail_invariants(report: Report) -> None:
     """Mains-fail 60 s graceful-ramp scenario invariants.
 
-    Pins the four headline numbers HANDOVER.md §5 and README.md ⭐ section
+    Pins the four headline numbers HANDOVER.md §5 and README.md section
     quote verbatim (6 C peak / 1.5 C cont. / 2.6 % DoD / pass-cutoff), so
     any future tweak to the generator parameters that drifts them out of
     those windows fails the gate before reaching a reviewer's eyes.
@@ -221,15 +221,15 @@ def check_mains_fail_invariants(report: Report) -> None:
     d = json.loads(_read(path))
     s = d["stats"]
 
-    # Hard: per-BBU C-rate must match README ⭐ section + HANDOVER §5 verbatim.
+    # Hard: per-BBU C-rate must match README section + HANDOVER §5 verbatim.
     report.add(
-        name="mains-fail peak C-rate = 6 C per BBU (README ⭐ + HANDOVER §5)",
+        name="mains-fail peak C-rate = 6 C per BBU (README + HANDOVER §5)",
         passed=_approx(s["peak_c_rate_per_bbu"], 6.0, 0.05),
         detail=f"peak_c_rate_per_bbu={s['peak_c_rate_per_bbu']:.3f}",
         target_loc="apps/web/public/scenarios/mains_fail_profile.json (stats)",
     )
     report.add(
-        name="mains-fail continuous C-rate = 1.5 C per BBU (README ⭐ + HANDOVER §5)",
+        name="mains-fail continuous C-rate = 1.5 C per BBU (README + HANDOVER §5)",
         passed=_approx(s["continuous_c_rate_per_bbu"], 1.5, 0.05),
         detail=f"continuous_c_rate_per_bbu={s['continuous_c_rate_per_bbu']:.3f}",
         target_loc="apps/web/public/scenarios/mains_fail_profile.json (stats)",
@@ -256,16 +256,16 @@ def check_mains_fail_invariants(report: Report) -> None:
         target_loc="apps/web/public/scenarios/mains_fail_profile.json (RC layer)",
     )
 
-    # Soft: README ⭐ section narrative anchors three timing values. Verify
+    # Soft: README section narrative anchors three timing values. Verify
     # the JSON stages match. If someone re-tunes the generator to a
-    # different stage layout, README ⭐ table goes stale.
+    # different stage layout, README table goes stale.
     stages = d.get("stages", {})
     readme = _read(README)
     readme_mentions_60s = bool(re.search(r"60\s*秒\s*graceful", readme))
     readme_mentions_500ms = bool(re.search(r"t\s*=\s*0[–-]500\s*ms", readme))
     readme_mentions_2s = bool(re.search(r"t\s*=\s*500\s*ms[–-]2\s*s", readme))
     report.add(
-        name="mains-fail stages align with README ⭐ table (0–0.5 s / 0.5–2 s / 2–60 s)",
+        name="mains-fail stages align with README table (0–0.5 s / 0.5–2 s / 2–60 s)",
         passed=(
             _approx(stages.get("peak_hold_s", 0), 0.5, 0.05)
             and _approx(stages.get("ramp_s", 0), 1.5, 0.05)
@@ -278,7 +278,7 @@ def check_mains_fail_invariants(report: Report) -> None:
             f"README has 60s='{readme_mentions_60s}' / 0-500ms='{readme_mentions_500ms}' / "
             f"500ms-2s='{readme_mentions_2s}'"
         ),
-        target_loc="apps/web/public/scenarios/mains_fail_profile.json (stages) ↔ README.md ⭐",
+        target_loc="apps/web/public/scenarios/mains_fail_profile.json (stages) ↔ README.md ",
     )
 
 

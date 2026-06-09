@@ -30,7 +30,7 @@ abstract: |
 > ATCC 第 23 屆 · 系統電工業大學企業菁英賽 C13 · 學生組
 > 文件版本 v1.3 / 2026-05-26(§2.8 改寫:複賽 BBU demonstrator → twin-first validation,對齊 `BBU_IMPLEMENTATION_PLAN.md` v2.0 + `RD_BRIEF.md` v0.1)
 > Live demo: <https://sysblade-atcc.vercel.app>
-> 上游文件:商業企劃書 v2.2 · 完整技術白皮書 `docs/whitepaper.md`
+> 上游文件:商業企劃書 v2.2 · **canonical 完整技術白皮書 `docs/whitepaper.md`**(本精煉版供複賽 binder 現場 Q&A 快翻用,數字與結論以 canonical 版為準)
 
 ---
 
@@ -52,13 +52,13 @@ abstract: |
 
 ## 1.2 六個關鍵數字
 
-### 🔋 5.7× — LFP 接收功率波動下降
+### 5.7× — LFP 接收功率波動下降
 
 LFP + LIC 混合拓撲把 GB200 ±30 % 瞬態能量分頻給 LIC 吃,LFP 主電池接收功率
 RMS 從 **8.7 kW 壓到 1.5 kW**(PyBaMM DFN 實測,詳見 §2.3),電芯電壓震盪
 peak-to-peak 也同步從 62 mV 收斂到 18 mV(**3.5× 改善**)。
 
-### ⏳ ~25 % — LFP 主電池循環壽命延長
+### ~25 % — LFP 主電池循環壽命延長
 
 這個 25 % 的**主要組成**是 BBU 低 duty 排程(§2.3.1 `duty_factor = 0.33`,
 ~50 cyc/yr vs Severson 1C/1C 實驗室 cadence ~365 cyc/yr),而**不是** hybrid
@@ -76,19 +76,19 @@ constraint**(v2.1 §G.3 footnote + §E.1 Tier-B 明文 8–12 yr LFP 浮充壽�
 壽命優勢會大幅縮減,§2.7.2 sensitivity)。capex 溢價與替換節省如何在 §2.7.1
 TCO 表中互抵的完整邏輯詳見 §2.3.1 最後一段。
 
-### 🧠 8.38 % — RUL 預測 MAPE(Severson 學術 baseline)
+### 8.38 % — RUL 預測 MAPE(Severson 學術 baseline)
 
 bagged-GBT (K=24) + xstrict filter (n=134):MAPE **8.38 %** (median, 10-seed)
 < Severson paper 9.1 %;R² 0.890,7/10 seeds < 10 %(§2.4)。**Fleet 部署實採
 LSTM 19.10 %**(跨 regime honesty 取捨,§2.5)。
 
-### 💰 33 % — 客戶 10 年 TCO 下降
+### 33 % — 客戶 10 年 TCO 下降
 
 每 rack USD 9,600 / 10y。Mid-tier 50r·TX **年省 $44.6k**(payback 2.4 y);
 Hyperscale 500r·VA **年省 $482.9k**(payback 2.3 y);三 preset 29.9–33.2 %
 (完整 model + 敏感度見 §2.7)。
 
-### ⚡ 60 sec graceful @ 120 kW rack peak — 對齊 OCP ORV3
+### 60 sec graceful @ 120 kW rack peak — 對齊 OCP ORV3
 
 **每 rack 8 台 BBU 並聯**(`scripts/generate_twin_scenarios.py::N_BBU_PER_RACK = 8`),
 每台 2.5 kWh / 15S LFP pack(v2.2 §E.1 Tier-B),**rack 總能量 8 × 2.5 = 20 kWh**;
@@ -96,9 +96,9 @@ Hyperscale 500r·VA **年省 $482.9k**(payback 2.3 y);三 preset 29.9–33.2 %
 20 kWh ÷ 120 kW = **600 秒**,60 秒備援只用 **10 % DoD,留 8 倍餘量**,
 落在 OCP ORV3 30–90 sec 規範區間;graceful 為動態 power profile(t = 0–2 s 由
 LIC + LFP 共同承擔 6C peak,t = 2–60 s 由 LFP 以 1.5C 連續放電撐至結束),
-**完整 cell-level 工作點防禦見 §2.1.1 ⭐**。長時 outage 由 facility UPS 接力。
+**完整 cell-level 工作點防禦見 §2.1.1 **。長時 outage 由 facility UPS 接力。
 
-### 📦 3.49× — ONNX INT8 壓縮(邊緣 NPU 可跑)
+### 3.49× — ONNX INT8 壓縮(邊緣 NPU 可跑)
 
 LSTM 從 **219 KB FP32 壓縮到 63 KB INT8**(measured,ΔMAPE +0.10 pp)。模型
 僅占 STM32N6 Neural-ART NPU 1.6 MB FLASH 的 4 %,單樣本 NPU latency 估算為
@@ -129,13 +129,13 @@ LSTM 從 **219 KB FP32 壓縮到 63 KB INT8**(measured,ΔMAPE +0.10 pp)。模型
 
 ## 1.4 三層架構速覽
 
-**☁️ 軟體層 — Cloud SaaS**
+**軟體層 — Cloud SaaS**
 `/twin` Battery Digital Twin · `/tco` TCO Calculator · `/dashboard` Fleet Dashboard(1000 台模擬)
 
-**🤖 邊緣層 — STM32N6 + Neural-ART NPU**
+**邊緣層 — STM32N6 + Neural-ART NPU**
 LSTM 2-layer hidden=64 · INT8 63 KB · BBU 內本地推論
 
-**🔋 硬體層 — Per-rack 12U 機箱(對齊 v2.2 §E.1 三層電氣分層)**
+**硬體層 — Per-rack 12U 機箱(對齊 v2.2 §E.1 三層電氣分層)**
 
 - **Tier-A**(瞬態)— 2× Eaton XLR-48-166 rack-level LIC 並聯,5 kJ 設計目標
 - **Tier-B**(備援)— **每 rack 8 台 BBU 並聯**,每台 2.5 kWh / 15S LFP pack,
@@ -184,7 +184,7 @@ AI inference 工作負載),per-rack 規格完全沿用 v2.2 §E.1「**同一個 
 | 層 | 規格 | 用途 / 設計依據 |
 |---|---|---|
 | **Tier-A** 瞬態緩衝 | **2× Eaton XLR-48-166 並聯**(48.6 V / 166 F / 54 Wh / ESR 5 mΩ,per Eaton XLR-48R6167-R datasheet)| 吃 ms 級瞬態。能量需求估算 120 kW × 30 % × 100 ms ≈ 3.6 kJ,加 30 % margin 後取 **5 kJ 為設計目標**;N+1 冗餘 |
-| **Tier-B** 短時備援 | **每 rack 8 台 BBU 並聯**,每台 **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱),rack 總能量 **20 kWh** | **60 sec graceful @ 120 kW rack peak** —— 每台 BBU 15 kW peak / **6C peak per cell**,1.5C 連續;**20 kWh ÷ 120 kW = 600 sec 理論值**,60 秒備援只用 **10 % DoD,8 倍餘量**;動態 power profile 詳 §2.1.1 ⭐;LFP 採車規 LG Energy Solution / Samsung SDI / KORE Power 等日韓系或北美自有 cell line 電芯(連續 1–3C / pulse 5–10C 規格涵蓋本工作點),**避 BABA Act / CFIUS 風險** |
+| **Tier-B** 短時備援 | **每 rack 8 台 BBU 並聯**,每台 **2.5 kWh / 15S 整合 LFP pack**(3.2 V × 15 = 48 V 標稱),rack 總能量 **20 kWh** | **60 sec graceful @ 120 kW rack peak** —— 每台 BBU 15 kW peak / **6C peak per cell**,1.5C 連續;**20 kWh ÷ 120 kW = 600 sec 理論值**,60 秒備援只用 **10 % DoD,8 倍餘量**;動態 power profile 詳 §2.1.1 ;LFP 採車規 LG Energy Solution / Samsung SDI / KORE Power 等日韓系或北美自有 cell line 電芯(連續 1–3C / pulse 5–10C 規格涵蓋本工作點),**避 BABA Act / CFIUS 風險** |
 | **Tier-C** 智能管理 | STM32N6 + Neural-ART NPU + edge LSTM | BBU 內邊緣推論(§2.5),斷網仍可運作 |
 | 介面 | 48 V DC + **±400 V HVDC ready**(雙電壓設計)| 規避 2027 OCP Mt. Diablo HVDC 換代 forklift 風險 |
 | 機械 | 單一 **12U OCP ORV3 BBU shelf** | 落 OCP ORV3 30–90 sec 備援規範區間 |
@@ -199,7 +199,7 @@ AI inference 工作負載),per-rack 規格完全沿用 v2.2 §E.1「**同一個 
 
 ---
 
-## 2.1.1 ⭐ graceful 動態 power profile —— 業師最關注點
+## 2.1.1 graceful 動態 power profile —— 業師最關注點
 
 **為什麼這節獨立成段**:讀者(尤其電池/電源產業背景)若用單台 BBU 容量除以
 整 rack 功率心算「2.5 kWh ÷ 120 kW = 75 秒 → 48C → LFP 物理不可行」,會錯誤
@@ -240,9 +240,9 @@ AI inference 工作負載),per-rack 規格完全沿用 v2.2 §E.1「**同一個 
 
 | 工作點 | 持續時間 | 車規 LFP datasheet 規格 | 結論 |
 |---|---|---|---|
-| **6C peak** | < 2 秒 | LG ESS B-series / Samsung SDI 高功率版 pulse 規格 5–10C × 30 秒允許 | ✅ 落在 pulse 允許區 |
-| **6C → 1.5C ramp** | 1.5 秒 | 仍屬 pulse 範疇(< 30 秒總窗口) | ✅ pulse 允許區 |
-| **1.5C 連續** | 58 秒 | 車規 LFP 連續放電規格 1–3C | ✅ 連續允許區下緣 |
+| **6C peak** | < 2 秒 | LG ESS B-series / Samsung SDI 高功率版 pulse 規格 5–10C × 30 秒允許 | [v] 落在 pulse 允許區 |
+| **6C → 1.5C ramp** | 1.5 秒 | 仍屬 pulse 範疇(< 30 秒總窗口) | [v] pulse 允許區 |
+| **1.5C 連續** | 58 秒 | 車規 LFP 連續放電規格 1–3C | [v] 連續允許區下緣 |
 
 **沒有任何工作點需要「車規 LFP × 連續 6C × 60 秒」**(這個工作點才是 48C 誤讀
 的物理不可行點)。Sysblade 的設計是把 6C 限制在 < 2 秒 pulse,把 60 秒連續
@@ -270,7 +270,7 @@ control plane API(NVIDIA `nvml`、IPMI Power Capping Spec 1.0、Redfish
 | 「為什麼不用更大 BBU 例如 25 kWh × 1 台?」 | **單點故障 blast radius**:per-rack 8 台並聯允許 N+1 容錯(任一台失效不影響 rack);整合單台 25 kWh 違反 v2.2 §E.1 12U OCP ORV3 機械形狀因子 + 失效範圍擴大 |
 | 「複賽 demonstrator 是 8S × 5C peak / 1C 連續,跟 spec 6C/1.5C 不一致?」 | **是 scaled-down,per-cell 工作點 transferable**:demonstrator 因預算 + 26 天時程 + 學生實驗室安全考量,容量縮 ~10×、串數縮 1/2、cell C-rate peak 5C / 連續 ~1C(因 Maxwell BMOD0058 Ioper 19A 限制)。**控制律 τ=0.5s、互補濾波器、5.72×/3.52× 削峰物理 chemistry-agnostic 且 sim 驗過**(`scripts/generate_scaled_8s_sim.py` PASS)。Spec 6C/1.5C 仍是 EVT(2026 Q3)目標,對齊 v2.2 §F.1。詳 `docs/BBU_IMPLEMENTATION_PLAN.md` §1.1 demonstrator spec |
 
-⭐ **本節 §2.1.1 + §2.3.1 RMS 應力分析(C-rate 6C peak → 1C 連續)+ §2.3.2 Wang+rainflow 交叉驗證(worst-case 5.5 % per-Ah 損傷下降),共構 LFP cell 工作點完整防禦**。
+**本節 §2.1.1 + §2.3.1 RMS 應力分析(C-rate 6C peak → 1C 連續)+ §2.3.2 Wang+rainflow 交叉驗證(worst-case 5.5 % per-Ah 損傷下降),共構 LFP cell 工作點完整防禦**。
 
 ---
 
@@ -313,7 +313,7 @@ $$
 | LFP 接收功率 RMS | 8.7 kW | 1.5 kW | **5.7×** |
 | 電池電壓震盪 (steady-state pp) | ~62 mV | ~18 mV | **3.5×** |
 
-### 2.3.0 LIC 物理層 — closed-form RC + Eaton datasheet anchor ⭐
+### 2.3.0 LIC 物理層 — closed-form RC + Eaton datasheet anchor
 
 LFP 我們走完整 PyBaMM DFN 物理模擬;**LIC 側刻意分層**走 closed-form 一階
 RC 等效模型(`_simulate_lic_rc()`,`scripts/generate_twin_scenarios.py`)。
@@ -364,7 +364,7 @@ Eaton in-the-loop 量測曲線校正;current-rating gate(463 A peak per module)
 
 **TCO 角色(誠實邊界)**:在 §2.7.1 TCO 表中,LFP+LIC 「初次採購 +$2,880 / rack」與「替換節省 −$2,880 / rack」剛好互抵,**壽命延長對 TCO bottom-line 的淨貢獻趨近於零**;33 % saving 主要是由瞬態損失(−3,600)、維運人力(−3,000)、HVDC 過渡(−3,000)三條 row 撐起(§2.7.1)。換句話說,壽命延長的角色是讓 Sysblade 能收下這筆 capex 溢價而不增加客戶 TCO,客戶實質拿到的是 +25 % 服役年限、Hyperscale 500 racks 規模 250 次現場派工避免,以及可列入 ESG 碳排報告的減量(對齊 v2.2 §D.1)。
 
-### 2.3.2 獨立交叉驗證 — Rainflow + Wang 2011 ⭐
+### 2.3.2 獨立交叉驗證 — Rainflow + Wang 2011
 
 §2.3.1 的 25 % 壽命延長基於 Attia + Severson 統計外推。為提供**第二條獨立可
 檢驗的物理路徑**,我們對 PyBaMM 產出的 LFP cell 電流跑 **ASTM E1049-85
@@ -425,7 +425,7 @@ Eaton in-the-loop 量測曲線校正;current-rating gate(463 A peak per module)
 > 浮充部署是**沉默外插**;augmented LSTM 涵蓋兩個 regime,點精度退讓但對客戶
 > 部署 honest。**Fleet 推論用 LSTM,學術 baseline 報 GBT**(§2.4)。
 
-### 2.5.1 合成 cell 是否 self-fulfilling — Severson-only 反證 ⭐
+### 2.5.1 合成 cell 是否 self-fulfilling — Severson-only 反證
 
 業師會問:**50 顆 Severson-anchored synthetic BBU 是不是讓模型訓自己?**
 合成 cell 的 cycle_life label 由同一條 Severson-fit 解析公式產出,LSTM 在
@@ -465,12 +465,12 @@ README + 完整白皮書 §3.3.8。
 
 ### 2.6.1 Battery Digital Twin · `/twin`
 
-🔗 **Live demo**:<https://sysblade-atcc.vercel.app/twin>
+**Live demo**:<https://sysblade-atcc.vercel.app/twin>
 
 **典型使用情境 — 機房維運副理 daily check-in**:
 > 副理 9:00 打開 `/twin`,9 顆 walkthrough cell 中 b2c1 標 **critical**(fleet
 > 內 critical 占 3.9 %),點進去看 LSTM 預測 — **點 218 cycles、90 % PI
-> [144, 332](≈ 4.4 BBU 年,PI 2.9–6.6 年);預期 EOL 比 walkthrough 中位數
+> [144, 332] (PI ≈ 4.4 BBU 年,2.9–6.6 年);預期 EOL 比 walkthrough 中位數
 > ~20 BBU 年早 ~16 年**,當場開工單請工程隊優先排程現場巡檢。
 
 **產品內容**:物理 + ML 整合可視化 — PyBaMM DFN 線下預算的瞬態 / 老化波形 +
@@ -480,7 +480,7 @@ cell span healthy / warning / early_aging / critical 四個狀態,可現場點�
 
 ### 2.6.2 TCO Calculator · `/tco`
 
-🔗 **Live demo**:<https://sysblade-atcc.vercel.app/tco>
+**Live demo**:<https://sysblade-atcc.vercel.app/tco>
 
 **典型使用情境 — 業務客戶提案會議**:
 > 客戶 CFO 問:「你們比 Vertiv 貴 50 %,為什麼換?」業務當場開 `/tco`、拉
@@ -494,7 +494,7 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 
 ### 2.6.3 Fleet Dashboard · `/dashboard`
 
-🔗 **Live demo**:<https://sysblade-atcc.vercel.app/dashboard>
+**Live demo**:<https://sysblade-atcc.vercel.app/dashboard>
 
 **典型使用情境 — 維運服務派工流程**:
 > 7:00,某客戶 Dallas 機房一台 rack SOH 從 0.86 跌至 **0.84**(RUL 5,400
@@ -587,12 +587,12 @@ Payback 對 rack 數量不敏感(extra capex 與 saving 都隨 racks 線性 scal
 
 | # | Validation chain | 證據 artifact | 對齊 spec | 狀態(2026-05-26)|
 |:--:|---|---|---|:--:|
-| **V1** | PyBaMM Prada2013 對公開車規 LFP 量測 fit error | `pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| §2.2 物理模擬可信度 | 📋 W2 |
-| **V2** | LIC RC closed-form 對真實 datasheet curve fit error | `lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| §2.3.0 RC anchor 可信度 | 📋 W2 |
-| **V3** | **整 rack 60 s graceful 整合 sim**(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型)| `rack_60s_graceful.json` + `/twin` 新 row | §2.1.1 60 s 承諾 | 📋 W3 |
-| **V4** | **N-1 BBU failure redundancy sim**(t=15 s 1 台 offline,剩 7 台撐 60 s)| `rack_n_minus_1.json` + dashboard fault-inject toggle | §2.1.1 N+1 容錯 | 📋 W3 |
-| **V5** | Severson → PyBaMM-generated GB200 duty cell transfer test | `severson_transfer_mape.json` | §2.5 cross-regime 證據 | 📋 W3 |
-| **V6** | **`make verify` 一鍵 reproducibility gate** | `Makefile` + `scripts/verify_all.py` + CI workflow | RD reviewer 30 分鐘 self-check 承諾 | 📋 W4 |
+| **V1** | PyBaMM Prada2013 對公開車規 LFP 量測 fit error | `pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| §2.2 物理模擬可信度 | W2 |
+| **V2** | LIC RC closed-form 對真實 datasheet curve fit error | `lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| §2.3.0 RC anchor 可信度 | W2 |
+| **V3** | **整 rack 60 s graceful 整合 sim**(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型)| `rack_60s_graceful.json` + `/twin` 新 row | §2.1.1 60 s 承諾 | W3 |
+| **V4** | **N-1 BBU failure redundancy sim**(t=15 s 1 台 offline,剩 7 台撐 60 s)| `rack_n_minus_1.json` + dashboard fault-inject toggle | §2.1.1 N+1 容錯 | W3 |
+| **V5** | Severson → PyBaMM-generated GB200 duty cell transfer test | `severson_transfer_mape.json` | §2.5 cross-regime 證據 | W3 |
+| **V6** | **`make verify` 一鍵 reproducibility gate** | `Makefile` + `scripts/verify_all.py` + CI workflow | RD reviewer 30 分鐘 self-check 承諾 | W4 |
 
 **V1-V6 完整論述**:V1+V2 物理模型 fit error 量化、V3+V4 系統整合 + 容錯
 (實機學生階段做不到正是 twin 的賣點)、V5 ML pipeline 跨 regime 誠實 transfer、
@@ -602,17 +602,17 @@ V6 reviewer 可獨立重跑。
 
 | 既有承諾 | v2.0 twin 對應 | 是否衝突 |
 |---|---|:--:|
-| **5.7× LFP RMS 削峰**(§2.3 / §2.3.1)| sim 數字不變;V1 給「sim 對 reality 的可信度區間」 | ✅ |
-| **3.5× V_cell pp 收斂**(§2.3)| 同上 | ✅ |
-| **8.38 % RUL MAPE**(§2.5 / Part 1.2)| 不變;V5 加 cross-regime transfer MAPE 誠實揭露 | ✅ **強化** |
-| **3.49× ONNX INT8 壓縮**(Part 1.2 / 附錄 C)| 不變 | ✅ |
-| **/dashboard 1000 台 SIMULATED + watermark**(§2.6.3)| V3/V4 sim 餵新 row 仍標 SIMULATED;watermark **不弱化** | ✅ |
-| **LFP 15S**(v2.2 §修訂 #4)| spec 不修訂;V3 整 rack sim 直接用 15S 配置 | ✅ **更直接** |
-| **60 s graceful @ 120 kW**(§2.1.1)| **V3 直接把這條曲線 sim 出來**(原本只是承諾,變 artifact)| ✅ **強化** |
-| **N+1 容錯**(§2.1.1)| **V4 fault-injection sim 把這條主張變 artifact** | ✅ **強化** |
-| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values | **V2 把這條邊界量化為 droop RMS error %** | ✅ **強化** |
-| §2.2 PyBaMM Prada2013 generic LFP | **V1 把這條邊界量化為 V RMS error %** | ✅ **強化** |
-| 「不承諾 MAPE < 5 %」(v2.2 附件 B)| V5 cross-regime MAPE 若 ≥ 10 % 仍誠實寫,不修飾 | ✅ |
+| **5.7× LFP RMS 削峰**(§2.3 / §2.3.1)| sim 數字不變;V1 給「sim 對 reality 的可信度區間」 | [v] |
+| **3.5× V_cell pp 收斂**(§2.3)| 同上 | [v] |
+| **8.38 % RUL MAPE**(§2.5 / Part 1.2)| 不變;V5 加 cross-regime transfer MAPE 誠實揭露 | [v] **強化** |
+| **3.49× ONNX INT8 壓縮**(Part 1.2 / 附錄 C)| 不變 | [v] |
+| **/dashboard 1000 台 SIMULATED + watermark**(§2.6.3)| V3/V4 sim 餵新 row 仍標 SIMULATED;watermark **不弱化** | [v] |
+| **LFP 15S**(v2.2 §修訂 #4)| spec 不修訂;V3 整 rack sim 直接用 15S 配置 | [v] **更直接** |
+| **60 s graceful @ 120 kW**(§2.1.1)| **V3 直接把這條曲線 sim 出來**(原本只是承諾,變 artifact)| [v] **強化** |
+| **N+1 容錯**(§2.1.1)| **V4 fault-injection sim 把這條主張變 artifact** | [v] **強化** |
+| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values | **V2 把這條邊界量化為 droop RMS error %** | [v] **強化** |
+| §2.2 PyBaMM Prada2013 generic LFP | **V1 把這條邊界量化為 V RMS error %** | [v] **強化** |
+| 「不承諾 MAPE < 5 %」(v2.2 附件 B)| V5 cross-regime MAPE 若 ≥ 10 % 仍誠實寫,不修飾 | [v] |
 
 ### 帳目
 
@@ -712,15 +712,15 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 
 | 維度 | Sysblade | Eaton XLR | Vertiv Liebert | Schneider Galaxy VS |
 |------|:---:|:---:|:---:|:---:|
-| LFP 主電池 | ✅ | ❌(只賣 LIC) | 🟡(NMC/VRLA,**非 LFP**)| 🟡(集中式 Li-ion,**通常 NMC**)|
-| LIC 瞬態緩衝 | ✅(整合) | ✅(只此一項) | ❌ | ❌ |
-| **Digital Twin(物理 + ML)** | ✅ | ❌ | ❌ | ❌ |
-| **Fleet Dashboard SaaS** | ✅(三層服務) | ❌ | 部分(iCOM) | 部分(EcoStruxure) |
-| **TCO Calculator(客戶帶走)** | ✅ | ❌ | ❌ | 部分(內部用) |
-| **HVDC ±400 V ready** | ✅(雙電壓介面) | 部分 | ❌(48 V only) | ✅(集中式) |
-| **Rack-level 部署** | ✅ | ✅ | 部分(Edge 系列) | ❌(集中式) |
+| LFP 主電池 | [v] | [x] (只賣 LIC) | (黃)(NMC/VRLA,**非 LFP**)| (黃)(集中式 Li-ion,**通常 NMC**)|
+| LIC 瞬態緩衝 | [v] (整合) | [v] (只此一項) | [x] | [x] |
+| **Digital Twin(物理 + ML)** | [v] | [x] | [x] | [x] |
+| **Fleet Dashboard SaaS** | [v] (三層服務) | [x] | 部分(iCOM) | 部分(EcoStruxure) |
+| **TCO Calculator(客戶帶走)** | [v] | [x] | [x] | 部分(內部用) |
+| **HVDC ±400 V ready** | [v] (雙電壓介面) | 部分 | [x] (48 V only) | [v] (集中式) |
+| **Rack-level 部署** | [v] | [v] | 部分(Edge 系列) | [x] (集中式) |
 
-### 3.4.2 商業 / 規模對比 ⭐
+### 3.4.2 商業 / 規模對比
 
 | 維度 | Sysblade(Sysgration 推案) | Eaton | Vertiv | Schneider |
 |------|---|---|---|---|
@@ -779,11 +779,11 @@ CMSIS-NN / TensorFlow Lite Micro / Edge Impulse 等替代執行環境)。
 
 | Feature | Sev μ | Sev σ | Sev [min, max] | NASA [min, max] | OOD | z-dist |
 |---|---:|---:|:---:|:---:|:--:|---:|
-| log_var_delta_q | -3.878 | 0.441 | [-5.21, -2.73] | [-2.07, -1.54] | ✗ | **5.31** |
-| log_min_delta_q | -1.462 | 0.238 | [-2.30, -0.86] | [-0.51, -0.26] | ✗ | **5.06** |
-| slope_q_2_100 | -0.000 | 0.000 | [-0.001, 0] | [-0.006, -0.004] | ✗ | **54.00** |
-| intercept_q_2_100 | 1.073 | 0.016 | [0.97, 1.10] | [1.86, 2.04] | ✗ | **61.41** |
-| q_at_cycle_2 | 1.069 | 0.015 | [0.97, 1.09] | [1.85, 2.04] | ✗ | **64.55** |
+| log_var_delta_q | -3.878 | 0.441 | [-5.21, -2.73] | [-2.07, -1.54] | [x] | **5.31** |
+| log_min_delta_q | -1.462 | 0.238 | [-2.30, -0.86] | [-0.51, -0.26] | [x] | **5.06** |
+| slope_q_2_100 | -0.000 | 0.000 | [-0.001, 0] | [-0.006, -0.004] | [x] | **54.00** |
+| intercept_q_2_100 | 1.073 | 0.016 | [0.97, 1.10] | [1.86, 2.04] | [x] | **61.41** |
+| q_at_cycle_2 | 1.069 | 0.015 | [0.97, 1.09] | [1.85, 2.04] | [x] | **64.55** |
 
 **z-distance 計算**:
 $$z = \max(|x_{\text{NASA,min}} - \mu_{\text{Sev}}|,\ |x_{\text{NASA,max}} - \mu_{\text{Sev}}|) / \sigma_{\text{Sev}}$$
@@ -826,16 +826,16 @@ $$z = \max(|x_{\text{NASA,min}} - \mu_{\text{Sev}}|,\ |x_{\text{NASA,max}} - \mu
 
 | 資源 | 模型需求 | NPU 容量 | 配適? |
 |---|---:|---:|:---:|
-| Weight FLASH(INT8 measured)| 62.9 KB | 1638.4 KB(1.6 MB)| ✅ 用 4 % |
-| Activation SRAM(INT8 estimate)| 32.0 KB | 1024 KB(1 MB)| ✅ 用 3 % |
+| Weight FLASH(INT8 measured)| 62.9 KB | 1638.4 KB(1.6 MB)| [v] 用 4 % |
+| Activation SRAM(INT8 estimate)| 32.0 KB | 1024 KB(1 MB)| [v] 用 3 % |
 
 ## C.3 Op dispatch(依 X-CUBE-AI 9.x 公開 op support matrix)
 
 | 類別 | 數量 | 說明 |
 |---|---:|---|
-| ✅ NPU 完全加速 | 45 ops | Gemm / Conv / Add / Mul / Reshape / Transpose / Slice / Concat 等 |
-| 🟡 NPU 部分 | 3 ops | LSTM(NPU 內部分解 → Gemm + Sigmoid + Tanh + element-wise)、Gather |
-| ❌ CPU fallback | 4 ops | Shape × 3 + Expand × 1 — **皆為 metadata ops,0 MAC** |
+| [v] NPU 完全加速 | 45 ops | Gemm / Conv / Add / Mul / Reshape / Transpose / Slice / Concat 等 |
+| (黃) NPU 部分 | 3 ops | LSTM(NPU 內部分解 → Gemm + Sigmoid + Tanh + element-wise)、Gather |
+| [x] CPU fallback | 4 ops | Shape × 3 + Expand × 1 — **皆為 metadata ops,0 MAC** |
 
 **整個 inference compute path 都在 NPU 上**,fallback 到 CPU 的 4 個 op
 不消耗 MAC,只是 graph 連結用的 shape 推導。

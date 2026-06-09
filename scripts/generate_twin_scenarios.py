@@ -104,7 +104,7 @@ I_PEAK_PACK_A = (
 # ---------------------------------------------------------------------------
 MAINS_FAIL_DURATION_S = 60.0
 MAINS_FAIL_DT = 0.02            # 3000 steps; balances DFN cost vs LIC dynamics
-MAINS_FAIL_PEAK_HOLD_S = 0.5    # LIC-led peak hold (~2.4 s usable energy, see README ⭐)
+MAINS_FAIL_PEAK_HOLD_S = 0.5    # LIC-led peak hold (~2.4 s usable energy, see README )
 MAINS_FAIL_RAMP_S = 1.5         # linear ramp window — BMC throttles GPU power-cap
 MAINS_FAIL_CONTINUOUS_KW = 30.0 # GPU survival power → 1.5 C continuous per BBU
 
@@ -522,7 +522,7 @@ def _build_mains_fail_profile(
 
     p[hold_mask] = p_peak
     # Linear ramp p(t') = p_peak + (p_cont − p_peak) × (t' / RAMP_S)
-    # — README ⭐ section quotes this as "120 → 30 kW (linear ramp)".
+    # — README section quotes this as "120 → 30 kW (linear ramp)".
     t_ramp = t[ramp_mask] - ramp_start
     p[ramp_mask] = p_peak + (p_cont - p_peak) * (t_ramp / MAINS_FAIL_RAMP_S)
     p[cont_mask] = p_cont

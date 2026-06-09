@@ -888,7 +888,7 @@ function Thermometer({
           style={{ bottom: `${warningPct}%` }}
         >
           <span className="absolute right-full pr-3 text-[10px] text-danger whitespace-nowrap -translate-y-1/2">
-            {warning}°C ⚠
+            {warning}°C
           </span>
         </div>
       </div>
@@ -990,7 +990,7 @@ function FormulaCard({
       </div>
       <div className="text-foreground/90 leading-relaxed">{formula}</div>
       <div className="mt-3 text-accent leading-relaxed">{substitution}</div>
-      <div className="mt-3 text-success leading-relaxed">✓ {check}</div>
+      <div className="mt-3 text-success leading-relaxed">{check}</div>
     </div>
   );
 }

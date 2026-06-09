@@ -1,4 +1,4 @@
-# ⏭ 後續待辦(換裝置接手用)
+# (skip) 後續待辦(換裝置接手用)
 
 > **v2.0 update (2026-05-27)**:本檔原為 2026-05-23 commit `dc7b04d`(化解 48C
 > 誤讀 + §2.1.1 動態 graceful ramp 防禦)的 internal handover note。**2026-05-26
@@ -38,32 +38,32 @@ pnpm build                              # next build,確認 static export OK
 pnpm dev                                # 開 localhost:3000 視覺驗證下列三點:
                                         #   (a) 首頁「5 kJ / rack rule」卡片有 "8 BBUs in parallel · 15 kW & 6C peak per BBU"
                                         #   (b) /twin Method 面板的 Physics tile 展開後有 unit-mixing pitfall 說明
-                                        #   (c) GitHub repo 顯示 README 時,⭐ 業師最關注點 區塊在 TL;DR 後立即可見
+                                        #   (c) GitHub repo 顯示 README 時,業師最關注點 區塊在 TL;DR 後立即可見
 ```
 
 ## 2. 已 ship + 已防禦的部分
 
-- ✅ `docs/whitepaper_restructured.md` §2.1 + §2.1.1(170 行)— 拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師六題答辯
-- ✅ `docs/whitepaper.md` §2.1 開頭 unit-mixing 警告 blockquote
-- ✅ `README.md` TL;DR 後的 ⭐ 業師最關注點 區塊
-- ✅ `apps/web/src/app/page.tsx` + `twin-client.tsx` 補 8-BBU 註
+- [v] `docs/whitepaper_restructured.md` §2.1 + §2.1.1(170 行)— 拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師六題答辯
+- [v] `docs/whitepaper.md` §2.1 開頭 unit-mixing 警告 blockquote
+- [v] `README.md` TL;DR 後的 業師最關注點 區塊
+- [v] `apps/web/src/app/page.tsx` + `twin-client.tsx` 補 8-BBU 註
 
 ## 3. 沒做但可選做的事(優先序)
 
 | 任務 | 動機 | 估時 | 何時做 |
 |---|---|---|---|
-| ~~**(P2)** `scripts/generate_twin_scenarios.py` 新增 `scenario_mains_fail()`,output `mains_fail_profile.json` 跑 60 秒動態 ramp 曲線~~ | ~~讓 §2.1.1 的 power profile 有 simulator 數據佐證,不是純文字~~ | ~~2–3 hr~~ | ✅ **2026-05-17 done** — PyBaMM DFN + LIC RC 雙層,stage 0-0.5s / 0.5-2s / 2-60s linear ramp,DoD 2.66 %、headroom 37.6×、6C / 1.5C per BBU(對齊本檔 §5 答辯句);新 invariant 5 條進 `check_whitepaper_numbers.py` |
-| ~~**(P2)** `/twin` 加新 tab 視覺化 graceful 曲線~~ | ~~讓上述 JSON 在 UI 上看得到,不只 README 文字~~ | ~~2–3 hr~~ | ✅ **2026-05-17 done** — `apps/web/src/app/twin/twin-client.tsx` 加獨立 section(Card + 4 Stat tile + 2 ChartCard:rack power split + LIC voltage envelope with 38 V cutoff reference line)|
+| ~~**(P2)** `scripts/generate_twin_scenarios.py` 新增 `scenario_mains_fail()`,output `mains_fail_profile.json` 跑 60 秒動態 ramp 曲線~~ | ~~讓 §2.1.1 的 power profile 有 simulator 數據佐證,不是純文字~~ | ~~2–3 hr~~ | [v] **2026-05-17 done** — PyBaMM DFN + LIC RC 雙層,stage 0-0.5s / 0.5-2s / 2-60s linear ramp,DoD 2.66 %、headroom 37.6×、6C / 1.5C per BBU(對齊本檔 §5 答辯句);新 invariant 5 條進 `check_whitepaper_numbers.py` |
+| ~~**(P2)** `/twin` 加新 tab 視覺化 graceful 曲線~~ | ~~讓上述 JSON 在 UI 上看得到,不只 README 文字~~ | ~~2–3 hr~~ | [v] **2026-05-17 done** — `apps/web/src/app/twin/twin-client.tsx` 加獨立 section(Card + 4 Stat tile + 2 ChartCard:rack power split + LIC voltage envelope with 38 V cutoff reference line)|
 | **(P3)** 選具體車規 LFP cell datasheet(LG ESS B-series 確切 part #、Samsung SDI 確切 part #)寫進 §2.1.1 C 段 | 業師可能追問「具體哪一顆?」目前 narrative 是「W3 EVT 階段定」,如果要更硬挺可預先點名 | 1 hr 找 datasheet + 半小時改字 | EVT 工程板下單前 |
-| **(P3)** `docs/figures/` 新增 graceful_ramp.svg power-vs-time 曲線圖,嵌入 §2.1.1 + README ⭐ 區塊 | 視覺化勝過表格 | 2 hr | 若簡報投影片要用同一張圖 |
+| **(P3)** `docs/figures/` 新增 graceful_ramp.svg power-vs-time 曲線圖,嵌入 §2.1.1 + README 區塊 | 視覺化勝過表格 | 2 hr | 若簡報投影片要用同一張圖 |
 | **(P4)** 把 §2.1.1 翻譯成英文版放在 `docs/whitepaper_en.md` | 國際業師 / 評審用 | 1 hr | 若有國際評審 |
 | **(P4)** 跟 v2.2 docx 同步:`scripts/generate_proposal_v22.py` 是否也要把 8-BBU 註明寫進企劃書本文? | 目前企劃書 docx 沒提 8-BBU,只有白皮書有。如果業師讀 docx 又算出 48C 還是會出事 | 改 generator + 重跑 = 1–2 hr | **若 docx 還會再交一版才做;v2.2 已繳交版不動** |
 
 ## 4. 沒做且不建議做的事(對齊先前討論)
 
-- ❌ **換高功率 LFP cell**(原 2a 方案)— 動 BOM、TCO 33%→28%、踩 BABA Act / CFIUS。Reduced 2b(用 pulse vs 連續詮釋 + 動態 ramp profile)已足以保留車規 LFP narrative,**不要再走這條**。
-- ❌ **加大電池容量到 8–24 kWh / 台**(原 A 方案)— 打死 12U 形狀因子,**不要走**。
-- ❌ **降低峰值宣稱**(原 B 方案)— 違反「per rack 一台 BBU」product narrative,**不要走**。
+- [x] **換高功率 LFP cell**(原 2a 方案)— 動 BOM、TCO 33%→28%、踩 BABA Act / CFIUS。Reduced 2b(用 pulse vs 連續詮釋 + 動態 ramp profile)已足以保留車規 LFP narrative,**不要再走這條**。
+- [x] **加大電池容量到 8–24 kWh / 台**(原 A 方案)— 打死 12U 形狀因子,**不要走**。
+- [x] **降低峰值宣稱**(原 B 方案)— 違反「per rack 一台 BBU」product narrative,**不要走**。
 
 ## 5. 答辯場合的兩句話備案(背起來)
 

@@ -30,6 +30,8 @@ abstract: |
 > 文件版本 v1.3 / 2026-05-26(§8.3 改寫:複賽 BBU demonstrator → twin-first validation,對齊 `BBU_IMPLEMENTATION_PLAN.md` v2.0 + `RD_BRIEF.md` v0.1;v1.x 硬體 M1-M4 narrative descope 為 EVT 2026 Q3 路線圖)
 > Github: <https://github.com/aericheng/atcc-sysblade>
 > Live demo: <https://sysblade-atcc.vercel.app>
+>
+> 本文為 **canonical 完整技術白皮書**;另有精煉版 `docs/whitepaper_restructured.md`(複賽 binder 現場 Q&A 快翻用),其內容與數字以本文為準。
 
 ---
 
@@ -94,7 +96,7 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 
 ### 2.1 硬體拓撲
 
-> **拓撲關鍵數字 ⭐(業師最常誤讀,獨立陳述以避免 unit-mixing)**:
+> **拓撲關鍵數字 (業師最常誤讀,獨立陳述以避免 unit-mixing)**:
 >
 > Sysblade per-rack BBU 是 **8 台 BBU 並聯**架構(對齊
 > `scripts/generate_twin_scenarios.py::N_BBU_PER_RACK = 8` 與
@@ -529,11 +531,11 @@ README,Saha & Goebel 2007,**§"Battery Data Set" cell description**;
 
 | Feature | Severson 範圍 | NASA 範圍 | OOD? | z-distance |
 |---------|---:|---:|:--:|---:|
-| log_var_delta_q | [-5.21, -2.73] | [-2.07, -1.54] | ✗ | **5.3 σ** |
-| log_min_delta_q | [-2.30, -0.86] | [-0.51, -0.26] | ✗ | **5.1 σ** |
-| slope_q_2_100 | [-0.001, 0] | [-0.006, -0.004] | ✗ | **54 σ** |
-| intercept_q_2_100 | [0.97, 1.10] | [1.86, 2.04] | ✗ | **61 σ** |
-| q_at_cycle_2 | [0.97, 1.09] | [1.85, 2.04] | ✗ | **65 σ** |
+| log_var_delta_q | [-5.21, -2.73] | [-2.07, -1.54] | [x] | **5.3 σ** |
+| log_min_delta_q | [-2.30, -0.86] | [-0.51, -0.26] | [x] | **5.1 σ** |
+| slope_q_2_100 | [-0.001, 0] | [-0.006, -0.004] | [x] | **54 σ** |
+| intercept_q_2_100 | [0.97, 1.10] | [1.86, 2.04] | [x] | **61 σ** |
+| q_at_cycle_2 | [0.97, 1.09] | [1.85, 2.04] | [x] | **65 σ** |
 
 **5/5 feature 全部超出訓練分布**,z-distance 5–65 σ。其中
 intercept_q_2_100 與 q_at_cycle_2 的 65 σ 偏移幾乎完全來自
@@ -687,7 +689,7 @@ duty cell 從未訓練過),augmented LSTM 對兩個 regime 都誠實。
 | Test R² | 0.862 | **0.553** |
 | Conformal PI median width | 1075 cycles | **793 cycles** |
 | n_train / cal / test | 114 / 37 / 37 | **84 / 27 / 27** |
-| ONNX 匯出 | ✅ 生產 `model_validation.json` 推論主力 | ⚠️ 跳過(避免污染 production checkpoint) |
+| ONNX 匯出 | [v] 生產 `model_validation.json` 推論主力 | (!) 跳過(避免污染 production checkpoint) |
 
 (完整 JSON 在 `data/processed/lstm_severson_only_eval.json`,
 gitignore 白名單,CI 守門可比對。)
@@ -975,17 +977,17 @@ $$
 
 | 模組 | 交付內容 | 狀態 |
 |------|---------|:--:|
-| 物理引擎 | PyBaMM DFN(Prada2013 LFP)瞬態 / 老化情境四件組(§3.1)| ✅ |
-| 資料管線 | Severson 2019 6 GB v7.3 .mat HDF5 解析,138 顆 cell + `summary` 子節點(IR / Tmax / chargetime)| ✅ |
-| ML — 點預測 | 13-feat Full model × 5 種 ensemble × 4 種 cell filter × 10-seed sweep(§3.3.3 / §3.3.4)| ✅ |
-| ML — random split | bagged-GBT (K=24) + xstrict filter median MAPE **8.38 %、R² 0.89**,**達 v2.2 附件 B「< 10 %」承諾** | ✅ |
-| ML — cross-batch | bagged-OLS + xstrict (b1+b2 → b3) median MAPE **13.87 %、R² +0.21** | ✅ |
-| ML — cross-dataset | Severson → NASA 5/5 feature OOD,z = 5–65 σ → per-chemistry 校準 SOP(§3.3.5)| ✅ |
-| ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles(−44 %),test coverage 100 %(§3.3.7)| ✅ |
-| ML — regime augmentation | 50 顆 **Severson-anchored synthetic BBU-duty cell**(analytic decay + per-cell noise,**non-PyBaMM**)加入訓練,LSTM span Severson + BBU 兩 regime(§3.3.8);僅作 regime coverage,production 信賴度仍以 Severson 真實 cells 為主 | ✅ |
-| 邊緣部署(measured)| ONNX export(opset 17)+ INT8 dynamic quant:**3.49× 壓縮、ΔMAPE +0.10 pp、CPU INT8 p50 1.11× 加速**(附錄 C)| ✅ |
-| 邊緣部署(estimate)| STM32N6 X-CUBE-AI 靜態圖分析,NPU latency **54.7 µs**(±2× 區間 27–109 µs,40 % NPU util 假設,附錄 C)| ✅ |
-| Live demo | `/twin` Battery Twin · `/tco` TCO Calculator · `/dashboard` 1000-台 fleet(seeded RNG 模擬,SIMULATED DATA watermark)| ✅ |
+| 物理引擎 | PyBaMM DFN(Prada2013 LFP)瞬態 / 老化情境四件組(§3.1)| [v] |
+| 資料管線 | Severson 2019 6 GB v7.3 .mat HDF5 解析,138 顆 cell + `summary` 子節點(IR / Tmax / chargetime)| [v] |
+| ML — 點預測 | 13-feat Full model × 5 種 ensemble × 4 種 cell filter × 10-seed sweep(§3.3.3 / §3.3.4)| [v] |
+| ML — random split | bagged-GBT (K=24) + xstrict filter median MAPE **8.38 %、R² 0.89**,**達 v2.2 附件 B「< 10 %」承諾** | [v] |
+| ML — cross-batch | bagged-OLS + xstrict (b1+b2 → b3) median MAPE **13.87 %、R² +0.21** | [v] |
+| ML — cross-dataset | Severson → NASA 5/5 feature OOD,z = 5–65 σ → per-chemistry 校準 SOP(§3.3.5)| [v] |
+| ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles(−44 %),test coverage 100 %(§3.3.7)| [v] |
+| ML — regime augmentation | 50 顆 **Severson-anchored synthetic BBU-duty cell**(analytic decay + per-cell noise,**non-PyBaMM**)加入訓練,LSTM span Severson + BBU 兩 regime(§3.3.8);僅作 regime coverage,production 信賴度仍以 Severson 真實 cells 為主 | [v] |
+| 邊緣部署(measured)| ONNX export(opset 17)+ INT8 dynamic quant:**3.49× 壓縮、ΔMAPE +0.10 pp、CPU INT8 p50 1.11× 加速**(附錄 C)| [v] |
+| 邊緣部署(estimate)| STM32N6 X-CUBE-AI 靜態圖分析,NPU latency **54.7 µs**(±2× 區間 27–109 µs,40 % NPU util 假設,附錄 C)| [v] |
+| Live demo | `/twin` Battery Twin · `/tco` TCO Calculator · `/dashboard` 1000-台 fleet(seeded RNG 模擬,SIMULATED DATA watermark)| [v] |
 
 ### 8.2 後續產品里程碑(對應商業 PDF §F.1)
 
@@ -1030,13 +1032,13 @@ $$
 
 | # | Validation chain | 證據 artifact | 對齊 spec | 狀態(2026-05-26)|
 |:--:|---|---|---|:--:|
-| **V1** | PyBaMM Prada2013 對公開車規 LFP 量測 fit error | `data/processed/pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| §2.2 物理模擬引擎可信度 | 📋 W2 |
-| **V2** | LIC RC closed-form 對真實 datasheet curve fit error | `data/processed/lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| §2.3.0 RC anchor model 可信度 | 📋 W2 |
-| **V3** | 整 rack 60 s graceful 整合 sim(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型)| `apps/web/public/scenarios/rack_60s_graceful.json` + `/twin` 新 row | §2.1.1 整 rack 60 s 承諾 | 📋 W3 |
-| **V4** | N-1 BBU failure redundancy sim(t=15 s 1 台 offline,剩 7 台撐 60 s)| `apps/web/public/scenarios/rack_n_minus_1.json` + dashboard fault-inject toggle | §2.1.1 N+1 容錯主張 | 📋 W3 |
-| **V5** | Severson → PyBaMM-generated GB200 duty cell transfer test(100 個 physics-grounded synthetic cell 至 80 % SOH,測 Severson MAPE)| `data/processed/severson_transfer_mape.json` | §3.3.5 cross-regime 誠實 transfer 證據 | 📋 W3 |
-| **V6** | `make verify` 一鍵 reproducibility gate(re-run twin + Severson + INT8 quant + cross-check,output PASS/FAIL JSON)| `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 對 RD reviewer 的 30 分鐘 self-check 承諾 | 📋 W4 |
-| **V7** | **Pack-level imbalance screening**(15S 串 cell-to-cell spread + 熱梯度 Arrhenius 局部老化 + 2 芯+電容 串並 A/B)| `apps/web/public/scenarios/pack_imbalance.json` + `/twin` 新 V7 card | 業師 2026-06-04:單顆模型抓不到整串最弱 cell + 櫃內熱不均 | ✅ 已生成(**screening,非 make-verify gate**)|
+| **V1** | PyBaMM Prada2013 對公開車規 LFP 量測 fit error | `data/processed/pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| §2.2 物理模擬引擎可信度 | W2 |
+| **V2** | LIC RC closed-form 對真實 datasheet curve fit error | `data/processed/lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| §2.3.0 RC anchor model 可信度 | W2 |
+| **V3** | 整 rack 60 s graceful 整合 sim(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型)| `apps/web/public/scenarios/rack_60s_graceful.json` + `/twin` 新 row | §2.1.1 整 rack 60 s 承諾 | W3 |
+| **V4** | N-1 BBU failure redundancy sim(t=15 s 1 台 offline,剩 7 台撐 60 s)| `apps/web/public/scenarios/rack_n_minus_1.json` + dashboard fault-inject toggle | §2.1.1 N+1 容錯主張 | W3 |
+| **V5** | Severson → PyBaMM-generated GB200 duty cell transfer test(100 個 physics-grounded synthetic cell 至 80 % SOH,測 Severson MAPE)| `data/processed/severson_transfer_mape.json` | §3.3.5 cross-regime 誠實 transfer 證據 | W3 |
+| **V6** | `make verify` 一鍵 reproducibility gate(re-run twin + Severson + INT8 quant + cross-check,output PASS/FAIL JSON)| `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 對 RD reviewer 的 30 分鐘 self-check 承諾 | W4 |
+| **V7** | **Pack-level imbalance screening**(15S 串 cell-to-cell spread + 熱梯度 Arrhenius 局部老化 + 2 芯+電容 串並 A/B)| `apps/web/public/scenarios/pack_imbalance.json` + `/twin` 新 V7 card | 業師 2026-06-04:單顆模型抓不到整串最弱 cell + 櫃內熱不均 | [v] 已生成(**screening,非 make-verify gate**)|
 
 **V1-V6 全到位 = twin-first 完整論述**:
 - **V1+V2 物理層**:PyBaMM DFN + LIC RC 兩個模型都對齊到 measured 量測,fit error 量化,**不是「我們假設這個模型對」**
@@ -1061,15 +1063,15 @@ $$
 
 | 既有承諾 | v2.0 twin validation 對應 | 是否衝突 |
 |---|---|---|
-| §2.1.1 / `/dashboard` headline「**8 BBU per rack** · 60 s graceful · GB200 NVL72 整 rack ~120 kW」 | **V3 整 rack 60 s graceful sim** 直接把這條曲線跑出來(原本只是承諾,v2.0 變成 sim artifact)| ✅ **強化** |
-| §2.3 / `/twin` 5.7× LFP RMS 削峰 · 3.5× V_cell pp 收斂 | sim 數字不變;V1 PyBaMM 對車規 LFP fit error 量化後給「sim 對 reality 的可信度區間」 | ✅ |
-| §3.3.3 / 附錄 A bagged-GBT (K=24) + xstrict cell filter random split MAPE **8.38 %** | 不變;V5 在 PyBaMM-generated BBU-duty cells 上加一個 transfer MAPE 數字(誠實揭露 cross-regime degradation) | ✅ **強化** |
-| 附錄 C INT8 LSTM measured ΔMAPE +0.10 pp · 63 KB · 3.49× 壓縮 | 不變;Pi 5 + STM32N6 仍為 estimated / measured 分軌 | ✅ |
-| §2.6.3 / `/dashboard` 1000 台 SIMULATED + watermark | **V3/V4 sim 餵新 row 仍標 SIMULATED**(不是 real device telemetry);watermark **不弱化** | ✅ |
-| LFP **15S**(v2.2 §修訂 #4 commitment) | v2.0 不修訂 spec;EVT 階段 15S 仍是承諾;V3 整 rack sim 直接用 15S 配置 | ✅ **更直接** |
-| 「不承諾 MAPE < 5 %」(v2.2 附件 B) | V5 transfer test 出來的 cross-regime MAPE 若 ≥ 10 % 仍誠實寫進報告,**不修飾數字**;v2.2 < 10 % 承諾仍是針對 random split | ✅ |
-| §6.1 PyBaMM 用 Prada2013 generic LFP 未對齊車規 cell 之邊界揭露 | **V1 把這條邊界量化為 fit error % 數字**;原本「未對齊」現在變「對齊到 X % RMS V error 內」 | ✅ **強化** |
-| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values 未對齊 measured | **V2 把這條邊界量化為 droop RMS error %**;原本「typical 假設」現在變「對齊到 X % droop error」 | ✅ **強化** |
+| §2.1.1 / `/dashboard` headline「**8 BBU per rack** · 60 s graceful · GB200 NVL72 整 rack ~120 kW」 | **V3 整 rack 60 s graceful sim** 直接把這條曲線跑出來(原本只是承諾,v2.0 變成 sim artifact)| [v] **強化** |
+| §2.3 / `/twin` 5.7× LFP RMS 削峰 · 3.5× V_cell pp 收斂 | sim 數字不變;V1 PyBaMM 對車規 LFP fit error 量化後給「sim 對 reality 的可信度區間」 | [v] |
+| §3.3.3 / 附錄 A bagged-GBT (K=24) + xstrict cell filter random split MAPE **8.38 %** | 不變;V5 在 PyBaMM-generated BBU-duty cells 上加一個 transfer MAPE 數字(誠實揭露 cross-regime degradation) | [v] **強化** |
+| 附錄 C INT8 LSTM measured ΔMAPE +0.10 pp · 63 KB · 3.49× 壓縮 | 不變;Pi 5 + STM32N6 仍為 estimated / measured 分軌 | [v] |
+| §2.6.3 / `/dashboard` 1000 台 SIMULATED + watermark | **V3/V4 sim 餵新 row 仍標 SIMULATED**(不是 real device telemetry);watermark **不弱化** | [v] |
+| LFP **15S**(v2.2 §修訂 #4 commitment) | v2.0 不修訂 spec;EVT 階段 15S 仍是承諾;V3 整 rack sim 直接用 15S 配置 | [v] **更直接** |
+| 「不承諾 MAPE < 5 %」(v2.2 附件 B) | V5 transfer test 出來的 cross-regime MAPE 若 ≥ 10 % 仍誠實寫進報告,**不修飾數字**;v2.2 < 10 % 承諾仍是針對 random split | [v] |
+| §6.1 PyBaMM 用 Prada2013 generic LFP 未對齊車規 cell 之邊界揭露 | **V1 把這條邊界量化為 fit error % 數字**;原本「未對齊」現在變「對齊到 X % RMS V error 內」 | [v] **強化** |
+| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values 未對齊 measured | **V2 把這條邊界量化為 droop RMS error %**;原本「typical 假設」現在變「對齊到 X % droop error」 | [v] **強化** |
 
 **v2.0 沒有任何結果會改寫本白皮書既有 spec / 數字承諾**;V1-V6 是「對 spec
 主張的 sim 重現 + 對 spec 邊界的量化揭露」,不是 spec 的修訂。**反而 V1+V2
@@ -1233,11 +1235,11 @@ Paper Table S2 Full model 9 個 feature 中還有 1 個 IR-difference 變體
 
 | Feature | Sev μ | Sev σ | Sev [min, max] | NASA [min, max] | OOD | z-dist |
 |---|---:|---:|:---:|:---:|:--:|---:|
-| log_var_delta_q | -3.878 | 0.441 | [-5.21, -2.73] | [-2.07, -1.54] | ✗ | **5.31** |
-| log_min_delta_q | -1.462 | 0.238 | [-2.30, -0.86] | [-0.51, -0.26] | ✗ | **5.06** |
-| slope_q_2_100 | -0.000 | 0.000 | [-0.001, 0] | [-0.006, -0.004] | ✗ | **54.00** |
-| intercept_q_2_100 | 1.073 | 0.016 | [0.97, 1.10] | [1.86, 2.04] | ✗ | **61.41** |
-| q_at_cycle_2 | 1.069 | 0.015 | [0.97, 1.09] | [1.85, 2.04] | ✗ | **64.55** |
+| log_var_delta_q | -3.878 | 0.441 | [-5.21, -2.73] | [-2.07, -1.54] | [x] | **5.31** |
+| log_min_delta_q | -1.462 | 0.238 | [-2.30, -0.86] | [-0.51, -0.26] | [x] | **5.06** |
+| slope_q_2_100 | -0.000 | 0.000 | [-0.001, 0] | [-0.006, -0.004] | [x] | **54.00** |
+| intercept_q_2_100 | 1.073 | 0.016 | [0.97, 1.10] | [1.86, 2.04] | [x] | **61.41** |
+| q_at_cycle_2 | 1.069 | 0.015 | [0.97, 1.09] | [1.85, 2.04] | [x] | **64.55** |
 
 z-distance 計算:$z = \max(|x_{\text{NASA,min}} - \mu_{\text{Sev}}|,\ |x_{\text{NASA,max}} - \mu_{\text{Sev}}|) / \sigma_{\text{Sev}}$
 
@@ -1289,8 +1291,8 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 | 資源 | 模型需求 | NPU 容量 | 配適? |
 |---|---:|---:|:---:|
-| Weight FLASH(INT8 measured) | 62.9 KB | 1638.4 KB(1.6 MB) | ✅ 用 4 % |
-| Activation SRAM(INT8 estimate) | 32.0 KB | 1024 KB(1 MB) | ✅ 用 3 % |
+| Weight FLASH(INT8 measured) | 62.9 KB | 1638.4 KB(1.6 MB) | [v] 用 4 % |
+| Activation SRAM(INT8 estimate) | 32.0 KB | 1024 KB(1 MB) | [v] 用 3 % |
 
 模型遠小於 NPU 容量上限,**沒有需要外部 PSRAM spillover 的風險**。
 
@@ -1298,9 +1300,9 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 | 類別 | 數量 | 說明 |
 |---|---:|---|
-| ✅ NPU 完全加速 | 45 ops | Gemm / Conv / Add / Mul / Reshape / Transpose / Slice / Concat 等 |
-| 🟡 NPU 部分 | 3 ops | LSTM(NPU 內部分解 → Gemm + Sigmoid + Tanh + element-wise)、Gather |
-| ❌ CPU fallback | 4 ops | Shape × 3 + Expand × 1 — **皆為 metadata ops,0 MAC** |
+| [v] NPU 完全加速 | 45 ops | Gemm / Conv / Add / Mul / Reshape / Transpose / Slice / Concat 等 |
+| (黃) NPU 部分 | 3 ops | LSTM(NPU 內部分解 → Gemm + Sigmoid + Tanh + element-wise)、Gather |
+| [x] CPU fallback | 4 ops | Shape × 3 + Expand × 1 — **皆為 metadata ops,0 MAC** |
 | — Graph 移除 | 0 ops | (Dropout 在 export 已移除) |
 
 **整個 inference compute path 都在 NPU 上**,fallback 到 CPU 的 4 個 op

@@ -34,7 +34,7 @@ import json
 import sys
 import time
 
-# Force UTF-8 console on Windows so µ / ✅ render. The Win10/11 default
+# Force UTF-8 console on Windows so µ / [v] render. The Win10/11 default
 # (cp950 for zh-TW locale, cp1252 elsewhere) crashes on non-ASCII print.
 if hasattr(sys.stdout, "buffer"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -262,9 +262,9 @@ def main() -> int:
     if pass_threshold_us is None:
         print(f"[m2] no formal pass threshold for device='{args.device_label}' — baseline measurement only")
     elif p99_us < pass_threshold_us:
-        print(f"[m2] ✅ M2 PASS: max p99 {p99_us:.1f} µs < {pass_threshold_us:.0f} µs threshold")
+        print(f"[m2] [v] M2 PASS: max p99 {p99_us:.1f} µs < {pass_threshold_us:.0f} µs threshold")
     else:
-        print(f"[m2] ❌ M2 FAIL: max p99 {p99_us:.1f} µs >= {pass_threshold_us:.0f} µs threshold")
+        print(f"[m2] [x] M2 FAIL: max p99 {p99_us:.1f} µs >= {pass_threshold_us:.0f} µs threshold")
         return 1
     return 0
 

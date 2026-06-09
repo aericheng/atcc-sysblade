@@ -231,7 +231,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           {device.rul_cycles < rulWarnCycles && (
             <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-              ⚠ RUL 低於 800-cycle 閾值 · 納入規則觸發 Tier-3 汰換佇列
+              RUL 低於 800-cycle 閾值 · 納入規則觸發 Tier-3 汰換佇列
             </div>
           )}
 
@@ -335,13 +335,13 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           {licRcEnvelope.passes_cutoff ? (
             <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[11px] text-success">
-              ✓ 在 v2.2 §B.1 展示瞬態波形下通過 Eaton XLR UVLO（{licRcEnvelope.v_min_datasheet.toFixed(0)} V）
+              在 v2.2 §B.1 展示瞬態波形下通過 Eaton XLR UVLO（{licRcEnvelope.v_min_datasheet.toFixed(0)} V）
               — 至截止點尚有 {licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V
               餘量。
             </div>
           ) : (
             <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-[11px] text-danger">
-              ✗ LIC v_min 低於資料表 UVLO — 量產設計在此波形下不通過。
+              LIC v_min 低於資料表 UVLO — 量產設計在此波形下不通過。
             </div>
           )}
 
@@ -354,7 +354,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             並聯模組以降低 ESR,而非增加電容。
           </p>
           <p className="text-[11px] leading-relaxed text-muted">
-            <span className="font-medium text-warning">⚠ 電流額定閾值尚未建模:</span>{" "}
+            <span className="font-medium text-warning">電流額定閾值尚未建模:</span>{" "}
             RC 模型驗證電壓包絡（v_min &gt; 38 V),但並未針對 Eaton XLR-48-166
             資料表的額定脈衝電流,檢查每模組 463 A 峰值(2 並聯共 926 A)。
             此尺寸的典型 48 V LIC 模組可在 30 s 內短暫

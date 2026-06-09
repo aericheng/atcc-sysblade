@@ -242,7 +242,7 @@ def main() -> None:
             },
             "droop_check": droop,
         })
-        status = "✅ pass" if droop["passes_uvlo"] else "❌ FAIL"
+        status = "[v] pass" if droop["passes_uvlo"] else "[x] FAIL"
         logger.info(
             f"  [{status}] {cfg.label}: v_min={droop['v_min']:.2f}V "
             f"(UVLO={cfg.v_min_bank_v:.1f}V, headroom={droop['headroom_to_uvlo_v']:.2f}V), "
