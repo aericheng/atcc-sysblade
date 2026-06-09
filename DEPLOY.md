@@ -36,7 +36,7 @@ in `apps/web/`.
 After ~60 seconds you'll see two URLs:
 
 ```
-✓ Production: https://sysblade-atcc.vercel.app  [+1m]
+[v] Production: https://sysblade-atcc.vercel.app  [+1m]
 ```
 
 Paste that URL into your slide deck.

@@ -95,28 +95,28 @@ RD 顧問可以單獨重跑每一條主張。
 
 ## 跨領域 entry point — 從你的專業看 Sysblade
 
-### 🔋 給電池 / 電化學 RD
+### 給電池 / 電化學 RD
 
 - 物理層:**PyBaMM DFN(Doyle-Fuller-Newman 1-D PDE)+ Prada2013 LFP-graphite 參數集** —— 公開 OSS,不是黑盒
 - 老化:Severson 2019 *Nature Energy* 公開 138 顆 LFP 18650 cycle life dataset(6 GB v7.3 HDF5),**我們用 13 個 feature 重現 paper Table S2 Full model**
 - 跨化學:已用 NASA NMC 18650 cell 做 cross-dataset z-distance 分析,**z = 5-65σ** OOD 證明跨化學需 per-chemistry recalibration —— 不是「我們訓練就 work」的天真聲明
 - 第二條獨立物理路徑:**Rainflow cycle counting + Wang 2011 半經驗老化模型**,在 worst-case GB200 工作點與 PyBaMM 交叉驗證 5.5 % per-Ah 損傷下降
 
-### 🧠 給 ML / Deep Learning RD
+### 給 ML / Deep Learning RD
 
 - **點預測**:bagged-GBT (K=24) + xstrict cell filter,Severson 134/138 cells 上 10-seed median MAPE **8.38 %**,7/10 seed < 10 %,**超越 paper baseline 9.1 %**
 - **誠實的 generalization 揭露**:cross-batch (b1+b2 → b3) 上 bagged-GBT 退化到 17-22 %(protocol-specific feature 過擬合),改 bagged-OLS 達 13.87 %。**部署 SOP**:同 protocol GBT,新 protocol OLS,新 chemistry 客戶 PoC 重訓
 - **機率輸出**:MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles (-44 %),test coverage 100 %
 - **邊緣部署**:PyTorch → ONNX (opset 17) → INT8 dynamic quant,**measured ΔMAPE +0.10 pp,3.49× 壓縮,CPU INT8 p50 1.11× 加速**(完整報告 `lstm_quantization_report.json`)
 
-### ⚙️ 給系統工程 / 控制 / 電力電子 RD
+### 給系統工程 / 控制 / 電力電子 RD
 
 - **拓樸**:LFP 15S × 2.5 kWh + 2× Eaton XLR-48-166 LIC bank per BBU,**8 BBU 並聯 per rack**(N+1 容錯,blast radius 限制在單台)
 - **控制律**:一階互補濾波器 τ = 0.5 s @ 1 kHz STM32F411,**Python sim 與 firmware skeleton 同一條公式**(`scripts/hybrid_control_emulator.py` 與 `firmware/stm32_hybrid_control/main.c`)
 - **LIC 物理層**:closed-form 一階 RC anchor 到 Eaton XLR-48-166 datasheet(C = 332 F, ESR = 2.5 mΩ,UVLO 10.98 V headroom);worst-case droop 2.32 V 95 % 由 ESR drop 主導
 - **熱推導**:IRFB4115 在 30 A 工作點 Rds(on) @ 100 °C 升至 16 mΩ → P_loss 14.4 W,**5 °C/W TO-220 鰭片 + 強制對流即可**(self-review 修掉初版 25 °C/W 自然對流的錯誤)
 
-### 💰 給商業 / 顧問 / 投資人
+### 給商業 / 顧問 / 投資人
 
 - **市場**:北美在建 35 GW(JLL 2025),Texas 6.5 GW + Virginia 5.3 GW 兩地合計 33 %;Tier-1 hyperscale 自研、Tier-2/3 colo **必依賴外採 BBU**
 - **競爭壁壘**:Eaton (USD 24.9 B) 無 SaaS DNA、Vertiv (USD 8.0 B) 押 Tier-1 大型 UPS、Schneider (EUR 38.2 B) 不自我蠶食 Galaxy VS —— **三家都有 strategic moat 不會做 Sysblade 在做的事**,我們有 **18-24 個月先發空窗**
@@ -156,7 +156,7 @@ RD 顧問可以單獨重跑每一條主張。
 
 ## 已驗證 vs Roadmap vs 永遠 sim 補不了的(誠實 3 欄)
 
-| 已用 measured 數據 / 公開資料集驗證 ✅ | 對齊 v2.2 §F.1 18 個月里程碑 🟡 | 物理 / 認證 / 市場本質限制 ⏭️ |
+| 已用 measured 數據 / 公開資料集驗證 [v] | 對齊 v2.2 §F.1 18 個月里程碑 (黃) | 物理 / 認證 / 市場本質限制 (skip) |
 |---|---|---|
 | PyBaMM 5.7× / 3.5× 削峰 | 車規 LFP cell 樣品 PyBaMM 重擬合(EVT 2026 Q3)| 多年真實 cell 衰減資料(Severson 4 年才有 138 cell) |
 | Severson MAPE 8.38 %(達 < 10 % 承諾) | GPU power-cap API 選型(nvml / IPMI / Redfish,2027 Q1)| UL 1973 / NFPA 855 abuse 認證(2027 Q3) |

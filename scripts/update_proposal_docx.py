@@ -159,7 +159,7 @@ def main() -> int:
     repl_cell(tables[4], 1, 1, "點焊 8S2P LFP pack",
               "組裝 8S1P LFP pack(從 12 顆挑 OCV 偏差 ≤ 30 mV 的 8 顆)")
 
-    repl_cell(tables[5], 4, 2, "M3 PASS ⬅ 關鍵死線", "M3 PASS ⬅ soft 6/2 / hard 6/3")
+    repl_cell(tables[5], 4, 2, "M3 PASS <- 關鍵死線", "M3 PASS <- soft 6/2 / hard 6/3")
 
     # Table 6 W4 timeline — try matching with fullwidth parens
     repl_cell(tables[6], 5, 1, "× 3 次",
@@ -192,8 +192,8 @@ def main() -> int:
             "ATCC 是 marketing-strategy 比賽,4 件實機證據是技術骨架,商業敘事是肌肉。系統電集團進入 BBU 市場的策略價值 = Tier-2/3 colo 縫隙 + 軟硬整合差異化 + 18-24 個月先發空窗。")
         insert_before(p38, "4 大頭條(初賽提出,複賽 demonstrator 證實):")
         for bullet in [
-            "5.7× LFP RMS 削峰(PyBaMM DFN sim ✅ → M3 實機波形對照)→ LFP 壽命延長,換電池週期從 6 yr → 10 yr。",
-            "3.5× cell 電壓震盪降(PyBaMM DFN sim ✅ → M3 scope V_cell pp)→ PSU 不誤觸 OVP/UVP,Tier-2/3 SLA 達標。",
+            "5.7× LFP RMS 削峰(PyBaMM DFN sim [v] → M3 實機波形對照)→ LFP 壽命延長,換電池週期從 6 yr → 10 yr。",
+            "3.5× cell 電壓震盪降(PyBaMM DFN sim [v] → M3 scope V_cell pp)→ PSU 不誤觸 OVP/UVP,Tier-2/3 SLA 達標。",
             "10 yr BBU 服役壽命(Severson aging fit + BBU duty + 跨化學 cross-dataset 證據)→ 客戶 CapEx 攤提期延長。",
             "33 % 10 yr TCO 節省(v2.2 §G.3 elasticity model → /tco Calculator client side)→ 業務談 USD 25 k / site / yr SaaS 訂閱依據。",
         ]:

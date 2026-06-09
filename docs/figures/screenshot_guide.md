@@ -33,7 +33,7 @@ If you'd rather frame manually, use Snipping Tool (Win+Shift+S) on a **1440×900
 **What to capture**: full page with default inputs (1000 racks, $0.10 / kWh, PUE 1.4). Make sure both the input form (left) and the cost breakdown (right) are visible.
 
 **Callouts to add**:
-- ⬅ Inputs panel : "可調 rack 數 / 電價 / PUE / 碳排係數"
+- <- Inputs panel : "可調 rack 數 / 電價 / PUE / 碳排係數"
 - → Total saving : "$9,600 per rack × 1000 = $9.6M / 10 年"
 - ↓ Payback line : "回收期 ≈ {實際數字}年"
 - ↓ CO2 line : "≈ {實際數字} t CO₂e 減量"
@@ -47,7 +47,7 @@ If you'd rather frame manually, use Snipping Tool (Win+Shift+S) on a **1440×900
 **What to capture**: split screen with the LFP-only ↔ Hybrid 切換按鈕在頂部、SOH 衰減曲線(主圖)+ scope chart(底部小圖)同框。**先點 Hybrid 模式**再截。
 
 **Callouts to add**:
-- ⬆ Mode toggle : "LFP-only vs LIC+LFP Hybrid 對比"
+- ^ Mode toggle : "LFP-only vs LIC+LFP Hybrid 對比"
 - → SOH curve : "DFN 物理模擬 1000 顆 cell 並行,平均 + 95% CI"
 - ↓ Scope chart : "ms 級突波 — LIC 在 30 ms 內吸收,主電池零循環"
 
@@ -61,7 +61,7 @@ If you'd rather frame manually, use Snipping Tool (Win+Shift+S) on a **1440×900
 
 **Callouts to add**:
 - → Tier-3 紅點 : "status === 'early_aging' = SOH<0.85 OR RUL<800"
-- ⬆ Watermark : "依 v2.2 規範,模擬資料一律標示"
+- ^ Watermark : "依 v2.2 規範,模擬資料一律標示"
 - → 數量總和 : "Tier-1+2+3 = 1000 racks(來自 PyBaMM 場景)"
 
 **Caption**: "Fleet Dashboard — 1000 機櫃即時健康狀態,提前 800 cycles 觸發 Tier-3 替換預警"

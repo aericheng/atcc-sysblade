@@ -486,7 +486,7 @@ function ScopeCharts({
       {mode === "hybrid" && licCutoffV != null && licNominalV != null && (
         <ChartCard
           title="LIC 電容組電壓（閉合解形式 RC 模型）"
-          subtitle={`Eaton XLR 48 V × 2 並聯 · C = ${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "✓ 通過" : "✗ 未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
+          subtitle={`Eaton XLR 48 V × 2 並聯 · C = ${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
         >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1150,7 +1150,7 @@ export function TwinClient({
               }`}
             >
               <span className="font-medium">
-                {activeRack.pass_criteria.overall_pass ? "✓ N-1 冗餘通過" : "✗ N-1 冗餘未通過"}
+                {activeRack.pass_criteria.overall_pass ? "N-1 冗餘通過" : "N-1 冗餘未通過"}
               </span>
               {" — "}
               {activeRack.headline_verdict}

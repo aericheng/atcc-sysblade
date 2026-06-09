@@ -2,7 +2,7 @@
 
 Usage:
     .venv/Scripts/python scripts/md_to_pdf.py docs/BBU_IMPLEMENTATION_PLAN.md
-    .venv/Scripts/python scripts/md_to_pdf.py docs/PURCHASE_LIST.md --out out_pdf/
+    .venv/Scripts/python scripts/md_to_pdf.py docs/archive_v1.x/PURCHASE_LIST.md --out out_pdf/
 
 No system install required — only `pip install markdown` in the project venv
 plus the Microsoft Edge that ships with Windows 11. Outputs handle CJK

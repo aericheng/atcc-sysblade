@@ -41,12 +41,12 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 
 | # | Validation chain | 證據 artifact | 對應 RD_BRIEF gap | 狀態(2026-05-26)|
 |---:|---|---|---|:--:|
-| 🎯 **V1** | **PyBaMM Prada2013 vs 公開車規 LFP 量測 擬合誤差** | `data/processed/pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| G1 | 📋 W2 |
-| 🎯 **V2** | **LIC RC closed-form 對真實 LIC datasheet curve 擬合誤差** | `data/processed/lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| G2 | 📋 W2 |
-| 🎯 **V3** | **整 rack 60 s graceful 整合 sim**(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型) | `apps/web/public/scenarios/rack_60s_graceful.json` + dashboard `/twin` 加 row | G3 | 📋 W3 |
-| 🎯 **V4** | **N-1 BBU failure redundancy sim**(t=15 s 強制 1 台 offline,剩 7 台撐到 60 s) | `apps/web/public/scenarios/rack_n_minus_1.json` + dashboard fault-inject toggle | G4 | 📋 W3 |
-| 🎯 **V5** | **Severson → physics-grounded BBU-duty transfer test**(PyBaMM 生 100 個 GB200 duty cell 至 80 % SOH,測 Severson MAPE)| `data/processed/severson_transfer_mape.json` | G5 | 📋 W3 |
-| 🎯 **V6** | **`make verify` 一鍵 reproducibility gate**(re-run twin + Severson + INT8 quant + cross-check,output PASS/FAIL JSON) | `Makefile` + `scripts/verify_all.py` + CI workflow | G6 | 📋 W4 |
+| **V1** | **PyBaMM Prada2013 vs 公開車規 LFP 量測 擬合誤差** | `data/processed/pybamm_lfp_fit_error.json`(目標 V RMS ≤ 5 % / capacity fade RMS ≤ 3 %)| G1 | W2 |
+| **V2** | **LIC RC closed-form 對真實 LIC datasheet curve 擬合誤差** | `data/processed/lic_rc_fit_error.json`(目標 droop RMS ≤ 10 %)| G2 | W2 |
+| **V3** | **整 rack 60 s graceful 整合 sim**(8 BBU + LIC bank + 控制律 + GPU ramp + 熱模型) | `apps/web/public/scenarios/rack_60s_graceful.json` + dashboard `/twin` 加 row | G3 | W3 |
+| **V4** | **N-1 BBU failure redundancy sim**(t=15 s 強制 1 台 offline,剩 7 台撐到 60 s) | `apps/web/public/scenarios/rack_n_minus_1.json` + dashboard fault-inject toggle | G4 | W3 |
+| **V5** | **Severson → physics-grounded BBU-duty transfer test**(PyBaMM 生 100 個 GB200 duty cell 至 80 % SOH,測 Severson MAPE)| `data/processed/severson_transfer_mape.json` | G5 | W3 |
+| **V6** | **`make verify` 一鍵 reproducibility gate**(re-run twin + Severson + INT8 quant + cross-check,output PASS/FAIL JSON) | `Makefile` + `scripts/verify_all.py` + CI workflow | G6 | W4 |
 
 **V1-V6 全到位 = twin-first 完整論述**:V1+V2 證明物理模型 faithful,V3+V4 證明
 系統整合 + 容錯,V5 證明 ML pipeline 跨 regime 可遷移,V6 證明 reviewer 可重跑。
@@ -57,11 +57,11 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 
 | 來自 v1.x 但 v2.0 直接接著用 | 狀態 |
 |---|:--:|
-| 8S scaled sim gate(power ratio 5.72× / voltage ratio 3.52×)| ✅ M1 PASS 2026-05-17,v2.0 升級為 V3 整 rack sim 的 reference baseline |
-| 笔电 INT8 LSTM latency p99 245 µs | ✅ v1.x M2 partial 已達,v2.0 接續 cross-platform 量測 |
-| Dashboard SaaS 三件套(`/twin` `/tco` `/dashboard`) | ✅ v1.x 軟體 stack 完成,v2.0 加 `/twin` V3/V4 toggle + `/dashboard` V4 fleet fault toggle;v1.x LiveDemonstratorCard 已隨硬體退貨於 2026-05-27 移除 |
-| Hybrid 控制律 Python emulator(對齊 sim 5.72×)| ✅ 沿用 |
-| Severson 13-feat bagged-GBT MAPE 8.38 % / INT8 ΔMAPE +0.10 pp / 3.49× 壓縮 | ✅ 沿用,V5 在這基礎上加 transfer test |
+| 8S scaled sim gate(power ratio 5.72× / voltage ratio 3.52×)| [v] M1 PASS 2026-05-17,v2.0 升級為 V3 整 rack sim 的 reference baseline |
+| 笔电 INT8 LSTM latency p99 245 µs | [v] v1.x M2 partial 已達,v2.0 接續 cross-platform 量測 |
+| Dashboard SaaS 三件套(`/twin` `/tco` `/dashboard`) | [v] v1.x 軟體 stack 完成,v2.0 加 `/twin` V3/V4 toggle + `/dashboard` V4 fleet fault toggle;v1.x LiveDemonstratorCard 已隨硬體退貨於 2026-05-27 移除 |
+| Hybrid 控制律 Python emulator(對齊 sim 5.72×)| [v] 沿用 |
+| Severson 13-feat bagged-GBT MAPE 8.38 % / INT8 ΔMAPE +0.10 pp / 3.49× 壓縮 | [v] 沿用,V5 在這基礎上加 transfer test |
 
 ## 目標 spec(twin 對齊對象,**非 demonstrator 規格**)
 
@@ -102,7 +102,7 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 
 | 週 | 日期 | 主要產出 |
 |---|---|---|
-| W1 | 5/16-22 | (已完成,v1.x 軌道)M1 sim gate PASS / M2 笔电 baseline / M4 dashboard stack ✅ |
+| W1 | 5/16-22 | (已完成,v1.x 軌道)M1 sim gate PASS / M2 笔电 baseline / M4 dashboard stack [v] |
 | W2 | 5/23-29 | **V1 PyBaMM 車規 LFP fit error**(找 1-2 個公開 dataset,跑 fit, RMS V error report);**V2 LIC RC fit error**(Maxwell BMOD0058 / Eaton XLR datasheet curve 對 RC model) |
 | W3 | 5/30-6/5 | **V3 整 rack 60 s graceful sim**(8 BBU 並聯 + LIC + 控制律 + GPU ramp + 熱模型 → `rack_60s_graceful.json`);**V4 N-1 failure injection**(同 sim 加 t=15 s 1 台 offline);**V5 Severson transfer test**(PyBaMM 生 100 個 BBU-duty cell → 跑 Severson model → MAPE report)|
 | W4 | 6/6-11 | **V6 `make verify` gate**(`Makefile` + `scripts/verify_all.py` re-run all + PASS/FAIL JSON;CI workflow);簡報整合 + 5 分鐘 demo dry-run × 3 + Q1-Q15 答辯練習;**複賽日 6/11 demo + 答辯** |
@@ -117,7 +117,7 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 | **本文件(BBU_IMPLEMENTATION_PLAN.md v2.0)** | v2.0 twin-first 設計決策 / 答辯支撐;**繳交主文件** |
 | `docs/RD_BRIEF.md` v0.1 | RD / 顧問 executive brief(2 頁 PDF;6 條 gap + Twin-first 論述)|
 | `docs/INVESTOR_BRIEF.md` v0.1 | 顧問 / 投資人 1 頁 narrative brief |
-| `docs/PURCHASE_LIST.md` v2.0 | 採購清單(v1.x sunk cost + 可挽回標註)|
+| `docs/archive_v1.x/PURCHASE_LIST.md` v2.0 | 採購清單(v1.x sunk cost + 可挽回標註)|
 | `docs/whitepaper.md` v1.3 / `whitepaper_restructured.md` v1.3 | 技術白皮書(§8.3 / §2.8 已對齊 v2.0 twin chains)|
 | `docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx` | 上游商業企劃書(spec 凍結) |
 | `PRESENTATION_GUIDE.md` | 5 分鐘 demo 腳本 + 答辯(Q1-Q15;待 v2.0 對齊 update) |
@@ -127,16 +127,16 @@ digital-twin validation chains(V1-V6)**,證明 v2.2 spec 的 hybrid LFP+LIC
 
 | 路徑 | 角色 | 狀態 |
 |---|---|:--:|
-| `scripts/generate_scaled_8s_sim.py` | M1 sim gate(8S scaled-down ratio 5.72× / 3.52×)| ✅ |
-| `scripts/generate_twin_scenarios.py` | 既有 4 個 PyBaMM scenario(transient / aging / rainflow)| ✅ |
-| `scripts/measure_lstm_latency.py` | INT8 LSTM device-agnostic latency 量測 | ✅ |
-| `scripts/hybrid_control_emulator.py` | 一階互補濾波器 τ=0.5s Python emulator | ✅ |
-| `scripts/eval_severson_models.py` | bagged-GBT MAPE 8.38 % 重訓 | ✅ |
-| `scripts/quantize_lstm_onnx.py` | INT8 量化 + measured ΔMAPE | ✅ |
-| `scripts/check_whitepaper_numbers.py` | 39/39 headline 數字 cross-check | ✅ |
-| `data/processed/scaled_8s_sim.json` | M1 sim 證據 | ✅ |
-| `data/processed/lstm_latency_laptop_cpu.{json,png}` | INT8 latency baseline | ✅ |
-| `data/processed/severson_model_eval.json` | MAPE 8.38 % artifact | ✅ |
+| `scripts/generate_scaled_8s_sim.py` | M1 sim gate(8S scaled-down ratio 5.72× / 3.52×)| [v] |
+| `scripts/generate_twin_scenarios.py` | 既有 4 個 PyBaMM scenario(transient / aging / rainflow)| [v] |
+| `scripts/measure_lstm_latency.py` | INT8 LSTM device-agnostic latency 量測 | [v] |
+| `scripts/hybrid_control_emulator.py` | 一階互補濾波器 τ=0.5s Python emulator | [v] |
+| `scripts/eval_severson_models.py` | bagged-GBT MAPE 8.38 % 重訓 | [v] |
+| `scripts/quantize_lstm_onnx.py` | INT8 量化 + measured ΔMAPE | [v] |
+| `scripts/check_whitepaper_numbers.py` | 39/39 headline 數字 cross-check | [v] |
+| `data/processed/scaled_8s_sim.json` | M1 sim 證據 | [v] |
+| `data/processed/lstm_latency_laptop_cpu.{json,png}` | INT8 latency baseline | [v] |
+| `data/processed/severson_model_eval.json` | MAPE 8.38 % artifact | [v] |
 
 ### v2.0 新增交付(W2-W4 待產)
 
@@ -239,9 +239,9 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 | Tier | 規格 | 預算 | 26 天可行性 | 對複賽說服力 |
 |---|---|---|---|---|
-| A. 完整 spec 縮放版 | 15S LFP × 1 Ah cell(~0.5 kWh / 2 kW peak),1× Eaton XLR-48-166,STM32N6 | NT$ 4.5–6 萬(會超) | ⚠️ Eaton lead time 是死穴,LFP 15S BMS 不易 | 高(對齊 spec 拓樸),但做不完的風險高 |
-| **B. ⭐ 推薦:8S LFP demonstrator(scaled-down topology)** | 8S LFP(~25 V)× 5–10 Ah,2–4× 商用 supercap 模組(替代 LIC,匹配 ESR/τ),STM32 + 邊緣推論(Pi 5 / Jetson Nano stand-in)| NT$ 3.5–4.8 萬 | ✅ 可達 | 中高 — 證明「混合控制律 + 邊緣推論 + dashboard 閉環」端到端 |
-| C. Bench-top PoC 純拓樸驗證 | 4S LFP(~13 V)+ supercap × 1–2 + STM32 控制板 + 電子負載當 GB200 emulator | NT$ 1.5–2.5 萬 | ✅ 容易達成 | 中 — 適合當「W3+ EVT roadmap 的 W2 階段成果」說 |
+| A. 完整 spec 縮放版 | 15S LFP × 1 Ah cell(~0.5 kWh / 2 kW peak),1× Eaton XLR-48-166,STM32N6 | NT$ 4.5–6 萬(會超) | (!) Eaton lead time 是死穴,LFP 15S BMS 不易 | 高(對齊 spec 拓樸),但做不完的風險高 |
+| **B. 推薦:8S LFP demonstrator(scaled-down topology)** | 8S LFP(~25 V)× 5–10 Ah,2–4× 商用 supercap 模組(替代 LIC,匹配 ESR/τ),STM32 + 邊緣推論(Pi 5 / Jetson Nano stand-in)| NT$ 3.5–4.8 萬 | [v] 可達 | 中高 — 證明「混合控制律 + 邊緣推論 + dashboard 閉環」端到端 |
+| C. Bench-top PoC 純拓樸驗證 | 4S LFP(~13 V)+ supercap × 1–2 + STM32 控制板 + 電子負載當 GB200 emulator | NT$ 1.5–2.5 萬 | [v] 容易達成 | 中 — 適合當「W3+ EVT roadmap 的 W2 階段成果」說 |
 
 下面的計畫主體針對 **Tier B** 寫;A 跟 C 的差異在各節旁註備存。
 
@@ -255,7 +255,7 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 ---
 
-## 0.4 ⭐ Critical-path-only mode(v1.3 reframe)
+## 0.4 Critical-path-only mode(v1.3 reframe)
 
 **重新框定問題**:複賽不需要「做出一顆可量產的 BBU」,需要的是「**4 張可被評審 challenge 的可行性證據**」。其餘所有元件都是「執行這 4 件事的 infrastructure」,不是 critical path。
 
@@ -263,20 +263,20 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 | # | 證據 | 產出 | 對齊白皮書 |
 |---|---|---|---|
-| 🎯 1 | **8S scaled simulation gate** | `data/processed/scaled_8s_sim.json` 數字表 | §3.1 / §3.2 縮放後 5.7× / 3.5× 仍守得住 |
-| 🎯 2 | **混合拓樸閉環削峰波形** | scope 抓 hybrid vs LFP-only 兩條曲線(2 張圖) | §3.2 控制律實機可運作 |
-| 🎯 3 | **邊緣推論 latency 實測** | Pi 5 / STM32N6 跑 1000 次 INT8 LSTM 的 µs histogram | §3.4 / 附錄 C NPU 部署可行 |
-| 🎯 4 | **Dashboard LIVE row** | dashboard 截圖 + 5 秒影片顯示 row 隨負載變化 | §2.6.3 fleet dashboard 可接真實 device |
+| 1 | **8S scaled simulation gate** | `data/processed/scaled_8s_sim.json` 數字表 | §3.1 / §3.2 縮放後 5.7× / 3.5× 仍守得住 |
+| 2 | **混合拓樸閉環削峰波形** | scope 抓 hybrid vs LFP-only 兩條曲線(2 張圖) | §3.2 控制律實機可運作 |
+| 3 | **邊緣推論 latency 實測** | Pi 5 / STM32N6 跑 1000 次 INT8 LSTM 的 µs histogram | §3.4 / 附錄 C NPU 部署可行 |
+| 4 | **Dashboard LIVE row** | dashboard 截圖 + 5 秒影片顯示 row 隨負載變化 | §2.6.3 fleet dashboard 可接真實 device |
 
 ### 三層標記法(本文 v1.3 起套用)
 
 | 標記 | 意義 | 例 |
 |---|---|---|
-| 🎯 | **Critical path** — 4 件證據之一或必要前置 | MOSFET switch matrix、控制板、e-load、Pi 5/STM32N6 |
-| 🛡️ | **Safety enabler** — 不證明任何事,但讓 critical path 可以「在不冒煙的情況下執行」 | BMS、fuse、E-stop、PPE、Lith-Ex 噴罐 |
-| ⏭️ | **Skippable** — 加分但不影響可行性論述,時間壓力下先砍 | 24 h 燒機、cell 精密配對、機械商品照、白皮書文件更新 |
+| | **Critical path** — 4 件證據之一或必要前置 | MOSFET switch matrix、控制板、e-load、Pi 5/STM32N6 |
+| | **Safety enabler** — 不證明任何事,但讓 critical path 可以「在不冒煙的情況下執行」 | BMS、fuse、E-stop、PPE、Lith-Ex 噴罐 |
+| (skip) | **Skippable** — 加分但不影響可行性論述,時間壓力下先砍 | 24 h 燒機、cell 精密配對、機械商品照、白皮書文件更新 |
 
-**讀者使用法**:每個 Part 5(驗證流程)/ Part 7(時程)的工作項目旁邊都會帶這三個 marker;若時程吃緊,⏭️ 全砍、🛡️ 維持、🎯 不動。
+**讀者使用法**:每個 Part 5(驗證流程)/ Part 7(時程)的工作項目旁邊都會帶這三個 marker;若時程吃緊,(skip) 全砍、維持、不動。
 
 ### Lean BoM vs Full BoM 兩版本
 
@@ -306,10 +306,10 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 > v1.3 reframe:原 v1.0–v1.2 列「3 件事」,實際拆解後是 **4 件**(把 §1.3 模擬 gate 從 W1 工作項升格為獨立證據)。每件都對應一張可被評審 challenge 的 artifact。
 
-1. 🎯 **§1.3 8S scaled simulation gate** — `data/processed/scaled_8s_sim.json`。**已完成 2026-05-17 PASS**(5.72× / 3.52×)。沒有這條,實機數字「預期值」沒有 baseline 對照,評審問「8S 縮放怎麼知道 work」答不上來。
-2. 🎯 **5.7× / 3.5× 削峰在實機上重現** — 用電子負載打 ±30 % @ 100 ms profile,scope 量純 LFP vs hybrid 兩條曲線。**這 2 張波形圖是複賽最有說服力的 slide**,直接證明「混合拓樸不是理論」。沒有這張圖,你們跟初賽純 SaaS demo 沒本質差別。
-3. 🎯 **邊緣推論 latency 實測** — Pi 5 + ONNX runtime 或 STM32N6(後者 stretch);跑 1000 次 INT8 LSTM 取平均 µs。把白皮書附錄 C 的「靜態圖估算 27–109 µs」升級為「實機量測」。半天可完成。
-4. 🎯 **Dashboard LIVE row** — 1000 台模擬 fleet 中插 1 row 真實 demonstrator,Python bridge 寫 atomic JSON,dashboard 5 秒 polling。**改動量小,展示效果是質的飛躍**。
+1. **§1.3 8S scaled simulation gate** — `data/processed/scaled_8s_sim.json`。**已完成 2026-05-17 PASS**(5.72× / 3.52×)。沒有這條,實機數字「預期值」沒有 baseline 對照,評審問「8S 縮放怎麼知道 work」答不上來。
+2. **5.7× / 3.5× 削峰在實機上重現** — 用電子負載打 ±30 % @ 100 ms profile,scope 量純 LFP vs hybrid 兩條曲線。**這 2 張波形圖是複賽最有說服力的 slide**,直接證明「混合拓樸不是理論」。沒有這張圖,你們跟初賽純 SaaS demo 沒本質差別。
+3. **邊緣推論 latency 實測** — Pi 5 + ONNX runtime 或 STM32N6(後者 stretch);跑 1000 次 INT8 LSTM 取平均 µs。把白皮書附錄 C 的「靜態圖估算 27–109 µs」升級為「實機量測」。半天可完成。
+4. **Dashboard LIVE row** — 1000 台模擬 fleet 中插 1 row 真實 demonstrator,Python bridge 寫 atomic JSON,dashboard 5 秒 polling。**改動量小,展示效果是質的飛躍**。
 
 **四件加起來**:#1 證明設計縮放可行、#2 證明硬體可運作、#3 證明邊緣推論可部署、#4 證明軟體可整合。**論述閉環**。
 
@@ -319,33 +319,33 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 | # | Milestone | Artifact | Bench Pass criteria | sim 對照(M1)| 狀態 |
 |:--:|---|---|---|---|:--:|
-| **M1** | 8S scaled sim gate | `data/processed/scaled_8s_sim.json` | power ratio ≥ 5× / voltage ratio ≥ 3× | **5.72× / 3.52×** | ✅ PASS(2026-05-17)|
-| **M2** | 邊緣推論 latency | `data/processed/lstm_latency_pi5.{json,png}` | **Pi 5 p99 < 500 µs** + INT8 vs FP32 ΔMAPE < 1% | sim 估算 27-109 µs(STM32N6 NPU)| 🟡 partial(笔电 baseline p99 245µs ✅,Pi 5 待補)|
-| **M3** | Hybrid 削峰實機波形 | scope 截圖 + JSON | **LFP RMS ratio ≥ 1/3**(bench 寬鬆於 sim 5.7×)**+ V_cell pp ratio ≥ 1/2**(bench 寬鬆於 sim 3.5×)| sim 5.72× / 3.52× | 🟡 ready,**M3 deadline 6/2 Tue** |
-| **M4** | Dashboard LIVE row E2E | dashboard 截圖 + 5 秒影片 | DL24M 增載 → **30 秒內** dashboard LIVE row 看到 V 微降 / 溫度升 | — | ✅ 軟體 ready / 🟡 W3-W4 整合 |
+| **M1** | 8S scaled sim gate | `data/processed/scaled_8s_sim.json` | power ratio ≥ 5× / voltage ratio ≥ 3× | **5.72× / 3.52×** | [v] PASS(2026-05-17)|
+| **M2** | 邊緣推論 latency | `data/processed/lstm_latency_pi5.{json,png}` | **Pi 5 p99 < 500 µs** + INT8 vs FP32 ΔMAPE < 1% | sim 估算 27-109 µs(STM32N6 NPU)| (黃) partial(笔电 baseline p99 245µs [v],Pi 5 待補)|
+| **M3** | Hybrid 削峰實機波形 | scope 截圖 + JSON | **LFP RMS ratio ≥ 1/3**(bench 寬鬆於 sim 5.7×)**+ V_cell pp ratio ≥ 1/2**(bench 寬鬆於 sim 3.5×)| sim 5.72× / 3.52× | (黃) ready,**M3 deadline 6/2 Tue** |
+| **M4** | Dashboard LIVE row E2E | dashboard 截圖 + 5 秒影片 | DL24M 增載 → **30 秒內** dashboard LIVE row 看到 V 微降 / 溫度升 | — | [v] 軟體 ready / (黃) W3-W4 整合 |
 
 **Bench thresholds 為何寬鬆於 sim**:
 - sim 是 PyBaMM DFN 純物理模型,**無實機損耗**(MOSFET Rds(on)、shunt 量測延遲、firmware tick rate、寄生電感、PCB layout)
 - bench 5.7× / 3.5× 嚴格達標機率 60-70%,**3× / 2× 達標機率 > 90%**
 - 簡報答辯:「sim 是上界,bench 是工程目標下界,中間差距是實機損耗 budget」
 
-## 1.3 ⭐ W1 Day 1 模擬驗證 gate — **2026-05-17 已執行,PASS**
+## 1.3 W1 Day 1 模擬驗證 gate — **2026-05-17 已執行,PASS**
 
 **結果**(`data/processed/scaled_8s_sim.json`,腳本 `scripts/generate_scaled_8s_sim.py`):
 
 | 指標 | 值 | spec 目標 | 達標 |
 |---|---:|---:|:--:|
-| Power ratio(LFP-only std / hybrid std)| **5.72×** | 5.7× | ✅ |
-| Cell voltage pp ratio(stable window)| **3.52×** | 3.5× | ✅ |
+| Power ratio(LFP-only std / hybrid std)| **5.72×** | 5.7× | [v] |
+| Cell voltage pp ratio(stable window)| **3.52×** | 3.5× | [v] |
 
 **Supercap 4 配置 sweep**(全部通過 UVLO + 電流 spec):
 
 | 配置 | i_peak / 模組 | Ioper 餘量 | UVLO 餘量 | 成本 | 採用 |
 |---|---:|---:|---:|---:|:--:|
-| **2× Maxwell BMOD0058 串聯 (32 V bank)** | **9.3 A** | **51 %** | 15.59 V | NT$ 9,000 | ⭐ |
-| 2× 並聯 (16 V bank, 需 DC-DC) | 18.6 A | 2 % | 7.80 V | NT$ 9,000 | ❌ 沒餘量 |
-| 4× 2S2P | 4.7 A | 75 % | 15.80 V | NT$ 18,000 | ❌ 過度投資 |
-| 2× 串聯,ESR 悲觀 2× | 9.3 A | 51 % | 15.18 V | NT$ 9,000 | ✅ robust |
+| **2× Maxwell BMOD0058 串聯 (32 V bank)** | **9.3 A** | **51 %** | 15.59 V | NT$ 9,000 | |
+| 2× 並聯 (16 V bank, 需 DC-DC) | 18.6 A | 2 % | 7.80 V | NT$ 9,000 | [x] 沒餘量 |
+| 4× 2S2P | 4.7 A | 75 % | 15.80 V | NT$ 18,000 | [x] 過度投資 |
+| 2× 串聯,ESR 悲觀 2× | 9.3 A | 51 % | 15.18 V | NT$ 9,000 | [v] robust |
 
 **鎖定決策**:
 - **Demonstrator baseline 500 W ±30 % @ 100 ms**(從 v1.1 1 kW 降載,因 Maxwell Ioper 19 A 限制)
@@ -382,39 +382,39 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 > v1.3:拆成兩版 — **§2.1 Lean BoM(推薦,critical-path-only)** 與 **§2.2 Full BoM(v1.2 凍結版,留作對照)**。預算 NT$ 5 萬上限。
 
-## 2.1 ⭐ Lean BoM(推薦,NT$ ~43,801 / v1.10)
+## 2.1 Lean BoM(推薦,NT$ ~43,801 / v1.10)
 
-只留 critical path(🎯)+ safety enabler(🛡️),刪掉 v1.2 為「完整 demonstrator」加的 ⏭️ 元件。
+只留 critical path()+ safety enabler(),刪掉 v1.2 為「完整 demonstrator」加的 (skip) 元件。
 
 | 對應 | 類別 | 品項 | 數量 | 單價(NT$) | 小計 | 備註 |
 |:--:|---|---|---:|---:|---:|---|
-| 🎯 #1 | (純軟體) | §1.3 sim,已完成 | — | 0 | 0 | `data/processed/scaled_8s_sim.json` |
-| 🎯 #2 | 主電池 | LFP 26650 3.2V/5Ah | **12**(8 主用 + 4 備品 + 配對池)| 250 | 3,000 | 蝦皮 / 露天;**v1.8 對齊 proposal_v2:8 → 12 顆**(4 顆備品 for DOA replacement + cell-matching 池;從 12 顆挑 OCV 偏差最小的 8 顆組 8S1P,§4.2.1 SOP);**v1.2 16 → v1.3 8 → v1.8 12** |
-| 🎯 #2 | 電池座 | **26650 單節電池盒 BH-26650-1(廣華)** | **10**(8 用 + 2 備品)| 30 | 300 | **v1.10**:台灣無 8 串整盒(26650 holder 市場主流 1/2 節),用單節 holder 排 8S1P;選 BH-26650-1(★★★★★;2 節款 ★★ 避開);廣華現貨;A123 平頭相容;**Endrich 若答帶 tab → holder 當純機械座**(電流走焊點不走彈片);裸電芯則彈片載流 |
-| 🛡️ | **BMS** | **JK-BMS JK-B 系列 8S 100A active balance**(含 RS485 customization) | 1 | 3,800 | 3,800 | **v1.6 (2026-05-18 用戶採購確認)**:基礎 USD $89.98,**checkout 必選 customization「RS485 Function」** → 漲到 ~USD $110-125 ≈ NT$ 3,520-4,000(取中間 NT$ 3,800);⚠️ **不選 RS485 = 買到 BT-only,M4 LIVE row 死**;**不選**:☐ CANBus(STM32F411 沒 CAN peripheral)/ ☐ Display(省 USD 10-20)/ ☐ Heating(室溫 demo 不需);**指定 JK-B series**(不要 JK-DZ11 或 JK-PB1,parser offset 不同);出廠 terminal ID 需確認為 `0x00000000`(用藍牙 APP 連 BMS 看);RS485 default baud 115200(`scripts/jkbms.py` 預設值,若 timeout 改 `--baud 9600` for 舊版 firmware) |
-| 🎯 #4 | **JK-BMS GX12 → DuPont cable**(RS485 訊號線) | JK-B RS485 訊號出在 4-pin GX12 port(俗稱 "GPS port");需 cable 把 GX12 → DuPont 才能接 USB-RS485 dongle | 1 | 200 | 200 | **v1.6 補**:JK 賣家頁面明寫「RS485 Adapter Cable: Sold separately as optional add-on」;同店加購最方便,或 ICShop / 蝦皮 GX12-4pin 4-line 通用 cable 自焊 DuPont 端子 |
-| 🎯 #2 | 超級電容 | **Maxwell BMOD0058-E016-C02 × 2**(串聯 32V)| 2 | 5,304 | 10,608 | **v1.4 更新**:Heisener B02 通路缺貨(2026-05-17 查證),改 DigiKey 台 stock 26 pcs(part 11673898),隔日到貨;C02 datasheet 與 B02 同 family — 16V/58F/22mΩ ESR/IPEAK 190A/IDCMAX 14A(ΔT=15°C)或 23A(ΔT=40°C),M5 螺絲端子 4 Nm,9.3 A 工作點全條件下 ≥ 34 % 餘量;§1.3 gate 仍 PASS |
-| 🎯 #2 | 控制板 | STM32 Black Pill F411 | **2**(1 用 + 1 備品)| 600 | 1,200 | **v1.10 加 1 備品**:控制大腦,學生 3.3V GPIO 接 32V 電力電路易 brick;W3 firmware τ 調參反覆燒錄 + 探針,死在 6/1-6/2 = M3 死線崩;備品手邊可當場換,免蝦皮重訂等 1-2 天 |
-| 🎯 #2 | 功率切換 | **IRFB4115PBF × 6**(DigiKey 448-IRFB4115PBF-ND)+ 5°C/W TO-220 鰭片(蝦皮)+ 矽脂(Arctic MX-4) | 1 套 | — | 1,008 | **v1.7 通路確認**:MOSFET 走 DigiKey 真品(Infineon 原廠,IRFB4115 仿冒重災區);現貨 4,126 pcs,單價 USD $3.37 ≈ NT$ 108;**v1.10 買 6 顆**(4 主 + **2 備品**;MOSFET 是電力電子頭號陣亡品,有時成對死)→ MOSFET NT$ 648 + 鰭片 + 矽脂 ≈ 360;鰭片 + 矽脂走蝦皮(DigiKey 散熱片貴 2×) |
-| 🎯 #2 | Gate driver | **UCC27282DR × 3**(2 用 + 1 備品)| 3 | 63 | 189 | **v1.10**:通路改 DigiKey UCC27282DR(part 13213543,6,570 現貨,**NT$ 63/顆**,SOIC-8 手焊可);qty 2 → 3 加 1 備品(gate driver 常陪 MOSFET 一起陣亡);**舊 Mouser 估 NT$ 900 過高 → DigiKey 實價修正(−711)**;bootstrap MLCC 見 §第二波;Fallback IR2110 |
-| 🎯 #2 | 電流量測 | **Adafruit INA228 breakout (#5832)** × 2(LFP path + supercap path) | 2 | 538 | 1,076 | **v1.5 升階**:從 INA226(16-bit / 36V)升 INA228(**20-bit / 85V**,supercap 32V bank 165% 餘量、4 mA 解析度);DigiKey 1528-5832-ND,現貨 671 pcs;onboard 15mΩ shunt → 量程 ±10.9A(supercap path 9.3A peak 直用);LFP path 若量 peak 25A 走外接 5mΩ shunt 或讀 JK-BMS 回報電流;**2 顆並掛 I²C 要設不同 address**(ADR0 跳線 0x40 / 0x41) |
-| 🎯 #2 | GB200 emulator | **ATORCH DL24M-H 600 W 套組**(master + 3 擴充模組)USB 可程式 | 1 | 4,500 | 4,500 | **v1.10 修正 v1.4**:無「單機 600W」DL24M —— 單一模組僅 150W,600W = DL24M-H 套組(master + 3 擴充模組,150W×4);下單須確認模組附齊,避開 DL24(150W)/ DL24P(180W);**peak 650 W 略超 600 W cap ~8 %**,100 ms pulse 在 IPEAK 容差內可接受,簡報若見頂部削平標明 cap 限制不影響削峰 ratio;套組實價待確認 |
-| 🎯 #3 | 邊緣推論板 | **Raspberry Pi 5 8GB**(DigiKey SC1432 / 2648-SC1432-ND)| 1 | 5,600 | 5,600 | **v1.7 通路確認**:DigiKey TW USD $175,現貨 11,513 pcs;**取代 STM32N6570-DK NT$ 9,000**;與 Maxwell + INA228 + IRFB4115 同單下訂省運費;Pi 5 配件(PSU + SD + HDMI)另列 NT$ 1,200;貴 RS TW ~NT$ 2,200 但**集中通路換時程確定性**(W1 下單即到貨確認) |
-| 🎯 #4 | 溫度感測 | DS18B20 防水 × 6(4 用 + 2 備品)| 6 | 50 | 300 | **v1.10 加 2 備品**:1-Wire 3 腳易接反燒;LIVE row 給 dashboard 用,4 顆工作 |
-| 🛡️ | LFP 側保護 | 80A blade fuse + 100A 接觸器 + E-stop | 1 套 | 1,500 | 1,500 | |
-| 🛡️ | Supercap 側保護 | Class T fast-blow 100A fuse + holder | 1 套 | 800 | 800 | supercap 短路峰值 ~5kA 需快斷 |
-| 🛡️ | **Supercap 預充電** | **5 Ω / 50 W wirewound resistor + 40A 5-pin automotive relay + driver MOSFET (IRLZ44N logic-level)** | 1 套 | 220 | 220 | **v1.3 補(review B1)**:32V × 29F bank 直接接帶電 bus = 200+ A inrush 會炸 IRFB4115;此路徑為硬體第二防線,主防線是「手動 pre-charge supercap 到距 bus < 0.5V 才合主接觸器」(§4.5.5 SOP);**v1.9:driver 2N7000 → IRLZ44N**(Picker PC792A relay 線圈 133 mA);**v1.10:5Ω 電阻 80 → 50**(RX24 鋁殼繞線現貨款,認「現貨」賣家避開較長備貨)→ 套 250 → 220 |
-| 🛡️ | PPE | 1.5kV 絕緣手套 + 護目鏡 | 1 套 | 800 | 800 | **降階** v1.2 NT$ 2,000 — 噴罐獨立列 |
-| 🛡️ | 滅火 | Lith-Ex / F-500 鋰電池噴罐 | 1 | 1,200 | 1,200 | 蝦皮 / momo |
-| 🎯 #2 | 機械 | 開放式壓克力 400×250×150 + 鋁角材 | 1 套 | 1,800 | 1,800 | Maxwell 2 顆串聯需放大 |
-| 🛡️ | 散熱 | 80mm fan × 2 + heatsink | 1 套 | 400 | 400 | **降階** v1.2 NT$ 600,4 fans → 2 fans |
-| 🎯 #2 | 連接 / 線材 | 矽膠線 10AWG + Anderson SB50 + 熱縮套 | 1 套 | 800 | 800 | |
-| 🎯 #4 | **USB-to-RS485 dongle** | **ICShop FT232 + SP485EEN**(對齊 JK-BMS GX12-DuPont cable 端子) | 1 | 400 | 400 | **v1.6 升階**:從 generic CH340 + MAX485(NT$ 200)→ FT232 + SP485EEN(NT$ 400);FT232 比 CH340 driver 穩(macOS/Linux 不卡);SP485EEN 半雙工 RS485 transceiver;ICShop 在台,1-2 天到貨;與 JK-BMS GX12 cable 配對(DuPont 端子直連) |
-| 🎯 全項 | **USB hub**(4-port 自供電 USB 3.0) | 確保 DL24M / JK-485 / STM32 / Pi 5 不爭電 | 1 | 300 | 300 | v1.3 review H1 |
-| 🎯 #3 | **Pi 5 配件**(3 件套):**5V/5A USB-C PSU** + **SanDisk Extreme 32GB UHS-I C10 U3**(優先 A1 版本)+ **micro-HDMI 線** | 開機必需 | 1 套 | 1,200 | 1,200 | **v1.6 鎖 SD card spec**:SanDisk Extreme 32GB UHS-I 100MB/s C10 U3,讀 100 MB/s / 寫 ≥ 30 MB/s,Pi 5 SDR104 UHS-I 滿速;**若有 A1 標示版本同價就買 A1**(Pi OS 開機 25s vs 45s)。⚠️ **防仿冒**:必認 SanDisk 官方旗艦店 / WD 台灣分公司 / PChome / momo / 博客來 / Costco;**禁蝦皮路邊賣家、Aliexpress、Alibaba**(SanDisk 是被仿最多的品牌);收貨後用 h2testw 驗容量。PSU 必 5V/5A 規格(手機充電器會限流);micro-HDMI(Pi 5 是 micro 不是 mini)|
-| 🛡️ | **30V/3A bench DC PSU**(或借學校 EE 系)| LFP 8S 0.5C CC/CV 充電 + supercap pre-charge SOP §4.5.5 L1 | 1 | 1,500 | 1,500 | v1.3 review H1;若借不到才買;主要候選 EVENTEK DPS3010 |
-| 🛡️ | **數位萬用表**(或借學校)| cell OCV 粗篩、ESR / V / I 量、debug | 1 | 800 | 800 | v1.3 review H1;若借不到才買;標稱 Fluke 17B+ 或 UNI-T UT139C |
-| 🛡️ | **ST-Link V2 clone** | Black Pill DFU brick 保險 / SWD debug | 1 | 300 | 300 | v1.3 review H1;主 flash 路徑是 USB-C DFU,此為 fallback |
+| #1 | (純軟體) | §1.3 sim,已完成 | — | 0 | 0 | `data/processed/scaled_8s_sim.json` |
+| #2 | 主電池 | LFP 26650 3.2V/5Ah | **12**(8 主用 + 4 備品 + 配對池)| 250 | 3,000 | 蝦皮 / 露天;**v1.8 對齊 proposal_v2:8 → 12 顆**(4 顆備品 for DOA replacement + cell-matching 池;從 12 顆挑 OCV 偏差最小的 8 顆組 8S1P,§4.2.1 SOP);**v1.2 16 → v1.3 8 → v1.8 12** |
+| #2 | 電池座 | **26650 單節電池盒 BH-26650-1(廣華)** | **10**(8 用 + 2 備品)| 30 | 300 | **v1.10**:台灣無 8 串整盒(26650 holder 市場主流 1/2 節),用單節 holder 排 8S1P;選 BH-26650-1(;2 節款 避開);廣華現貨;A123 平頭相容;**Endrich 若答帶 tab → holder 當純機械座**(電流走焊點不走彈片);裸電芯則彈片載流 |
+| | **BMS** | **JK-BMS JK-B 系列 8S 100A active balance**(含 RS485 customization) | 1 | 3,800 | 3,800 | **v1.6 (2026-05-18 用戶採購確認)**:基礎 USD $89.98,**checkout 必選 customization「RS485 Function」** → 漲到 ~USD $110-125 ≈ NT$ 3,520-4,000(取中間 NT$ 3,800);(!) **不選 RS485 = 買到 BT-only,M4 LIVE row 死**;**不選**:[ ] CANBus(STM32F411 沒 CAN peripheral)/ [ ] Display(省 USD 10-20)/ [ ] Heating(室溫 demo 不需);**指定 JK-B series**(不要 JK-DZ11 或 JK-PB1,parser offset 不同);出廠 terminal ID 需確認為 `0x00000000`(用藍牙 APP 連 BMS 看);RS485 default baud 115200(`scripts/jkbms.py` 預設值,若 timeout 改 `--baud 9600` for 舊版 firmware) |
+| #4 | **JK-BMS GX12 → DuPont cable**(RS485 訊號線) | JK-B RS485 訊號出在 4-pin GX12 port(俗稱 "GPS port");需 cable 把 GX12 → DuPont 才能接 USB-RS485 dongle | 1 | 200 | 200 | **v1.6 補**:JK 賣家頁面明寫「RS485 Adapter Cable: Sold separately as optional add-on」;同店加購最方便,或 ICShop / 蝦皮 GX12-4pin 4-line 通用 cable 自焊 DuPont 端子 |
+| #2 | 超級電容 | **Maxwell BMOD0058-E016-C02 × 2**(串聯 32V)| 2 | 5,304 | 10,608 | **v1.4 更新**:Heisener B02 通路缺貨(2026-05-17 查證),改 DigiKey 台 stock 26 pcs(part 11673898),隔日到貨;C02 datasheet 與 B02 同 family — 16V/58F/22mΩ ESR/IPEAK 190A/IDCMAX 14A(ΔT=15°C)或 23A(ΔT=40°C),M5 螺絲端子 4 Nm,9.3 A 工作點全條件下 ≥ 34 % 餘量;§1.3 gate 仍 PASS |
+| #2 | 控制板 | STM32 Black Pill F411 | **2**(1 用 + 1 備品)| 600 | 1,200 | **v1.10 加 1 備品**:控制大腦,學生 3.3V GPIO 接 32V 電力電路易 brick;W3 firmware τ 調參反覆燒錄 + 探針,死在 6/1-6/2 = M3 死線崩;備品手邊可當場換,免蝦皮重訂等 1-2 天 |
+| #2 | 功率切換 | **IRFB4115PBF × 6**(DigiKey 448-IRFB4115PBF-ND)+ 5°C/W TO-220 鰭片(蝦皮)+ 矽脂(Arctic MX-4) | 1 套 | — | 1,008 | **v1.7 通路確認**:MOSFET 走 DigiKey 真品(Infineon 原廠,IRFB4115 仿冒重災區);現貨 4,126 pcs,單價 USD $3.37 ≈ NT$ 108;**v1.10 買 6 顆**(4 主 + **2 備品**;MOSFET 是電力電子頭號陣亡品,有時成對死)→ MOSFET NT$ 648 + 鰭片 + 矽脂 ≈ 360;鰭片 + 矽脂走蝦皮(DigiKey 散熱片貴 2×) |
+| #2 | Gate driver | **UCC27282DR × 3**(2 用 + 1 備品)| 3 | 63 | 189 | **v1.10**:通路改 DigiKey UCC27282DR(part 13213543,6,570 現貨,**NT$ 63/顆**,SOIC-8 手焊可);qty 2 → 3 加 1 備品(gate driver 常陪 MOSFET 一起陣亡);**舊 Mouser 估 NT$ 900 過高 → DigiKey 實價修正(−711)**;bootstrap MLCC 見 §第二波;Fallback IR2110 |
+| #2 | 電流量測 | **Adafruit INA228 breakout (#5832)** × 2(LFP path + supercap path) | 2 | 538 | 1,076 | **v1.5 升階**:從 INA226(16-bit / 36V)升 INA228(**20-bit / 85V**,supercap 32V bank 165% 餘量、4 mA 解析度);DigiKey 1528-5832-ND,現貨 671 pcs;onboard 15mΩ shunt → 量程 ±10.9A(supercap path 9.3A peak 直用);LFP path 若量 peak 25A 走外接 5mΩ shunt 或讀 JK-BMS 回報電流;**2 顆並掛 I²C 要設不同 address**(ADR0 跳線 0x40 / 0x41) |
+| #2 | GB200 emulator | **ATORCH DL24M-H 600 W 套組**(master + 3 擴充模組)USB 可程式 | 1 | 4,500 | 4,500 | **v1.10 修正 v1.4**:無「單機 600W」DL24M —— 單一模組僅 150W,600W = DL24M-H 套組(master + 3 擴充模組,150W×4);下單須確認模組附齊,避開 DL24(150W)/ DL24P(180W);**peak 650 W 略超 600 W cap ~8 %**,100 ms pulse 在 IPEAK 容差內可接受,簡報若見頂部削平標明 cap 限制不影響削峰 ratio;套組實價待確認 |
+| #3 | 邊緣推論板 | **Raspberry Pi 5 8GB**(DigiKey SC1432 / 2648-SC1432-ND)| 1 | 5,600 | 5,600 | **v1.7 通路確認**:DigiKey TW USD $175,現貨 11,513 pcs;**取代 STM32N6570-DK NT$ 9,000**;與 Maxwell + INA228 + IRFB4115 同單下訂省運費;Pi 5 配件(PSU + SD + HDMI)另列 NT$ 1,200;貴 RS TW ~NT$ 2,200 但**集中通路換時程確定性**(W1 下單即到貨確認) |
+| #4 | 溫度感測 | DS18B20 防水 × 6(4 用 + 2 備品)| 6 | 50 | 300 | **v1.10 加 2 備品**:1-Wire 3 腳易接反燒;LIVE row 給 dashboard 用,4 顆工作 |
+| | LFP 側保護 | 80A blade fuse + 100A 接觸器 + E-stop | 1 套 | 1,500 | 1,500 | |
+| | Supercap 側保護 | Class T fast-blow 100A fuse + holder | 1 套 | 800 | 800 | supercap 短路峰值 ~5kA 需快斷 |
+| | **Supercap 預充電** | **5 Ω / 50 W wirewound resistor + 40A 5-pin automotive relay + driver MOSFET (IRLZ44N logic-level)** | 1 套 | 220 | 220 | **v1.3 補(review B1)**:32V × 29F bank 直接接帶電 bus = 200+ A inrush 會炸 IRFB4115;此路徑為硬體第二防線,主防線是「手動 pre-charge supercap 到距 bus < 0.5V 才合主接觸器」(§4.5.5 SOP);**v1.9:driver 2N7000 → IRLZ44N**(Picker PC792A relay 線圈 133 mA);**v1.10:5Ω 電阻 80 → 50**(RX24 鋁殼繞線現貨款,認「現貨」賣家避開較長備貨)→ 套 250 → 220 |
+| | PPE | 1.5kV 絕緣手套 + 護目鏡 | 1 套 | 800 | 800 | **降階** v1.2 NT$ 2,000 — 噴罐獨立列 |
+| | 滅火 | Lith-Ex / F-500 鋰電池噴罐 | 1 | 1,200 | 1,200 | 蝦皮 / momo |
+| #2 | 機械 | 開放式壓克力 400×250×150 + 鋁角材 | 1 套 | 1,800 | 1,800 | Maxwell 2 顆串聯需放大 |
+| | 散熱 | 80mm fan × 2 + heatsink | 1 套 | 400 | 400 | **降階** v1.2 NT$ 600,4 fans → 2 fans |
+| #2 | 連接 / 線材 | 矽膠線 10AWG + Anderson SB50 + 熱縮套 | 1 套 | 800 | 800 | |
+| #4 | **USB-to-RS485 dongle** | **ICShop FT232 + SP485EEN**(對齊 JK-BMS GX12-DuPont cable 端子) | 1 | 400 | 400 | **v1.6 升階**:從 generic CH340 + MAX485(NT$ 200)→ FT232 + SP485EEN(NT$ 400);FT232 比 CH340 driver 穩(macOS/Linux 不卡);SP485EEN 半雙工 RS485 transceiver;ICShop 在台,1-2 天到貨;與 JK-BMS GX12 cable 配對(DuPont 端子直連) |
+| 全項 | **USB hub**(4-port 自供電 USB 3.0) | 確保 DL24M / JK-485 / STM32 / Pi 5 不爭電 | 1 | 300 | 300 | v1.3 review H1 |
+| #3 | **Pi 5 配件**(3 件套):**5V/5A USB-C PSU** + **SanDisk Extreme 32GB UHS-I C10 U3**(優先 A1 版本)+ **micro-HDMI 線** | 開機必需 | 1 套 | 1,200 | 1,200 | **v1.6 鎖 SD card spec**:SanDisk Extreme 32GB UHS-I 100MB/s C10 U3,讀 100 MB/s / 寫 ≥ 30 MB/s,Pi 5 SDR104 UHS-I 滿速;**若有 A1 標示版本同價就買 A1**(Pi OS 開機 25s vs 45s)。(!) **防仿冒**:必認 SanDisk 官方旗艦店 / WD 台灣分公司 / PChome / momo / 博客來 / Costco;**禁蝦皮路邊賣家、Aliexpress、Alibaba**(SanDisk 是被仿最多的品牌);收貨後用 h2testw 驗容量。PSU 必 5V/5A 規格(手機充電器會限流);micro-HDMI(Pi 5 是 micro 不是 mini)|
+| | **30V/3A bench DC PSU**(或借學校 EE 系)| LFP 8S 0.5C CC/CV 充電 + supercap pre-charge SOP §4.5.5 L1 | 1 | 1,500 | 1,500 | v1.3 review H1;若借不到才買;主要候選 EVENTEK DPS3010 |
+| | **數位萬用表**(或借學校)| cell OCV 粗篩、ESR / V / I 量、debug | 1 | 800 | 800 | v1.3 review H1;若借不到才買;標稱 Fluke 17B+ 或 UNI-T UT139C |
+| | **ST-Link V2 clone** | Black Pill DFU brick 保險 / SWD debug | 1 | 300 | 300 | v1.3 review H1;主 flash 路徑是 USB-C DFU,此為 fallback |
 | **小計** | | | | | **~43,801** | |
 
 **Buffer:NT$ ~6,199**(50,000 − 43,801)。**強烈建議借得到 bench PSU + 萬用表(buffer 回 NT$ 8,499)**。Buffer 主要吸收採購意外、補耗材、覆蓋失敗重做(MOSFET 燒、cell 退貨);**warning line NT$ 5,000,目前餘 NT$ 1,199**(v1.10 加備品 STM32/IRFB4115/DS18B20 但 holder 改單節 −500 + UCC27282 DigiKey 實價 −711 抵消,Buffer 反而比 v1.9 寬鬆)。
@@ -447,9 +447,9 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 ### 採購順序(下單優先級)
 
-1. **🎯 立刻下單**(W1 內必到):LFP cell × 8、Maxwell BMOD0058 × 2、**JK-BMS(必勾 RS485 customization + GX12 cable 加購)**、**ICShop FT232+SP485EEN USB-RS485 dongle**、STM32 Black Pill、IRFB4115、UCC27282、DL24M、**Pi 5 + SanDisk Extreme 32GB UHS-I U3(認 SanDisk 官方旗艦店)**、INA228 (Adafruit 5832)、DS18B20
-2. **🛡️ 安全配備**(W2 接電前必到):fuses、接觸器、E-stop、PPE、Lith-Ex 噴罐、線材
-3. **🎯 機械 / 散熱**(W3 整合用):壓克力、鋁角材、fan、熱縮套
+1. **立刻下單**(W1 內必到):LFP cell × 8、Maxwell BMOD0058 × 2、**JK-BMS(必勾 RS485 customization + GX12 cable 加購)**、**ICShop FT232+SP485EEN USB-RS485 dongle**、STM32 Black Pill、IRFB4115、UCC27282、DL24M、**Pi 5 + SanDisk Extreme 32GB UHS-I U3(認 SanDisk 官方旗艦店)**、INA228 (Adafruit 5832)、DS18B20
+2. **安全配備**(W2 接電前必到):fuses、接觸器、E-stop、PPE、Lith-Ex 噴罐、線材
+3. **機械 / 散熱**(W3 整合用):壓克力、鋁角材、fan、熱縮套
 
 ---
 
@@ -492,7 +492,7 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 # Part 3 · 系統架構(實機)
 
-> ⚠️ **v1.x archive · v2.0 已 descope**(2026-05-26 pivot 至 twin-first)。
+> (!) **v1.x archive · v2.0 已 descope**(2026-05-26 pivot 至 twin-first)。
 > 本節原為 8S 實機 demonstrator 系統架構;v2.0 留作 EVT 2026 Q3 重啟二期參考 +
 > answers「我們先有完整硬體規劃才 pivot」的工程紀律證據。**v2.0 critical path
 > 在 摘要 § V1-V6 chains,不在本節**。
@@ -541,7 +541,7 @@ Part 3-6 標題下方加 banner 標 **「v1.x archive · v2.0 已 descope」**,�
 
 # Part 4 · 韌體實作清單
 
-> ⚠️ **v1.x archive · v2.0 已 descope**。本節原為 STM32F411 firmware + JK-BMS
+> (!) **v1.x archive · v2.0 已 descope**。本節原為 STM32F411 firmware + JK-BMS
 > RS485 + Pi 5 ONNX runtime + dashboard live-row bridge + MOSFET switch matrix +
 > supercap pre-charge SOP 詳細實作清單;v2.0 純軟體 / 純 sim,韌體不交付。
 > **`scripts/hybrid_control_emulator.py` Python 鏡像在 v2.0 仍沿用為 V3 控制律
@@ -570,7 +570,7 @@ P2   控制律 τ live-tunable (USB CDC command)             0.5 d
   - `README.md` — STM32CubeIDE 建專案 + flash + bench dry-run SOP(W2 Tue 5/27 / Wed 5/28)
 
 **驗證點**:
-- W1:`python scripts/hybrid_control_emulator.py --plot` 驗證控制律 Python 版可重現 §1.3 sim 數字(已 ✅ PASS)
+- W1:`python scripts/hybrid_control_emulator.py --plot` 驗證控制律 Python 版可重現 §1.3 sim 數字(已 [v] PASS)
 - W2 Tue:CubeMX 開新專案,paste `main.c`,build + flash 到 Black Pill;USART2 看到 telemetry stream
 - W2 Wed bench dry-run(無電池):信號發生器灌假 v_bus / v_sc 進 ADC,logic analyzer 看狀態機跳轉 + PWM duty ramp 線性度,W2 Thu 再接實電池
 
@@ -585,12 +585,12 @@ JK-BMS 出廠就有 RS485 / Bluetooth telemetry,無需自寫 BMS 韌體。
 - 合成 8S response 自測通過:`pack_v=25.8V, pack_i=5.0A, soc=85%, t_fet=35°C`
 - `scripts/live_demonstrator_bridge.py --port COM3` 切 bench mode,連續 5 次讀失敗才寫 offline snapshot(避免單次抖動就閃 LIVE 卡)
 
-⚠️ **未經實機驗證**(購買 JK-BMS 時必確認 series — **指定 JK-B,不是 DZ11 或 PB1**;後兩者 protocol offset 不同):
+(!) **未經實機驗證**(購買 JK-BMS 時必確認 series — **指定 JK-B,不是 DZ11 或 PB1**;後兩者 protocol offset 不同):
 - pack current 符號約定(高位元 sign vs 反向)— 首次接線用 `--invert-current` flag 翻轉,或先跑 `python scripts/jkbms.py --port COM3` 一次性測試
 - temperature 負溫換算(raw > 100 視為負)— 室溫下不會觸發,寒冬若做戶外才驗
 - bytecount 計算假設 8S(`cells_start + n_cells × 3 = 38`)— 改 cell 數要傳 `--n-cells`
 
-### 4.2.1 ⚠️ LFP cell pre-balance + 首充 SOP(v1.3 review H2/H6 補)
+### 4.2.1 (!) LFP cell pre-balance + 首充 SOP(v1.3 review H2/H6 補)
 
 **為什麼這節獨立**:8 顆 LFP 26650 從蝦皮 / 露天到貨時 SOC 不同(常見一顆 2.8V、另一顆 3.6V)。**直接串聯接 BMS,首充 5 分鐘 BMS 會 trip**(高 SOC cell 先過充截止);active balance 50-100 mA 要 10+ 小時才平衡完 — **燒掉 W2 工期**。
 
@@ -622,7 +622,7 @@ JK-BMS 出廠就有 RS485 / Bluetooth telemetry,無需自寫 BMS 韌體。
      任一 cell 電壓飄到 3.65V → BMS 切斷充電(正常,等其他 cell 跟上)
 4. CV stage 收斂:pack current 降到 < 0.25 A(0.05C)即為「充飽」
 5. 全程 < 10 °C 溫升(熱影像 / 手摸)— 若 > 15 °C 立刻斷電
-6. 充飽後靜置 30 min,再量 cell 電壓:max - min ≤ 30 mV → ✅ pack 可用
+6. 充飽後靜置 30 min,再量 cell 電壓:max - min ≤ 30 mV → [v] pack 可用
 ```
 
 **burn-in**:充飽後接 0.5C 放電(JK-BMS LED 顯示 SOC 應持續下降),跑 1 小時看是否飄移 / 過熱。**v1.3 lean 不做 24 h**;只跑 1 hr 確認 pack 整體穩定。
@@ -645,17 +645,17 @@ JK-BMS 出廠就有 RS485 / Bluetooth telemetry,無需自寫 BMS 韌體。
 
 ### 4.3.1 Pi 5 路徑(lean 預設)
 
-> ⚡ **腳本已備好**:`scripts/measure_lstm_latency.py` 是 device-agnostic 的;笔电 baseline 已跑(`lstm_latency_laptop_cpu.{json,png}`)。Pi 5 到貨後 `python scripts/measure_lstm_latency.py --device-label pi5` 即出 M2 final evidence。
+> **腳本已備好**:`scripts/measure_lstm_latency.py` 是 device-agnostic 的;笔电 baseline 已跑(`lstm_latency_laptop_cpu.{json,png}`)。Pi 5 到貨後 `python scripts/measure_lstm_latency.py --device-label pi5` 即出 M2 final evidence。
 
 | 步驟 | 工作 | effort | 狀態 |
 |---|---|---:|:--:|
-| 1 | Pi 5 8GB + Pi OS 64-bit Bookworm 燒 32GB SD card 開機 | 0.5 d | ⬜ 等貨 |
-| 2 | `sudo apt update && sudo apt install python3-pip python3-venv` | 5 min | ⬜ |
-| 3 | `python3 -m venv .venv && source .venv/bin/activate && pip install onnxruntime numpy matplotlib` | 5 min | ⬜ |
-| 4 | **aarch64 wheel 驗證**:`python -c "import onnxruntime; print(onnxruntime.get_device(), onnxruntime.get_available_providers())"` 應印 `CPU` + `['CPUExecutionProvider']` — 若印 `azure` 表示裝錯版本 | 1 min | ⬜ |
-| 5 | scp models/ → Pi 5(8.2 + 211 + 63 KB,1 秒) | 1 min | ⬜ |
-| 6 | 跑 `measure_lstm_latency.py --device-label pi5` → 1000 次 × FP32+INT8 | 5 min | ⬜ |
-| 7 | 自動產 JSON + histogram PNG;**腳本內建 1 ms p99 pass 閘** | 即時 | ✅ 腳本就緒 |
+| 1 | Pi 5 8GB + Pi OS 64-bit Bookworm 燒 32GB SD card 開機 | 0.5 d | [ ] 等貨 |
+| 2 | `sudo apt update && sudo apt install python3-pip python3-venv` | 5 min | [ ] |
+| 3 | `python3 -m venv .venv && source .venv/bin/activate && pip install onnxruntime numpy matplotlib` | 5 min | [ ] |
+| 4 | **aarch64 wheel 驗證**:`python -c "import onnxruntime; print(onnxruntime.get_device(), onnxruntime.get_available_providers())"` 應印 `CPU` + `['CPUExecutionProvider']` — 若印 `azure` 表示裝錯版本 | 1 min | [ ] |
+| 5 | scp models/ → Pi 5(8.2 + 211 + 63 KB,1 秒) | 1 min | [ ] |
+| 6 | 跑 `measure_lstm_latency.py --device-label pi5` → 1000 次 × FP32+INT8 | 5 min | [ ] |
+| 7 | 自動產 JSON + histogram PNG;**腳本內建 1 ms p99 pass 閘** | 即時 | [v] 腳本就緒 |
 
 **笔电 baseline 已採**(M2 partial,2026-05-17):
 
@@ -768,9 +768,9 @@ share。**為什麼選 high-side 而不是 low-side**:demonstrator 走共地參�
 - [ ] UCC27282 現貨確認;**4 週以上 lead time → 立刻換 IR2110**(蝦皮一定有)
 - [ ] 散熱片 TO-220 用 25 °C/W aluminum heatsink
 
-⚠️ **這條若 W1 結束前未完成,整個 W2 沒法做 switch matrix 組裝,連帶 W3 整合會崩**。
+(!) **這條若 W1 結束前未完成,整個 W2 沒法做 switch matrix 組裝,連帶 W3 整合會崩**。
 
-### 4.5.5 ⚠️ Supercap 預充電序列(v1.3 review #B1 補)
+### 4.5.5 (!) Supercap 預充電序列(v1.3 review #B1 補)
 
 **為什麼需要**:32V supercap bank 串聯 29F 等效電容,從 0V 接帶電 DC bus 的瞬間電流:
 
@@ -791,7 +791,7 @@ IRFB4115 Ifsm pulse rating 700 A → **燒 MOSFET、熔 PCB trace、可能觸發
 **L1 SOP**(每次 demo 前 5 分鐘):
 
 ```
-0. ⚠️ 萬用表先量 v_supercap +/- 兩端電壓:
+0. (!) 萬用表先量 v_supercap +/- 兩端電壓:
      若 = 0 V → 正常(初始或上次 demo 後有 short wire 短接保存)
      若 > 0 V(典型 1–2 V)→ "bounce-back"(datasheet 警告):
        Maxwell 模組充滿放完電,儲存無 short wire 會自然回升 ~2 V。
@@ -852,32 +852,32 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 # Part 5 · 驗證流程(實機 bench test plan)
 
-> ⚠️ **v1.x archive · v2.0 已 descope**。本節原為實機 unit test → 子系統整合
+> (!) **v1.x archive · v2.0 已 descope**。本節原為實機 unit test → 子系統整合
 > → headline 數字實機重現 → dashboard LIVE 整合的 4 階段 bench test plan。
 > **v2.0 驗證流程移到 V1-V6 chains**(摘要 § 6 條 critical-path),全部在 sim 層。
 
-> v1.3 reframe:測項以 🎯/🛡️/⏭️ 標記。critical-path-only mode 下 §5.3 + §5.4 必做,§5.1 / §5.2 簡化為「能開機不冒煙」level,⏭️ 項可砍。
+> v1.3 reframe:測項以 //(skip) 標記。critical-path-only mode 下 §5.3 + §5.4 必做,§5.1 / §5.2 簡化為「能開機不冒煙」level,(skip) 項可砍。
 
 ## 5.1 階段 1:單元測試(W1–W2,各元件分開)
 
 | 標記 | 元件 | 測項 | Pass 條件 |
 |:--:|---|---|---|
-| 🛡️ | LFP cell **粗篩**(OCV)| 萬用表量靜置 30 min 後開路電壓 | **OCV 偏差 ≤ 30 mV**(粗篩,~30 min)— 這條是 🛡️ 不能砍,不平衡會讓 BMS 提早 cut |
-| ⏭️ | LFP cell **精密配對**(10A 放電)| 4 顆並行 10A 放電量真容量 | ≤ 5 % 偏差(~4 hr;**lean mode 可砍**,粗篩夠) |
-| 🛡️ | Supercap | leakage current + ESR DC 量測 | ESR < datasheet × 1.5(放寬 — 二手老化可接受) |
-| 🛡️ | BMS | 過充截斷 / 過放截斷 / 短路保護(低容量替身電池) | 動作 < 100 ms;**不通過不准接 8S pack** |
-| 🎯 | 電子負載 | 100 ms 階躍上升時間 | < 5 ms (DL24M 規格) |
-| 🎯 | Pi 5 / STM32N6 | LSTM 99-cycle inference vs onnxruntime FP32 reference | MAPE < 1 % |
+| | LFP cell **粗篩**(OCV)| 萬用表量靜置 30 min 後開路電壓 | **OCV 偏差 ≤ 30 mV**(粗篩,~30 min)— 這條是 不能砍,不平衡會讓 BMS 提早 cut |
+| (skip) | LFP cell **精密配對**(10A 放電)| 4 顆並行 10A 放電量真容量 | ≤ 5 % 偏差(~4 hr;**lean mode 可砍**,粗篩夠) |
+| | Supercap | leakage current + ESR DC 量測 | ESR < datasheet × 1.5(放寬 — 二手老化可接受) |
+| | BMS | 過充截斷 / 過放截斷 / 短路保護(低容量替身電池) | 動作 < 100 ms;**不通過不准接 8S pack** |
+| | 電子負載 | 100 ms 階躍上升時間 | < 5 ms (DL24M 規格) |
+| | Pi 5 / STM32N6 | LSTM 99-cycle inference vs onnxruntime FP32 reference | MAPE < 1 % |
 
 ## 5.2 階段 2:子系統整合(W2 末)
 
 | 標記 | 子系統 | 測項 | Pass 條件 |
 |:--:|---|---|---|
-| 🛡️ | LFP+BMS+DC bus | 0.5C 充電 / 0.5C 放電 5 分鐘(**lean: 不跑 1C 飽和**),熱影像看溫升 | < 10 °C 溫升 |
-| 🎯 | Supercap bank | 100 A 脈衝放電,v_cap droop | 對齊 §1.3 sim RC 模型 ± 15 % |
-| 🎯 | Hybrid control 開環測試 | LFP+supercap 接電,0.5 Hz 方波負載,scope 看 LFP/LIC 分流 | 高頻分量 > 80 % 進 supercap |
+| | LFP+BMS+DC bus | 0.5C 充電 / 0.5C 放電 5 分鐘(**lean: 不跑 1C 飽和**),熱影像看溫升 | < 10 °C 溫升 |
+| | Supercap bank | 100 A 脈衝放電,v_cap droop | 對齊 §1.3 sim RC 模型 ± 15 % |
+| | Hybrid control 開環測試 | LFP+supercap 接電,0.5 Hz 方波負載,scope 看 LFP/LIC 分流 | 高頻分量 > 80 % 進 supercap |
 
-## 5.3 階段 3:Headline 數字實機重現(W3)— 🎯 critical path #2
+## 5.3 階段 3:Headline 數字實機重現(W3)— critical path #2
 
 **5.7× 實驗**(v1.2 對齊 §1.3 sim):
 - 設定:**DL24M 播放 500 W baseline ±30 % @ 100 ms**(peak 650 W)
@@ -892,14 +892,14 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 - sim 預期:pure pp ≈ 62 mV,hybrid pp ≈ 18 mV,ratio 3.52×
 - Pass:hybrid pp ΔV / pure pp ΔV **≤ 0.4**(留 bench noise margin)
 
-**🎯 critical path #3 邊緣推論 latency 實測**:
+**critical path #3 邊緣推論 latency 實測**:
 - Pi 5 + onnxruntime(lean 預設)或 STM32N6 X-CUBE-AI(stretch)
 - 在 `models/lstm_int8.onnx` 上跑 1000 次 inference,程式碼 `time.perf_counter_ns()` 量 wall clock
 - 出 histogram 截圖:p50 / p95 / p99
 - Pass:p99 < 1 ms (Pi 5) 或 < 200 µs(STM32N6)
 - 簡報用句:「實機跑出 N µs,對齊白皮書附錄 C 估算 27–109 µs」
 
-## 5.4 階段 4:Dashboard LIVE row 整合(W3 末–W4)— 🎯 critical path #4
+## 5.4 階段 4:Dashboard LIVE row 整合(W3 末–W4)— critical path #4
 
 - Python bridge 從 BMS RS485 + INA228 + DS18B20 收 telemetry → atomic JSON write
 - 寫 `live_demonstrator.json` 進 `apps/web/public/scenarios/`(用 §4.4 atomic helper)
@@ -912,7 +912,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 # Part 6 · 安全(學生實驗室絕對不能省)
 
-> ⚠️ **v1.x archive · v2.0 已 descope**(no bench work = no fire/shock/short-circuit risk)。
+> (!) **v1.x archive · v2.0 已 descope**(no bench work = no fire/shock/short-circuit risk)。
 > 本節原為實機操作的三層安全 SOP(supercap pre-charge / LFP 首充 / 配備 PPE
 > + Lith-Ex + Class T fuse + E-stop)。v2.0 純軟體不需要這些;但**Part 6 的
 > 安全意識在 EVT 2026 Q3 重啟硬體時必須回來**,保留為 archive。
@@ -956,7 +956,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 # Part 7 · 26 天時程拆解(從 2026/05/16 到 2026/06/11)
 
-> ⚠️ **v1.x archive · v2.0 已 descope**。下方為 v1.x 圍繞 M1-M4 milestone 重排
+> (!) **v1.x archive · v2.0 已 descope**。下方為 v1.x 圍繞 M1-M4 milestone 重排
 > 的逐日時程(採購 → 組裝 → 接電 → 整合)。**v2.0 W2-W4 時程已重排在
 > 摘要 § 4-week 時程**,W1 已完成(M1+M2 partial+M4 stack)沿用,W2 起切換 V1-V6
 > 工作。
@@ -967,85 +967,85 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 | Milestone | Critical path | 預定完成日 | 狀態 |
 |---|---|---|:--:|
-| M1 | 🎯 §1.3 模擬 gate PASS | 2026-05-17 | ✅ 完成 |
-| M2 | 🎯 邊緣推論 latency histogram | 2026-05-25(W2 上半) | 🟡 **laptop CPU baseline 已完成 2026-05-17**(`data/processed/lstm_latency_laptop_cpu.{json,png}`,FP32 p50 170/p99 264 µs,INT8 p50 124/p99 245 µs);Pi 5 到貨後跑 `--device-label pi5` 即達成 |
-| M3 | 🎯 Hybrid 削峰 5.7×/3.5× 實機波形 | 2026-06-02(W3 中) | ⬜ |
-| M4 | 🎯 Dashboard LIVE row E2E | 2026-06-04(W3 末) | ⬜ |
+| M1 | §1.3 模擬 gate PASS | 2026-05-17 | [v] 完成 |
+| M2 | 邊緣推論 latency histogram | 2026-05-25(W2 上半) | (黃) **laptop CPU baseline 已完成 2026-05-17**(`data/processed/lstm_latency_laptop_cpu.{json,png}`,FP32 p50 170/p99 264 µs,INT8 p50 124/p99 245 µs);Pi 5 到貨後跑 `--device-label pi5` 即達成 |
+| M3 | Hybrid 削峰 5.7×/3.5× 實機波形 | 2026-06-02(W3 中) | [ ] |
+| M4 | Dashboard LIVE row E2E | 2026-06-04(W3 末) | [ ] |
 
 **M2 / M3 / M4 可大幅平行**(不像 v1.2 完全線性);M2 不需等硬體到貨,M4 軟體部分 W1 就能寫好 stub。
 
-## W1(5/16–5/22):🎯 M1 達成 + 採購 + 🎯 M4 軟體 stub
+## W1(5/16–5/22):M1 達成 + 採購 + M4 軟體 stub
 
 | Day | 標記 | 任務 | 負責 |
 |---|:--:|---|---|
-| **Sun 5/17** | 🎯 **M1** | **§1.3 W1 Day 1 模擬 gate** ✅ PASS(5.72× / 3.52×)`data/processed/scaled_8s_sim.json` | 韌體 ✅ |
-| Sun 5/17 | 🎯 | Gate 判讀:鎖定 2× Maxwell 串聯 32V + demonstrator 降載 500 W baseline | 韌體+採購 ✅ |
-| Sun 5/17 PM | 🎯 | **§2.1 Lean BoM 採購**:LFP × 8、Maxwell × 2(DigiKey C02)、JK-BMS、DL24M、Pi 5、INA228(Adafruit 5832)、STM32、MOSFET+driver+fuse 下單 | 採購 |
-| Sun 5/17 | 🛡️ | Lith-Ex 噴罐 + PPE 採購(蝦皮 / momo 翌日到) | 採購 |
-| Sun 5/17 | ⏭️ | (lean: 點焊機不借,直接用彈片座) | 採購 |
-| Mon 5/18 | 🎯 **M4** | **寫 `live_demonstrator.json` schema + dashboard polling + atomic write helper**(用 fake data,W2 stub) | 軟體 |
-| Mon 5/18 | 🎯 | 寫 JK-BMS RS485 parser(GitHub fork) | 軟體 |
-| Wed 5/20 | 🎯 | 控制律 Python sim:跑 `tau=0.5s` 互補濾波器,輸出對齊 `transient_hybrid.json` | 韌體 |
-| Wed 5/20 | 🎯 | MOSFET + gate driver 預組(無電池) — 實驗室電源 + 假負載空跑驗證 dead-time | 韌體 |
-| **貨到當日** | 🛡️ | LFP cell **OCV 粗篩 + pre-balance**(§4.2.1 SOP,~30-60 min);精密 10A 配對 ⏭️ 可砍 | 硬體 |
-| Fri 5/22 | 🛡️ | W1 review:採購全部到貨確認 + M4 軟體 stub 跑通(fake data 輸出 dashboard 顯示) | 全員 |
+| **Sun 5/17** | **M1** | **§1.3 W1 Day 1 模擬 gate** [v] PASS(5.72× / 3.52×)`data/processed/scaled_8s_sim.json` | 韌體 [v] |
+| Sun 5/17 | | Gate 判讀:鎖定 2× Maxwell 串聯 32V + demonstrator 降載 500 W baseline | 韌體+採購 [v] |
+| Sun 5/17 PM | | **§2.1 Lean BoM 採購**:LFP × 8、Maxwell × 2(DigiKey C02)、JK-BMS、DL24M、Pi 5、INA228(Adafruit 5832)、STM32、MOSFET+driver+fuse 下單 | 採購 |
+| Sun 5/17 | | Lith-Ex 噴罐 + PPE 採購(蝦皮 / momo 翌日到) | 採購 |
+| Sun 5/17 | (skip) | (lean: 點焊機不借,直接用彈片座) | 採購 |
+| Mon 5/18 | **M4** | **寫 `live_demonstrator.json` schema + dashboard polling + atomic write helper**(用 fake data,W2 stub) | 軟體 |
+| Mon 5/18 | | 寫 JK-BMS RS485 parser(GitHub fork) | 軟體 |
+| Wed 5/20 | | 控制律 Python sim:跑 `tau=0.5s` 互補濾波器,輸出對齊 `transient_hybrid.json` | 韌體 |
+| Wed 5/20 | | MOSFET + gate driver 預組(無電池) — 實驗室電源 + 假負載空跑驗證 dead-time | 韌體 |
+| **貨到當日** | | LFP cell **OCV 粗篩 + pre-balance**(§4.2.1 SOP,~30-60 min);精密 10A 配對 (skip) 可砍 | 硬體 |
+| Fri 5/22 | | W1 review:採購全部到貨確認 + M4 軟體 stub 跑通(fake data 輸出 dashboard 顯示) | 全員 |
 
-⚠️ **W1 死線**:
-- ~~§1.3 模擬 gate~~ ✅ M1 已達成(2026-05-17)
+(!) **W1 死線**:
+- ~~§1.3 模擬 gate~~ [v] M1 已達成(2026-05-17)
 - Pi 5 / Maxwell BMOD0058 Heisener 下單後追蹤;若 > 2 週 lead time → Pi 5 改露天現貨 / Maxwell 改 eBay 二手或 LS Mtron LSUM
 - UCC27282 lead time > 4 週 → 立刻換 IR2110(韌體加 minimum-duty 限制)
 - (STM32N6 已 descope 進 lean BoM stretch goal,不影響 critical path)
 
-## W2(5/23–5/29):元件單測 + 子系統組裝 + 🎯 M2 完成
+## W2(5/23–5/29):元件單測 + 子系統組裝 + M2 完成
 
 | Day | 標記 | 任務 | 負責 |
 |---|:--:|---|---|
-| Sat 5/23 | ⏭️ | LFP cell **粗篩** OCV ≤ 30 mV 偏差(lean,~30 min);若 W1 已到貨已做則略過 | 硬體 |
-| Sun 5/24 | 🛡️ | 8S1P pack 組裝(**彈片座優先**)+ JK-BMS 接線 + **§4.2.1 首充 CC/CV SOP**(0.5C/2.5A → 29.2V → 收斂 < 0.05C);1 hr burn-in(**lean: 不跑 24h**)| 硬體 |
-| Sun 5/24 | 🎯 M2 | **Pi 5 + onnxruntime + `lstm_int8.onnx` flash,跑 1000 次 inference,出 latency histogram** ← **M2 達成** | 韌體 |
-| Mon 5/25 | 🎯 | Supercap bank 串聯組裝 + leakage / ESR 量測(對齊 §1.3 sim) | 硬體 |
-| Mon 5/25 | 🎯 | STM32 控制板 ADC + PWM 空跑(信號發生器當電池模型) | 韌體 |
-| Tue 5/26 | 🎯 | DC bus + MOSFET switch matrix 組裝(W1 已空跑驗證過 dead-time) | 硬體 |
-| Wed 5/27 | 🎯 | **§5.4 軟體側 dashboard polling + atomic write helper 完成**(stub 接 fake telemetry) | 軟體 |
-| Thu 5/28 | 🎯 | 所有子系統合接,空載開機 → 接電子負載 1 A 試拉 | 硬體+韌體 |
-| Fri 5/29 | 🛡️ | W2 review:M2 達成確認 + 子系統可運作 + **安全 SOP 演練**(E-stop / Lith-Ex 位置 / PPE) | 全員 |
+| Sat 5/23 | (skip) | LFP cell **粗篩** OCV ≤ 30 mV 偏差(lean,~30 min);若 W1 已到貨已做則略過 | 硬體 |
+| Sun 5/24 | | 8S1P pack 組裝(**彈片座優先**)+ JK-BMS 接線 + **§4.2.1 首充 CC/CV SOP**(0.5C/2.5A → 29.2V → 收斂 < 0.05C);1 hr burn-in(**lean: 不跑 24h**)| 硬體 |
+| Sun 5/24 | M2 | **Pi 5 + onnxruntime + `lstm_int8.onnx` flash,跑 1000 次 inference,出 latency histogram** ← **M2 達成** | 韌體 |
+| Mon 5/25 | | Supercap bank 串聯組裝 + leakage / ESR 量測(對齊 §1.3 sim) | 硬體 |
+| Mon 5/25 | | STM32 控制板 ADC + PWM 空跑(信號發生器當電池模型) | 韌體 |
+| Tue 5/26 | | DC bus + MOSFET switch matrix 組裝(W1 已空跑驗證過 dead-time) | 硬體 |
+| Wed 5/27 | | **§5.4 軟體側 dashboard polling + atomic write helper 完成**(stub 接 fake telemetry) | 軟體 |
+| Thu 5/28 | | 所有子系統合接,空載開機 → 接電子負載 1 A 試拉 | 硬體+韌體 |
+| Fri 5/29 | | W2 review:M2 達成確認 + 子系統可運作 + **安全 SOP 演練**(E-stop / Lith-Ex 位置 / PPE) | 全員 |
 
-⚠️ **W2 死線**:
+(!) **W2 死線**:
 - M2(latency histogram)5/24 內必完成 — 純軟體,不該卡
 - LFP pack 首充任何 cell 異常(電壓飄 / 溫升 > 10 °C)立刻換,**不要硬撐**
 
-## W3(5/30–6/5):🎯 M3 + 🎯 M4 完成
+## W3(5/30–6/5):M3 + M4 完成
 
 | Day | 標記 | 任務 | 負責 |
 |---|:--:|---|---|
-| Sat 5/30 | 🎯 | 整機接電,1 A → 5 A 漸進試拉,scope 量基線雜訊 | 硬體+韌體 |
-| Sun 5/31 | 🎯 | Hybrid 控制 OFF 純 LFP baseline 30 分鐘穩定性 + 出純 LFP 削峰前波形 | 韌體 |
-| Mon 6/1 | 🎯 | Hybrid ON 跑 ±30 % @ 100 ms 負載,scope 量電壓震盪 + 韌體調 τ | 韌體 |
-| **Tue 6/2** | 🎯 **M3** | **5.7× / 3.5× headline 實驗 + 出實機波形圖**(M3 達成) | 韌體 |
-| Wed 6/3 | 🎯 | Dashboard LIVE row 軟體側接實機 telemetry(W2 stub 切換到真實 source) | 軟體 |
-| **Thu 6/4** | 🎯 **M4** | **E2E demo 跑通:動電子負載 → dashboard LIVE row 變化**(M4 達成) | 軟體+硬體 |
-| Fri 6/5 | 🛡️ | W3 review:M3 + M4 證據 artifact 蒐齊(波形 PNG × 2 + latency histogram + dashboard 影片) | 全員 |
+| Sat 5/30 | | 整機接電,1 A → 5 A 漸進試拉,scope 量基線雜訊 | 硬體+韌體 |
+| Sun 5/31 | | Hybrid 控制 OFF 純 LFP baseline 30 分鐘穩定性 + 出純 LFP 削峰前波形 | 韌體 |
+| Mon 6/1 | | Hybrid ON 跑 ±30 % @ 100 ms 負載,scope 量電壓震盪 + 韌體調 τ | 韌體 |
+| **Tue 6/2** | **M3** | **5.7× / 3.5× headline 實驗 + 出實機波形圖**(M3 達成) | 韌體 |
+| Wed 6/3 | | Dashboard LIVE row 軟體側接實機 telemetry(W2 stub 切換到真實 source) | 軟體 |
+| **Thu 6/4** | **M4** | **E2E demo 跑通:動電子負載 → dashboard LIVE row 變化**(M4 達成) | 軟體+硬體 |
+| Fri 6/5 | | W3 review:M3 + M4 證據 artifact 蒐齊(波形 PNG × 2 + latency histogram + dashboard 影片) | 全員 |
 
-⚠️ **W3 死線**:6/2 拿不到 M3 headline → 立刻啟動 Plan C 降階(§9 Plan C — bench-top PoC)。
+(!) **W3 死線**:6/2 拿不到 M3 headline → 立刻啟動 Plan C 降階(§9 Plan C — bench-top PoC)。
 
 ## W4(6/6–6/11):複賽簡報整合 + buffer
 
 | Day | 標記 | 任務 | 負責 |
 |---|:--:|---|---|
-| Sat 6/6 | 🎯 | 簡報整合 4 份 critical-path 證據 artifact + 對照 v2.2 spec 故事 | 簡報 |
-| Sun 6/7 | 🎯 | 答辯模擬 — 對著 v2.2 spec gap 練 scaled-down rationale + 對照 §1.1 / §1.3 表 | 全員 |
-| Mon 6/8 | ⏭️ | demonstrator 燒機 (lean: 8 hr 而非 24 h)監看飄移 | 硬體 |
-| Tue 6/9 | ⏭️ | 機械固定 + 走線整理 + 拍商品照 | 硬體 |
-| Wed 6/10 | 🎯 | 完整 dry-run 30 分鐘(從開機到 dashboard LIVE 完整流程)× 3 次 | 全員 |
-| Thu 6/11 | 🎯 | **複賽日**:現場 demo + 答辯;備案:4 份 artifact 錄影 + screenshot 後援 | 全員 |
+| Sat 6/6 | | 簡報整合 4 份 critical-path 證據 artifact + 對照 v2.2 spec 故事 | 簡報 |
+| Sun 6/7 | | 答辯模擬 — 對著 v2.2 spec gap 練 scaled-down rationale + 對照 §1.1 / §1.3 表 | 全員 |
+| Mon 6/8 | (skip) | demonstrator 燒機 (lean: 8 hr 而非 24 h)監看飄移 | 硬體 |
+| Tue 6/9 | (skip) | 機械固定 + 走線整理 + 拍商品照 | 硬體 |
+| Wed 6/10 | | 完整 dry-run 30 分鐘(從開機到 dashboard LIVE 完整流程)× 3 次 | 全員 |
+| Thu 6/11 | | **複賽日**:現場 demo + 答辯;備案:4 份 artifact 錄影 + screenshot 後援 | 全員 |
 
-**W4 心法**:M1–M4 都已達成,W4 是「不要把已有的證據搞砸」 — ⏭️ 標記的工作砍掉空間留給 dry-run + buffer。
+**W4 心法**:M1–M4 都已達成,W4 是「不要把已有的證據搞砸」 — (skip) 標記的工作砍掉空間留給 dry-run + buffer。
 
 ---
 
 # Part 8 · 風險登錄(高 → 低)
 
-> ⚠️ **v1.x archive · v2.0 已 descope**。下方 13 條風險登錄是 v1.x 硬體路線
+> (!) **v1.x archive · v2.0 已 descope**。下方 13 條風險登錄是 v1.x 硬體路線
 > (STM32 firmware bug / LFP cell 假料 / supercap inrush / JK-BMS 認錯 series /
 > Vercel 掛掉等)。**v2.0 風險已壓縮為 4 條 R-v2.0-1 ~ R-v2.0-4**(見 摘要 §
 > 風險摘要),全部是軟體 / sim 層風險,無物理燃燒 / 電擊 / 短路類。
@@ -1058,7 +1058,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 | R4 | Supercap bank ESR 與計算不符,droop 過大 | 中 | 中 | 量測後若 ESR 比預期高,用更多並聯解(BoM 預算 buffer 給多買 1 顆)|
 | R5 | 電子負載動態響應跟不上 100 ms 階躍 | 低 | 中 | DL24P spec 5 ms 應 ok;備案改 50 ms 週期(對齊白皮書 §3.1 dt = 5 ms × 10) |
 | R6 | Cell 異常燃燒 / 冒煙 | 低 | 極高 | §6 SOP;保險:萬一發生,立刻拍照、E-stop、**Lith-Ex 噴罐**滅火,不要靠近;事故報告寫進複賽簡報 transparency 加分 |
-| R7 | Dashboard 改動破壞 static export build | 中 | 低 | 改 dashboard-client.tsx 不要動 page.tsx 的 fs.readFile(對齊 CLAUDE.md 規則);v1.3 build 已驗 |
+| R7 | Dashboard 改動破壞 static export build | 中 | 低 | 改 dashboard-client.tsx 不要動 page.tsx 的 fs.readFile(對齊專案架構規則);v1.3 build 已驗 |
 | R8 | 複賽當日網路不穩 / Vercel 掛掉 | 低 | 中 | **v1.3:localhost dev server 本來就是預設 demo 路徑**(LIVE row 只能 localhost,§Q10);Vercel 掛掉只影響 /tco /twin SaaS 部分,demonstrator demo 不受影響 |
 | **R11 (v1.3 新)** | **Supercap pre-charge SOP 違反 → MOSFET 炸**| 中 | 極高 | §4.5.5 三層防線必跑(L1 手動 + L2 硬體 + L3 韌體);任何 demo 開機前必跑 L1 SOP,違反就斷電 |
 | **R12 (v1.3 新)** | **JK-BMS 買到 DZ11/PB1 非 JK-B series → parser offset 不對**| 中 | 中 | 採購時指定 JK-B series;到貨先跑 `python scripts/jkbms.py --port COM3` 一次性驗證,失敗則 fork parser 加新 offset |
@@ -1070,7 +1070,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 # Part 9 · Fall-back 階梯(萬一某段做不出來)
 
-> ⚠️ **v1.x archive · v2.0 已 descope**。下方 Plan A → Plan E 是 v1.x 硬體路線
+> (!) **v1.x archive · v2.0 已 descope**。下方 Plan A → Plan E 是 v1.x 硬體路線
 > 降階順序(完整 demonstrator → bench-top PoC → 元件展示 → 純 SaaS demo)。
 > **v2.0 沒有「硬體降階」概念**,只有「V1-V6 是否各自 PASS 判準」;若 V1/V2
 > fit error 超出目標 → R-v2.0-1 fallback(用 Severson 自身 / Maxwell datasheet
@@ -1085,7 +1085,7 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 5. **Plan E(純軟體展示,絕對最後)**:跟初賽一樣只 demo 既有 SaaS + 簡報強調「實作物因元件缺貨延後到 W3+」。**等於沒晉級成果**。
 
 **決策點**:每個 W 末 review 時對照 Plan A → Plan E:
-- W1 review(5/22):採購到貨確認 + M1 ✅ + M2 笔电 baseline + M4 軟體 stub → 仍走 Plan A
+- W1 review(5/22):採購到貨確認 + M1 [v] + M2 笔电 baseline + M4 軟體 stub → 仍走 Plan A
 - W2 review(5/29):各子系統能單獨運作 → 走 Plan A;若 STM32 韌體 build 失敗 → 降 Plan C
 - W3 review(6/5):M3 + M4 達成 → 走 Plan A;M3 削峰 ratio < 3× → 降 Plan C;LIVE row 接不通 → 降 Plan D
 - W4 dry-run(6/10):demo 流程順暢 → 維持 Plan A;**不可拖到複賽日才降階**
@@ -1098,18 +1098,18 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 | 工作 | 動的檔案 | 狀態(v1.3) |
 |---|---|---|
-| `live_demonstrator.json` schema 加進 dashboard | `apps/web/src/app/dashboard/dashboard-client.tsx` + `apps/web/public/scenarios/live_demonstrator.json`(新)| ✅ 完成 |
-| LIVE row 視覺強調(綠色光暈 + LIVE pulse 動畫) | `apps/web/src/components/live-demonstrator-card.tsx`(新)| ✅ 完成 |
-| Bridge stub + atomic write | `scripts/live_demonstrator_bridge.py` + `scripts/atomic_json.py`(新)| ✅ 完成(mock + bench modes) |
-| JK-BMS RS485 parser | `scripts/jkbms.py`(新)| ✅ 完成(checksum + 8S response 自測) |
-| E-load profile 控制 | `scripts/eload_gb200_profile.py`(新)| ✅ 完成(PX100 protocol,Atorch stub) |
-| M2 latency 量測 | `scripts/measure_lstm_latency.py`(新)| ✅ 完成(笔电 baseline,Pi 5 swap ready) |
-| Hybrid 控制律 Python emulator | `scripts/hybrid_control_emulator.py`(新)| ✅ 完成(對齊 §1.3 sim 5.72×) |
-| Vercel cache header for LIVE JSON | `apps/web/vercel.json`(修)| ✅ 完成(v1.3 review H3) |
-| `PRESENTATION_GUIDE.md` 增「複賽 demo SOP」 + Q7-Q10 | `PRESENTATION_GUIDE.md`(修)| ✅ 完成 |
-| 白皮書 §2.1.1 demonstrator 5C/1C footnote | `docs/whitepaper_restructured.md` §2.1.1 E 表(修)| ✅ 完成(v1.3 review B4) |
-| ⏭️ `/twin` 加 Bench Validation cards | `apps/web/src/app/twin/page.tsx` 或新 route | ⏭️ skippable,W4 dry-run 後若有時間再做 |
-| ⏭️ 白皮書 §8.2 路線圖補「demonstrator 已運作」 | `docs/whitepaper.md` `docs/whitepaper_restructured.md` §2 | ⏭️ skippable,複賽當天 PRESENTATION_GUIDE Q7-Q10 已 cover |
+| `live_demonstrator.json` schema 加進 dashboard | `apps/web/src/app/dashboard/dashboard-client.tsx` + `apps/web/public/scenarios/live_demonstrator.json`(新)| [v] 完成 |
+| LIVE row 視覺強調(綠色光暈 + LIVE pulse 動畫) | `apps/web/src/components/live-demonstrator-card.tsx`(新)| [v] 完成 |
+| Bridge stub + atomic write | `scripts/live_demonstrator_bridge.py` + `scripts/atomic_json.py`(新)| [v] 完成(mock + bench modes) |
+| JK-BMS RS485 parser | `scripts/jkbms.py`(新)| [v] 完成(checksum + 8S response 自測) |
+| E-load profile 控制 | `scripts/eload_gb200_profile.py`(新)| [v] 完成(PX100 protocol,Atorch stub) |
+| M2 latency 量測 | `scripts/measure_lstm_latency.py`(新)| [v] 完成(笔电 baseline,Pi 5 swap ready) |
+| Hybrid 控制律 Python emulator | `scripts/hybrid_control_emulator.py`(新)| [v] 完成(對齊 §1.3 sim 5.72×) |
+| Vercel cache header for LIVE JSON | `apps/web/vercel.json`(修)| [v] 完成(v1.3 review H3) |
+| `PRESENTATION_GUIDE.md` 增「複賽 demo SOP」 + Q7-Q10 | `PRESENTATION_GUIDE.md`(修)| [v] 完成 |
+| 白皮書 §2.1.1 demonstrator 5C/1C footnote | `docs/whitepaper_restructured.md` §2.1.1 E 表(修)| [v] 完成(v1.3 review B4) |
+| (skip) `/twin` 加 Bench Validation cards | `apps/web/src/app/twin/page.tsx` 或新 route | (skip) skippable,W4 dry-run 後若有時間再做 |
+| (skip) 白皮書 §8.2 路線圖補「demonstrator 已運作」 | `docs/whitepaper.md` `docs/whitepaper_restructured.md` §2 | (skip) skippable,複賽當天 PRESENTATION_GUIDE Q7-Q10 已 cover |
 
 ---
 
@@ -1131,14 +1131,14 @@ STATE_FAULT         : 任何 fault → 全 PWM = 0, contactor OPEN, K1 OPEN
 
 # Annex A · 規劃初期內部 self-review(v1.0 階段,2026-05-16)
 
-> 此 Annex 為**規劃 v1.0 時團隊自我審視紀錄**,所列 ⚠️ 項目已在後續 v1.1–v1.10 迭代中**全部解掉**(對應修補見 Annex B 修訂歷史)。保留此 Annex 作為**透明工程過程證據** — 規劃初期不藏短處,後續 9 輪迭代逐項回應。
+> 此 Annex 為**規劃 v1.0 時團隊自我審視紀錄**,所列 (!) 項目已在後續 v1.1–v1.10 迭代中**全部解掉**(對應修補見 Annex B 修訂歷史)。保留此 Annex 作為**透明工程過程證據** — 規劃初期不藏短處,後續 9 輪迭代逐項回應。
 
-- ✅ **誠實揭露**:Part 0 就講「26 天 5 萬做不出 spec-grade」,沒拿幻想說服自己。
-- ✅ **對齊 v2.2 spec**:demonstrator 規格(τ=0.5 s、互補濾波器、INT8 LSTM)直接 link 到 `generate_twin_scenarios.py` 與既有 ONNX。Per-cell C-rate 工作點(6C peak / 1.5C 連續)與 spec 一致 — 這是「縮放但不違背」的關鍵論述。
-- ⚠️ **預算抓得緊**:46.5k / 50k 只剩 7 % buffer → **v1.3 lean BoM reframe 解決**(降到 33,700,buffer 升到 16,300);後續 v1.4–v1.10 採購通路升級 + 備品到 43,801,buffer NT$ 6,199(warning line 上方 NT$ 1,199)。
-- ⚠️ **STM32N6 lead time 是最大未知** → **v1.3 critical-path-only mode 解決**:Pi 5 升 lean 預設,STM32N6 降 stretch goal。
-- ⚠️ **安全部分仍偏紙上**(Class D 滅火器台灣難買) → **v1.2 解決**:BoM 改用 Lith-Ex 噴罐(蝦皮現貨 NT$ 1,200)。
-- ⚠️ **未驗證的單一假設**(8S 縮放 5.7×/3.5× 能否成立) → **v1.3 §1.3 W1 Day 1 模擬 gate 解決**:`scripts/generate_scaled_8s_sim.py` 2026-05-17 跑出 5.72× / 3.52× **PASS,對齊 spec 到小數位內**。
+- [v] **誠實揭露**:Part 0 就講「26 天 5 萬做不出 spec-grade」,沒拿幻想說服自己。
+- [v] **對齊 v2.2 spec**:demonstrator 規格(τ=0.5 s、互補濾波器、INT8 LSTM)直接 link 到 `generate_twin_scenarios.py` 與既有 ONNX。Per-cell C-rate 工作點(6C peak / 1.5C 連續)與 spec 一致 — 這是「縮放但不違背」的關鍵論述。
+- (!) **預算抓得緊**:46.5k / 50k 只剩 7 % buffer → **v1.3 lean BoM reframe 解決**(降到 33,700,buffer 升到 16,300);後續 v1.4–v1.10 採購通路升級 + 備品到 43,801,buffer NT$ 6,199(warning line 上方 NT$ 1,199)。
+- (!) **STM32N6 lead time 是最大未知** → **v1.3 critical-path-only mode 解決**:Pi 5 升 lean 預設,STM32N6 降 stretch goal。
+- (!) **安全部分仍偏紙上**(Class D 滅火器台灣難買) → **v1.2 解決**:BoM 改用 Lith-Ex 噴罐(蝦皮現貨 NT$ 1,200)。
+- (!) **未驗證的單一假設**(8S 縮放 5.7×/3.5× 能否成立) → **v1.3 §1.3 W1 Day 1 模擬 gate 解決**:`scripts/generate_scaled_8s_sim.py` 2026-05-17 跑出 5.72× / 3.52× **PASS,對齊 spec 到小數位內**。
 
 ---
 
@@ -1169,9 +1169,9 @@ hybrid 拓樸在物理 / 控制 / ML / 商業 4 層皆 close-loop 驗證,且 RD 
    - § 0.5.1 為什麼 pivot(twin-first vs bench-first 對照表 + SpaceX/Tesla 論述)
    - § 0.5.2 已下單 sunk cost 處置 SOP(每項目「處置 + 動作死線」表;最壞 sunk 17,165 / 預算 34 %)
    - § 0.5.3 v1.x Part 3-6 為什麼保留(answers「pivot ≠ 棄置 v1.x 工作」)
-8. **Part 3-9 加 banner**:標「⚠️ v1.x archive · v2.0 已 descope」+ 指向新摘要;**內容不刪**(engineering process evidence + EVT 2026 Q3 重啟用)
+8. **Part 3-9 加 banner**:標「(!) v1.x archive · v2.0 已 descope」+ 指向新摘要;**內容不刪**(engineering process evidence + EVT 2026 Q3 重啟用)
 9. **Part 11 next-steps**:加 v2.0 update,V1-V6 → EVT 2026 Q3 → Tier-2 colo PoC 三 milestone 軌跡
-10. **`docs/PURCHASE_LIST.md`**:bump v1.10 → v2.0;每 SKU 加「v2.0 處置」欄;新增「§ v2.0 sunk cost / 可挽回 / 取消」總表 + 7 天動作死線(2026-06-02)
+10. **`docs/archive_v1.x/PURCHASE_LIST.md`**:bump v1.10 → v2.0;每 SKU 加「v2.0 處置」欄;新增「§ v2.0 sunk cost / 可挽回 / 取消」總表 + 7 天動作死線(2026-06-02)
 11. **`docs/whitepaper.md` §8.3 + `whitepaper_restructured.md` §2.8**:bump v1.2 → v1.3;改寫硬體 M1-M4 narrative 為 twin V1-V6 chains;刪 BoM 帳目 / 三層安全 SOP / Plan A→E 三節(不適用 twin-only);保留並更新一致性 self-check 表
 12. **新增 `docs/RD_BRIEF.md` v0.1**:RD / 顧問 executive brief(2 頁 A4 PDF,6 條 gap + Twin-first 論述 + 跨領域 4 個 entry points)
 13. **新增 `docs/INVESTOR_BRIEF.md` v0.1**:顧問 / 投資人 1 頁 narrative brief(less technical / more business)
@@ -1244,7 +1244,7 @@ Annex B v1.0 - v1.10 條目(歷史不修);Part 10 軟體側工作(v2.0 仍適用
    - M3:**bench LFP RMS ratio ≥ 1/3 + V_cell pp ratio ≥ 1/2**(寬鬆於 sim 5.7×/3.5×,實機損耗 budget)
    - M4:DL24M 增載 → **dashboard 30 秒內**看到 V 微降 / 溫度升
    - **Bench 寬鬆於 sim** 的理由寫清楚(MOSFET Rds(on)/shunt 延遲/firmware tick rate/寄生電感/PCB layout 損耗)
-   
+
 2. **§2.1 LFP cell qty 8 → 12**(對齊 proposal_v2 BoM「LFP 26650 cell ×12」):
    - 8 主用 + **4 備品**(DOA replacement + cell-matching 池;§4.2.1 SOP 從 12 顆挑 OCV 偏差最小的 8 顆組 8S1P)
    - 小計 +NT$ 1,000(2,000 → 3,000)
@@ -1328,7 +1328,7 @@ Annex B v1.0 - v1.10 條目(歷史不修);Part 10 軟體側工作(v2.0 仍適用
    - 電子負載 **DL24P 150W → DL24M 600W**(+NT$ 2,000),因 demonstrator peak 650 W
    - 小計重算:借得到點焊機 NT$ 47,600 / 借不到 NT$ 44,100;buffer 從 ~7 % 收緊到 ~5–12 %
 4. **§5.3 Headline 實驗**:測試設定數字對齊 sim — 500 W baseline、pass 條件 ≥ 4×(留 30 % bench noise margin)
-5. **§7 W1 timeline**:gate 標記為 5/17 已完成 ✅;採購行程從 Sat 5/16 順延 Sun 5/17(因 gate 實際在 5/17 完成);Maxwell 通路 fallback 規則新增。
+5. **§7 W1 timeline**:gate 標記為 5/17 已完成 [v];採購行程從 Sat 5/16 順延 Sun 5/17(因 gate 實際在 5/17 完成);Maxwell 通路 fallback 規則新增。
 6. **新工具**:`scripts/generate_scaled_8s_sim.py` — 重跑 gate 用,改 BASELINE_KW 或 CONFIGS 即可 re-validate。
 
 **未動的章節**(v1.2 review 確認仍正確):Part 4 韌體選型(MOSFET 30 A 級在新降載後反而更輕鬆,IRFB4115 + UCC27282 維持)、Part 6 安全 SOP、Part 9 fallback 階梯、Part 11 next-steps。
@@ -1338,7 +1338,7 @@ Annex B v1.0 - v1.10 條目(歷史不修);Part 10 軟體側工作(v2.0 仍適用
 **觸發**:用戶 review BoM 1A 的「INA226 模組 × 2 NT$ 200」時注意到 32V supercap bank 在 INA226 36V 上限只剩 11% 餘量,bounce-back 場景(datasheet WARNING)可能踩線。WebFetch DigiKey 台 Adafruit 5832(STEMMA QT INA228 breakout)確認現貨 671 pcs 單價 NT$ 538;以「85V 量程 + 20-bit ADC + integrated coulomb / joule accumulator」三項升級理由,值得 +NT$ 876 升階。
 
 **驗證結果**(INA228 vs INA226):
-- 電壓量程:**85V**(vs INA226 36V)— supercap 32V 餘量從 11% → 165% ✅
+- 電壓量程:**85V**(vs INA226 36V)— supercap 32V 餘量從 11% → 165% [v]
 - ADC:**20-bit**(vs INA226 16-bit)— 解析度 ×16,4 mA 級電流分辨
 - 整合:V/I/P + **coulomb counter + energy accumulator**(vs INA226 只 V/I/P)— M3 削峰量測直接讀累積能量,不需軟體積分
 - onboard shunt 15mΩ → 量程 ±10.9A,supercap path 9.3A peak 直接用;LFP path 25A peak 走外接 5mΩ shunt 或讀 JK-BMS 回報
@@ -1367,7 +1367,7 @@ Annex B v1.0 - v1.10 條目(歷史不修);Part 10 軟體側工作(v2.0 仍適用
 **觸發 2(DL24M 品牌)**:用戶傳露天 listing `ATORCH DL24M 150W 可並聯 600W`,WebSearch 三條交叉驗證後確認 BoM 寫的「RIDEN DL24M」品牌錯誤 — DL24 系列(DL24 / DL24P / DL24M / DL24MP / DL24M-H)全屬 **ATORCH(炬為)**;**RIDEN** 是另一品牌(做 DPS5020 / RD60XX 雙向電源,無電子負載線)。露天那台「DL24M 150W 並聯 600W」實為 DL24(150W) 冒充 DL24M。真正 DL24M 是**單機 600W**,透過 jumper cap + 軟體切 150 / 300 / 450 / 600 W 4 mode。
 
 **驗證結果**(C02 vs B02 同 family):
-- 電氣:16V / 58F / 22mΩ ESR — 完全一致 ✅
+- 電氣:16V / 58F / 22mΩ ESR — 完全一致 [v]
 - IDCMAX(datasheet 嚴謹版):14A @ ΔT=15°C / 23A @ ΔT=40°C;9.3A 工作點最保守 34 % 餘量(原 B02 標的 19A 是中間折衷標式)
 - IPEAK:190 A(B02 標 200 A 是 round-up)
 - 端子:M5 螺絲(4 Nm 扭力);完美相容 ring lug + 10 AWG 矽膠線 + Anderson SB50
@@ -1391,21 +1391,21 @@ Annex B v1.0 - v1.10 條目(歷史不修);Part 10 軟體側工作(v2.0 仍適用
 
 ## v1.3(2026-05-17,範圍重新界定「不交付完整 BBU,改交付 4 件可行性證據」)
 
-**觸發**:用戶觀察「做出 BBU」≠「證明可行性」,直接拆出 4 件 critical-path 證據,並列出 ⏭️ 可砍清單。重新檢視全文發現 v1.2 規劃為「完整 demonstrator」加了不少不直接是 critical path 的工作。
+**觸發**:用戶觀察「做出 BBU」≠「證明可行性」,直接拆出 4 件 critical-path 證據,並列出 (skip) 可砍清單。重新檢視全文發現 v1.2 規劃為「完整 demonstrator」加了不少不直接是 critical path 的工作。
 
 **核心 reframe**:**「critical-path-only mode」** — 4 件可被評審 challenge 的證據(模擬 gate / 削峰波形 / NPU latency / dashboard LIVE row)是充分條件,其他都是支撐 infrastructure(safety enabler)或加分(skippable)。
 
 **修訂**:
 
-1. **§0.4 新增**「Critical-path-only mode」總綱:4 件證據定義 + 🎯/🛡️/⏭️ 三層標記法。
+1. **§0.4 新增**「Critical-path-only mode」總綱:4 件證據定義 + //(skip) 三層標記法。
 2. **§1.2 重寫**:「3 件事」→ **4 件 critical-path 證據**(把模擬 gate 升格為獨立證據,而不是只當作 W1 工作項)。
 3. **§2 拆兩版**:
-   - **§2.1 Lean BoM(推薦)** NT$ ~33,700(v1.3 release-time;後續 B1+H1 patch 升到 ~38,250),只留 🎯 + 🛡️
+   - **§2.1 Lean BoM(推薦)** NT$ ~33,700(v1.3 release-time;後續 B1+H1 patch 升到 ~38,250),只留 +
    - **§2.2 Full BoM(v1.2 凍結)** NT$ ~47,900,保留作 stretch / 對照
    - Lean 砍掉:STM32N6 → Pi 5(省 4,500)、LEM Hall → INA226(省 2,800)、cell 16→8 顆(省 2,000)、第 2 顆 STM32(省 600)、DPS5020(省 1,800)、點焊機(省 3,500)、PPE 簡化、散熱簡化 — **共省 NT$ 14,200,buffer 從 NT$ 2,100 → 16,300**。
-4. **§5 加標記**:每個測項標 🎯/🛡️/⏭️;§5.3 / §5.4 明標 critical path #2/#3/#4;§5.1 cell 配對降階為「OCV 粗篩 30 min」(原 10A 放電 4 hr)。
+4. **§5 加標記**:每個測項標 //(skip);§5.3 / §5.4 明標 critical path #2/#3/#4;§5.1 cell 配對降階為「OCV 粗篩 30 min」(原 10A 放電 4 hr)。
 5. **§7 圍繞 4 milestone 重排**:
-   - M1 = §1.3 模擬 gate ✅(2026-05-17)
+   - M1 = §1.3 模擬 gate [v] (2026-05-17)
    - M2 = 邊緣推論 latency histogram(預定 2026-05-24,Pi 5 + onnxruntime,**不需等硬體到貨**)
    - M3 = Hybrid 削峰實機波形(預定 2026-06-02)
    - M4 = Dashboard LIVE row E2E(預定 2026-06-04)
@@ -1414,4 +1414,4 @@ Annex B v1.0 - v1.10 條目(歷史不修);Part 10 軟體側工作(v2.0 仍適用
 
 **未動的章節**:Part 0.1–0.3 現實檢查、Part 3 系統架構、Part 4 韌體實作、Part 6 安全 SOP、Part 8–11 風險 / fallback / 軟體側 / next-steps、Part 12 v1.0 self-review。
 
-**心法**:M1 已 ✅;M2 純軟體可在 W2 上半完成,M3 / M4 留 W3 完整一週 — 比 v1.2「線性 W1 採購 → W2 組裝 → W3 整合」抗風險強很多。Plan A → Plan E fallback 階梯(§9)未動,critical-path-only mode 落在 Plan A / B 之間。
+**心法**:M1 已 [v];M2 純軟體可在 W2 上半完成,M3 / M4 留 W3 完整一週 — 比 v1.2「線性 W1 採購 → W2 組裝 → W3 整合」抗風險強很多。Plan A → Plan E fallback 階梯(§9)未動,critical-path-only mode 落在 Plan A / B 之間。

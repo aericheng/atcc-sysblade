@@ -10,7 +10,7 @@
  *   - 10 Hz telemetry uplink to Pi 5 over USART2
  *   - E-stop EXTI on PB2 → fault state, all PWM = 0 in < 1 ms
  *
- * ⚠️ SKELETON — uses placeholder hal_stub.h. Replace with stm32f4xx_hal.h and
+ * (!) SKELETON — uses placeholder hal_stub.h. Replace with stm32f4xx_hal.h and
  * CubeMX-generated pin init before flashing. See README.md.
  */
 

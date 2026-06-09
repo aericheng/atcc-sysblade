@@ -2,8 +2,8 @@
 
 > **v2.0 凍結 · 2026-05-26**(Twin-first pivot — v1.x 已下單部分列入 sunk cost / 可挽回標註,Wave 2-3 全部取消)
 > v1.x → v2.0:**整個硬體 demonstrator 路線 descope**;v2.0 critical path 是 6 條 twin validation chains(V1-V6,純軟體 / 純 sim),**增量採購 NT$ 0**。下方 v1.x 38 SKU 表保留為**已執行採購歷史 + 處置狀態**。
-> 對應 BoM(v1.x archive):[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md)(v1.10 凍結時的最終 BoM)
-> 對應 v2.0 計畫:[docs/BBU_IMPLEMENTATION_PLAN.md § 摘要 + § 0.5](BBU_IMPLEMENTATION_PLAN.md)
+> 對應 BoM(v1.x archive):[docs/BBU_IMPLEMENTATION_PLAN.md §2.1](../BBU_IMPLEMENTATION_PLAN.md)(v1.10 凍結時的最終 BoM)
+> 對應 v2.0 計畫:[docs/BBU_IMPLEMENTATION_PLAN.md § 摘要 + § 0.5](../BBU_IMPLEMENTATION_PLAN.md)
 
 ---
 
@@ -29,7 +29,7 @@
 
 ---
 
-## ⚠️ 以下為 v1.x archive(2026-05-22 v1.10 凍結時的採購清單)
+## (!) 以下為 v1.x archive(2026-05-22 v1.10 凍結時的採購清單)
 
 > v2.0 已 descope。**保留為 engineering process evidence**(評審看到 procurement
 > rigor + sourcing 防偽 SOP + datasheet 嚴謹化的軌跡是加分點),**但 v2.0
@@ -51,15 +51,15 @@
 
 ---
 
-## 🔥 第一波 — TODAY 5/17 PM 立刻下單(W1 內必到)
+## 第一波 — TODAY 5/17 PM 立刻下單(W1 內必到)
 
 ### 1A. 蝦皮 / 露天(1-3 天到)— 小計 ~14,520(v1.10:STM32 備品 + holder 單節 + DS18B20 備品 + 5Ω 實價)
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
 | LFP 26650 3.2V/5Ah | **12** | **3,000** | `LFP 26650 5Ah`、`磷酸鋰鐵 26650`、`EVE 26650 5000mAh`、`A123 26650 高功率` | **v1.8 對齊 proposal_v2**:8 主用 + **4 備品**(DOA replacement + cell-matching 池);**5 防呆**:① 標 3.2V(不是 3.7V Li-ion)② 充飽 3.65V(不是 4.2V)③ 化學系統 LiFePO4 / 磷酸鋰鐵(不是 NCM/NMC/NCA)④ prefix IFR(不是 ICR/INR)⑤ 連續放電 ≥ 2C(我們 25A peak 要求);同批號;避開 NCR / BRC 假料品牌 |
-| **26650 單節電池盒 BH-26650-1**(廣華) | **10** | **300** | 廣華 shop.cpu.com.tw `BH-26650-1`;或蝦皮 `26650 單節 電池盒 彈片` | **v1.10**:台灣無 8 串整盒 → 單節 holder × 10 排 8S1P(8 用 + 2 備);NT$ 30/顆;★★★★★(2 節款 ★★ 避開);79×29×29mm,A123 平頭相容;Endrich 若答帶 tab 則當純機械座 |
-| **JK-BMS 8S 100A**(限 JK-B 系列,含 RS485 customization) | 1 | 3,800 | `JK-BMS 8S B1A8S20P`、`極空 BMS JK-B` | **v1.6 升**:基礎 USD $89.98 + checkout 必勾 ☑ RS485 → ~USD $110-125 ≈ NT$ 3,800;☐ CANBus / ☐ Display / ☐ Heating 不勾;**勿買 DZ11/PB1**(jkbms.py offset 不同) |
+| **26650 單節電池盒 BH-26650-1**(廣華) | **10** | **300** | 廣華 shop.cpu.com.tw `BH-26650-1`;或蝦皮 `26650 單節 電池盒 彈片` | **v1.10**:台灣無 8 串整盒 → 單節 holder × 10 排 8S1P(8 用 + 2 備);NT$ 30/顆;(2 節款 避開);79×29×29mm,A123 平頭相容;Endrich 若答帶 tab 則當純機械座 |
+| **JK-BMS 8S 100A**(限 JK-B 系列,含 RS485 customization) | 1 | 3,800 | `JK-BMS 8S B1A8S20P`、`極空 BMS JK-B` | **v1.6 升**:基礎 USD $89.98 + checkout 必勾 [v] RS485 → ~USD $110-125 ≈ NT$ 3,800;[ ] CANBus / [ ] Display / [ ] Heating 不勾;**勿買 DZ11/PB1**(jkbms.py offset 不同) |
 | **JK-BMS GX12-DuPont RS485 cable**(加購)| 1 | 200 | 同 JK-BMS 賣家頁面「RS485 Adapter Cable: Sold separately as optional add-on」 | JK-B RS485 訊號出在 4-pin GX12 port(俗稱 "GPS port"),需 cable 把 GX12 → DuPont 才能接 ICShop FT232+SP485EEN dongle |
 | STM32 Black Pill F411 | **2** | **1,200** | `STM32F411 Black Pill`、`WeAct F411CE` | F411CE 512KB;USB-C;**v1.10:1 用 + 1 備品**(控制大腦,3.3V GPIO 接 32V 電路易 brick,W3 死線備品可當場換) |
 | **ATORCH DL24M-H 600W 套組** | 1 | 4,500 | `DL24M-H 600W`、`ATORCH DL24M-H`、`DL24M 600W 套組` | **v1.10 修正 v1.4 錯誤**:無「單機 600W」DL24M —— 單一模組僅 150W;600W = **DL24M-H 完整套組(master + 3 擴充模組,150W×4)**。下單**必問賣家「master + 3 擴充模組附齊?」**;避開 DL24(150W)/ DL24P(180W)誤購;蝦皮無貨 → AliExpress ATORCH 官方店;USB 可程式 + 4 線 Kelvin;**套組實價待確認,可能異動 Buffer** |
@@ -86,7 +86,7 @@
 
 **v1.4 通路升 DigiKey 理由**:Heisener B02 通路缺貨(v1.2 記錄 6,732 pcs 已售完);DigiKey 台 stock 26 pcs C02 隔日到貨、台幣計價、發票退換貨機制完整,差價 NT$ 1,608(+18 %)Buffer 吃得下,免「Heisener 24h email 追單」的時間壓力。
 
-⚠️ **datasheet WARNING(收貨當日必做)**:Maxwell 模組未短路保存 +/- 端可能 bounce back 至 2 V → 收到後**第一動作:萬用表量 +/- 兩端**,若 > 0 V 用 5 Ω 預充電阻跨接放電 30 秒。串聯 / 預充 SOP 全程在 §4.5.5。
+(!) **datasheet WARNING(收貨當日必做)**:Maxwell 模組未短路保存 +/- 端可能 bounce back 至 2 V → 收到後**第一動作:萬用表量 +/- 兩端**,若 > 0 V 用 5 Ω 預充電阻跨接放電 30 秒。串聯 / 預充 SOP 全程在 §4.5.5。
 
 **INA228 規格驗證**(對 TI INA228 datasheet + Adafruit 5832 schematic):85V 量程(supercap 32V 餘量 165%)/ 20-bit ADC / I²C 介面 / onboard shunt **R015 = 15 mΩ**(滿量程 ±10.9 A)/ STEMMA QT JST-SH 4-pin + 7 腳排針座(板上未焊,需自焊)/ ADR0+ADR1 跳線 4 種 address(預設 0x40)。**用法**:#1 量 supercap path(15 mΩ 直用,9.3 A peak 在量程內 85%);#2 量 LFP path(25 A peak 須**外接 5 mΩ shunt** 跨 VIN+ / VIN- 螺絲端子,將量程拉到 ±32 A;或讀 JK-BMS RS485 回報 I_total 反推)。2 顆並掛同條 I²C bus,**第 2 顆把 ADR0 跳線改 0x41**。
 
@@ -105,12 +105,12 @@
 |---|---:|---:|---|---|
 | ~~Raspberry Pi 5 8GB~~ | ~~1~~ | ~~4,500~~ | (**v1.7 移到 1B DigiKey 同單**)| 已升 NT$ 5,600(DigiKey SC1432)|
 | **5V/5A USB-C PSU**(Raspberry Pi 官方 27W)| 1 | 600 | 蝦皮 RS / iCircuit 官方店;或 Pi 5 同店 | **必 5V/5A 規格**(手機充電器 / 一般 USB-C PSU 會限流 → Pi 5 throttle / 開機掛)|
-| **SanDisk Extreme 32GB UHS-I C10 U3**(優先 A1) | 1 | 300-400 | **SanDisk 官方旗艦店 / WD 台灣 / PChome / momo / 博客來 / Costco** | ⚠️ **SanDisk 仿冒重災區**;**禁:蝦皮路邊、Aliexpress、Alibaba**;收貨用 **h2testw** 驗容量;若有 A1 標示同價就買 A1(Pi OS 開機 25s vs 45s)|
+| **SanDisk Extreme 32GB UHS-I C10 U3**(優先 A1) | 1 | 300-400 | **SanDisk 官方旗艦店 / WD 台灣 / PChome / momo / 博客來 / Costco** | (!) **SanDisk 仿冒重災區**;**禁:蝦皮路邊、Aliexpress、Alibaba**;收貨用 **h2testw** 驗容量;若有 A1 標示同價就買 A1(Pi OS 開機 25s vs 45s)|
 | **micro-HDMI to HDMI 線 1m** | 1 | 200-300 | 蝦皮 | **micro-HDMI 不是 mini-HDMI**;Pi 5 有 2 個 micro-HDMI port |
 
 ---
 
-## 🛡️ 第二波 — 5/18 接電前必到(蝦皮 / momo 翌日到)— 小計 ~6,400(2 項可借)
+## 第二波 — 5/18 接電前必到(蝦皮 / momo 翌日到)— 小計 ~6,400(2 項可借)
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
@@ -118,16 +118,16 @@
 | 100A DC 接觸器 + E-stop | 1 套 | 1,100 | `DC 接觸器 100A 12V`、`E-stop 緊急停止按鈕` | **DC rated**(AC contactor 直流會 arc);12V 線圈 |
 | **Class T 100A fast-blow fuse** | 1 套 | 800 | `Class T fuse 100A`、`Bussmann JJN-100` | **必 Class T / semiconductor fuse**(ANL 擋不住 supercap 5kA 短路) |
 | 1.5kV 絕緣手套 + 護目鏡 | 1 套 | 800 | `絕緣手套 1000V 電工`、`護目鏡 安全 防衝擊` | EN 60903 Class 0+;含側護 |
-| **Lith-Ex / F-500 鋰電池滅火噴罐** | 1 | 1,200 | `Lith-Ex 鋰電池滅火`、`F-500 噴罐` | **必鋰電池專用**(ABC 一般滅火器 ❌) |
+| **Lith-Ex / F-500 鋰電池滅火噴罐** | 1 | 1,200 | `Lith-Ex 鋰電池滅火`、`F-500 噴罐` | **必鋰電池專用**(ABC 一般滅火器 [x]) |
 | 矽膠線 10AWG + Anderson SB50 + 熱縮套 | 1 套 | 800 | `矽膠線 10AWG`、`Anderson SB50 紅` | 矽膠絕緣(PVC 耐熱不夠) |
 | 1µF 50V X7R MLCC(UCC27282 bootstrap) | **10** | **60** | `1uF 50V X7R 0805` | X7R 非 Y5V;**v1.10:4→10 備品**(被動件焊接必損耗);若改 IR2110 改 10µF 50V 電解 |
 | UF4007 二極體 | **10** | 50 | `UF4007 快速恢復` | trr < 75ns;**v1.10:4→10 備品**(relay 線圈 flyback + 保護;銅板價多買) |
-| ★ bench PSU 30V/3A(借不到才買) | 1 | 1,500 | `EVENTEK DPS3010`、`UNI-T UTP3315TFL` | **優先借學校 EE 系** |
-| ★ 數位萬用表(借不到才買) | 1 | 800 | `Fluke 17B+`、`UNI-T UT139C` | **優先借學校 EE 系** |
+| bench PSU 30V/3A(借不到才買) | 1 | 1,500 | `EVENTEK DPS3010`、`UNI-T UTP3315TFL` | **優先借學校 EE 系** |
+| 數位萬用表(借不到才買) | 1 | 800 | `Fluke 17B+`、`UNI-T UT139C` | **優先借學校 EE 系** |
 
 ---
 
-## 🔧 第三波 — 5/25 前到(W3 整合用)— 小計 2,200
+## 第三波 — 5/25 前到(W3 整合用)— 小計 2,200
 
 | 品項 | 數 | NT$ | 搜尋 query | 確認重點 |
 |---|---:|---:|---|---|
@@ -137,7 +137,7 @@
 
 ---
 
-## 📦 借的清單(優先嘗試 · 可省 NT$ 2,300+)
+## 借的清單(優先嘗試 · 可省 NT$ 2,300+)
 
 | 項目 | 找誰借 | 沒借到怎辦 |
 |---|---|---|
@@ -169,7 +169,7 @@
 
 ---
 
-## ⚠️ 風險警示(下單前必讀)
+## (!) 風險警示(下單前必讀)
 
 | 風險 | 機率 | 對策 |
 |---|:--:|---|
@@ -189,9 +189,9 @@
 
 ## 對應 BoM / 計畫 / 韌體交叉引用
 
-- BoM 完整 25 列細目 → [BBU_IMPLEMENTATION_PLAN.md §2.1](BBU_IMPLEMENTATION_PLAN.md)
+- BoM 完整 25 列細目 → [BBU_IMPLEMENTATION_PLAN.md §2.1](../BBU_IMPLEMENTATION_PLAN.md)
 - LFP 首充 CC/CV SOP → §4.2.1
 - Supercap pre-charge 三層防線 SOP → §4.5.5
 - 4 件 critical-path milestone(M1-M4)→ §1.2 + §7 時程表
-- 答辯硬問(Q7-Q10:8S vs 15S / Maxwell vs Eaton / Pi 5 vs STM32N6 / LIVE row Vercel)→ [PRESENTATION_GUIDE.md](../PRESENTATION_GUIDE.md)
+- 答辯硬問(Q7-Q10:8S vs 15S / Maxwell vs Eaton / Pi 5 vs STM32N6 / LIVE row Vercel)→ PRESENTATION_GUIDE.md(複賽答辯腳本,團隊本機維護,未進公開 repo)
 - Plan A→E fallback 階梯 → §9

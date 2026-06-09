@@ -1,6 +1,6 @@
 # STM32 Hybrid Control Firmware Skeleton
 
-> ⚠️ **v1.x archive · v2.0 已 descope**(2026-05-26 twin-first pivot;2026-05-27
+> (!) **v1.x archive · v2.0 已 descope**(2026-05-26 twin-first pivot;2026-05-27
 > STM32 Black Pill 控制板隨硬體全數退貨)。本 skeleton **不再 W2 開發**,
 > 保留為 v1.x firmware design rigor 工程紀律證據(完整狀態機 + LPF math +
 > pin map + dead-time 互鎖 + 預充電序列)。**v2.0 控制律以

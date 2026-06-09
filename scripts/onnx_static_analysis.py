@@ -305,9 +305,9 @@ def render_markdown(report: dict, quant: dict | None) -> str:
     A(f"| 資源 | 模型需求 | NPU 容量 | 配適? |")
     A(f"|---|---:|---:|:---:|")
     A(f"| Weight FLASH | {report['weights_int8_kb_estimated']} KB | 1638.4 KB | "
-      f"{'✅' if report['fits_npu_flash'] else '❌'} |")
+      f"{'[v]' if report['fits_npu_flash'] else '[x]'} |")
     A(f"| Activation SRAM | {report['activation_peak_int8_kb']} KB | 1024 KB | "
-      f"{'✅' if report['fits_npu_sram'] else '❌'} |")
+      f"{'[v]' if report['fits_npu_sram'] else '[x]'} |")
     A("")
     A("## C.3 Op dispatch breakdown")
     A("")
@@ -319,9 +319,9 @@ def render_markdown(report: dict, quant: dict | None) -> str:
         cnt = report["by_op_count"][op]
         disp = OP_DISPATCH.get(op, "cpu")
         symbol = {
-            "npu": "✅ NPU",
-            "partial": "🟡 NPU (部分)",
-            "cpu": "❌ CPU fallback",
+            "npu": "[v] NPU",
+            "partial": "(黃) NPU (部分)",
+            "cpu": "[x] CPU fallback",
             "removed": "— (graph opt 移除)",
         }[disp]
         A(f"| `{op}` | {cnt} | {symbol} |")
@@ -360,7 +360,7 @@ def render_markdown(report: dict, quant: dict | None) -> str:
     A("|---|---|:---:|---:|---:|")
     sorted_rows = sorted(report["per_node"], key=lambda r: -r["macs_estimated"])
     for row in sorted_rows[:10]:
-        disp_symbol = {"npu": "✅", "partial": "🟡", "cpu": "❌", "removed": "—"}.get(
+        disp_symbol = {"npu": "[v]", "partial": "(黃)", "cpu": "[x]", "removed": "—"}.get(
             row["dispatch"], "?"
         )
         weight_kb = row["weights_int8_bytes"] / 1024

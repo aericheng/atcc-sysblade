@@ -2,7 +2,7 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
-[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📘 技術白皮書 v1.3**](docs/whitepaper.md) · [**📕 精煉版 v1.3**](docs/whitepaper_restructured.md) · [**🔧 實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**🎯 RD Brief**](docs/RD_BRIEF.md) · [**💼 Investor Brief**](docs/INVESTOR_BRIEF.md)
+[**Live demo**](https://sysblade-atcc.vercel.app) · [**技術白皮書 v1.3**](docs/whitepaper.md) · [**精煉版 v1.3**](docs/whitepaper_restructured.md) · [**實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**RD Brief**](docs/RD_BRIEF.md) · [**Investor Brief**](docs/INVESTOR_BRIEF.md)
 
 > **v2.0 update (2026-05-27)**:複賽路線從 8S 實機 demonstrator(v1.x M1-M4)pivot 到 **6 條 digital-twin validation chains(V1-V6)**,target 科技業 RD / 顧問 / 投資人。`make verify` 5-6/6 chains PASS in 75s,GitHub `make verify-fast` 一鍵 CI gate。完整 pivot rationale 見 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 § 0.5。
 
@@ -13,17 +13,17 @@
 針對**北美 Tier-2/3 AI 機房 BBU 市場**的軟硬整合方案 ——
 **LFP + 鋰離子電容(LIC)混合 BBU** 搭配 **Battery Digital Twin SaaS**,一次解掉:
 
-- 🔋 **GB200 毫秒級電壓瞬態** — 純電池 BBU 撐不住 50–200 ms 壓降造成下游 PSU 重啟
-- 🔌 **48 V → ±400 V HVDC 過渡** — Vertiv 等只賣 48 V,客戶 2027 後須 forklift 換代
-- 📊 **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,業界無公開 SaaS 提供 BBU-level RUL
+- **GB200 毫秒級電壓瞬態** — 純電池 BBU 撐不住 50–200 ms 壓降造成下游 PSU 重啟
+- **48 V → ±400 V HVDC 過渡** — Vertiv 等只賣 48 V,客戶 2027 後須 forklift 換代
+- **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,業界無公開 SaaS 提供 BBU-level RUL
 
-**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點⭐見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
+**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
 
 > †「~25 %」的主要來源是 **BBU 低 duty 排程**(§G.3 `duty_factor=0.33`,~50 cyc/yr vs Severson 1C/1C 實驗室 cadence),**不是** hybrid 拓樸貢獻;hybrid 拓樸的 per-Ah 損傷差由 rainflow + Wang 2011 獨立驗證(`aging_rainflow_validation.json`)估算為 worst-case ~5 %、demo waveform 近於 neutral。
 
 ---
 
-## ⭐ 業師最關注點:60 秒 graceful 架構 ── 化解「48C 不可行」誤讀
+## 業師最關注點:60 秒 graceful 架構 ── 化解「48C 不可行」誤讀
 
 **先說結論**:Sysblade per-rack BBU 是 **8 台並聯**架構,**每台 BBU 2.5 kWh / 15 kW peak,
 rack 總能量 20 kWh**;rack peak 120 kW 對應每台 BBU **6C peak per cell(非 48C)**;
@@ -39,7 +39,7 @@ datasheet 不同規格條目允許區內。
 
 | 心算誤讀 | 正確算法 |
 |---|---|
-| 2.5 kWh ÷ 120 kW = **75 秒 → 48C** ❌ | **20 kWh ÷ 120 kW = 600 秒理論** / 60 秒承諾,**8 倍 DoD 餘量,per-cell 6C peak** ✅ |
+| 2.5 kWh ÷ 120 kW = **75 秒 → 48C** [x] | **20 kWh ÷ 120 kW = 600 秒理論** / 60 秒承諾,**8 倍 DoD 餘量,per-cell 6C peak** [v] |
 
 來源交叉一致(架構先行於文件):
 - `scripts/generate_twin_scenarios.py:65` `N_BBU_PER_RACK = 8` · `LFP_PACK_KWH = 2.5` · `TARGET_PEAK_C_RATE = 6.0`
@@ -60,14 +60,14 @@ datasheet 不同規格條目允許區內。
 
 | 工作點 | 持續時間 | 車規 LFP datasheet 規格 | 結論 |
 |---|---|---|---|
-| **6C peak** | < 2 秒 | LG ESS B-series / Samsung SDI 高功率版 pulse 5–10C × 30 秒允許 | ✅ 落在 pulse 允許區 |
-| **1.5C 連續** | 58 秒 | 車規 LFP 連續放電 1–3C 規格 | ✅ 連續允許區下緣 |
+| **6C peak** | < 2 秒 | LG ESS B-series / Samsung SDI 高功率版 pulse 5–10C × 30 秒允許 | [v] 落在 pulse 允許區 |
+| **1.5C 連續** | 58 秒 | 車規 LFP 連續放電 1–3C 規格 | [v] 連續允許區下緣 |
 
 **沒有任何工作點需要「車規 LFP × 連續 6C × 60 秒」**(這個工作點才是 48C
 誤讀的物理不可行點)。Sysblade 設計把 6C 限制在 < 2 秒 pulse、把 60 秒連續
 工作點壓到 1.5C —— 兩個不同的 datasheet 規格條目,各自合規。
 
-📘 **完整推導**:[`docs/whitepaper_restructured.md` §2.1.1](docs/whitepaper_restructured.md)
+**完整推導**:[`docs/whitepaper_restructured.md` §2.1.1](docs/whitepaper_restructured.md)
 (含拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師預期追問與答辯六層完整防禦)。
 
 > **Status**:ATCC 2026 提交版本 — **企劃書 v2.2 修訂版**(2026-05-06)+
@@ -283,15 +283,15 @@ atcc/
 
 | 文件 | 用途 |
 |---|---|
-| [`docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx`](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) | **競賽企劃書 v2.2 修訂版**(2026-05-06,主要繳交版本)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
-| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.3**(2026-05-26)— 完整證據 + 局限討論 + §8.3 複賽 twin-first validation(V1-V6 chains 取代 v1.x M1-M4)|
-| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.3**(Part 1 速覽 / Part 2 細節 / Part 3 競品)+ §2.8 twin-first validation |
+| `docs/proposal_v2.2_additions/…Proposal_v2.2.docx`(含財務,未公開於 repo) | **競賽企劃書 v2.2 修訂版**(2026-05-06,主要繳交版本;canonical 商業 spec)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
+| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.3**(2026-05-26,**canonical 完整版**)— 完整證據 + 局限討論 + §8.3 複賽 twin-first validation(V1-V6 chains 取代 v1.x M1-M4)|
+| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.3** — 衍生自 canonical [`whitepaper.md`](docs/whitepaper.md),供複賽 binder 現場 Q&A 快翻(Part 1 速覽 / Part 2 細節 / Part 3 競品 + §2.8 twin-first validation);數字以 canonical 版為準 |
 | [`docs/BBU_IMPLEMENTATION_PLAN.md`](docs/BBU_IMPLEMENTATION_PLAN.md) | 實作計畫 **v2.0**(2026-05-26)— twin-first 6 條 V1-V6 chains;v1.x 硬體路線保留為 archive(engineering process evidence)|
 | [`docs/BBU_PROPOSAL.md`](docs/BBU_PROPOSAL.md) | 對外繳交提案 **v2.0** — Twin-first Validation 實作企劃 |
-| [`docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx`](docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx) | 複賽實作企劃 **v3.1**(2026-05-28)— 四大面向(軟體深化 + 技術背書 + 商業論證 + IP 法律佈局),取代原 8S 實機 demonstrator 路線;v3.0 → v3.1 校正 KPI #1 LSTM latency 目標、Dashboard 互動模式改 scenario preset switcher、移除已 descope 的 LIVE 元件殘留條目 |
+| `docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx`(含複賽策略,未公開於 repo) | 複賽實作企劃 **v3.1**(2026-05-28)— 四大面向(軟體深化 + 技術背書 + 商業論證 + IP 法律佈局),取代原 8S 實機 demonstrator 路線;v3.0 → v3.1 校正 KPI #1 LSTM latency 目標、Dashboard 互動模式改 scenario preset switcher、移除已 descope 的 LIVE 元件殘留條目 |
 | [`docs/RD_BRIEF.md`](docs/RD_BRIEF.md) | RD / 顧問 2 頁 executive brief — 跨領域 entry point + Twin-first 工程論述 |
 | [`docs/INVESTOR_BRIEF.md`](docs/INVESTOR_BRIEF.md) | 投資人 1 頁 narrative — 三大廠 strategic moat + 商業含義 |
-| [`docs/PURCHASE_LIST.md`](docs/PURCHASE_LIST.md) | 採購清單 **v2.0** — v1.x 採購 2026-05-27 全數退貨完成,v2.0 不依賴硬體 |
+| [`docs/archive_v1.x/PURCHASE_LIST.md`](docs/archive_v1.x/PURCHASE_LIST.md) | 採購清單 **v2.0** — v1.x 採購 2026-05-27 全數退貨完成,v2.0 不依賴硬體 |
 | [`docs/MIRROR_SETUP.md`](docs/MIRROR_SETUP.md) | Standby GitLab/Codeberg mirror SOP(GitHub 帳號 contingency)|
 | [`docs/BINDER_README.md`](docs/BINDER_README.md) | 複賽日紙本 PDF binder 印刷順序 + packing checklist + fallback 階梯 |
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |

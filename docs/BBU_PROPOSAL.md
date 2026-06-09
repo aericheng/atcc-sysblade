@@ -42,12 +42,12 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 
 | # | Validation chain | 證據 artifact | Pass criteria | 狀態 |
 |---:|---|---|---|:--:|
-| **V1** | **PyBaMM Prada2013 vs Severson LFP fit** | `pybamm_lfp_fit_error.json`(3 cells,cycle_life 534-1227)| V RMS error ≤ 5% of plateau | ✅ **PASS** 2.15% RMS |
-| **V2** | **LIC RC vs Maxwell datasheet + nonlinear extensions** | `lic_rc_fit_error.json`(simple RC vs 4 ext + datasheet IPEAK 190A pulse)| max droop error ≤ 10% | ✅ **PASS** 2.93% max err · datasheet 0.000% err |
-| **V3** | **整 rack 60s graceful 整合 sim** | `rack_60s_graceful.json`(8 BBU + LIC + 控制律 + GPU ramp + 熱模型)| T_cell rise < 25K · per-BBU 6C/1.5C 對齊 spec | ✅ **PASS** T_rise 0.10K |
-| **V4** | **N-1 BBU failure redundancy** | `rack_n_minus_1.json`(t=15s 1 台 offline,7 台撐 60s)| per-BBU 連續 ≤ 2.5C · V_cell swing ≤ 500 mV · T_cell ≤ 50°C · LIC headroom > 0 | ✅ **PASS** 4/4 criteria |
-| **V5** | **Severson → BBU duty transfer MAPE** | `severson_transfer_mape.json`(K=24 bagged-GBT,50 BBU 合成 cells) | informational(揭露 cross-regime degradation) | ✅ **Severson 9.04% → BBU 80.20%**(8.9× degradation honestly disclosed)|
-| **V6** | **`make verify` reproducibility gate** | `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 6/6 chains PASS in CI | ✅ **6/6 PASS in 74.7s** |
+| **V1** | **PyBaMM Prada2013 vs Severson LFP fit** | `pybamm_lfp_fit_error.json`(3 cells,cycle_life 534-1227)| V RMS error ≤ 5% of plateau | [v] **PASS** 2.15% RMS |
+| **V2** | **LIC RC vs Maxwell datasheet + nonlinear extensions** | `lic_rc_fit_error.json`(simple RC vs 4 ext + datasheet IPEAK 190A pulse)| max droop error ≤ 10% | [v] **PASS** 2.93% max err · datasheet 0.000% err |
+| **V3** | **整 rack 60s graceful 整合 sim** | `rack_60s_graceful.json`(8 BBU + LIC + 控制律 + GPU ramp + 熱模型)| T_cell rise < 25K · per-BBU 6C/1.5C 對齊 spec | [v] **PASS** T_rise 0.10K |
+| **V4** | **N-1 BBU failure redundancy** | `rack_n_minus_1.json`(t=15s 1 台 offline,7 台撐 60s)| per-BBU 連續 ≤ 2.5C · V_cell swing ≤ 500 mV · T_cell ≤ 50°C · LIC headroom > 0 | [v] **PASS** 4/4 criteria |
+| **V5** | **Severson → BBU duty transfer MAPE** | `severson_transfer_mape.json`(K=24 bagged-GBT,50 BBU 合成 cells) | informational(揭露 cross-regime degradation) | [v] **Severson 9.04% → BBU 80.20%**(8.9× degradation honestly disclosed)|
+| **V6** | **`make verify` reproducibility gate** | `Makefile` + `scripts/verify_all.py` + `.github/workflows/verify.yml` | 6/6 chains PASS in CI | [v] **6/6 PASS in 74.7s** |
 
 **6 條到位 = 完整 close-loop 論述**:V1+V2 物理模型 fit error 量化、V3+V4 系統整合 + N+1 容錯(實機學生階段做不到,正是 twin > hardware 的賣點)、V5 ML pipeline cross-regime 誠實揭露(deployment SOP 的 quantitative justification)、V6 reviewer 30 分鐘 self-check 重跑。
 
@@ -70,7 +70,7 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 
 ---
 
-## ⚠️ 以下為 v1.8 archive · v2.0 已 descope
+## (!) 以下為 v1.8 archive · v2.0 已 descope
 
 > 下方 v1.x 內容(系統規格 scaled-down / 帳目 BoM v1.8 / 4 週硬體時程 / Plan A→E
 > 硬體 fallback / 安全 SOP / 4 大頭條 / 已落地軟體)是 2026-05-19 v1.8 凍結時的
@@ -78,7 +78,7 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 > **engineering process evidence**(評審看到「先做完整硬體規劃才 pivot 到
 > twin-first」的工程紀律是加分點)。**完整 v2.0 spec 與時程在
 > `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0**;Sunk cost 處置 SOP 在
-> `docs/PURCHASE_LIST.md` v2.0 §0(動作死線 2026-06-02)。
+> `docs/archive_v1.x/PURCHASE_LIST.md` v2.0 §0(動作死線 2026-06-02)。
 
 ---
 
@@ -111,7 +111,7 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 | 借設備(學校 EE 系:bench PSU / 萬用表 / 示波器 / 差動探棒)| (借)|
 | **Buffer** | **5,766**(借 PSU+萬用表 → 8,066)|
 
-⚠️ **Warning line NT$ 5,000,目前餘 NT$ 766** — 後續任何升級需明確「不可省」理由。完整 34 SKU 明細見 `docs/PURCHASE_LIST.md` v1.8。
+(!) **Warning line NT$ 5,000,目前餘 NT$ 766** — 後續任何升級需明確「不可省」理由。完整 34 SKU 明細見 `docs/archive_v1.x/PURCHASE_LIST.md` v1.8。
 
 ---
 
@@ -119,7 +119,7 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 
 | 週 | 日期 | 主產出 | 死線 |
 |---|---|---|:--:|
-| **W1** | 5/16-22 | M1 ✅ 模擬 gate PASS;採購全部到貨;軟體 stub(M4 mock + M2 笔电 baseline)全部 ✅ | 5/22 W1 review |
+| **W1** | 5/16-22 | M1 [v] 模擬 gate PASS;採購全部到貨;軟體 stub(M4 mock + M2 笔电 baseline)全部 [v] | 5/22 W1 review |
 | **W2** | 5/23-29 | 組裝 8S LFP pack + supercap bank + STM32 控制板 + Pi 5;cell 首充 + burn-in;**M2 final**(Pi 5 latency)| 5/29 W2 review |
 | **W3** | 5/30-6/5 | 整機接電;hybrid OFF/ON 對照;**M3 削峰實機波形(soft target 6/2 Tue / hard 6/3 Wed,1 天 buffer)**;**M4 LIVE row E2E(6/4 Thu)** | 6/5 W3 review |
 | **W4** | 6/6-11 | 4 件證據整合進簡報;**dry-run × 3 + 備援 artifact**(任一次失敗 → 預錄影片 + screenshot pack `docs/figures/demo_backup/`);Q1-Q10 答辯練習;**複賽日 6/11 demo + 答辯** | 6/11 複賽日 |
@@ -186,8 +186,8 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 
 | 頭條 | 模擬出處 | 複賽證據 | 客戶價值 |
 |---|---|---|---|
-| **5.7× LFP RMS 削峰** | PyBaMM DFN sim ✅ | **M3 實機波形對照** | LFP 壽命延長 → 換電池週期從 6 yr → 10 yr |
-| **3.5× cell 電壓震盪降** | PyBaMM DFN sim ✅ | **M3 scope V_cell pp** | PSU 不誤觸 OVP/UVP,Tier-2/3 SLA 達標 |
+| **5.7× LFP RMS 削峰** | PyBaMM DFN sim [v] | **M3 實機波形對照** | LFP 壽命延長 → 換電池週期從 6 yr → 10 yr |
+| **3.5× cell 電壓震盪降** | PyBaMM DFN sim [v] | **M3 scope V_cell pp** | PSU 不誤觸 OVP/UVP,Tier-2/3 SLA 達標 |
 | **10 yr BBU 服役壽命** | Severson aging fit + BBU duty | 跨化學 cross-dataset 證據 | 客戶 CapEx 攤提期延長 |
 | **33 % 10 yr TCO 節省** | v2.2 §G.3 elasticity model | `/tco` Calculator client side | 業務談 USD 25 k/site/yr SaaS 訂閱依據 |
 
@@ -212,19 +212,19 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 
 | 路徑 | 角色 | 狀態 |
 |---|---|:--:|
-| `scripts/generate_scaled_8s_sim.py` | M1 sim gate | ✅ PASS |
-| `scripts/measure_lstm_latency.py` | M2 device-agnostic latency 量測 | ✅(laptop baseline 已測)|
-| `scripts/hybrid_control_emulator.py` | STM32 控制律 Python 鏡像 | ✅(對齊 §1.3 sim 5.72×)|
-| ~~`scripts/jkbms.py`~~ | ~~JK-BMS RS485 parser~~ | 🗑️ 2026-05-27 隨硬體退貨刪除(checksum + 8S 自測 PASS 是 v1.x 完成歷史)|
-| ~~`scripts/live_demonstrator_bridge.py`~~ | ~~bench telemetry bridge~~ | 🗑️ 2026-05-27 同上(mock + bench 雙模式為 v1.x 完成歷史)|
-| ~~`scripts/eload_gb200_profile.py`~~ | ~~ATORCH DL24M 控制~~ | 🗑️ 2026-05-27 同上(PX100 protocol,4 編碼測例驗證為 v1.x 完成歷史)|
-| ~~`scripts/atomic_json.py`~~ | ~~atomic write helper~~ | 🗑️ 2026-05-27 隨 live bridge 同步刪除 |
-| ~~`apps/web/src/components/live-demonstrator-card.tsx`~~ | ~~dashboard LIVE 卡~~ | 🗑️ 2026-05-27 隨硬體退貨刪除(v2.0 dashboard 改 V4 fleet fault toggle 動態 UI)|
-| ~~`apps/web/src/lib/types.ts` `LiveDemonstratorSnapshot`~~ | ~~LiveDemonstratorSnapshot 型別~~ | 🗑️ 2026-05-27 隨 card 同步移除;types.ts 保留其他 Device / LicRcEnvelope types |
-| ~~`apps/web/vercel.json` LIVE no-cache header~~ | ~~LIVE JSON no-cache header~~ | 🗑️ 2026-05-27 隨 card 同步移除;vercel.json 保留 framework / buildCommand |
-| ~~`firmware/stm32_hybrid_control/{main.c, pin_map.md, README.md}`~~ | ~~STM32F411 韌體 skeleton~~ | 🗂️ v1.x archive 保留(README banner 已加;EVT 2026 Q3 重啟硬體時可接手)|
-| `data/processed/scaled_8s_sim.json` | M1 證據 artifact | ✅ |
-| `data/processed/lstm_latency_laptop_cpu.{json,png}` | M2 笔电 baseline 證據 | ✅ |
+| `scripts/generate_scaled_8s_sim.py` | M1 sim gate | [v] PASS |
+| `scripts/measure_lstm_latency.py` | M2 device-agnostic latency 量測 | [v] (laptop baseline 已測)|
+| `scripts/hybrid_control_emulator.py` | STM32 控制律 Python 鏡像 | [v] (對齊 §1.3 sim 5.72×)|
+| ~~`scripts/jkbms.py`~~ | ~~JK-BMS RS485 parser~~ | 2026-05-27 隨硬體退貨刪除(checksum + 8S 自測 PASS 是 v1.x 完成歷史)|
+| ~~`scripts/live_demonstrator_bridge.py`~~ | ~~bench telemetry bridge~~ | 2026-05-27 同上(mock + bench 雙模式為 v1.x 完成歷史)|
+| ~~`scripts/eload_gb200_profile.py`~~ | ~~ATORCH DL24M 控制~~ | 2026-05-27 同上(PX100 protocol,4 編碼測例驗證為 v1.x 完成歷史)|
+| ~~`scripts/atomic_json.py`~~ | ~~atomic write helper~~ | 2026-05-27 隨 live bridge 同步刪除 |
+| ~~`apps/web/src/components/live-demonstrator-card.tsx`~~ | ~~dashboard LIVE 卡~~ | 2026-05-27 隨硬體退貨刪除(v2.0 dashboard 改 V4 fleet fault toggle 動態 UI)|
+| ~~`apps/web/src/lib/types.ts` `LiveDemonstratorSnapshot`~~ | ~~LiveDemonstratorSnapshot 型別~~ | 2026-05-27 隨 card 同步移除;types.ts 保留其他 Device / LicRcEnvelope types |
+| ~~`apps/web/vercel.json` LIVE no-cache header~~ | ~~LIVE JSON no-cache header~~ | 2026-05-27 隨 card 同步移除;vercel.json 保留 framework / buildCommand |
+| ~~`firmware/stm32_hybrid_control/{main.c, pin_map.md, README.md}`~~ | ~~STM32F411 韌體 skeleton~~ | v1.x archive 保留(README banner 已加;EVT 2026 Q3 重啟硬體時可接手)|
+| `data/processed/scaled_8s_sim.json` | M1 證據 artifact | [v] |
+| `data/processed/lstm_latency_laptop_cpu.{json,png}` | M2 笔电 baseline 證據 | [v] |
 
 ### 文件交付
 
@@ -232,8 +232,8 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 |---|---:|---|
 | **本企劃(精簡 1 頁版)** | 此檔 | 評審 5 分鐘讀懂 |
 | `docs/BBU_IMPLEMENTATION_PLAN.md` v1.8 | ~1,100 | 完整技術細節 + 14 章節 + Annex(v1.8 對齊本提案)|
-| `docs/PURCHASE_LIST.md` v1.8 | 166 | 34 SKU 採購清單分波 + 防呆 + 收貨 SOP |
-| `docs/TODO_v1.7.md` | 217 | 77 項代辦清單 + checkbox(v1.7-era artifact)|
+| `docs/archive_v1.x/PURCHASE_LIST.md` v1.8 | 166 | 34 SKU 採購清單分波 + 防呆 + 收貨 SOP |
+| `docs/archive_v1.x/TODO_v1.7.md` | 217 | 77 項代辦清單 + checkbox(v1.7-era artifact)|
 | `PRESENTATION_GUIDE.md` | 227 | 5 分鐘 demo + Q1-Q10 答辯 |
 
 ### Reproducibility — GitHub baseline
@@ -246,4 +246,4 @@ prior_version: "v1.8(2026-05-19 對齊 BBU_PROPOSAL_v2.pdf,4 件硬體 M1-M4)—
 
 **26 天內,4 件 critical-path 證據已 2 件完整 + 1 件 partial + 1 件硬體就緒**,Plan A 執行路徑風險可控、Plan C/D 降階階梯齊全;**安全 SOP 三層防線 + 4 大頭條商業敘事(5.7× / 3.5× / 10 yr / 33 % TCO)+ Severson MAPE 8.38 % 跨領域證據完整**。**繳交此計畫 = 證明團隊在資源受限下能交付可驗證的工程成果與商業敘事,非紙上談兵**。
 
-技術深度、採購防呆、安全 SOP、答辯腳本所有細節:**`docs/BBU_IMPLEMENTATION_PLAN.md` v1.8(14 章節 + Annex A/B)**;每日代辦進度:**`docs/TODO_v1.7.md`**;5 分鐘 demo 腳本 + Q1-Q10 答辯:**`PRESENTATION_GUIDE.md`**。
+技術深度、採購防呆、安全 SOP、答辯腳本所有細節:**`docs/BBU_IMPLEMENTATION_PLAN.md` v1.8(14 章節 + Annex A/B)**;每日代辦進度:**`docs/archive_v1.x/TODO_v1.7.md`**;5 分鐘 demo 腳本 + Q1-Q10 答辯:**`PRESENTATION_GUIDE.md`**。
