@@ -1,17 +1,11 @@
 import { DashboardClient } from "./dashboard-client";
+import { loadScenario } from "@/lib/load-scenario";
 
 export const metadata = {
   title: "機隊儀表板 · Sysblade",
   description:
     "1000 台設備合成 Sysblade 機隊 — 即時監測、主動式維護、預測性維運。",
 };
-
-async function loadJson(name: string) {
-  const fs = await import("node:fs/promises");
-  const path = await import("node:path");
-  const file = path.join(process.cwd(), "public", "scenarios", `${name}.json`);
-  return JSON.parse(await fs.readFile(file, "utf-8"));
-}
 
 // Extract the LIC RC envelope from the hybrid transient scenario so the
 // per-device drilldown can show fleet-wide LIC headroom without polluting
@@ -38,9 +32,9 @@ function extractLicRcEnvelope(transientHybrid: {
 
 export default async function DashboardPage() {
   const [fleet, transientHybrid, rackNMinus1] = await Promise.all([
-    loadJson("fleet_devices"),
-    loadJson("transient_hybrid"),
-    loadJson("rack_n_minus_1"),
+    loadScenario("fleet_devices"),
+    loadScenario("transient_hybrid"),
+    loadScenario("rack_n_minus_1"),
   ]);
   const licRcEnvelope = extractLicRcEnvelope(transientHybrid);
   return (
