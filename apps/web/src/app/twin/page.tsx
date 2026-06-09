@@ -1,18 +1,11 @@
 import { TwinClient } from "./twin-client";
+import { loadScenario } from "@/lib/load-scenario";
 
 export const metadata = {
   title: "電池數位孿生 · Sysblade",
   description:
     "PyBaMM DFN 模擬 LFP 電芯對 GB200 毫秒級功率瞬變的響應,比較有無 LIC 混合緩衝的差異。",
 };
-
-async function loadScenario(name: string) {
-  const fs = await import("node:fs/promises");
-  const path = await import("node:path");
-  const file = path.join(process.cwd(), "public", "scenarios", `${name}.json`);
-  const buf = await fs.readFile(file, "utf-8");
-  return JSON.parse(buf);
-}
 
 export default async function TwinPage() {
   const [
