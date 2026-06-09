@@ -2,7 +2,7 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
 
-[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📑 企劃書 v2.2 (DOCX)**](docs/proposal_v2.2_additions/Sysblade_HyperBuffer_Proposal_v2.2.docx) · [**📘 技術白皮書 v1.3**](docs/whitepaper.md) · [**📕 精煉版 v1.3**](docs/whitepaper_restructured.md) · [**🔧 實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**🎯 RD Brief**](docs/RD_BRIEF.md) · [**💼 Investor Brief**](docs/INVESTOR_BRIEF.md)
+[**🎬 Live demo**](https://sysblade-atcc.vercel.app) · [**📘 技術白皮書 v1.3**](docs/whitepaper.md) · [**📕 精煉版 v1.3**](docs/whitepaper_restructured.md) · [**🔧 實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**🎯 RD Brief**](docs/RD_BRIEF.md) · [**💼 Investor Brief**](docs/INVESTOR_BRIEF.md)
 
 > **v2.0 update (2026-05-27)**:複賽路線從 8S 實機 demonstrator(v1.x M1-M4)pivot 到 **6 條 digital-twin validation chains(V1-V6)**,target 科技業 RD / 顧問 / 投資人。`make verify` 5-6/6 chains PASS in 75s,GitHub `make verify-fast` 一鍵 CI gate。完整 pivot rationale 見 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 § 0.5。
 

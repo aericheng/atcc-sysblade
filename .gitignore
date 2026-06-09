@@ -96,6 +96,19 @@ PRESENTATION_GUIDE.md
 docs/proposal_v2.2_additions/*.docx
 _v21_text_cache.json
 
+# Business-sensitive proposal/plan docs — keep OUT of the public repo.
+# Untracked 2026-06-09 (git rm --cached); history NOT purged — stopgap per team
+# decision. Local working copies are retained; these rules block re-adding them.
+docs/BBU_PROPOSAL_v2.docx
+docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx
+docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf
+docs/Sysblade_可行性分析.docx
+# Generated technical white-paper .docx (regenerable from docs/whitepaper.md)
+docs/Sysblade_HyperBuffer_技術白皮書_v1.3.docx
+# Working handoff folder + local demo video — prevent accidental publish
+for_min/
+video/
+
 # Personal infographic generators for proposal/whitepaper figures.
 # Output paths are hardcoded to the author's local Downloads folder, so
 # these are author-machine-only tooling — not portable to teammates' boxes.
