@@ -238,9 +238,10 @@ $$ Q_{\text{loss,cal}}(t) = k_{\text{ref}} \cdot e^{-E_a/R\,(1/T - 1/T_{\text{re
 設計推導以一階 high-pass / low-pass 互補濾波器為基礎:
 
 $$
-P_{\text{LIC}}(t) = P_{\text{load}}(t) - \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
-\\
-P_{\text{LFP}}(t) = \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
+\begin{aligned}
+P_{\text{LIC}}(t) &= P_{\text{load}}(t) - \mathrm{LPF}_{\tau}(P_{\text{load}}(t)) \\
+P_{\text{LFP}}(t) &= \mathrm{LPF}_{\tau}(P_{\text{load}}(t))
+\end{aligned}
 $$
 
 時間常數 $\tau = 0.5$ s(對應 1/(2π·τ) ≈ 0.32 Hz 截止頻率,涵蓋 GB200
