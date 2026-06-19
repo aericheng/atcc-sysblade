@@ -48,6 +48,9 @@ data/processed/**
 !data/processed/cross_dataset_mape.json
 !data/processed/x_cube_ai_static_analysis.json
 !data/processed/lstm_severson_only_eval.json
+# Production TCN/1D-CNN RUL model — head-to-head vs LSTM + static INT8 + NPU-op
+# evidence (whitepaper §3.4.1); reproducible via scripts/train_tcn_rul.py.
+!data/processed/tcn_rul_report.json
 # v1.3 review M5 — keep BBU implementation evidence in repo (M1-M4 artifacts)
 !data/processed/scaled_8s_sim.json
 !data/processed/lstm_latency_laptop_cpu.json
