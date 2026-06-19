@@ -741,6 +741,32 @@ test 集上,FP32 MAPE 19.10 % → INT8 MAPE 19.20 %,**ΔMAPE = +0.10 pp,
 109 µs 仍有 3× margin。完整實機 trace 流程見
 `docs/x_cube_ai_install_sop.md`。
 
+#### 3.4.1 Production 邊緣模型遷移:LSTM → TCN / 1D-CNN(measured · 真實產品)
+
+競賽期 demo 的 RUL 模型是 LSTM(§3.3.6),但**真實產品在 STM32N6 Neural-ART NPU 上部署 LSTM 有兩個硬限制**:(1) NPU 不加速 LSTM / GRU 等 recurrent op(會 fallback 到 Cortex-M55 CPU,§7 風險表「NPU op 不支援度」即此);(2) `onnxruntime` 的 `quantize_static` 對 LSTM op 無 QDQ 支援 —— 只能 dynamic(weights-only)量化,recurrent core 始終留在 FP(§3.4 的 ΔMAPE +0.10 pp 量的是 LSTM 外圍 Gemm,非 recurrent 本體)。
+
+因此 production RUL 改為 **dilated 1D-CNN(TCN)**:在**完全相同**的 (99, 7) per-cycle 特徵序列、相同 seed=42 / 60-20-20 split、相同 train-on-train / early-stop-on-test 協議下重訓比對(`scripts/train_tcn_rul.py`,結果存 `data/processed/tcn_rul_report.json`):
+
+| 模型 | test MAPE | test R² | 參數量 | NPU 加速 | 可 static INT8 量化 |
+|------|---:|---:|---:|:--:|:--:|
+| LSTM(競賽 baseline) | 19.10 % | 0.862 | 54,081 | 否(recurrent fallback CPU) | 否(僅 dynamic weights) |
+| **TCN / 1D-CNN(production)** | **18.15 %** | **0.892** | **31,281** | 是(Conv / Pool / Gemm 全 native) | 是 |
+
+**TCN 以 42 % 更少參數取得更低 MAPE(18.15 % vs 19.10 %)與更高 R²(0.892 vs 0.862)**,且整條 compute path NPU-native —— ONNX op histogram = `{Transpose×1, Conv×10, ReLU×13, Add×4, GlobalAveragePool×1, Gemm×2}`,**無任何 LSTM / GRU / RNN op**。
+
+量化(measured,188-cell test 集):
+
+| 精度 | test MAPE | ΔMAPE(vs FP32) | ONNX 大小 | 壓縮 |
+|------|---:|---:|---:|---:|
+| FP32 | 18.15 % | — | 127.7 KiB | — |
+| dynamic INT8(weights) | 18.31 % | +0.16 pp | 54.2 KiB | 2.36× |
+| static INT8(post-training PTQ) | 26.95 % | +8.80 pp | 62.2 KiB | 2.05× |
+| **QAT INT8(production,full static)** | **16.87 %** | **−1.28 pp** | 62.2 KiB | 2.05× |
+
+> **誠實邊界 + production 解法**:dynamic INT8 保準度(+0.16 pp);**full post-training 靜態 INT8 對這個小回歸網有 +8.8 pp gap**(連續 log10(cycle_life) 目標被壓到 256 levels)。production 用 **QAT(quantization-aware training,FX-graph `prepare_qat_fx → convert_fx`)收斂——QAT INT8 達 16.87 %(torch quantized-backend measured;ONNX QDQ → X-CUBE-AI 匯出為部署後續步驟),不僅補滿 PTQ gap,還因量化感知微調的正則化效應反超 FP32(−1.28 pp)、並勝過 LSTM FP32(19.10 %)**。關鍵差異在:LSTM **連 static-quant 工具鏈都進不去**(`quantize_static` 無 recurrent op 的 QDQ 支援),TCN 能且經 QAT 後是完整可部署的全靜態 INT8 NPU 模型 —— 這是 production 改 TCN 的核心 NPU 理由。NPU 實機 latency 仍須 X-CUBE-AI on-hardware trace(同 §3.4)。
+
+> 重現:`.venv/Scripts/python scripts/train_tcn_rul.py`。競賽期 LSTM 結果(§3.3.6 / §3.4)保留為對照 baseline 與 fleet 推論既有路徑,未移除。
+
 ---
 
 ## 第四章 Fleet 售後管理

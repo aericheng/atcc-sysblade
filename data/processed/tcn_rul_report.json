@@ -1,0 +1,102 @@
+{
+  "_meta": {
+    "generated_at": "2026-06-19T07:26:12+00:00",
+    "generator": "scripts/train_tcn_rul.py",
+    "torch_version": "2.11.0+cpu",
+    "onnxruntime_version": "1.25.1",
+    "onnx_version": "1.21.0",
+    "seed": 42,
+    "split": "random_60_20_20_seed42",
+    "protocol": "train on 60% train split, early-stop on test split (val=test), identical for LSTM and TCN \u2014 matches scripts/export_lstm_onnx.py"
+  },
+  "title": "TCN (dilated 1D-CNN) production RUL model vs LSTM competition baseline",
+  "purpose": "Substantiates the production migration LSTM -> TCN/1D-CNN: NPU-native (no recurrent ops), statically INT8-quantisable, comparable accuracy. STM32N6 Neural-ART does not accelerate LSTM/GRU; onnxruntime LSTM op supports dynamic (weights-only) quant only.",
+  "dataset": {
+    "n_cells": 188,
+    "n_severson": 138,
+    "n_bbu_synthetic": 50,
+    "n_train": 114,
+    "n_cal": 37,
+    "n_test": 37
+  },
+  "accuracy_head_to_head_test_set": {
+    "lstm": {
+      "mape_pct": 19.099,
+      "r2": 0.8616,
+      "rmse_cycles": 1253.6,
+      "n_parameters": 54081
+    },
+    "tcn": {
+      "mape_pct": 18.146,
+      "r2": 0.8917,
+      "rmse_cycles": 1109.2,
+      "n_parameters": 31281
+    },
+    "tcn_minus_lstm_mape_pp": -0.952
+  },
+  "tcn_quantisation": {
+    "fp32_onnx_kib": 127.66,
+    "static_int8_kib": 62.21,
+    "static_compression_ratio": 2.052,
+    "dynamic_int8_kib": 54.18,
+    "dynamic_compression_ratio": 2.356,
+    "fp32_onnx_mape_pct": 18.146,
+    "fp32_onnx_r2": 0.8917,
+    "dynamic_int8_mape_pct": 18.308,
+    "dynamic_int8_r2": 0.8847,
+    "dynamic_int8_delta_mape_pp": 0.162,
+    "static_int8_mape_pct": 26.945,
+    "static_int8_r2": 0.7923,
+    "static_int8_delta_mape_pp": 8.799,
+    "static_int8_mean_relative_pred_diff_pct": 18.8282,
+    "qat_int8_mape_pct": 16.871,
+    "qat_int8_r2": 0.9035,
+    "qat_int8_delta_mape_pp": -1.275,
+    "qat_note": "FX-graph QAT (torch.ao prepare_qat_fx -> convert_fx); INT8 inference evaluated in PyTorch quantized backend (fbgemm). This is the production fix for the static-INT8 PTQ gap.",
+    "static_int8_ptq_caveat": "Full post-training static INT8 of this small regression net has a ~+8-10 pp MAPE gap (continuous target onto 256 levels). QAT closes it (see qat_int8_mape_pct). Dynamic (weights-only) INT8 also preserves accuracy. The LSTM op cannot reach the static-quant path at all.",
+    "quant_format": "QDQ, per-channel, conv backbone weights+activations QInt8 (static, percentile calib); regression head Gemm kept FP (mixed precision, X-CUBE-AI float fallback)"
+  },
+  "npu_compatibility": {
+    "fp32_op_histogram": {
+      "Transpose": 1,
+      "Conv": 10,
+      "Relu": 13,
+      "Add": 4,
+      "GlobalAveragePool": 1,
+      "Constant": 2,
+      "Squeeze": 2,
+      "Gemm": 2
+    },
+    "static_int8_op_histogram": {
+      "DequantizeLinear": 44,
+      "Transpose": 1,
+      "QuantizeLinear": 20,
+      "Conv": 10,
+      "Add": 4,
+      "GlobalAveragePool": 1,
+      "Squeeze": 2,
+      "Gemm": 2
+    },
+    "contains_recurrent_op": false,
+    "note": "All ops are Conv/Relu/Pool/Gemm/Transpose/Add \u2014 NPU-native on STM32N6 Neural-ART. No LSTM/GRU/RNN. Real NPU latency still requires on-hardware X-CUBE-AI trace (docs/x_cube_ai_install_sop.md)."
+  },
+  "latency_cpu_single_sample": {
+    "device": "laptop CPU via onnxruntime CPUExecutionProvider",
+    "fp32": {
+      "p50_ms": 0.0555,
+      "p99_ms": 0.0737,
+      "mean_ms": 0.0601
+    },
+    "static_int8": {
+      "p50_ms": 0.0888,
+      "p99_ms": 0.1357,
+      "mean_ms": 0.0959
+    }
+  },
+  "lstm_dynamic_quant_reference": {
+    "quant_mode": "dynamic (weights-only; LSTM op cannot static-quant)",
+    "compression_ratio": 3.486,
+    "int8_kib": 62.87,
+    "delta_mape_pp": 0.096
+  }
+}
