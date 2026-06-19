@@ -35,6 +35,22 @@ abstract: |
 
 ---
 
+## 真實產品修訂對照(勘誤 · 2026-06)
+
+> 本文為 ATCC 競賽期技術文件。在「真正量產上市」的端到端審視下,以下技術陳述需與真實產品規格一致更正。完整真實產品審視 / 料件選型 / 產品規格 / 量產企劃見 `docs/product_realization/`。
+
+| # | 競賽期原陳述 | 更正(真實產品基準) |
+|---|---|---|
+| 1 | Tier-A 為「LIC 鋰離子電容」,錨定 Eaton XLR-48-166 | Eaton XLR-48R6167-R 經官方 datasheet 為 **EDLC 超級電容**,非 LIC;本文 demo 沿用其 RC 等效。**量產 Tier-A 改採真 LIC(Musashi ULTIMO CPQ3300SD,連續 200A / 脈衝 ≤1300A)** |
+| 2 | 5.7× / 3.5× 削峰 | 為 **±30%/100ms reference 波形下的理想無損耗換流上界**,描述「LFP 看到的訊號乾淨度」非壽命倍率;含 DC-DC 效率 / 迴路頻寬後**典型 2.4–3.9×、>100Hz 退到 ~1.5×** |
+| 3 | 雙向 DC-DC 前級 | OCP ORV3 規範禁 Oring 後 shared bus 放電容 → **LIC 必在 active DC-DC 後,DC-DC 為合規必要件(非可選優化)**;本文 sim 為開環 RC 等效,closed-loop 為 EVT deliverable |
+| 4 | STM32N6 NPU 推論 LSTM(54.7 µs / INT8 量化) | ST 官方 **Neural-ART NPU 不支援 LSTM / GRU**;54.7 µs 估算與 INT8「無損」對 LSTM 本體不成立(量的是外圍 Gemm)。**量產 RUL 模型改 TCN / 1D-CNN**(NPU 原生 Conv1D + 可 static INT8 量化) |
+| 5 | Tier-C 單晶片 STM32N6 整合 BMS + ML(+ OpenBMC) | M55 無 MMU,跑不了 OpenBMC;安全 BMS 與 ML 共晶片違反 UL 1973 / IEC 61508。**拆三層**:獨立 BMS-AFE(BQ79616-Q1)+ safety MCU(TMS570)+ N6 推論;BBU 以 managed device 走 MCTP/PLDM,**不自稱 BMC** |
+
+> 另須對齊:先發空窗已關(Eaton / Vertiv / Schneider×NVIDIA / KULR / Skeleton / Delta 全在同品類);單台真實 BOM 約為 v2.2 估值 2.0–2.7×;認證須擴及 UL 9540 / UL 9540A;北美在地 cell 以 pack 組裝為主、cell 進口走 UFLPA 可追溯。詳見 `docs/product_realization/01_product_review.md`。
+
+---
+
 ## 目錄
 
 1. [問題陳述](#第一章-問題陳述)
