@@ -506,8 +506,8 @@ OLS 高 bias / 低 variance,protocol shift 等同 distribution shift,放大 vari
 >    OLS / GBT 都不能直接外插(§3.3.5)
 >
 > 這三條 routing rule 由 `/dashboard` 的 admission 邏輯支援
-> (§8.2 路線圖列為後續客戶 PoC 階段啟用);本白皮書 demo 以單一 LSTM
-> 為 fleet 推論主路徑。
+> (§8.2 路線圖列為後續客戶 PoC 階段啟用);fleet 推論主路徑為 **production TCN**
+> (§3.4.1);LSTM 保留為文件化 baseline。
 
 #### 3.3.5 跨資料集驗證(Severson → NASA NMC)
 
@@ -632,7 +632,7 @@ Severson + BBU 188-cell test 集上 MAPE = **19.10 %、R² 0.86**(per-batch
 bagged-OLS 13.87 % cross-batch)顯著高**。原因是 LSTM 訓練集涵蓋兩個 regime
 (壓力測試 + BBU),OLS / GBT ensemble 只用 Severson 138(扣 outlier 134)→
 LSTM 的 19.10 % 是「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % 是
-「single-regime 漂亮但對 BBU 沉默外插」。**這就是為什麼 fleet 推論用 LSTM、
+「single-regime 漂亮但對 BBU 沉默外插」。**這就是為什麼 fleet 推論用序列模型(production = TCN,§3.4.1;LSTM 為 baseline)、
 學術 baseline 報 GBT ensemble**:同一個模型不能既做漂亮的 paper 對齊又做
 誠實的 BBU 外推。Probabilistic 不會自動降低點誤差,它解決的是「報告誠實度」。
 要再降 LSTM MAPE 需要更多真實 LFP-BBU-duty 資料(客戶 PoC 第一年累積,§8.2)。
@@ -672,8 +672,9 @@ ground truth 仍須回到真實 Severson cells + 客戶 PoC 累積資料。每�
 | Severson b3 | 44 | 14.72 % |
 | **BBU duty** | **50** | **16.49 %** ← BBU regime MAPE 為 4 batch 中第二低,模型確實學到合成軌跡 |
 
-整體 test MAPE 19.1 %、R² 0.86(來源:`packages/shared/scenarios/model_validation.json`
-的 `metrics` 區塊,由 `scripts/export_lstm_onnx.py` 寫入)— 比 §3.3.3 OLS/GBT
+> **Production 更新**:`model_validation.json`(/twin、/dashboard 消費)現由 `scripts/export_tcn_onnx.py` 產出 **production TCN**:**整體 test MAPE 18.1 %、R² 0.89**(§3.4.1)。本節上方 per-batch breakdown 與 §3.3.7 conformal 表為 **LSTM baseline run** 的分析(`scripts/export_lstm_onnx.py` 可重現),保留作 regime-augmentation 論述。
+
+LSTM baseline 整體 test MAPE 19.1 %、R² 0.86(`metrics` 區塊)— 比 §3.3.3 OLS/GBT
 ensemble 在 Severson-only 上的 8.38 % 顯著高,因為模型現在 span 完整 regime
 光譜。這是「per-regime sharpness」換「cross-regime honesty」的取捨;
 單純 Severson-only 的 8.38 % 是**對 BBU 部署沉默地錯誤**(它對 BBU
@@ -707,9 +708,9 @@ gitignore 白名單,CI 守門可比對。)
 反證可用 `--severson-only` flag 一行重現。「BBU 合成 cell self-fulfilling」
 是合理但已被反證的質疑。
 
-**使用方式**:`/dashboard` 的 1000 台 fleet RUL 由 LSTM 直接推論:
+**使用方式**:`/dashboard` 的 1000 台 fleet RUL 由 **production TCN** 直接推論(§3.4.1;LSTM 同架構可替換):
 **每台裝置匹配一條 BBU duty 軌跡(以 age bucket 對應 severity tercile),
-餵同一個 LSTM 預測該軌跡 cycle_life,扣掉 elapsed cycles = RUL**。
+餵同一個序列模型(production TCN)預測該軌跡 cycle_life,扣掉 elapsed cycles = RUL**。
 `/twin` Inference Walkthrough 與 `/dashboard` 共用同一個 model,
 **one model, two views**。
 

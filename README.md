@@ -183,7 +183,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 ## 模型卡
 
 兩條 RUL 預測管線並行,**「one model, two views」**:`/twin` Inference Walkthrough
-與 `/dashboard` 1000 台 fleet RUL 共用同一個 LSTM 推論輸出,確保兩頁面數字一致。
+與 `/dashboard` 1000 台 fleet RUL 共用同一個 **production TCN**(§3.4.1)推論輸出,確保兩頁面數字一致(LSTM 為文件化 baseline)。
 
 ### Severson cycle-life regression(隨機 split,10-seed median)
 
@@ -198,7 +198,9 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 **達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。
 跨 protocol 部署改用 bagged-OLS(13.87 %),GBT 在 cross-batch 因 protocol-specific 過擬合退化。
 
-### LSTM(augmented,跨兩個 regime)
+### 序列模型(production = TCN,LSTM 為 baseline)
+
+> **Production fleet 模型 = TCN**:`/twin`、`/dashboard` 的 fleet 推論已切換為 dilated 1D-CNN(NPU-native,無 recurrent op;QAT 後 full static-INT8 **16.87 % MAPE / R² 0.903**,FP32 18.15 % / R² 0.892,勝 LSTM 19.10 %)。measured 見 `data/processed/tcn_rul_report.json` 與技術白皮書 §3.4.1。下表 LSTM 數字保留為文件化 baseline 與 regime-augmentation 反證。
 
 > **Augmentation 反證(P1-1)**:跑 `python scripts/export_lstm_onnx.py --severson-only` 用同一條 LSTM 架構、同 seed=42、同 60/20/20 random split,只訓 138 顆 Severson 真實 cell(去掉 50 顆合成 BBU)— 結果 test MAPE **16.17 %**、R² **0.553**、conformal PI median width **793 cycles**(完整 JSON 在 `data/processed/lstm_severson_only_eval.json`)。**augmentation 把 MAPE 從 16.17 → 19.10 % 反而略升**(因為要 fit 跨 100-13,000 cycles 的大 dynamic range),R² 從 0.55 → 0.86 是因為加入長壽命 cell 後 explainable variance 比例上升。**augmentation 純粹是 regime coverage,不是 MAPE 障眼法** — 這條反證在白皮書 §3.3.8 加入,反駁「BBU 合成 cell 是不是 self-fulfilling」的合理質疑。
 
