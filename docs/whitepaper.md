@@ -596,20 +596,20 @@ deterministic 預測 753,**+151 % 點誤差**;b2c46 真實 429,預測 888,
 自己不知道」。
 
 **做法**:Gal & Ghahramani (2016) 的 Monte Carlo Dropout —— 推論時保留
-LSTM 兩處 dropout 開啟(`lstm.train()` + `head.Dropout`),做 100 次
+TCN 的 dropout 開啟(conv 殘差塊 + head),做 100 次
 forward pass 得到後驗預測分布。中位數作為點估計,5–95 percentile
 作為 90 % 預測區間 (PI)。**不需重訓**,套在已 export 的 checkpoint 上。
 
-**結果**(`scripts/export_lstm_onnx.py`,Severson 138 + BBU 50 = 188 cells
-的最終 LSTM,3-way 60/20/20 split):
+**結果**(production TCN,`scripts/export_tcn_onnx.py`,Severson 138 + BBU 50 = 188 cells,
+3-way 60/20/20 split;`/twin` Inference Walkthrough 顯示的就是此 TCN 的 PI。LSTM baseline 行為類似:raw 1910 → conformal 1075、q = 0.563):
 
 | 指標 | 原始 MC Dropout | + Split Conformal |
 |------|---:|---:|
 | Test set 90 % PI coverage | 100 % | **100 %** (≥ 90 % 保證) |
-| 中位數 PI 寬度 (cycles) | 1910 | **1075** |
-| Sharpening | — | **−44 %** |
+| 中位數 PI 寬度 (cycles) | 2697 | **1359** |
+| Sharpening | — | **−50 %** |
 
-**Conformal q_factor = 0.563** — calibration set 上 score 90 % quantile
+**Conformal q_factor = 0.504** — calibration set 上 score 90 % quantile
 < 1,代表 raw PIs 太寬,於是縮窄。**核心保證**(Vovk 2005, Lei 2018):
 在 data exchangeability 下(我們是 random split,自動成立),conformal
 PIs 在 test 上 coverage **保證 ≥ 90 %**,即使 calibration 集很小也成立。
@@ -619,18 +619,18 @@ PIs 在 test 上 coverage **保證 ≥ 90 %**,即使 calibration 集很小也成
 **Walkthrough 的具體變化**(/twin Inference Walkthrough 顯示的就是
 conformal 後的 PI):
 
-| Cell | Status | Actual | Median | Before PI | **After PI** |
-|---|---|---:|---:|:---:|:---:|
-| b2c1 | critical | 148 | 238 | [113, 783] | **[144, 332]** |
-| b2c16 | early_aging | 483 | 573 | [194, 1068] | **[356, 791]** |
-| b1c44 | warning | 616 | 880 | [350, 2111] | **[506, 1254]** |
-| b3c22 | healthy | 1002 | 1150 | [285, 2152] | **[464, 1836]** |
-| bbu_c023 | healthy | 7016 | 7326 | [856, 13797] | **[856, 13797]** ← BBU 範圍 |
+| Cell | Status | Actual | Median | **90 % PI(conformal)** |
+|---|---|---:|---:|:---:|
+| b2c1 | critical | 148 | 331 | **[172, 491]** |
+| b2c16 | early_aging | 483 | 527 | **[270, 784]** |
+| b1c44 | warning | 616 | 1157 | **[434, 1879]** |
+| b3c22 | healthy | 1002 | 1034 | **[273, 1795]** |
+| bbu_c023 | healthy | 7016 | 6928 | **[1982, 11874]** ← BBU 範圍 |
 
 所有 actual 仍在 PI 內(coverage 維持 100 %),但 PI 寬度系統性收縮
-~ 44 %(中位數半寬從 ±955 cycles 收到 ±537 cycles),**Tier-3 admission
-決策變得有意義**(BBU duty 50 cycles/yr → 從「±19 yr 替換時程不確定」
-變到「±11 yr」)。
+~ 50 %(中位數半寬從 ±1349 cycles 收到 ±680 cycles),**Tier-3 admission
+決策變得有意義**(BBU duty 50 cycles/yr → 從「±27 yr 替換時程不確定」
+變到「±14 yr」)。
 
 **已知限制**:
 * MC Dropout 僅捕捉 **epistemic** uncertainty(模型不確定性),不含
@@ -640,18 +640,18 @@ conformal 後的 PI):
 * PI 縮窄是 q < 1 才會發生;若未來訓練改善導致 raw PIs already tight,
   conformal 反而會 widen — 這是**特性不是 bug**(維持 90 % 覆蓋)。
 
-**與 deterministic 點 MAPE 的關係**:LSTM 中位數點預測在
-Severson + BBU 188-cell test 集上 MAPE = **19.10 %、R² 0.86**(per-batch
-全 188-cell 切面:b1 17.02 % / b2 33.45 %(早夭 outlier 主導)/ b3 14.72 % / BBU 16.49 %,
+**與 deterministic 點 MAPE 的關係**:production TCN 中位數點預測在
+Severson + BBU 188-cell test 集上 MAPE = **18.15 %、R² 0.89**(per-batch
+全 188-cell 切面:b1 18.30 % / b2 27.35 %(早夭 outlier 主導)/ b3 14.47 % / BBU 17.88 %,
 來源 `model_validation.json::predicted_vs_actual`),
 **比 §3.3.3 的最佳 OLS / GBT ensemble(xstrict bagged-GBT 8.38 % random /
-bagged-OLS 13.87 % cross-batch)顯著高**。原因是 LSTM 訓練集涵蓋兩個 regime
+bagged-OLS 13.87 % cross-batch)顯著高**。原因是序列模型訓練集涵蓋兩個 regime
 (壓力測試 + BBU),OLS / GBT ensemble 只用 Severson 138(扣 outlier 134)→
-LSTM 的 19.10 % 是「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % 是
+production TCN 的 18.15 % 是「跨 regime 誠實 trade-off」,GBT ensemble 的 8.38 % 是
 「single-regime 漂亮但對 BBU 沉默外插」。**這就是為什麼 fleet 推論用序列模型(production = TCN,§3.4.1;LSTM 為 baseline)、
 學術 baseline 報 GBT ensemble**:同一個模型不能既做漂亮的 paper 對齊又做
 誠實的 BBU 外推。Probabilistic 不會自動降低點誤差,它解決的是「報告誠實度」。
-要再降 LSTM MAPE 需要更多真實 LFP-BBU-duty 資料(客戶 PoC 第一年累積,§8.2)。
+要再降序列模型 MAPE 需要更多真實 LFP-BBU-duty 資料(客戶 PoC 第一年累積,§8.2)。
 
 #### 3.3.8 BBU duty 增強訓練集 — 跨 regime 一個模型部署
 
@@ -683,10 +683,10 @@ ground truth 仍須回到真實 Severson cells + 客戶 PoC 累積資料。每�
 
 | 樣本 | n | MAPE_all |
 |------|---:|---:|
-| Severson b1 | 46 | 17.02 % |
-| Severson b2 | 48 | 33.45 % ← 含早夭 outlier(b2c0、b2c46),點預測高估嚴重(§3.3.7 機率輸出處理)|
-| Severson b3 | 44 | 14.72 % |
-| **BBU duty** | **50** | **16.49 %** ← BBU regime MAPE 為 4 batch 中第二低,模型確實學到合成軌跡 |
+| Severson b1 | 46 | 18.30 % |
+| Severson b2 | 48 | 27.35 % ← 含早夭 outlier(b2c0、b2c46),點預測高估嚴重(§3.3.7 機率輸出處理)|
+| Severson b3 | 44 | 14.47 % |
+| **BBU duty** | **50** | **17.88 %** ← BBU regime 學到合成軌跡 |
 
 > **Production 更新**:`model_validation.json`(/twin、/dashboard 消費)現由 `scripts/export_tcn_onnx.py` 產出 **production TCN**:**整體 test MAPE 18.1 %、R² 0.89**(§3.4.1)。本節上方 per-batch breakdown 與 §3.3.7 conformal 表為 **LSTM baseline run** 的分析(`scripts/export_lstm_onnx.py` 可重現),保留作 regime-augmentation 論述。
 
