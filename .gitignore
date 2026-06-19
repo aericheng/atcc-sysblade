@@ -119,3 +119,8 @@ scripts/generate_*_png.py
 
 # Md → PDF output (binary, regenerable via scripts/md_to_pdf.py)
 out_pdf/
+
+# Real-product realization deliverables (business-sensitive: real BOM costs,
+# competitive analysis, supplier strategy, repriced financials, supplier RFQs).
+# Keep OUT of the public judged repo; local working copies retained.
+docs/product_realization/
