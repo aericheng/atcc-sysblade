@@ -778,9 +778,9 @@ test 集上,FP32 MAPE 19.10 % → INT8 MAPE 19.20 %,**ΔMAPE = +0.10 pp,
 | FP32 | 18.15 % | — | 127.7 KiB | — |
 | dynamic INT8(weights) | 18.31 % | +0.16 pp | 54.2 KiB | 2.36× |
 | static INT8(post-training PTQ) | 26.95 % | +8.80 pp | 62.2 KiB | 2.05× |
-| **QAT INT8(production,full static)** | **16.87 %** | **−1.28 pp** | 62.2 KiB | 2.05× |
+| **QAT INT8(production · ONNX QDQ artifact)** | **14.68 %**(ONNX QDQ 14.54 %) | **−3.47 pp** | QDQ 135.7 KiB(見註) | — |
 
-> **誠實邊界 + production 解法**:dynamic INT8 保準度(+0.16 pp);**full post-training 靜態 INT8 對這個小回歸網有 +8.8 pp gap**(連續 log10(cycle_life) 目標被壓到 256 levels)。production 用 **QAT(quantization-aware training,FX-graph `prepare_qat_fx → convert_fx`)收斂——QAT INT8 達 16.87 %(torch quantized-backend measured;ONNX QDQ → X-CUBE-AI 匯出為部署後續步驟),不僅補滿 PTQ gap,還因量化感知微調的正則化效應反超 FP32(−1.28 pp)、並勝過 LSTM FP32(19.10 %)**。關鍵差異在:LSTM **連 static-quant 工具鏈都進不去**(`quantize_static` 無 recurrent op 的 QDQ 支援),TCN 能且經 QAT 後是完整可部署的全靜態 INT8 NPU 模型 —— 這是 production 改 TCN 的核心 NPU 理由。NPU 實機 latency 仍須 X-CUBE-AI on-hardware trace(同 §3.4)。
+> **誠實邊界 + production 解法**:dynamic INT8 保準度(+0.16 pp);**full post-training 靜態 INT8 對這個小回歸網有 +8.8 pp gap**(連續 log10(cycle_life) 目標被壓到 256 levels)。production 用 **QAT(quantization-aware training,FX-graph `prepare_qat_fx`,非 fused `FakeQuantize` + per-channel 權重)收斂,並實際匯出為 ONNX QDQ artifact**(`models/tcn_rul.int8.qat.onnx`,含 `QuantizeLinear` / `DequantizeLinear`,QDQ-ops verified):**torch backend 14.68 % / onnxruntime QDQ 14.54 % MAPE、R² 0.948**,不僅補滿 PTQ gap,還因量化感知微調的正則化效應反超 FP32(−3.5 pp)、並勝過 LSTM FP32(19.10 %)。QDQ 檔案大小(135.7 KiB)不小於 FP32 是 QDQ 格式特性(保留 FP 權重 + 插入 QDQ 節點;真正 INT8 體積由 NPU 編譯器 fold,靜態 PTQ 的 62.2 KiB 為壓縮參考)。關鍵差異在:LSTM **連 static-quant 工具鏈都進不去**(`quantize_static` 無 recurrent op 的 QDQ 支援),TCN 能且經 QAT 後是完整可部署的全靜態 INT8 QDQ ONNX —— 這是 production 改 TCN 的核心 NPU 理由。NPU 實機 latency / X-CUBE-AI 編譯為部署後續(同 §3.4)。
 
 > 重現:`.venv/Scripts/python scripts/train_tcn_rul.py`。競賽期 LSTM 結果(§3.3.6 / §3.4)保留為對照 baseline 與 fleet 推論既有路徑,未移除。
 

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated_at": "2026-06-19T07:26:12+00:00",
+    "generated_at": "2026-06-21T13:01:19+00:00",
     "generator": "scripts/train_tcn_rul.py",
     "torch_version": "2.11.0+cpu",
     "onnxruntime_version": "1.25.1",
@@ -49,10 +49,17 @@
     "static_int8_r2": 0.7923,
     "static_int8_delta_mape_pp": 8.799,
     "static_int8_mean_relative_pred_diff_pct": 18.8282,
-    "qat_int8_mape_pct": 16.871,
-    "qat_int8_r2": 0.9035,
-    "qat_int8_delta_mape_pp": -1.275,
-    "qat_note": "FX-graph QAT (torch.ao prepare_qat_fx -> convert_fx); INT8 inference evaluated in PyTorch quantized backend (fbgemm). This is the production fix for the static-INT8 PTQ gap.",
+    "qat_int8_mape_pct": 14.683,
+    "qat_int8_r2": 0.9475,
+    "qat_int8_delta_mape_pp": -3.463,
+    "qat_note": "FX-graph QAT (torch.ao prepare_qat_fx -> convert_fx); INT8 inference evaluated in PyTorch quantized backend. This is the production fix for the static-INT8 PTQ gap.",
+    "qat_qdq_onnx_path": "models\\tcn_rul.int8.qat.onnx",
+    "qat_qdq_onnx_kib": 135.68,
+    "qat_qdq_onnx_mape_pct": 14.539,
+    "qat_qdq_onnx_r2": 0.9428,
+    "qat_qdq_has_qdq_ops": true,
+    "qat_qdq_export_error": null,
+    "qat_qdq_note": "QAT model exported to ONNX QDQ (QuantizeLinear/DequantizeLinear) via torch.onnx; onnxruntime-measured MAPE is the deployable INT8-graph accuracy. ONNX in models/ (gitignored, regenerable).",
     "static_int8_ptq_caveat": "Full post-training static INT8 of this small regression net has a ~+8-10 pp MAPE gap (continuous target onto 256 levels). QAT closes it (see qat_int8_mape_pct). Dynamic (weights-only) INT8 also preserves accuracy. The LSTM op cannot reach the static-quant path at all.",
     "quant_format": "QDQ, per-channel, conv backbone weights+activations QInt8 (static, percentile calib); regression head Gemm kept FP (mixed precision, X-CUBE-AI float fallback)"
   },
@@ -83,14 +90,14 @@
   "latency_cpu_single_sample": {
     "device": "laptop CPU via onnxruntime CPUExecutionProvider",
     "fp32": {
-      "p50_ms": 0.0555,
-      "p99_ms": 0.0737,
-      "mean_ms": 0.0601
+      "p50_ms": 0.0528,
+      "p99_ms": 0.0908,
+      "mean_ms": 0.0553
     },
     "static_int8": {
-      "p50_ms": 0.0888,
-      "p99_ms": 0.1357,
-      "mean_ms": 0.0959
+      "p50_ms": 0.0847,
+      "p99_ms": 0.1264,
+      "mean_ms": 0.0882
     }
   },
   "lstm_dynamic_quant_reference": {
