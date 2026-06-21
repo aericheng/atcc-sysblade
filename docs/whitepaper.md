@@ -591,8 +591,8 @@ feature,normalised 0–1 per-line,raw 物理單位 hover 可見)與該 cell 的
 
 **為什麼加這個**:Severson 訓練資料的 cycle-life 尾部稀疏(`cycle_life < 200`
 只有 1/138 顆 cell),點預測模型對這類 cell 系統性高估(b2c0 真實 300,
-deterministic 預測 753,**+151 % 點誤差**;b2c46 真實 429,預測 888,
-+107 %)。直接呈現點誤差會讓觀眾以為「模型壞了」,實際是「模型不知道
+deterministic 預測 639,**+113 % 點誤差**;b2c46 真實 429,預測 928,
++116 %)。直接呈現點誤差會讓觀眾以為「模型壞了」,實際是「模型不知道
 自己不知道」。
 
 **做法**:Gal & Ghahramani (2016) 的 Monte Carlo Dropout —— 推論時保留
