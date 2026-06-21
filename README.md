@@ -216,7 +216,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 
 ### 序列模型(production = TCN,LSTM 為 baseline)
 
-> **Production fleet 模型 = TCN**:`/twin`、`/dashboard` 的 fleet 推論已切換為 dilated 1D-CNN(NPU-native,無 recurrent op;QAT 後 full static-INT8 **16.87 % MAPE / R² 0.903**,FP32 18.15 % / R² 0.892,勝 LSTM 19.10 %)。measured 見 `data/processed/tcn_rul_report.json` 與技術白皮書 §3.4.1。下表 LSTM 數字保留為文件化 baseline 與 regime-augmentation 反證。
+> **Production fleet 模型 = TCN**:`/twin`、`/dashboard` 的 fleet 推論已切換為 dilated 1D-CNN(NPU-native,無 recurrent op;QAT 後匯出為 **ONNX QDQ artifact**(`models/tcn_rul.int8.qat.onnx`,QuantizeLinear/DequantizeLinear),onnxruntime 實測 **14.54 % MAPE**、torch backend 14.68 % / R² 0.948,FP32 18.15 % / R² 0.892,勝 LSTM 19.10 %)。measured 見 `data/processed/tcn_rul_report.json` 與技術白皮書 §3.4.1。下表 LSTM 數字保留為文件化 baseline 與 regime-augmentation 反證。
 
 > **Augmentation 反證(P1-1)**:跑 `python scripts/export_lstm_onnx.py --severson-only` 用同一條 LSTM 架構、同 seed=42、同 60/20/20 random split,只訓 138 顆 Severson 真實 cell(去掉 50 顆合成 BBU)— 結果 test MAPE **16.17 %**、R² **0.553**、conformal PI median width **793 cycles**(完整 JSON 在 `data/processed/lstm_severson_only_eval.json`)。**augmentation 把 MAPE 從 16.17 → 19.10 % 反而略升**(因為要 fit 跨 100-13,000 cycles 的大 dynamic range),R² 從 0.55 → 0.86 是因為加入長壽命 cell 後 explainable variance 比例上升。**augmentation 純粹是 regime coverage,不是 MAPE 障眼法** — 這條反證在白皮書 §3.3.8 加入,反駁「BBU 合成 cell 是不是 self-fulfilling」的合理質疑。
 

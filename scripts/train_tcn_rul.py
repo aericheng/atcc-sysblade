@@ -121,7 +121,21 @@ def run_qat(fp_state: dict, scaler, X: np.ndarray, y: np.ndarray, y_log: np.ndar
     base.load_state_dict(fp_state)
     base.train()
     example = torch.tensor(scaler.transform(X[:1]), dtype=torch.float32)
-    qmap = tq.get_default_qat_qconfig_mapping(engine)
+    # Use NON-fused FakeQuantize (not the default FusedMovingAvgObsFakeQuantize):
+    # the plain op has an ONNX symbolic that emits QuantizeLinear/DequantizeLinear,
+    # so the QAT model can be exported to a real ONNX QDQ artifact. Per-tensor
+    # affine activations + per-channel symmetric weights (standard INT8 NPU scheme).
+    from torch.ao.quantization import (
+        FakeQuantize, MovingAverageMinMaxObserver,
+        MovingAveragePerChannelMinMaxObserver, QConfig, QConfigMapping,
+    )
+    act_fq = FakeQuantize.with_args(
+        observer=MovingAverageMinMaxObserver, quant_min=-128, quant_max=127,
+        dtype=torch.qint8, qscheme=torch.per_tensor_affine, reduce_range=False)
+    wt_fq = FakeQuantize.with_args(
+        observer=MovingAveragePerChannelMinMaxObserver, quant_min=-128, quant_max=127,
+        dtype=torch.qint8, qscheme=torch.per_channel_symmetric, reduce_range=False)
+    qmap = QConfigMapping().set_global(QConfig(activation=act_fq, weight=wt_fq))
     prepared = prepare_qat_fx(base, qmap, (example,))
 
     Xtr = torch.tensor(scaler.transform(X[tr]), dtype=torch.float32)
@@ -149,15 +163,46 @@ def run_qat(fp_state: dict, scaler, X: np.ndarray, y: np.ndarray, y_log: np.ndar
             best_state = {k: vv.detach().clone() for k, vv in prepared.state_dict().items()}
     if best_state is not None:
         prepared.load_state_dict(best_state)
-
     prepared.eval()
+
+    # --- Export the QAT model to a real ONNX QDQ artifact ---
+    # The fake-quant (FakeQuantize) modules emit QuantizeLinear/DequantizeLinear
+    # (QDQ) nodes carrying the QAT-learned scales/zero-points, so the exported
+    # ONNX is an INT8-deployable graph (onnxruntime / X-CUBE-AI consume QDQ).
+    qdq = {"path": None, "kib": None, "mape_pct": None, "r2": None, "has_qdq_ops": False, "error": None}
+    try:
+        prepared.apply(tq.disable_observer)  # freeze learned ranges for export
+        ex = torch.tensor(scaler.transform(X[:1]), dtype=torch.float32)
+        qdq_path = MODELS / "tcn_rul.int8.qat.onnx"
+        torch.onnx.export(
+            prepared, ex, str(qdq_path),
+            input_names=["per_cycle_features"], output_names=["log10_cycle_life"],
+            dynamic_axes={"per_cycle_features": {0: "batch"}, "log10_cycle_life": {0: "batch"}},
+            opset_version=17, dynamo=False,
+        )
+        ops = sorted({n.op_type for n in onnx.load(str(qdq_path)).graph.node})
+        has_qdq = "QuantizeLinear" in ops and "DequantizeLinear" in ops
+        s = ort.InferenceSession(str(qdq_path), providers=["CPUExecutionProvider"])
+        Xz = scaler.transform(X[te]).astype(np.float32)
+        p = np.array([float(np.squeeze(s.run(None, {"per_cycle_features": Xz[i:i+1]})[0])) for i in range(len(Xz))])
+        pq = 10.0 ** p
+        qdq = {
+            "path": str(qdq_path.relative_to(REPO)), "kib": round(qdq_path.stat().st_size / 1024, 2),
+            "mape_pct": round(float(np.mean(np.abs((y[te] - pq) / y[te])) * 100.0), 3),
+            "r2": round(evaluate(y[te], pq)["r2"], 4),
+            "has_qdq_ops": has_qdq, "ops": ops, "error": None,
+        }
+    except Exception as e:
+        qdq["error"] = f"{type(e).__name__}: {str(e)[:240]}"
+
+    # --- torch quantized-backend INT8 eval (reference) ---
     quantized = convert_fx(prepared)
     with torch.no_grad():
         pred_log = np.asarray(quantized(Xte_t).cpu().numpy()).reshape(-1)
     pred = 10.0 ** pred_log
     mape = float(np.mean(np.abs((y[te] - pred) / y[te])) * 100.0)
     r2 = evaluate(y[te], pred)["r2"]
-    return {"qat_int8_mape_pct": round(mape, 3), "qat_int8_r2": round(r2, 4)}
+    return {"qat_int8_mape_pct": round(mape, 3), "qat_int8_r2": round(r2, 4), "qdq": qdq}
 
 
 def main() -> int:
@@ -285,6 +330,11 @@ def main() -> int:
     qat = run_qat(tr_res.model.state_dict(), tr_res.scaler, X, y, y_log, tr, te, seed=SEED)
     print(f"  QAT INT8 MAPE {qat['qat_int8_mape_pct']:.2f}%  R2 {qat['qat_int8_r2']:.3f}  "
           f"(PTQ static {int8_mape:.2f}% → QAT {qat['qat_int8_mape_pct']:.2f}%; FP32 {fp32_mape:.2f}%)")
+    _q = qat.get("qdq", {})
+    if _q.get("error"):
+        print(f"  QAT→ONNX QDQ export FAILED: {_q['error']}")
+    else:
+        print(f"  QAT→ONNX QDQ artifact: {_q['path']} ({_q['kib']} KiB)  onnxruntime MAPE {_q['mape_pct']:.2f}%  QDQ-ops={_q['has_qdq_ops']}")
 
     # ---------- LSTM dynamic-quant reference (from existing report) ----------
     lstm_quant_ref = None
@@ -346,7 +396,14 @@ def main() -> int:
             "qat_int8_mape_pct": qat["qat_int8_mape_pct"],
             "qat_int8_r2": qat["qat_int8_r2"],
             "qat_int8_delta_mape_pp": round(qat["qat_int8_mape_pct"] - fp32_mape, 3),
-            "qat_note": "FX-graph QAT (torch.ao prepare_qat_fx -> convert_fx); INT8 inference evaluated in PyTorch quantized backend (fbgemm). This is the production fix for the static-INT8 PTQ gap.",
+            "qat_note": "FX-graph QAT (torch.ao prepare_qat_fx -> convert_fx); INT8 inference evaluated in PyTorch quantized backend. This is the production fix for the static-INT8 PTQ gap.",
+            "qat_qdq_onnx_path": qat.get("qdq", {}).get("path"),
+            "qat_qdq_onnx_kib": qat.get("qdq", {}).get("kib"),
+            "qat_qdq_onnx_mape_pct": qat.get("qdq", {}).get("mape_pct"),
+            "qat_qdq_onnx_r2": qat.get("qdq", {}).get("r2"),
+            "qat_qdq_has_qdq_ops": qat.get("qdq", {}).get("has_qdq_ops"),
+            "qat_qdq_export_error": qat.get("qdq", {}).get("error"),
+            "qat_qdq_note": "QAT model exported to ONNX QDQ (QuantizeLinear/DequantizeLinear) via torch.onnx; onnxruntime-measured MAPE is the deployable INT8-graph accuracy. ONNX in models/ (gitignored, regenerable).",
             "static_int8_ptq_caveat": "Full post-training static INT8 of this small regression net has a ~+8-10 pp MAPE gap (continuous target onto 256 levels). QAT closes it (see qat_int8_mape_pct). Dynamic (weights-only) INT8 also preserves accuracy. The LSTM op cannot reach the static-quant path at all.",
             "quant_format": "QDQ, per-channel, conv backbone weights+activations QInt8 (static, percentile calib); regression head Gemm kept FP (mixed precision, X-CUBE-AI float fallback)",
         },
