@@ -23,6 +23,7 @@ import {
   Thermometer as ThermoIcon,
   Cpu,
 } from "lucide-react";
+import { PlainInline } from "@/components/ui/plain";
 
 interface Scenario {
   series: Record<string, number[]>;
@@ -39,18 +40,18 @@ interface Scenario {
 // =============================================================================
 const SLIDES = [
   { id: "hero",          label: "Intro",         ms: 2500 },
-  { id: "pain",          label: "Pain",          ms: 3600 },
+  { id: "pain",          label: "Pain",          ms: 4000 },
   { id: "solution",      label: "Solution",      ms: 2500 },
-  { id: "arch",          label: "Architecture",  ms: 2800 },
-  { id: "v1",            label: "V1 物理",       ms: 4300 },
-  { id: "v2",            label: "V2 datasheet",  ms: 4300 },
-  { id: "v3-chart",      label: "V3 60s",        ms: 3200 },
-  { id: "v3-thermal",    label: "V3 熱",         ms: 3800 },
-  { id: "v4-chart",      label: "V4 N-1",        ms: 3200 },
-  { id: "v4-crate",      label: "V4 C-rate",     ms: 4500 },
-  { id: "v5-mape",       label: "V5 MAPE",       ms: 4000 },
-  { id: "v5-honest",     label: "V5 揭露",       ms: 6000 },
-  { id: "edge",          label: "Edge AI",       ms: 4300 },
+  { id: "arch",          label: "Architecture",  ms: 3200 },
+  { id: "v1",            label: "V1 物理",       ms: 4700 },
+  { id: "v2",            label: "V2 datasheet",  ms: 4700 },
+  { id: "v3-chart",      label: "V3 60s",        ms: 3600 },
+  { id: "v3-thermal",    label: "V3 熱",         ms: 4200 },
+  { id: "v4-chart",      label: "V4 N-1",        ms: 3600 },
+  { id: "v4-crate",      label: "V4 C-rate",     ms: 4900 },
+  { id: "v5-mape",       label: "V5 MAPE",       ms: 4400 },
+  { id: "v5-honest",     label: "V5 揭露",       ms: 6400 },
+  { id: "edge",          label: "Edge AI",       ms: 4700 },
   { id: "tco-headline",  label: "TCO",           ms: 3200 },
   { id: "tco-scenarios", label: "TCO scenarios", ms: 3600 },
   { id: "ride",          label: "Ride-through",  ms: 3800 },
@@ -275,15 +276,21 @@ export function TourClient({
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             北美 Tier-2/3 AI 機房,沒有整合方案。
           </h2>
+          <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
+            用電抖動會弄壞供電、供電標準正在換代、上千顆電池不知道誰快壞 — 三個痛點,目前得買三套方案。
+          </PlainInline>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             <PainIconCard icon={<Zap className="h-7 w-7" />} kicker="毫秒瞬態"
               title="GB200 ±30 % dV/dt"
+              plain="用電像心電圖,電壓驟降會讓設備重啟"
               className="anim-rotate-in anim-stagger-1" />
             <PainIconCard icon={<Network className="h-7 w-7" />} kicker="HVDC 換代"
               title="48 V → ±400 V"
+              plain="買錯設備,轉換期要整批重買"
               className="anim-rotate-in anim-stagger-2" />
             <PainIconCard icon={<Activity className="h-7 w-7" />} kicker="機隊維運"
               title="1000+ 節 RUL 預測"
+              plain="不知道哪顆電池快壞、何時該換"
               className="anim-rotate-in anim-stagger-3" />
           </div>
         </div>
@@ -308,6 +315,9 @@ export function TourClient({
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             8 BBU 並聯 per rack,N+1 容錯
           </h2>
+          <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
+            一個機架配 8 顆電池模組,本來就多留 1 顆餘裕 — 任一顆故障,服務照常。
+          </PlainInline>
           <div className="mt-10 rounded-2xl border border-border bg-surface/40 p-6 sm:p-10">
             <div className="flex flex-wrap justify-center gap-2.5">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -348,6 +358,9 @@ export function TourClient({
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             3 顆電芯 × cycle_life 534–1227 · 對齊論文的放電 V(Qd) 曲線擬合
           </p>
+          <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            我們的電腦模型與公開實測資料誤差只有 2.15 %,遠低於 5 % 及格線 — 模型可信,後面的結論才可信。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -367,6 +380,9 @@ export function TourClient({
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             加 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降誤差 2.93 % &lt; 10 %
           </p>
+          <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            模型算出的電容表現與原廠規格書完全對得上 — 不是我們自己說了算。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -377,6 +393,9 @@ export function TourClient({
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             120 kW 峰值 → 30 kW 連續,LIC 吃瞬態
           </h2>
+          <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
+            斷電後 60 秒:尖峰由電容扛、平均由電池扛 — 各司其職,誰都不過勞。
+          </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
@@ -414,6 +433,9 @@ export function TourClient({
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             集總熱模型 · I²R 發熱 vs 對流散熱 · 熱失控風險近乎零
           </p>
+          <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            全程電池只升溫 0.1 度,離 50 度的安全上限非常遠。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -424,6 +446,9 @@ export function TourClient({
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             t = {fault_t} s 時 1 台 BBU 離線,剩 7 台撐到 60 s
           </h2>
+          <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
+            故意讓 8 台中的 1 台故障,剩下 7 台照樣把 60 秒任務做完 — 服務零中斷。
+          </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={faultPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
@@ -463,6 +488,9 @@ export function TourClient({
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             整機架 N-1 容錯在實體上極難重現,孿生層卻能直接驗證 — 這正是 twin {">"} hardware 的價值
           </p>
+          <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            故障後每台多出力約 14 %,仍遠低於原廠 2.5 C 安全上限 — 這種破壞性測試實體幾乎做不了,虛擬分身直接驗證。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -488,6 +516,9 @@ export function TourClient({
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 超越 Severson 2019 論文自身基準
           </p>
+          <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            在公開資料集上,壽命預測平均誤差 8.4 % — 比原論文自己的基準更準。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -514,6 +545,9 @@ export function TourClient({
             OOD 是刻意設計 — Severson cycle_life &lt; 2200,BBU duty 4000–13000。
             這個數字的存在正好是部署 SOP「新 protocol 退回 OLS、新化學體系客戶 PoC 重訓」的量化依據。
           </div>
+          <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            換到差異很大的使用情境,誤差會大幅上升 — 我們主動揭露這個極限,並訂好「新情境先重新訓練」的規則,而不是等客戶踩雷。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -538,6 +572,9 @@ export function TourClient({
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             ΔMAPE +0.10 pp · STM32N6 Neural-ART NPU 估算 27–109 µs · 本地推論,客戶不為每次推論付費
           </p>
+          <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
+            模型壓縮 3.5 倍後,小到能放進設備內的晶片、就地運算 — 客戶不必為每次預測付雲端費用。
+          </PlainInline>
         </div>
       </Slide>
 
@@ -1035,9 +1072,9 @@ function Caret() {
 // Tiny helpers
 // =============================================================================
 function PainIconCard({
-  icon, kicker, title, className,
+  icon, kicker, title, plain, className,
 }: {
-  icon: React.ReactNode; kicker: string; title: string; className?: string;
+  icon: React.ReactNode; kicker: string; title: string; plain?: string; className?: string;
 }) {
   return (
     <div className={`rounded-xl border border-border bg-surface/40 p-6 text-center ${className ?? ""}`}>
@@ -1046,6 +1083,7 @@ function PainIconCard({
       </div>
       <p className="text-xs uppercase tracking-wider text-warning font-semibold">{kicker}</p>
       <h3 className="mt-2 text-lg font-medium">{title}</h3>
+      {plain && <p className="mt-2 text-sm text-muted leading-relaxed">{plain}</p>}
     </div>
   );
 }

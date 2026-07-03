@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Disclosure } from "@/components/ui/disclosure";
+import { PlainNote, PlainInline, GlossaryPanel } from "@/components/ui/plain";
 import { Stat } from "@/components/ui/stat";
 import { USFleetMap } from "@/components/us-fleet-map";
 import { DeviceDrilldown } from "@/components/device-drilldown";
@@ -144,6 +145,9 @@ export function DashboardClient({
                 模式,而機隊層級的服務連續性維持 100 %。
                 底層的模擬波形請見 /twin · V3 / V4 切換。
               </Disclosure>
+              <PlainInline className="mt-2">
+                按右邊按鈕，模擬部分機架各有一顆電池故障 — 地圖與統計即時更新：服務照常，沒有任何客戶受影響。
+              </PlainInline>
             </div>
             <button
               type="button"
@@ -243,15 +247,26 @@ export function DashboardClient({
             以及在 SOH 跨越{" "}
             <span className="text-foreground font-medium">80 %</span> 之前就浮現汰換候選的<span className="text-foreground">預測性維運</span>。
           </p>
+          <PlainNote className="max-w-3xl">
+            這就是客戶每天實際打開的產品畫面：三個服務等級由淺入深 — 即時看現況、提早發現異常、預先排好汰換計畫。畫面上所有資料皆為模擬。
+          </PlainNote>
         </div>
         <span className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-warning whitespace-normal">
           模擬資料 · 僅供展示用的合成機隊
         </span>
       </header>
 
+      {/* Plain-language glossary for this page's recurring terms. */}
+      <GlossaryPanel
+        termKeys={[
+          "bbu", "soh", "rul", "n_redundancy", "digital_twin", "lstm", "c_rate", "uvlo", "calendar_aging",
+        ]}
+      />
+
       {/* Tier 1 — real-time monitoring */}
       <section className="space-y-4">
         <SectionHeader icon={<Activity className="h-4 w-4" />} kicker="Tier 1" title="即時監測" />
+        <PlainInline>全機隊此刻的體檢總表 — 幾台健康、幾台過熱、幾台開始老化。</PlainInline>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Stat
             label="設備總數"
@@ -270,13 +285,13 @@ export function DashboardClient({
             label="熱警告"
             value={fleet.status_summary.thermal_warn}
             tone="warning"
-            hint="LIC > 60 °C 或 LFP > 45 °C"
+            hint="LIC > 60 °C 或 LFP > 45 °C(電容或電池溫度越過安全觀察線)"
           />
           <Stat
             label="早期老化"
             value={fleet.status_summary.early_aging}
             tone="danger"
-            hint="SOH < 85 % 或 RUL < 800 cycles · 自動納入 Tier-3"
+            hint="SOH < 85 % 或 RUL < 800 cycles · 自動納入 Tier-3(健康度偏低或預測剩餘壽命不足,自動排入汰換佇列)"
           />
         </div>
       </section>
@@ -284,6 +299,7 @@ export function DashboardClient({
       {/* Tier 2 — geographic + SOH bucket */}
       <section className="space-y-4">
         <SectionHeader icon={<MapPin className="h-4 w-4" />} kicker="Tier 2" title="主動式維護 · 地理與 SOH 視圖" accent="accent" />
+        <PlainInline>把 1,000 台設備放上地圖、按健康度分層 — 問題還沒發生，先知道往哪裡看。</PlainInline>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted mr-2">篩選:</span>
@@ -400,6 +416,7 @@ export function DashboardClient({
       {/* Tier 3 — predictive ops */}
       <section className="space-y-4">
         <SectionHeader icon={<Shield className="h-4 w-4" />} kicker="Tier 3" title="預測性維運 · 汰換佇列" accent="warning" />
+        <PlainInline>AI 依每顆電池的預測壽命，自動列出最該優先換的前 8 名 — 維修從定期巡檢變成照清單辦事。</PlainInline>
         <Card className="simulated-watermark">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
