@@ -16,7 +16,7 @@
 |---|---|---|
 | 1 | Tier-A「LIC 鋰離子電容」錨定 Eaton XLR | Eaton XLR-48R6167-R 官方 datasheet 為 **EDLC 超級電容**;**量產 Tier-A 改採真 LIC(Musashi ULTIMO CPQ3300SD)** |
 | 2 | 5.7× / 3.5× 削峰 | **±30%/100ms reference 波形理想無損耗上界、非壽命倍率**;含 DC-DC 損耗後典型 **2.4–3.9×、>100Hz 退到 ~1.5×** |
-| 3 | 雙向 DC-DC 前級 | OCP ORV3 禁 Oring 後 bus 放電容 → **DC-DC 為合規必要件**;sim 為開環等效,closed-loop 為 EVT deliverable |
+| 3 | 雙向 DC-DC 前級 | OCP ORV3 禁 Oring 後 bus 放電容 → **DC-DC 為合規必要件**;sim 為開環等效,**電力電子層** closed-loop 為 EVT deliverable(監督層閉環 SOH→τ 已於 **V8** 模擬驗證,`make v8`) |
 | 4 | STM32N6 NPU 推論 LSTM(54.7 µs) | Neural-ART **NPU 不支援 LSTM/GRU**;量產 RUL 改 **TCN/1D-CNN**(NPU 原生 + 可 static INT8 量化) |
 | 5 | Tier-C 單晶片整合(含 OpenBMC) | M55 無 MMU 跑不了 OpenBMC;**拆三層**(BMS-AFE + safety MCU + N6 推論),BBU 走 MCTP/PLDM **不自稱 BMC** |
 

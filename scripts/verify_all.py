@@ -82,8 +82,16 @@ CHAINS = [
         "pass_path": None,
     },
     {
+        "id": "V8",
+        "name": "Aged-pack adaptive split (supervisory closed-loop)",
+        "script": "scripts/generate_adaptive_split_sim.py",
+        "args": [],
+        "artifact": "apps/web/public/scenarios/adaptive_split.json",
+        "pass_path": ["pass_criteria", "overall_pass"],
+    },
+    {
         "id": "XCHECK",
-        "name": "Whitepaper headline number cross-check (38 assertions)",
+        "name": "Whitepaper headline number cross-check (43 assertions)",
         "script": "scripts/check_whitepaper_numbers.py",
         "args": [],
         "artifact": None,
