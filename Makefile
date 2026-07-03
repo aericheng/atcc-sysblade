@@ -14,7 +14,7 @@
 
 PYTHON := .venv/Scripts/python
 
-.PHONY: verify verify-fast v1 v2 v3 v4 v5 v6 xcheck clean help
+.PHONY: verify verify-fast v1 v2 v3 v4 v5 v6 v8 xcheck clean help
 
 help:
 	@echo "Sysblade HyperBuffer — Twin-first validation gate"
@@ -27,7 +27,8 @@ help:
 	@echo "  make v4            - N-1 BBU failure redundancy sim"
 	@echo "  make v5            - Severson -> BBU duty transfer MAPE"
 	@echo "  make v6            - One-command verify_all_report.json"
-	@echo "  make xcheck        - Whitepaper headline number cross-check (38 assertions)"
+	@echo "  make v8            - Aged-pack adaptive split (supervisory closed-loop) sim"
+	@echo "  make xcheck        - Whitepaper headline number cross-check (43 assertions)"
 	@echo "  make clean         - remove generated JSON artifacts (keeps Severson cache)"
 
 verify:
@@ -53,6 +54,9 @@ v5:
 
 v6: verify
 
+v8:
+	$(PYTHON) scripts/generate_adaptive_split_sim.py
+
 xcheck:
 	$(PYTHON) scripts/check_whitepaper_numbers.py
 
@@ -65,8 +69,11 @@ clean:
 	-rm -f data/processed/severson_transfer_mape.png
 	-rm -f data/processed/rack_60s_graceful.png
 	-rm -f data/processed/rack_n_minus_1.png
+	-rm -f data/processed/adaptive_split.png
 	-rm -f data/processed/verify_all_report.json
 	-rm -f apps/web/public/scenarios/rack_60s_graceful.json
 	-rm -f apps/web/public/scenarios/rack_n_minus_1.json
+	-rm -f apps/web/public/scenarios/adaptive_split.json
 	-rm -f packages/shared/scenarios/rack_60s_graceful.json
 	-rm -f packages/shared/scenarios/rack_n_minus_1.json
+	-rm -f packages/shared/scenarios/adaptive_split.json

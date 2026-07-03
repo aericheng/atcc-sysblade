@@ -43,7 +43,7 @@ abstract: |
 |---|---|---|
 | 1 | Tier-A 為「LIC 鋰離子電容」,錨定 Eaton XLR-48-166 | Eaton XLR-48R6167-R 經官方 datasheet 為 **EDLC 超級電容**,非 LIC;本文 demo 沿用其 RC 等效。**量產 Tier-A 改採真 LIC(Musashi ULTIMO CPQ3300SD,連續 200A / 脈衝 ≤1300A)** |
 | 2 | 5.7× / 3.5× 削峰 | 為 **±30%/100ms reference 波形下的理想無損耗換流上界**,描述「LFP 看到的訊號乾淨度」非壽命倍率;含 DC-DC 效率 / 迴路頻寬後**典型 2.4–3.9×、>100Hz 退到 ~1.5×** |
-| 3 | 雙向 DC-DC 前級 | OCP ORV3 規範禁 Oring 後 shared bus 放電容 → **LIC 必在 active DC-DC 後,DC-DC 為合規必要件(非可選優化)**;本文 sim 為開環 RC 等效,closed-loop 為 EVT deliverable |
+| 3 | 雙向 DC-DC 前級 | OCP ORV3 規範禁 Oring 後 shared bus 放電容 → **LIC 必在 active DC-DC 後,DC-DC 為合規必要件(非可選優化)**;本文 sim 為開環 RC 等效,**DC-DC 電力電子層** closed-loop 為 EVT deliverable。**監督層閉環(SOH/DCIR 估測 → 分頻常數 τ 動態改寫)另已於 V8 模擬驗證**(`adaptive_split.json`,§2.3)— 兩者為不同層,不可混用 |
 | 4 | STM32N6 NPU 推論 LSTM(54.7 µs / INT8 量化) | ST 官方 **Neural-ART NPU 不支援 LSTM / GRU**;54.7 µs 估算與 INT8「無損」對 LSTM 本體不成立(量的是外圍 Gemm)。**量產 RUL 模型改 TCN / 1D-CNN**(NPU 原生 Conv1D + 可 static INT8 量化) |
 | 5 | Tier-C 單晶片 STM32N6 整合 BMS + ML(+ OpenBMC) | M55 無 MMU,跑不了 OpenBMC;安全 BMS 與 ML 共晶片違反 UL 1973 / IEC 61508。**拆三層**:獨立 BMS-AFE(BQ79616-Q1)+ safety MCU(TMS570)+ N6 推論;BBU 以 managed device 走 MCTP/PLDM,**不自稱 BMC** |
 
@@ -218,11 +218,19 @@ MW/s ramp + 頻域規範,未直接給 cell-level 數值**),SPM 會低估 solid-p
 | `aging_lfp.json` | 3000 cycle BBU duty cycle-fade + **Naumann √t calendar/storage fade overlay**(§3.1.1)| cycle-fade 80 % SOH @ ~3360 cyc(≈67 yr);**calendar binds ≈10 yr**(校準 v2.2 附件 C) |
 | `aging_rainflow_validation.json` | Rainflow + Wang 2011 對 hybrid 與 LFP-only 各自的 LFP cell 電流跑 cycle-aging 預測,獨立交叉驗證 `aging_lfp.json` 的 hybrid-vs-solo 排序(見 §3.2.1) | demo 波形 hybrid/LFP-only damage ratio = 1.012,worst-case (10C peaks) ratio = 0.945 |
 | `model_validation.json` | LSTM 推論逐 cycle trajectory + actual | 9 個 curated cells |
+| `adaptive_split.json` | **V8 監督層閉環**:60 s graceful profile 上做 SOH sweep [1.00→0.80] × {固定 τ, 自適應 τ(SOH)},老化以 DCIR overlay(+50 % @ SOH 0.80,同步 `lib/aging.ts`)表示,τ_adapt = τ0 × (1 + dcir_growth) | SOH 0.80 固定 τ 峰值 C-rate 6.06C **跨越 6C 設計點**、swing +4.4 %;閉環改寫 τ→0.75 s 後峰值 **5.47C 回設計點內**、swing 回 BOL 包絡(267 mV)、LIC UVLO 餘裕不變;SOH 高估 5 pp 的 robustness 檢查亦過(`make v8`) |
 
 > 上述 JSON 是 `/twin` 與 `/dashboard` 所有數字的單一資料源,SHA-256
 > 雙寫一致(generator 同一時間戳寫到 `packages/shared/` 與
 > `apps/web/public/`)。`aging_rainflow_validation.json` 不被 UI 消費,
 > 純粹是後端交叉驗證的可追溯產物。
+>
+> `adaptive_split.json`(V8)同樣暫不被 UI 消費——它是專利獨立項
+> 「預測控制閉環 / 老化偵測動態改寫配比」的模擬層量化證據:回授訊號為
+> twin 的 SOH/DCIR 估測,屬**監督層**閉環(改寫分頻常數 τ);與 errata #3
+> 所指 **DC-DC 電力電子層** closed-loop(EVT deliverable)為不同層。
+> 不加任何硬體,老化機櫃自動恢復 6C 設計工作點,即「無法預期的功效」
+> 的量化表述。
 
 #### 3.1.1 Calendar / 純儲老化 overlay(業師 2026-06-04 質疑回應)
 

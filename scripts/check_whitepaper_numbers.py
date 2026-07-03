@@ -282,6 +282,30 @@ def check_mains_fail_invariants(report: Report) -> None:
     )
 
 
+def check_adaptive_split_invariants(report: Report) -> None:
+    """V8 — aged-pack adaptive split (supervisory closed-loop) gate."""
+    v8 = json.loads(_read(SCENARIOS_PUB / "adaptive_split.json"))
+    v3 = json.loads(_read(SCENARIOS_PUB / "rack_60s_graceful.json"))
+
+    report.add(
+        name="V8 adaptive split overall_pass",
+        passed=bool(v8["pass_criteria"]["overall_pass"]),
+        detail=v8["headline_verdict"],
+        target_loc="apps/web/public/scenarios/adaptive_split.json",
+    )
+
+    # Cross-scenario anchor: V8's BOL run must reproduce V3's swing (same
+    # profile, same τ) — guards against the two sims drifting apart.
+    bol_swing = float(v8["stats"]["bol_v_swing_v"])
+    v3_swing = float(v3["stats"]["v_cell_swing_v"])
+    report.add(
+        name="V8 BOL run reproduces V3 swing anchor",
+        passed=_approx(bol_swing, v3_swing, 0.10 * v3_swing),
+        detail=f"V8 BOL {bol_swing*1000:.1f} mV vs V3 {v3_swing*1000:.1f} mV",
+        target_loc="adaptive_split.json stats.bol_v_swing_v ↔ rack_60s_graceful.json stats.v_cell_swing_v",
+    )
+
+
 def check_fleet_invariants(report: Report) -> None:
     fleet = json.loads(_read(SCENARIOS_PUB / "fleet_devices.json"))
     devices = fleet["devices"]
@@ -690,6 +714,7 @@ def main() -> int:
 
     report = Report()
     check_scenarios_in_sync(report)
+    check_adaptive_split_invariants(report)
     check_fleet_invariants(report)
     check_lic_rc_invariants(report)
     check_mains_fail_invariants(report)
