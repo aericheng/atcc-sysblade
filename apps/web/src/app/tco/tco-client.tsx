@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Disclosure } from "@/components/ui/disclosure";
+import { PlainNote, GlossaryPanel } from "@/components/ui/plain";
 import { Stat } from "@/components/ui/stat";
 import {
   computeTco,
@@ -180,7 +181,13 @@ export function TcoClient() {
           <span className="text-foreground">PUE 1.4</span>) 得出{" "}
           <span className="text-success font-medium">主要的 33 % 節省</span>。請依您的情境調整滑桿。
         </p>
+        <PlainNote className="mt-4 max-w-3xl">
+          「瞬變」是 AI 伺服器毫秒級的劇烈用電抖動 — 它造成的電壓驟降、設備重啟與停機，都是帳單上看不到的隱形成本。這個計算器把它們連同採購、更換、人力，一起算成 10 年總帳。
+        </PlainNote>
       </header>
+
+      {/* Plain-language glossary for this page's recurring terms. */}
+      <GlossaryPanel termKeys={["tco", "transient", "pue", "hvdc", "bbu", "lfp", "lic"]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Inputs */}
@@ -234,6 +241,7 @@ export function TcoClient() {
               max={2.0}
               step={0.05}
               onChange={(v) => setInputs((s) => ({ ...s, pue: v }))}
+              hint="總用電 ÷ IT 設備用電,越接近 1 越省;冷卻用電越多,數字越高。"
             />
             <NumberField
               label="電網碳排 (kg CO₂ / kWh)"
@@ -241,6 +249,7 @@ export function TcoClient() {
               min={0.05}
               max={0.8}
               step={0.01}
+              hint="您所在電網每度電的碳排,用於估算 CO₂ 減量。"
               onChange={(v) => setInputs((s) => ({ ...s, gridCarbonKgPerKwh: v }))}
             />
           </CardBody>
@@ -469,6 +478,7 @@ function NumberField({
   step,
   onChange,
   prefix,
+  hint,
 }: {
   label: string;
   value: number;
@@ -477,6 +487,7 @@ function NumberField({
   step: number;
   onChange: (v: number) => void;
   prefix?: string;
+  hint?: string;
 }) {
   // Decimal places follow the slider step so the typed input shows the same
   // resolution as the slider snaps to (step=1 → 0, step=0.005 → 3, etc.).
@@ -551,6 +562,7 @@ function NumberField({
         onChange={(e) => onChange(Number(e.target.value))}
         className="mt-2 w-full accent-primary"
       />
+      {hint && <p className="mt-1 text-xs text-muted leading-relaxed">{hint}</p>}
     </div>
   );
 }
