@@ -401,10 +401,10 @@ export function TourClient({
               <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
                 key={active === 6 ? "active" : "inactive"}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
-                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name="機架"
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name="機架總負載"
                   isAnimationActive={active === 6} animationDuration={1500} />
                 <Line type="monotone" dataKey="p_lfp"   stroke="var(--success)" strokeWidth={2} dot={false} name="LFP"
                   isAnimationActive={active === 6} animationDuration={1500} animationBegin={300} />
@@ -454,7 +454,7 @@ export function TourClient({
               <LineChart data={faultPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
                 key={active === 8 ? "active" : "inactive"}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
                 <ReferenceLine
@@ -462,10 +462,10 @@ export function TourClient({
                   stroke="var(--danger)"
                   strokeWidth={2}
                   strokeDasharray="4 4"
-                  label={{ value: "BBU 8 → 7", position: "insideTopRight", fill: "var(--danger)", fontSize: 11 }}
+                  label={{ value: "1 台故障（8 → 7 台）", position: "insideTopRight", fill: "var(--danger)", fontSize: 11 }}
                   className="anim-marker-flash"
                 />
-                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="每 BBU kW"
+                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="每台 BBU 功率"
                   isAnimationActive={active === 8} animationDuration={1500} />
               </LineChart>
             </ResponsiveContainer>

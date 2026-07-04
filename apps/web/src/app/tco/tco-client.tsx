@@ -58,6 +58,17 @@ function BreakdownBars({ rows, isNarrow }: { rows: BreakdownRow[]; isNarrow: boo
   const max = Math.max(1, ...rows.flatMap((r) => [r.traditional, r.sysblade]));
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pb-1 text-xs text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(251,191,36,0.85)" }} />
+          傳統 NMC BBU
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(99,102,241,0.9)" }} />
+          Sysblade HyperBuffer
+        </span>
+        <span className="ml-auto">每組上下兩條：上=傳統、下=Sysblade，越短越省。</span>
+      </div>
       {rows.map((row) => {
         const tw = (row.traditional / max) * 100;
         const sw = (row.sysblade / max) * 100;
@@ -88,23 +99,15 @@ function BreakdownBars({ rows, isNarrow }: { rows: BreakdownRow[]; isNarrow: boo
                 />
               </div>
             </div>
-            <div className="text-right tabular-nums text-xs whitespace-nowrap">
+            <div className="text-right tabular-nums text-xs sm:text-sm whitespace-nowrap">
               <div className="text-warning">${row.traditional.toLocaleString()}</div>
               <div className="text-primary">${row.sysblade.toLocaleString()}</div>
             </div>
           </div>
         );
       })}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3 mt-2 border-t border-border text-xs text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(251,191,36,0.85)" }} />
-          傳統 NMC BBU
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-3 rounded-sm" style={{ background: "rgba(99,102,241,0.9)" }} />
-          Sysblade HyperBuffer
-        </span>
-        <span className="ml-auto">長條寬度以最大的成本項目為基準正規化。</span>
+      <div className="pt-3 mt-2 border-t border-border text-xs text-muted">
+        長條寬度以最大的成本項目為基準正規化。
       </div>
     </div>
   );

@@ -130,14 +130,29 @@ export function CalendarWidget() {
           </div>
         </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" style={{ height: 80 }} preserveAspectRatio="none">
-        <line x1={0} y1={gateY} x2={W} y2={gateY} stroke="var(--warning)" strokeDasharray="4 3" strokeWidth={1} opacity={0.7} />
-        <polyline points={pts} fill="none" stroke={lifeTone(life)} strokeWidth={2} />
-        {lifeX < W && <line x1={lifeX} y1={0} x2={lifeX} y2={H} stroke="var(--muted)" strokeDasharray="2 2" strokeWidth={1} opacity={0.6} />}
-      </svg>
-      <div className="mt-1 flex justify-between text-[10px] text-muted">
+      <div className="mt-3 flex items-stretch gap-1">
+        {/* Y-axis gutter — labels positioned with the same yToY math as the SVG */}
+        <div className="relative w-16 shrink-0 text-[9px] text-muted" style={{ height: 80 }}>
+          <span className="absolute right-0 top-0 -translate-y-1/2">健康 100%</span>
+          <span
+            className="absolute right-0 -translate-y-1/2 text-warning"
+            style={{ top: `${(gateY / H) * 100}%` }}
+          >
+            80% 門檻
+          </span>
+          <span className="absolute right-0 bottom-0 translate-y-1/2">60%</span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full flex-1" style={{ height: 80 }} preserveAspectRatio="none">
+          <line x1={0} y1={gateY} x2={W} y2={gateY} stroke="var(--warning)" strokeDasharray="4 3" strokeWidth={1} opacity={0.7} />
+          <polyline points={pts} fill="none" stroke={lifeTone(life)} strokeWidth={2} />
+          {lifeX < W && <line x1={lifeX} y1={0} x2={lifeX} y2={H} stroke="var(--muted)" strokeDasharray="2 2" strokeWidth={1} opacity={0.6} />}
+        </svg>
+      </div>
+      <div className="mt-1 ml-[68px] flex justify-between text-[10px] text-muted">
         <span>0 年</span>
-        <span className="text-warning">80% SOH 門檻</span>
+        <span>5 年</span>
+        <span>10 年</span>
+        <span>15 年</span>
         <span>{YEARS} 年</span>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
@@ -231,34 +246,60 @@ export function PackThermalWidget({ nSeries = 15, inletC = 28 }: { nSeries?: num
         onChange={setOutletC}
         display={`${outletC} °C  ·  Δ${(outletC - inletC).toFixed(0)} °C`}
       />
-      <div className="mt-3 relative flex items-end gap-1 h-28 border-b border-border/40">
-        <div
-          className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-warning/60"
-          style={{ bottom: `${((0.8 - 0.55) / (0.85 - 0.55)) * 100}%` }}
-        >
-          <span className="absolute -top-4 right-0 text-[10px] text-warning">80% 門檻</span>
+      <div className="mt-3 flex items-stretch gap-1">
+        {/* Y-axis gutter — same 55%..85% scale as the bars */}
+        <div className="relative w-12 shrink-0 text-[9px] text-muted h-28">
+          <span className="absolute right-0 top-0 -translate-y-1/2">85%</span>
+          <span
+            className="absolute right-0 translate-y-1/2 text-warning"
+            style={{ bottom: `${((0.8 - 0.55) / (0.85 - 0.55)) * 100}%` }}
+          >
+            80% 門檻
+          </span>
+          <span className="absolute right-0 bottom-0 translate-y-1/2">55%</span>
         </div>
-        {cells.map((c) => {
-          const h = ((c.soh - 0.55) / (0.85 - 0.55)) * 100;
-          const isWeak = c.idx === weakest.idx;
-          const hotFrac = (c.t - inletC) / Math.max(1e-6, outletC - inletC);
-          return (
-            <div
-              key={c.idx}
-              className="relative flex-1 self-stretch flex flex-col items-center justify-end"
-              title={`電芯 ${c.idx} · ${c.t.toFixed(1)} °C · SOH@7年 ${(c.soh * 100).toFixed(1)}%`}
-            >
+        <div className="relative flex flex-1 items-end gap-1 h-28 border-b border-border/40">
+          <div
+            className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-warning/60"
+            style={{ bottom: `${((0.8 - 0.55) / (0.85 - 0.55)) * 100}%` }}
+          />
+          {cells.map((c) => {
+            const h = ((c.soh - 0.55) / (0.85 - 0.55)) * 100;
+            const isWeak = c.idx === weakest.idx;
+            const hotFrac = (c.t - inletC) / Math.max(1e-6, outletC - inletC);
+            return (
               <div
-                className="w-full rounded-t"
-                style={{
-                  height: `${Math.max(4, Math.min(100, h))}%`,
-                  background: isWeak ? "var(--danger)" : "var(--success)",
-                  opacity: isWeak ? 1 : 0.35 + 0.5 * (1 - hotFrac),
-                }}
-              />
-            </div>
-          );
-        })}
+                key={c.idx}
+                className="relative flex-1 self-stretch flex flex-col items-center justify-end"
+                title={`電芯 ${c.idx} · ${c.t.toFixed(1)} °C · SOH@7年 ${(c.soh * 100).toFixed(1)}%`}
+              >
+                <div
+                  className="w-full rounded-t"
+                  style={{
+                    height: `${Math.max(4, Math.min(100, h))}%`,
+                    background: isWeak ? "var(--danger)" : "var(--success)",
+                    opacity: isWeak ? 1 : 0.35 + 0.5 * (1 - hotFrac),
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-1 ml-[52px] flex justify-between text-[10px] text-muted">
+        <span>電芯 1（冷端）</span>
+        <span>電芯 8</span>
+        <span>電芯 15（熱端）</span>
+      </div>
+      <div className="mt-1 ml-[52px] flex items-center gap-4 text-[10px] text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--danger)" }} />
+          最熱／最弱電芯
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--success)", opacity: 0.6 }} />
+          其餘電芯（顏色越深越接近冷端）
+        </span>
       </div>
       <div className="mt-2 grid grid-cols-3 gap-3 text-center">
         <div>

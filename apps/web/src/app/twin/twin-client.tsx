@@ -401,13 +401,23 @@ function ScopeCharts({
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
     >
-      <ChartCard title="電芯電壓（V）" subtitle="ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP">
+      <ChartCard
+        title="電芯電壓（V）"
+        subtitle="ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP"
+        plain="線越平、電壓越穩 — 綠色（混合模式）比黃色（純電池）平穩得多。"
+      >
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <ReferenceArea x1={4} x2={6} fill="rgba(99,102,241,0.06)" stroke="none" />
-            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
-            <YAxis domain={[3.05, 3.5]} stroke="" tickFormatter={(v) => v.toFixed(2)} />
+            <ReferenceArea
+              x1={4} x2={6} fill="rgba(99,102,241,0.06)" stroke="none"
+              label={{ value: "穩態視窗", position: "insideTopLeft", fill: "var(--muted)", fontSize: 10 }}
+            />
+            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
+            <YAxis
+              domain={[3.05, 3.5]} stroke="" tickFormatter={(v) => v.toFixed(2)}
+              label={{ value: "電芯電壓 (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
+            />
             <Tooltip content={<DarkTooltip />} />
             <Line
               type="monotone"
@@ -448,17 +458,17 @@ function ScopeCharts({
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
-            <YAxis stroke="" tickFormatter={(v) => `${v}`} />
+            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
+            <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
             <Tooltip content={<DarkTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+            <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
             <Line
               type="linear"
               dataKey="p_total"
               stroke="var(--muted)"
               strokeWidth={0.8}
               dot={false}
-              name="機架總功率（kW）"
+              name="機架總功率"
               isAnimationActive={false}
             />
             <Line
@@ -467,7 +477,7 @@ function ScopeCharts({
               stroke="var(--primary)"
               strokeWidth={1.6}
               dot={false}
-              name={mode === "hybrid" ? "→ LFP（已平滑）" : "→ LFP（完整）"}
+              name={mode === "hybrid" ? "電池承受的功率（已平滑）" : "電池承受的功率（完整）"}
               isAnimationActive={false}
             />
             {showLeadingDot && (
@@ -498,15 +508,15 @@ function ScopeCharts({
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v}s`} stroke="" allowDataOverflow />
+              <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
               <YAxis
                 domain={[licCutoffV - 1, licNominalV + 1.5]}
                 stroke=""
                 tickFormatter={(v) => v.toFixed(0)}
-                label={{ value: "V_lic (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 10 }}
+                label={{ value: "電容組電壓 (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
               />
               <Tooltip content={<DarkTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+              <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
               {/* Eaton datasheet UVLO cutoff — dashed red, labelled. If
                   v_lic ever crosses this line the production design fails
                   for that waveform. The check_whitepaper_numbers.py gate
@@ -517,10 +527,10 @@ function ScopeCharts({
                 strokeDasharray="6 4"
                 strokeWidth={1.2}
                 label={{
-                  value: `Eaton XLR UVLO ${licCutoffV.toFixed(0)} V`,
+                  value: `保護門檻 ${licCutoffV.toFixed(0)} V（UVLO）`,
                   position: "insideTopRight",
                   fill: "var(--danger)",
-                  fontSize: 10,
+                  fontSize: 11,
                 }}
                 ifOverflow="extendDomain"
               />
@@ -533,7 +543,7 @@ function ScopeCharts({
                   value: `額定 ${licNominalV.toFixed(1)} V`,
                   position: "insideTopRight",
                   fill: "var(--muted)",
-                  fontSize: 10,
+                  fontSize: 11,
                 }}
               />
               <Line
@@ -542,7 +552,7 @@ function ScopeCharts({
                 stroke="var(--success)"
                 strokeWidth={1.6}
                 dot={false}
-                name="V_lic（RC 模型）"
+                name="電容組電壓"
                 isAnimationActive={false}
               />
               {showLeadingDot && leadingPoint.v_lic != null && (
@@ -772,14 +782,13 @@ export function TwinClient({
           解決 <span className="gradient-text">GB200 毫秒級瞬變</span>。
         </h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          本頁是電池的<span className="text-foreground font-medium">數位孿生</span>：以物理方程式重現真實電池行為，
-          模型已對齊公開實測資料與原廠規格書。方法：PyBaMM DFN 求解{" "}
-          <span className="text-foreground font-medium">LFP 電芯</span>；
-          <span className="text-foreground font-medium">LIC 側</span>以
-          R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（資料表為基準，非電化學模型）。
-          情境：單一機架、<span className="text-foreground font-medium">80 kW 基準</span>、{" "}
-          <span className="text-foreground font-medium">每 100 ms ±30 % 方波脈衝</span>。
-          切換下方按鈕，比較<span className="text-success font-medium">有無 LIC 分流時電池承受的應力差異</span>。
+          本頁是電池的<span className="text-foreground font-medium">數位孿生</span>：以物理方程式重現真實電池的行為，
+          模型已對齊公開實測資料與原廠規格書。
+          切換下方按鈕，比較<span className="text-success font-medium">有無電容分流時，電池承受的應力差異</span>。
+        </p>
+        <p className="text-xs text-muted max-w-3xl leading-relaxed">
+          方法：PyBaMM DFN 求解 LFP 電芯 · LIC 側以 R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（資料表為基準，非電化學模型）
+          · 情境：單一機架、80 kW 基準、每 100 ms ±30 % 方波脈衝
         </p>
       </header>
 
@@ -1020,14 +1029,15 @@ export function TwinClient({
           <ChartCard
             title="機架功率分流 · 0-60 s"
             subtitle={`Stage A 0-${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 於 ${(mainsFail.stages?.ramp_s ?? 1.5).toFixed(1)} s 內線性降載 ${(mainsFail.stages?.peak_kw ?? 120).toFixed(0)} → ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`}
+            plain="斷電後的 60 秒：藍色（電容）先扛住開頭的尖峰，綠色（電池）接手平穩的長尾。"
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rampPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip content={<DarkTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
                 <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name="機架總功率" isAnimationActive={false} />
                 <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name="LFP 電池組" isAnimationActive={false} />
                 <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name="LIC 電容組" isAnimationActive={false} />
@@ -1038,11 +1048,12 @@ export function TwinClient({
           <ChartCard
             title="LIC 電容組電壓包絡 · 閉合解形式 RC"
             subtitle={`2× Eaton XLR-48-166 並聯 · v_nominal 51.3 V · 資料表截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`}
+            plain="電容電壓全程遠高於紅色保護門檻 — 60 秒事件中保護餘裕充足。"
           >
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={rampLicData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                 <YAxis domain={[35, 55]} stroke="" tickFormatter={(v) => `${v} V`} />
                 <Tooltip content={<DarkTooltip />} />
                 <ReferenceLine
@@ -1050,13 +1061,13 @@ export function TwinClient({
                   stroke="var(--danger)"
                   strokeDasharray="4 4"
                   label={{
-                    value: `Eaton XLR 截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`,
+                    value: `保護門檻 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V（UVLO）`,
                     position: "insideTopRight",
                     fill: "var(--danger)",
-                    fontSize: 10,
+                    fontSize: 11,
                   }}
                 />
-                <Line type="monotone" dataKey="v_lic" stroke="var(--primary)" strokeWidth={1.8} dot={false} name="v_lic" isAnimationActive={false} />
+                <Line type="monotone" dataKey="v_lic" stroke="var(--primary)" strokeWidth={1.8} dot={false} name="電容組電壓" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -1190,24 +1201,29 @@ export function TwinClient({
                 : "機架功率分流 · 0–60 s（正常 8 BBU 對稱）"
             }
             subtitle={`Stage A ${(activeRack.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 線性降載 ${(activeRack.stages?.peak_kw ?? 120).toFixed(0)} → ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`}
+            plain={
+              rackMode === "n-1"
+                ? "紅色虛線處一台故障 — 曲線幾乎不受影響，備援任務照常完成。"
+                : "正常情境的功率分工：電容承接開頭尖峰，電池負責平穩長尾。"
+            }
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip content={<DarkTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
                 {rackMode === "n-1" && activeRack.fault_injection && (
                   <ReferenceLine
                     x={activeRack.fault_injection.fault_time_s}
                     stroke="var(--danger)"
                     strokeDasharray="4 4"
                     label={{
-                      value: `故障注入（BBU ${activeRack.fault_injection.n_bbu_normal}→${activeRack.fault_injection.n_bbu_degraded}）`,
+                      value: `1 台故障（${activeRack.fault_injection.n_bbu_normal} → ${activeRack.fault_injection.n_bbu_degraded} 台）`,
                       position: "insideTopRight",
                       fill: "var(--danger)",
-                      fontSize: 10,
+                      fontSize: 11,
                     }}
                   />
                 )}
@@ -1225,11 +1241,16 @@ export function TwinClient({
                 ? `存活的 BBU 在 t=${activeRack.fault_injection?.fault_time_s ?? 15}s 之後分擔機架負載；階躍上升反映負載重分配`
                 : "8-BBU 對稱負載 — 所有 BBU 承受相同的縮放電流"
             }
+            plain={
+              rackMode === "n-1"
+                ? "故障後每台分擔的功率階梯上升 — 增幅約 14 %，仍在安全範圍內。"
+                : "八台平均分擔，每台都在低負載區運轉。"
+            }
           >
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={rackPerBbuData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip content={<DarkTooltip />} />
                 {rackMode === "n-1" && activeRack.fault_injection && (
@@ -1245,7 +1266,7 @@ export function TwinClient({
                   stroke="var(--success)"
                   strokeWidth={1.8}
                   dot={false}
-                  name="每 BBU kW"
+                  name="每台 BBU 功率"
                   isAnimationActive={false}
                 />
               </LineChart>
@@ -1256,11 +1277,12 @@ export function TwinClient({
             <ChartCard
               title="電芯熱軌跡 · 集總熱容 + 對流冷卻"
               subtitle={`I²·R_int 加熱 vs h·A·ΔT 冷卻 · 電芯 C_th 70 J/K · R_int 8 mΩ · 環境 ${activeRack.thermal_model?.t_ambient_c ?? 25} °C`}
+              plain="全程溫升不到一度，距 50 °C 警告線非常遠 — 電池不會過熱。"
             >
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={rackThermalData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)}s`} />
+                  <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
                   <YAxis
                     domain={[
                       (activeRack.thermal_model?.t_ambient_c ?? 25) - 1,
@@ -1278,10 +1300,10 @@ export function TwinClient({
                     stroke="var(--danger)"
                     strokeDasharray="4 4"
                     label={{
-                      value: `警告 ${activeRack.thermal_model?.t_warning_c ?? 50} °C（whitepaper §6.1）`,
+                      value: `警告線 ${activeRack.thermal_model?.t_warning_c ?? 50} °C`,
                       position: "insideTopRight",
                       fill: "var(--danger)",
-                      fontSize: 10,
+                      fontSize: 11,
                     }}
                   />
                   <ReferenceLine
@@ -1356,7 +1378,7 @@ export function TwinClient({
                 <XAxis dataKey="cycle" type="number" stroke="" tickFormatter={(v) => `${v}`} />
                 <YAxis domain={[0.45, 1.0]} stroke="" tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
                 <Tooltip content={<DarkTooltip percent />} />
-                <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
                 <Line
                   type="monotone"
                   dataKey="soh_full"
@@ -1707,7 +1729,7 @@ export function TwinClient({
                 <XAxis
                   type="number"
                   dataKey="actual"
-                  name="actual"
+                  name="實際"
                   domain={domain}
                   allowDataOverflow={false}
                   stroke=""
@@ -1717,7 +1739,7 @@ export function TwinClient({
                 <YAxis
                   type="number"
                   dataKey="predicted"
-                  name="predicted"
+                  name="預測"
                   domain={domain}
                   allowDataOverflow={false}
                   stroke=""
@@ -2136,7 +2158,7 @@ function ErrorByLifetimeBucket({
               );
             }}
           />
-          <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted)" }} />
+          <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
           <Bar yAxisId="count" dataKey="count" name="電芯數" radius={[4, 4, 0, 0]}>
             {buckets.map((b, i) => (
               <RCell key={i} fill={barColour(b.mape)} />

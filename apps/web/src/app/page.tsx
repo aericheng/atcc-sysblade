@@ -83,46 +83,45 @@ export default async function HomePage() {
           {[
             {
               value: 3.5, decimals: 1, prefix: "", suffix: "×",
-              label: (<><span className="text-foreground font-medium">電芯電壓波動降低</span> — 電壓穩定，設備不因瞬態突波重啟(GB200 瞬變情境)</>),
+              benefit: "電壓更穩定 — 設備不會因電力突波而重啟",
+              anchor: "電芯電壓波動降低 · GB200 瞬變情境 · PyBaMM 模擬",
               tone: "from-primary to-accent",
             },
             {
               value: 5.7, decimals: 1, prefix: "", suffix: "×",
-              label: (<><span className="text-foreground font-medium">LFP 功率應力降低</span> — 瞬間功率衝擊由 LIC 承擔，主電池老化更慢</>),
+              benefit: "主電池承受的衝擊更小 — 老化更慢",
+              anchor: "LFP 功率應力降低 · LIC 分流後 RMS 比較",
               tone: "from-accent to-primary",
             },
             {
               value: 25, decimals: 0, prefix: "~", suffix: " %",
-              label: (
-                <>
-                  <span className="text-foreground font-medium">LFP 使用壽命優勢</span> — 低負載排程下壽命多約四分之一，更換成本同步下降(提案 §G.3)
-                </>
-              ),
+              benefit: "電池壽命多約四分之一 — 更換成本同步下降",
+              anchor: "LFP 低負載排程 · 提案 §G.3",
               tone: "from-success to-accent",
             },
             {
               value: 10, decimals: 0, prefix: "", suffix: " 年",
-              label: (<><span className="text-foreground font-medium">BBU 使用壽命</span> — 模擬顯示服役滿 10 年健康度(SOH)仍在 80 % 汰換線之上(Severson-fit)</>),
+              benefit: "服役十年，健康度仍在業界標準之上",
+              anchor: "SOH >80 % · Severson-fit 模擬",
               tone: "from-primary to-accent",
             },
             {
               value: 33, decimals: 0, prefix: "≈", suffix: " %",
-              label: (<><span className="text-foreground font-medium">10 年 TCO 降幅</span> — 採購、更換、停機與人力的 10 年總帳低約三分之一(提案 §G.3 基準)</>),
+              benefit: "十年總成本省約三分之一",
+              anchor: "採購+更換+停機+人力 · 提案 §G.3 基準",
               tone: "from-accent to-primary",
             },
             mv
               ? {
                   value: mv.latency.p99_ms, decimals: 2, prefix: "", suffix: " ms",
-                  label: (
-                    <>
-                      <span className="text-foreground font-medium">壽命預測推論延遲</span> — 快到可於設備本地運算、不需雲端(筆電 CPU ONNX p99 · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× 優於規格</span> · STM32N6 NPU 預估 ≤5 ms)
-                    </>
-                  ),
+                  benefit: "壽命預測在設備內即時完成 — 不需連網、不付雲端費用",
+                  anchor: `筆電 CPU ONNX p99 · ${(50 / mv.latency.p99_ms).toFixed(0)}× 優於規格 · STM32N6 NPU 預估 ≤5 ms`,
                   tone: "from-primary to-accent",
                 }
               : {
                   value: 50, decimals: 0, prefix: "<", suffix: " ms",
-                  label: (<><span className="text-foreground font-medium">邊緣推論延遲目標</span> — 壽命預測於設備本地運算、不需雲端(STM32N6 ONNX 路徑，執行 <code>export_lstm_onnx.py</code> 以填入)</>),
+                  benefit: "壽命預測在設備內即時完成 — 不需連網、不付雲端費用",
+                  anchor: "邊緣推論延遲目標 · STM32N6 ONNX 路徑",
                   tone: "from-primary to-accent",
                 },
           ].map((s, i) => (
@@ -131,7 +130,8 @@ export default async function HomePage() {
                 <div className={`text-3xl sm:text-4xl md:text-5xl font-semibold tabular-nums bg-gradient-to-br ${s.tone} bg-clip-text text-transparent`}>
                   <CountUp value={s.value} decimals={s.decimals} prefix={s.prefix} suffix={s.suffix} />
                 </div>
-                <div className="text-sm text-muted mt-2 leading-relaxed">{s.label}</div>
+                <div className="text-sm text-foreground/90 mt-2 leading-relaxed">{s.benefit}</div>
+                <div className="text-xs text-muted mt-1 leading-relaxed">{s.anchor}</div>
               </CardBody>
             </Card>
           ))}
@@ -165,11 +165,11 @@ export default async function HomePage() {
           body={
             <>
               為每一顆電池建立<span className="text-foreground font-medium">虛擬分身</span>，模擬其老化並預測剩餘壽命
-              — 維運從「定期巡檢」轉為「到期才換」。模型基礎：
-              <span className="text-foreground font-medium">PyBaMM DFN 物理</span> +{" "}
-              <span className="text-foreground font-medium">LSTM RUL</span>，以{" "}
-              <span className="text-foreground font-medium">188 顆 LFP 電芯</span>訓練(138 顆 Severson 2019 + 50 顆合成 BBU 負載)，
-              90 % 預測區間來自 <span className="text-success font-medium">MC Dropout + split conformal</span>；雲端訓練、邊緣(STM32N6)推論。
+              — 維運從「定期巡檢」轉為「到期才換」。
+              <span className="block mt-2 text-xs text-muted">
+                模型基礎：PyBaMM DFN 物理 + LSTM RUL · 188 顆 LFP 電芯訓練(138 顆 Severson 2019 + 50 顆合成 BBU 負載) ·
+                90 % 預測區間 MC Dropout + split conformal · 雲端訓練、邊緣(STM32N6)推論
+              </span>
             </>
           }
           visual={<PillarVisual Icon={Cpu} tint="tint-primary" glow="glow-primary" stat="90 %" statLabel="conformal 預測區間涵蓋率" />}
@@ -184,9 +184,12 @@ export default async function HomePage() {
           cta="計算節省"
           body={
             <>
-              輸入機房規模、電價與現行 BBU 規格，即可得出{" "}
-              <span className="text-foreground font-medium">10 年省多少、幾年回本與 CO₂ 減量</span>
-              — 每一條成本項皆可點開，對照提案 §G.3 與業界依據逐項稽核。
+              輸入機房規模與電價，即可得出{" "}
+              <span className="text-foreground font-medium">十年省多少、幾年回本與碳排減量</span>
+              — 每個數字都能點開查看依據。
+              <span className="block mt-2 text-xs text-muted">
+                成本模型對照提案 §G.3 與業界依據，逐項可稽核
+              </span>
             </>
           }
           visual={<PillarVisual Icon={BarChart3} tint="tint-accent" glow="glow-accent" stat="≈33 %" statLabel="10 年 TCO 降幅 · 提案 §G.3" />}
@@ -201,9 +204,10 @@ export default async function HomePage() {
           body={
             <>
               單一畫面掌握{" "}
-              <span className="text-foreground font-medium">1,000 台設備</span>的健康狀態與汰換順序，系統自動將接近壽命終點的設備排入維運佇列
-              — 三種服務等級(<span className="text-foreground font-medium">即時監測、主動式維護、預測性維運</span>)，
-              合成機隊權重分配於 Texas + Virginia。
+              <span className="text-foreground font-medium">1,000 台設備</span>的健康狀態與汰換順序，系統自動將接近壽命終點的設備排入維運佇列。
+              <span className="block mt-2 text-xs text-muted">
+                三種服務等級：即時監測、主動式維護、預測性維運 · 合成機隊權重分配於 Texas + Virginia
+              </span>
             </>
           }
           visual={<PillarVisual Icon={Activity} tint="tint-success" glow="" stat="1,000" statLabel="台合成機隊 · Texas + Virginia" />}
