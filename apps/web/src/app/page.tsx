@@ -45,12 +45,11 @@ export default async function HomePage() {
           <span className="gradient-text">AI 機架毫秒級瞬變</span>
         </h1>
         <p className="mt-6 max-w-2xl text-base sm:text-lg text-muted leading-relaxed">
-          AI 伺服器的功率需求在毫秒間劇烈波動（GB200/GB300 機架可達{" "}
-          <span className="text-foreground">±30 %</span>），傳統備援電池無法即時反應。Sysblade HyperBuffer
-          以反應極快的<span className="text-foreground font-medium">鋰離子電容</span>承擔瞬態、
-          以耐用的 <span className="text-foreground font-medium">LFP 電芯</span>提供備援，
-          並由內嵌的<span className="text-foreground font-medium">電池數位孿生</span>預測每一顆電池的剩餘壽命
-          — 硬體解決斷電風險，軟體成為長期的 SaaS 服務。
+          AI 伺服器的功率每毫秒劇烈波動（<span className="text-foreground">±30 %</span>），傳統備援電池跟不上。
+          Sysblade 用<span className="text-foreground font-medium">電容</span>吸收瞬間衝擊、
+          用<span className="text-foreground font-medium">長壽命電池</span>撐過斷電，
+          再以<span className="text-foreground font-medium">數位孿生</span>預測每顆電池的壽命
+          — 硬體保供電，軟體變訂閱。
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -164,8 +163,8 @@ export default async function HomePage() {
           cta="執行物理模擬"
           body={
             <>
-              為每一顆電池建立<span className="text-foreground font-medium">虛擬分身</span>，模擬其老化並預測剩餘壽命
-              — 維運從「定期巡檢」轉為「到期才換」。
+              每顆電池都有<span className="text-foreground font-medium">虛擬分身</span>，預測還能用多久
+              — 維運從定期巡檢變成到期才換。
               <span className="block mt-2 text-xs text-muted">
                 模型基礎：PyBaMM DFN 物理 + LSTM RUL · 188 顆 LFP 電芯訓練(138 顆 Severson 2019 + 50 顆合成 BBU 負載) ·
                 90 % 預測區間 MC Dropout + split conformal · 雲端訓練、邊緣(STM32N6)推論
@@ -184,9 +183,9 @@ export default async function HomePage() {
           cta="計算節省"
           body={
             <>
-              輸入機房規模與電價，即可得出{" "}
-              <span className="text-foreground font-medium">十年省多少、幾年回本與碳排減量</span>
-              — 每個數字都能點開查看依據。
+              輸入規模與電價，算出{" "}
+              <span className="text-foreground font-medium">十年省多少、幾年回本</span>
+              — 每個數字都可查驗。
               <span className="block mt-2 text-xs text-muted">
                 成本模型對照提案 §G.3 與業界依據，逐項可稽核
               </span>
@@ -203,8 +202,8 @@ export default async function HomePage() {
           cta="開啟儀表板"
           body={
             <>
-              單一畫面掌握{" "}
-              <span className="text-foreground font-medium">1,000 台設備</span>的健康狀態與汰換順序，系統自動將接近壽命終點的設備排入維運佇列。
+              一個畫面看{" "}
+              <span className="text-foreground font-medium">1,000 台設備</span>的健康與汰換順序 — 該換的自動排入佇列。
               <span className="block mt-2 text-xs text-muted">
                 三種服務等級：即時監測、主動式維護、預測性維運 · 合成機隊權重分配於 Texas + Virginia
               </span>
@@ -222,11 +221,13 @@ export default async function HomePage() {
           title="電源保護堆疊中的特定缺口。"
           intro={
             <>
-              Microsoft Azure 已發表此底層問題(arXiv 2508.14318):LLM 訓練的運算–同步週期
-              使機架功率產生 <span className="text-foreground font-medium">1–50 ms 內 ±30 % 的波動</span>。
-              NVIDIA 將電容置於 GB300 PSU 內部;我們則在機架層級放置{" "}
-              <span className="text-foreground font-medium">LFP+LIC 混合緩衝</span>，服務需要次秒級瞬變吸收、
-              又不想整批汰換既有 UPS 的 <span className="text-foreground font-medium">Tier-2/3 AI 市場區隔</span>。
+              Microsoft 已證實：LLM 訓練使機架功率在{" "}
+              <span className="text-foreground font-medium">1–50 ms 內 ±30 % 波動</span>。
+              我們在機架層放<span className="text-foreground font-medium">混合緩衝</span>，
+              服務不想整批換 UPS 的 <span className="text-foreground font-medium">Tier-2/3 市場</span>。
+              <span className="block mt-2 text-xs">
+                出處：arXiv 2508.14318（Azure）· NVIDIA 的做法是把電容放進 GB300 PSU 內
+              </span>
             </>
           }
         />
@@ -237,11 +238,9 @@ export default async function HomePage() {
               5 kJ / 機架法則
             </div>
             <p className="text-sm text-muted leading-relaxed">
-              一座 GB200 NVL72 機架的瞬變約需 <span className="text-foreground font-medium">5 kJ/機架</span> 緩衝能量;
-              我們以 <span className="text-foreground font-medium">2× 現成 Eaton XLR 48 V LIC 模組</span> 配置{" "}
-              <span className="text-foreground font-medium">345 kJ</span> — 刻意保留{" "}
-              <span className="text-success font-medium">69× 餘量</span>，無須客製電池組
-              — 以標準品的超額配置，取代高成本的客製開發。
+              一次瞬變約需 <span className="text-foreground font-medium">5 kJ</span>；我們用現成模組配置{" "}
+              <span className="text-foreground font-medium">345 kJ</span>（<span className="text-success font-medium">69× 餘量</span>）
+              — 用標準品的超額，取代昂貴的客製。
             </p>
             <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
               <Mini label="需求" value="5 kJ" />
@@ -279,9 +278,9 @@ export default async function HomePage() {
           title={<>Sysblade 在電源保護堆疊中的<span className="gradient-text-accent">定位</span>。</>}
           intro={
             <>
-              以下每一層都有既有廠商 — Sysblade 的論點並非「沒有人做這件事」，而是：
-              <span className="text-foreground">高速電容、長壽命電池與壽命預測軟體的整合組合，在機架層仍是空缺</span>
-              — 這正是切入點。
+              每一層都有既有廠商；缺的是
+              <span className="text-foreground">「電容＋電池＋壽命預測軟體」的機架級整合</span>
+              — 這是我們的切入點。
             </>
           }
           className="max-w-3xl"

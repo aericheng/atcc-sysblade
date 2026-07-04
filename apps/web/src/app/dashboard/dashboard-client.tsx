@@ -146,7 +146,7 @@ export function DashboardClient({
                 底層的模擬波形請見 /twin · V3 / V4 切換。
               </Disclosure>
               <PlainInline className="mt-2">
-                切換右側按鈕，模擬部分機架各有一台 BBU 離線 — 統計即時更新：機隊服務連續性維持 100 %。
+                切換按鈕模擬故障 — 服務連續性維持 100 %。
               </PlainInline>
             </div>
             <button
@@ -241,11 +241,10 @@ export function DashboardClient({
             全機隊 <span className="gradient-text">{fleet.n_devices.toLocaleString()}</span> 顆 Sysblade BBU
           </h1>
           <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-            這是客戶日常使用的產品畫面。<span className="text-foreground font-medium">三個服務等級</span>由淺入深:{" "}
-            <span className="text-foreground">即時監測</span>掌握現況、{" "}
-            由電池數位孿生 SOH 推論觸發的<span className="text-foreground">主動式維護</span>提早發現異常,
-            以及在 SOH 跨越{" "}
-            <span className="text-foreground font-medium">80 %</span> 之前預先排定汰換計畫的<span className="text-foreground">預測性維運</span>。
+            客戶日常使用的畫面。<span className="text-foreground font-medium">三個服務等級</span>：
+            <span className="text-foreground">即時監測</span>看現況、
+            <span className="text-foreground">主動式維護</span>抓異常、
+            <span className="text-foreground">預測性維運</span>排汰換。
           </p>
         </div>
         <span className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-warning whitespace-normal">
@@ -263,7 +262,7 @@ export function DashboardClient({
       {/* Tier 1 — real-time monitoring */}
       <section className="space-y-4">
         <SectionHeader icon={<Activity className="h-4 w-4" />} kicker="Tier 1" title="即時監測" />
-        <PlainInline>全機隊即時狀態總覽 — 健康、熱警示與早期老化的設備數量一目瞭然。</PlainInline>
+        <PlainInline>全機隊現況：健康、熱警示、早期老化各多少台。</PlainInline>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Stat
             label="設備總數"
@@ -296,7 +295,7 @@ export function DashboardClient({
       {/* Tier 2 — geographic + SOH bucket */}
       <section className="space-y-4">
         <SectionHeader icon={<MapPin className="h-4 w-4" />} kicker="Tier 2" title="主動式維護 · 地理與 SOH 視圖" accent="accent" />
-        <PlainInline>1,000 台設備的地理分布與健康度分層 — 在問題發生之前，先確定該關注哪裡。</PlainInline>
+        <PlainInline>地圖＋健康度分層 — 問題發生前先知道看哪裡。</PlainInline>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted mr-2">篩選:</span>
@@ -413,7 +412,7 @@ export function DashboardClient({
       {/* Tier 3 — predictive ops */}
       <section className="space-y-4">
         <SectionHeader icon={<Shield className="h-4 w-4" />} kicker="Tier 3" title="預測性維運 · 汰換佇列" accent="warning" />
-        <PlainInline>依 AI 預測壽命自動排序最優先汰換的 8 台設備 — 維運由定期巡檢轉為佇列驅動的預測性汰換。</PlainInline>
+        <PlainInline>AI 排出最該換的 8 台 — 照清單維運，不必逐台巡檢。</PlainInline>
         <Card className="simulated-watermark">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
