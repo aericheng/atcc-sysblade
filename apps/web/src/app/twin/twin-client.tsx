@@ -404,7 +404,7 @@ function ScopeCharts({
       <ChartCard
         title="電芯電壓（V）"
         subtitle="ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP"
-        plain="線越平、電壓越穩 — 綠色（混合模式）比黃色（純電池）平穩得多。"
+        plain="線越平越好 — 綠色（混合）比黃色（純電池）穩得多。"
       >
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -451,8 +451,8 @@ function ScopeCharts({
         subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 更高頻成分皆導向 LIC" : "無濾波 — 單級路徑"}
         plain={
           mode === "hybrid"
-            ? "0.5 秒為分工門檻：快於此的變化由電容承擔，慢於此的由電池承擔。"
-            : "無分頻時，電池須直接追隨每一次功率跳動 — 即傳統純電池方案的運作狀態。"
+            ? "快於 0.5 秒的變化給電容，慢的給電池。"
+            : "沒有分流 — 電池硬吃每一次跳動。"
         }
       >
         <ResponsiveContainer width="100%" height={220}>
@@ -503,7 +503,7 @@ function ScopeCharts({
         <ChartCard
           title="LIC 電容組電壓（閉合解形式 RC 模型）"
           subtitle={`Eaton XLR 48 V × 2 並聯 · C = ${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
-          plain="電容電壓維持在紅色虛線（UVLO 保護門檻）之上即為安全 — 模擬顯示餘裕充足。"
+          plain="綠線離紅色保護線越遠越安全 — 餘裕充足。"
         >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -782,9 +782,8 @@ export function TwinClient({
           解決 <span className="gradient-text">GB200 毫秒級瞬變</span>。
         </h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          本頁是電池的<span className="text-foreground font-medium">數位孿生</span>：以物理方程式重現真實電池的行為，
-          模型已對齊公開實測資料與原廠規格書。
-          切換下方按鈕，比較<span className="text-success font-medium">有無電容分流時，電池承受的應力差異</span>。
+          電池的<span className="text-foreground font-medium">數位孿生</span>：物理模型重現真實電池行為，
+          已對齊公開實測與原廠規格書。切換按鈕，看<span className="text-success font-medium">電容分流讓電池輕鬆多少</span>。
         </p>
         <p className="text-xs text-muted max-w-3xl leading-relaxed">
           方法：PyBaMM DFN 求解 LFP 電芯 · LIC 側以 R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（資料表為基準，非電化學模型）
@@ -818,7 +817,7 @@ export function TwinClient({
                   : "基準情境:傳統純電池 BBU 承受完整的 ±30 % 功率波動,LFP 電芯電壓追隨每個脈衝,使化學體系承受應力並增加局部發熱。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                灰線為機架劇烈波動的功率需求；系統將高頻成分分給電容、低頻平均留給電池 — 電池側僅承受平滑後的功率，應力與老化同步下降。
+                快的波動給電容、慢的平均給電池 — 電池只承受平滑後的功率。
               </PlainInline>
             </div>
             <span
@@ -915,7 +914,7 @@ export function TwinClient({
                 {"以模擬資料對應 whitepaper §2.1.1 動態降載敘事。階段 A(0–0.5 s):LIC 主導的峰值保持,每 BBU 6 C 脈衝(在車規 LFP 資料表 5–10 C 脈衝規格內);階段 B(0.5–2.0 s):隨 GPU 降頻,從 120 kW 線性降至 30 kW;階段 C(2.0–60 s):30 kW 連續 = 每 BBU 1.5 C(在 1–3 C 連續規格內)。GPU power-cap 收斂時間為工程佔位值,量產前須於 GB200 / Bluefield BMC 實機量測(HANDOVER §6 待解問題)。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                模擬「突然斷電」的最壞情境：第一秒由電容承接尖峰，GPU 隨後逐步降速，電池以低應力撐滿 60 秒 — 完成資料保存後有序關機。
+                突然斷電：電容扛第一秒尖峰，電池撐滿 60 秒 — 存檔完成再關機。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1029,7 +1028,7 @@ export function TwinClient({
           <ChartCard
             title="機架功率分流 · 0-60 s"
             subtitle={`Stage A 0-${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 於 ${(mainsFail.stages?.ramp_s ?? 1.5).toFixed(1)} s 內線性降載 ${(mainsFail.stages?.peak_kw ?? 120).toFixed(0)} → ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`}
-            plain="斷電後的 60 秒：藍色（電容）先扛住開頭的尖峰，綠色（電池）接手平穩的長尾。"
+            plain="藍色（電容）扛開頭尖峰，綠色（電池）接手長尾。"
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rampPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1048,7 +1047,7 @@ export function TwinClient({
           <ChartCard
             title="LIC 電容組電壓包絡 · 閉合解形式 RC"
             subtitle={`2× Eaton XLR-48-166 並聯 · v_nominal 51.3 V · 資料表截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`}
-            plain="電容電壓全程遠高於紅色保護門檻 — 60 秒事件中保護餘裕充足。"
+            plain="全程遠離紅色保護線 — 餘裕充足。"
           >
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={rampLicData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1086,7 +1085,7 @@ export function TwinClient({
                   : "V3 整 rack 60 s graceful 整合模擬:8 BBU 並聯 + LIC bank(2× Eaton XLR-48-166 並聯)+ 一階互補濾波器 τ=0.5 s + GPU power-cap 三段降載(峰值保持 0.5 s / 線性降載 1.5 s / 連續 58 s)+ 集總電芯熱模型。每 BBU 峰值 6.0 C 脈衝 < 2 s、連續 1.50 C,皆在車規 LFP 資料表允許區內。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                切換正常與故障注入兩種情境：故意使 1 台 BBU 離線後，其餘 7 台仍完成 60 秒任務、出力在原廠上限內 — 此類破壞性測試難以在實體重現，孿生層可隨時重跑。
+                故意弄壞 1 台：剩 7 台照樣完成 60 秒任務，出力仍在上限內。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1203,8 +1202,8 @@ export function TwinClient({
             subtitle={`Stage A ${(activeRack.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 線性降載 ${(activeRack.stages?.peak_kw ?? 120).toFixed(0)} → ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`}
             plain={
               rackMode === "n-1"
-                ? "紅色虛線處一台故障 — 曲線幾乎不受影響，備援任務照常完成。"
-                : "正常情境的功率分工：電容承接開頭尖峰，電池負責平穩長尾。"
+                ? "紅線處一台故障 — 曲線幾乎不動。"
+                : "電容接尖峰、電池接長尾。"
             }
           >
             <ResponsiveContainer width="100%" height={300}>
@@ -1243,8 +1242,8 @@ export function TwinClient({
             }
             plain={
               rackMode === "n-1"
-                ? "故障後每台分擔的功率階梯上升 — 增幅約 14 %，仍在安全範圍內。"
-                : "八台平均分擔，每台都在低負載區運轉。"
+                ? "故障後每台多扛約 14 % — 仍在安全區。"
+                : "八台平分 — 每台都很輕鬆。"
             }
           >
             <ResponsiveContainer width="100%" height={220}>
@@ -1277,7 +1276,7 @@ export function TwinClient({
             <ChartCard
               title="電芯熱軌跡 · 集總熱容 + 對流冷卻"
               subtitle={`I²·R_int 加熱 vs h·A·ΔT 冷卻 · 電芯 C_th 70 J/K · R_int 8 mΩ · 環境 ${activeRack.thermal_model?.t_ambient_c ?? 25} °C`}
-              plain="全程溫升不到一度，距 50 °C 警告線非常遠 — 電池不會過熱。"
+              plain="溫升不到 1 度 — 離警告線很遠。"
             >
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={rackThermalData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1342,7 +1341,7 @@ export function TwinClient({
             {"容量衰減曲線校準至 Severson 2019 LFP 平均行為。BBU duty 採 0.33 有效循環因子:日曆循環 N 對應 N × 0.33 等效滿循環,因此 80 % SOH 的日曆年齡遠晚於等效 1C/1C 實驗。循環衰減並非 DC 備援工況的約束條件 — 電池組多半在高 SOC 閒置,由日曆/儲存衰減主導。soh_calendar 疊加 Naumann-2018 √t 日曆模型(Arrhenius T × 單調 SOC),校準至 80 % SOH 落在 ~10 yr(對應 v2.2 附件 C 的 8–12 yr LFP 浮充壽命);soh_binding = min(循環, 日曆) 即客戶實際所見。"}
           </Disclosure>
           <PlainInline className="mt-2">
-            核心結論：備援工作型態下循環老化極慢，實際壽命上限是「靜置也會發生」的日曆老化，約 10 年。展開下方「日曆 vs 循環」段落，可調整溫度與電量水位觀察其敏感度。
+            備援模式下電池老得很慢 — 真正的壽命上限是日曆老化，約 10 年。
           </PlainInline>
         </CardHeader>
         <CardBody className="space-y-6">
@@ -1370,7 +1369,7 @@ export function TwinClient({
           </div>
           <ChartCard
             title="容量衰減 · 3,000 循環視野"
-            plain="綠線（BBU 實際工作型態）的衰減遠緩於黃線（實驗室加速循環）；實際壽命上限為紅色虛線 — 靜置亦會發生的日曆老化，約 10 年。"
+            plain="綠線（實際工況）老得慢 — 真正的上限是紅線：日曆老化約 10 年。"
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={agingData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1480,7 +1479,7 @@ export function TwinClient({
                 {"對單一電芯老化模型無法表達的電池組層級效應做一階篩選(業師 2026-06-04):(1) 15S 串列中電芯間容量/電阻/SOC 分散 — 最弱電芯限制串列可用容量、最熱電芯限制串列壽命;(2) 機架 inlet→outlet 熱梯度驅動 Arrhenius 局部加速日曆老化;(3) 業師建議的 2 電芯+電容 A/B 拓樸對比。此為界定 EVT 範圍的篩選研究,非完整電化學;單一代表電芯 DFN 仍是主要老化引擎。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                串聯電池組的可用容量與壽命由最弱的電芯決定 — 本節檢驗最弱電芯與最熱位置是否會限制整組表現。
+                整串電池的壽命由最弱、最熱的那顆決定 — 本節就在檢驗它。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-warning/15 text-warning px-3 py-1 text-xs font-medium">
@@ -1629,7 +1628,7 @@ export function TwinClient({
                 {"PyTorch 2 層 LSTM(hidden=64),以 188 顆 LFP 電芯的逐循環摘要特徵訓練(138 顆 Severson 2019 batch 1+2+3 + 50 顆 Severson 錨定的合成 BBU-duty 電芯;解析式衰減 + 各電芯雜訊,非 PyBaMM 老化 — 合成電芯與其標籤共用衰減函數,僅作為工況擴增,見 whitepaper §3.3.5/§3.3.8)。匯出為 ONNX 並於 onnxruntime CPU 上量測,作為 STM32N6 NPU 部署路徑的代理基準。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                以公開資料集（上百顆電芯的全壽命實測）訓練 AI 預測剩餘壽命，並如實揭露模型在哪些情境準確、哪些情境尚有限制。
+                AI 以上百顆電芯的公開實測訓練 — 準與不準的情境都如實標示。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1721,7 +1720,7 @@ export function TwinClient({
           <ChartCard
             title={`預測 vs 實際循環壽命 · 全部 ${modelValidation.predicted_vs_actual.length} 顆電芯`}
             subtitle={`切分 ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} 訓練 · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} 校準 · ${modelValidation.metrics.n_test} 測試`}
-            plain="每一點為一顆電芯：越貼近對角線，預測越準。兩群之間的空白為模型未涵蓋的區間，已如實標示。"
+            plain="點越貼近對角線，預測越準 — 中間空白是模型沒看過的區間。"
           >
             <ResponsiveContainer width="100%" height={360}>
               <ScatterChart margin={{ top: 12, right: 16, left: 12, bottom: 24 }}>
