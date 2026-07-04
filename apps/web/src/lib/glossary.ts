@@ -1,5 +1,5 @@
 /**
- * Plain-language glossary — single source of truth for the「白話」guide layer.
+ * Plain-language glossary — single source of truth for the guide layer.
  *
  * Same catalogue idiom as TCO_LINE_ITEM_SOURCES in lib/tco.ts: typed keys,
  * one data file, rendered by presentational components (components/ui/plain.tsx).

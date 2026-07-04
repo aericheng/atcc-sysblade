@@ -22,7 +22,7 @@ import {
 } from "recharts";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Disclosure } from "@/components/ui/disclosure";
-import { PlainNote, PlainInline, GlossaryPanel } from "@/components/ui/plain";
+import { PlainInline, GlossaryPanel } from "@/components/ui/plain";
 import { Stat } from "@/components/ui/stat";
 import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
 import { CalendarWidget, AgedPowerWidget, PackThermalWidget } from "@/components/model-widgets";
@@ -441,8 +441,8 @@ function ScopeCharts({
         subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 更高頻成分皆導向 LIC" : "無濾波 — 單級路徑"}
         plain={
           mode === "hybrid"
-            ? "0.5 秒是分工門檻：比它快的變化給電容，比它慢的給電池。"
-            : "沒有電容分工時，電池得自己追上每一個抖動 — 這就是傳統方案的日常。"
+            ? "0.5 秒為分工門檻：快於此的變化由電容承擔，慢於此的由電池承擔。"
+            : "無分頻時，電池須直接追隨每一次功率跳動 — 即傳統純電池方案的運作狀態。"
         }
       >
         <ResponsiveContainer width="100%" height={220}>
@@ -493,7 +493,7 @@ function ScopeCharts({
         <ChartCard
           title="LIC 電容組電壓（閉合解形式 RC 模型）"
           subtitle={`Eaton XLR 48 V × 2 並聯 · C = ${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
-          plain="這條線只要不碰到紅色虛線（保護門檻），設計就安全 — 實測還有充足餘裕。"
+          plain="電容電壓維持在紅色虛線（UVLO 保護門檻）之上即為安全 — 模擬顯示餘裕充足。"
         >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -772,16 +772,15 @@ export function TwinClient({
           解決 <span className="gradient-text">GB200 毫秒級瞬變</span>。
         </h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          PyBaMM DFN 求解 <span className="text-foreground font-medium">LFP 電芯</span>；
-          <span className="text-foreground font-medium">LIC 側</span>則以
-          其 R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（以資料表為基準，非
-          電化學模型）。單一機架、<span className="text-foreground font-medium">80 kW 基準</span>、{" "}
+          本頁是電池的<span className="text-foreground font-medium">數位孿生</span>：以物理方程式重現真實電池行為，
+          模型已對齊公開實測資料與原廠規格書。方法：PyBaMM DFN 求解{" "}
+          <span className="text-foreground font-medium">LFP 電芯</span>；
+          <span className="text-foreground font-medium">LIC 側</span>以
+          R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（資料表為基準，非電化學模型）。
+          情境：單一機架、<span className="text-foreground font-medium">80 kW 基準</span>、{" "}
           <span className="text-foreground font-medium">每 100 ms ±30 % 方波脈衝</span>。
-          切換下方按鈕，觀察 <span className="text-success font-medium">LIC 等效模型吸收高頻殘量</span>。
+          切換下方按鈕，比較<span className="text-success font-medium">有無 LIC 分流時電池承受的應力差異</span>。
         </p>
-        <PlainNote className="max-w-3xl">
-          這一頁是電池的「虛擬分身」：用物理方程式在電腦裡重現真實電池的行為，而且模型已對齊公開實測資料與原廠規格書。切換下方按鈕，就能看到有電容幫忙時，電池的日子好過多少。
-        </PlainNote>
       </header>
 
       {/* Plain-language glossary for this page's recurring terms. */}
@@ -810,7 +809,7 @@ export function TwinClient({
                   : "基準情境:傳統純電池 BBU 承受完整的 ±30 % 功率波動,LFP 電芯電壓追隨每個脈衝,使化學體系承受應力並增加局部發熱。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                灰線是機架劇烈跳動的用電；系統把「快的抖動」分給電容、「慢的平均」留給電池 — 電池端幾乎無感，壓力小、壽命就長。
+                灰線為機架劇烈波動的功率需求；系統將高頻成分分給電容、低頻平均留給電池 — 電池側僅承受平滑後的功率，應力與老化同步下降。
               </PlainInline>
             </div>
             <span
@@ -907,7 +906,7 @@ export function TwinClient({
                 {"以模擬資料對應 whitepaper §2.1.1 動態降載敘事。階段 A(0–0.5 s):LIC 主導的峰值保持,每 BBU 6 C 脈衝(在車規 LFP 資料表 5–10 C 脈衝規格內);階段 B(0.5–2.0 s):隨 GPU 降頻,從 120 kW 線性降至 30 kW;階段 C(2.0–60 s):30 kW 連續 = 每 BBU 1.5 C(在 1–3 C 連續規格內)。GPU power-cap 收斂時間為工程佔位值,量產前須於 GB200 / Bluefield BMC 實機量測(HANDOVER §6 待解問題)。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                模擬「突然停電」的最壞情境：第一秒電容扛住尖峰，接著 GPU 逐步降速，電池以輕鬆的力道撐滿 60 秒 — 資料存檔完成，設備體面關機。
+                模擬「突然斷電」的最壞情境：第一秒由電容承接尖峰，GPU 隨後逐步降速，電池以低應力撐滿 60 秒 — 完成資料保存後有序關機。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1076,7 +1075,7 @@ export function TwinClient({
                   : "V3 整 rack 60 s graceful 整合模擬:8 BBU 並聯 + LIC bank(2× Eaton XLR-48-166 並聯)+ 一階互補濾波器 τ=0.5 s + GPU power-cap 三段降載(峰值保持 0.5 s / 線性降載 1.5 s / 連續 58 s)+ 集總電芯熱模型。每 BBU 峰值 6.0 C 脈衝 < 2 s、連續 1.50 C,皆在車規 LFP 資料表允許區內。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                左邊是正常情境，右邊是「故意弄壞一台」— 剩下 7 台照樣完成任務，出力仍在原廠上限內。這種測試實體做不起，虛擬分身一秒重跑。
+                切換正常與故障注入兩種情境：故意使 1 台 BBU 離線後，其餘 7 台仍完成 60 秒任務、出力在原廠上限內 — 此類破壞性測試難以在實體重現，孿生層可隨時重跑。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1321,7 +1320,7 @@ export function TwinClient({
             {"容量衰減曲線校準至 Severson 2019 LFP 平均行為。BBU duty 採 0.33 有效循環因子:日曆循環 N 對應 N × 0.33 等效滿循環,因此 80 % SOH 的日曆年齡遠晚於等效 1C/1C 實驗。循環衰減並非 DC 備援工況的約束條件 — 電池組多半在高 SOC 閒置,由日曆/儲存衰減主導。soh_calendar 疊加 Naumann-2018 √t 日曆模型(Arrhenius T × 單調 SOC),校準至 80 % SOH 落在 ~10 yr(對應 v2.2 附件 C 的 8–12 yr LFP 浮充壽命);soh_binding = min(循環, 日曆) 即客戶實際所見。"}
           </Disclosure>
           <PlainInline className="mt-2">
-            結論先講：在備援工作型態下，電池老得非常慢；先到期的反而是「放著也會老」的日曆壽命，約 10 年。展開下方「日曆 vs 循環」段落，可拖動滑桿看溫度與電量水位怎麼影響它。
+            核心結論：備援工作型態下循環老化極慢，實際壽命上限是「靜置也會發生」的日曆老化，約 10 年。展開下方「日曆 vs 循環」段落，可調整溫度與電量水位觀察其敏感度。
           </PlainInline>
         </CardHeader>
         <CardBody className="space-y-6">
@@ -1349,7 +1348,7 @@ export function TwinClient({
           </div>
           <ChartCard
             title="容量衰減 · 3,000 循環視野"
-            plain="綠線（實際工作型態）老得比黃線（實驗室極限操練）慢得多；真正先到期的是紅虛線 — 放著也會老的日曆壽命，約 10 年。"
+            plain="綠線（BBU 實際工作型態）的衰減遠緩於黃線（實驗室加速循環）；實際壽命上限為紅色虛線 — 靜置亦會發生的日曆老化，約 10 年。"
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={agingData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1459,7 +1458,7 @@ export function TwinClient({
                 {"對單一電芯老化模型無法表達的電池組層級效應做一階篩選(業師 2026-06-04):(1) 15S 串列中電芯間容量/電阻/SOC 分散 — 最弱電芯限制串列可用容量、最熱電芯限制串列壽命;(2) 機架 inlet→outlet 熱梯度驅動 Arrhenius 局部加速日曆老化;(3) 業師建議的 2 電芯+電容 A/B 拓樸對比。此為界定 EVT 範圍的篩選研究,非完整電化學;單一代表電芯 DFN 仍是主要老化引擎。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                一串電池像一隊登山客，速度由最慢的人決定 — 這裡檢查「最弱的電芯」與「最熱的位置」會不會拖垮整串。
+                串聯電池組的可用容量與壽命由最弱的電芯決定 — 本節檢驗最弱電芯與最熱位置是否會限制整組表現。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-warning/15 text-warning px-3 py-1 text-xs font-medium">
@@ -1608,7 +1607,7 @@ export function TwinClient({
                 {"PyTorch 2 層 LSTM(hidden=64),以 188 顆 LFP 電芯的逐循環摘要特徵訓練(138 顆 Severson 2019 batch 1+2+3 + 50 顆 Severson 錨定的合成 BBU-duty 電芯;解析式衰減 + 各電芯雜訊,非 PyBaMM 老化 — 合成電芯與其標籤共用衰減函數,僅作為工況擴增,見 whitepaper §3.3.5/§3.3.8)。匯出為 ONNX 並於 onnxruntime CPU 上量測,作為 STM32N6 NPU 部署路徑的代理基準。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                我們用公開資料集（上百顆電池從新用到報廢）訓練 AI 預測壽命，並誠實列出它在哪些情境準、哪些情境還不準。
+                以公開資料集（上百顆電芯的全壽命實測）訓練 AI 預測剩餘壽命，並如實揭露模型在哪些情境準確、哪些情境尚有限制。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1700,7 +1699,7 @@ export function TwinClient({
           <ChartCard
             title={`預測 vs 實際循環壽命 · 全部 ${modelValidation.predicted_vs_actual.length} 顆電芯`}
             subtitle={`切分 ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} 訓練 · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} 校準 · ${modelValidation.metrics.n_test} 測試`}
-            plain="每個點是一顆電池：越貼近對角線，預測越準。兩群顏色中間的空白，就是我們誠實標示的「模型沒看過的地帶」。"
+            plain="每一點為一顆電芯：越貼近對角線，預測越準。兩群之間的空白為模型未涵蓋的區間，已如實標示。"
           >
             <ResponsiveContainer width="100%" height={360}>
               <ScatterChart margin={{ top: 12, right: 16, left: 12, bottom: 24 }}>
@@ -1930,7 +1929,7 @@ function ChartCard({
         <h4 className="text-sm font-medium">{title}</h4>
         {subtitle && <span className="text-xs text-muted">{subtitle}</span>}
       </div>
-      {plain && <p className="text-xs text-accent mb-2 leading-relaxed">白話 · {plain}</p>}
+      {plain && <p className="text-xs text-accent mb-2 leading-relaxed">{plain}</p>}
       {children}
     </div>
   );

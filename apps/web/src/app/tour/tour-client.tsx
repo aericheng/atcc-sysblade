@@ -277,20 +277,20 @@ export function TourClient({
             北美 Tier-2/3 AI 機房,沒有整合方案。
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            用電抖動會弄壞供電、供電標準正在換代、上千顆電池不知道誰快壞 — 三個痛點,目前得買三套方案。
+            供電品質、規格換代與機隊維運三個痛點,目前市場需要三套獨立方案 — 缺乏整合解。
           </PlainInline>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             <PainIconCard icon={<Zap className="h-7 w-7" />} kicker="毫秒瞬態"
               title="GB200 ±30 % dV/dt"
-              plain="用電像心電圖,電壓驟降會讓設備重啟"
+              plain="毫秒級功率波動引發電壓驟降,足以觸發設備重啟"
               className="anim-rotate-in anim-stagger-1" />
             <PainIconCard icon={<Network className="h-7 w-7" />} kicker="HVDC 換代"
               title="48 V → ±400 V"
-              plain="買錯設備,轉換期要整批重買"
+              plain="規格不相容的設備在換代期須整批汰換"
               className="anim-rotate-in anim-stagger-2" />
             <PainIconCard icon={<Activity className="h-7 w-7" />} kicker="機隊維運"
               title="1000+ 節 RUL 預測"
-              plain="不知道哪顆電池快壞、何時該換"
+              plain="無法預知個別電池的劣化時點與汰換順序"
               className="anim-rotate-in anim-stagger-3" />
           </div>
         </div>
@@ -316,7 +316,7 @@ export function TourClient({
             8 BBU 並聯 per rack,N+1 容錯
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            一個機架配 8 顆電池模組,本來就多留 1 顆餘裕 — 任一顆故障,服務照常。
+            每機架配置 8 台 BBU 模組、預留 1 台冗餘 — 任一台故障,服務不中斷。
           </PlainInline>
           <div className="mt-10 rounded-2xl border border-border bg-surface/40 p-6 sm:p-10">
             <div className="flex flex-wrap justify-center gap-2.5">
@@ -359,7 +359,7 @@ export function TourClient({
             3 顆電芯 × cycle_life 534–1227 · 對齊論文的放電 V(Qd) 曲線擬合
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            我們的電腦模型與公開實測資料誤差只有 2.15 %,遠低於 5 % 及格線 — 模型可信,後面的結論才可信。
+            物理模型對公開實測資料的擬合誤差僅 2.15 %,遠低於 5 % 門檻 — 模型可信,後續結論才有依據。
           </PlainInline>
         </div>
       </Slide>
@@ -381,7 +381,7 @@ export function TourClient({
             加 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降誤差 2.93 % &lt; 10 %
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            模型算出的電容表現與原廠規格書完全對得上 — 不是我們自己說了算。
+            電容模型與原廠規格書公式完全一致 — 依據來自原廠文件,而非自行宣稱。
           </PlainInline>
         </div>
       </Slide>
@@ -394,7 +394,7 @@ export function TourClient({
             120 kW 峰值 → 30 kW 連續,LIC 吃瞬態
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            斷電後 60 秒:尖峰由電容扛、平均由電池扛 — 各司其職,誰都不過勞。
+            斷電後 60 秒:瞬間尖峰由電容承擔、平均功率由電池承擔 — 各司其職,皆在安全裕度內。
           </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={300}>
@@ -434,7 +434,7 @@ export function TourClient({
             集總熱模型 · I²R 發熱 vs 對流散熱 · 熱失控風險近乎零
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            全程電池只升溫 0.1 度,離 50 度的安全上限非常遠。
+            全程電芯僅升溫 0.1 K,距 50 °C 安全上限餘裕極大。
           </PlainInline>
         </div>
       </Slide>
@@ -447,7 +447,7 @@ export function TourClient({
             t = {fault_t} s 時 1 台 BBU 離線,剩 7 台撐到 60 s
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            故意讓 8 台中的 1 台故障,剩下 7 台照樣把 60 秒任務做完 — 服務零中斷。
+            模擬中故意使 8 台中 1 台故障,其餘 7 台仍完成 60 秒備援任務 — 服務零中斷。
           </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={260}>
@@ -489,7 +489,7 @@ export function TourClient({
             整機架 N-1 容錯在實體上極難重現,孿生層卻能直接驗證 — 這正是 twin {">"} hardware 的價值
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            故障後每台多出力約 14 %,仍遠低於原廠 2.5 C 安全上限 — 這種破壞性測試實體幾乎做不了,虛擬分身直接驗證。
+            故障後每台負載增加約 14 %,仍遠低於原廠 2.5 C 連續上限 — 此類破壞性測試難以在實體重現,由孿生層直接驗證。
           </PlainInline>
         </div>
       </Slide>
@@ -517,7 +517,7 @@ export function TourClient({
             13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 超越 Severson 2019 論文自身基準
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            在公開資料集上,壽命預測平均誤差 8.4 % — 比原論文自己的基準更準。
+            公開資料集上的壽命預測平均誤差 8.4 % — 優於原論文的基準方法。
           </PlainInline>
         </div>
       </Slide>
@@ -546,7 +546,7 @@ export function TourClient({
             這個數字的存在正好是部署 SOP「新 protocol 退回 OLS、新化學體系客戶 PoC 重訓」的量化依據。
           </div>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            換到差異很大的使用情境,誤差會大幅上升 — 我們主動揭露這個極限,並訂好「新情境先重新訓練」的規則,而不是等客戶踩雷。
+            跨入差異極大的使用情境時誤差顯著上升 — 我們主動揭露此限制,並明訂「新情境先重新校準」的部署規則。
           </PlainInline>
         </div>
       </Slide>
@@ -573,7 +573,7 @@ export function TourClient({
             ΔMAPE +0.10 pp · STM32N6 Neural-ART NPU 估算 27–109 µs · 本地推論,客戶不為每次推論付費
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            模型壓縮 3.5 倍後,小到能放進設備內的晶片、就地運算 — 客戶不必為每次預測付雲端費用。
+            模型壓縮 3.5 倍後可置入設備內晶片本地運算 — 無雲端推論費用,斷網亦不中斷。
           </PlainInline>
         </div>
       </Slide>

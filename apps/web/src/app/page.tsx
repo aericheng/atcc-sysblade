@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/card";
 import { Activity, BarChart3, Cpu, ArrowRight, Zap } from "lucide-react";
 import { Disclosure } from "@/components/ui/disclosure";
-import { PlainNote, PlainInline, GlossaryPanel } from "@/components/ui/plain";
+import { GlossaryPanel } from "@/components/ui/plain";
 import { SectionHeader, FeatureRow } from "@/components/ui/section";
 import { CountUp } from "@/components/motion";
 import fs from "node:fs/promises";
@@ -45,10 +45,12 @@ export default async function HomePage() {
           <span className="gradient-text">AI 機架毫秒級瞬變</span>
         </h1>
         <p className="mt-6 max-w-2xl text-base sm:text-lg text-muted leading-relaxed">
-          Sysblade HyperBuffer 結合 <span className="text-foreground font-medium">LFP 電芯</span>、{" "}
-          <span className="text-foreground font-medium">鋰離子電容</span> 與內嵌的{" "}
-          <span className="text-foreground font-medium">電池數位孿生</span>，吸收 GB200/GB300 機架對電網施加的{" "}
-          <span className="text-foreground">±30 % 功率波動</span> — 並將這些資料轉化為提供給營運方的 SaaS 服務。
+          AI 伺服器的功率需求在毫秒間劇烈波動（GB200/GB300 機架可達{" "}
+          <span className="text-foreground">±30 %</span>），傳統備援電池無法即時反應。Sysblade HyperBuffer
+          以反應極快的<span className="text-foreground font-medium">鋰離子電容</span>承擔瞬態、
+          以耐用的 <span className="text-foreground font-medium">LFP 電芯</span>提供備援，
+          並由內嵌的<span className="text-foreground font-medium">電池數位孿生</span>預測每一顆電池的剩餘壽命
+          — 硬體解決斷電風險，軟體成為長期的 SaaS 服務。
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -64,10 +66,6 @@ export default async function HomePage() {
             執行 TCO 計算器
           </Link>
         </div>
-        <PlainNote className="mt-8 max-w-2xl">
-          AI 伺服器的用電像心電圖一樣劇烈跳動，傳統備援電池反應不過來。我們把「反應快的電容」和「耐用的電池」裝進同一個機架單元，再用一套軟體預測每一顆電池還能用多久 —
-          硬體解決斷電風險，軟體變成長期的 SaaS 服務。
-        </PlainNote>
       </section>
 
       {/* Plain-language glossary for this page's recurring terms. */}
@@ -85,37 +83,31 @@ export default async function HomePage() {
           {[
             {
               value: 3.5, decimals: 1, prefix: "", suffix: "×",
-              label: (<>在 GB200 瞬變下降低 <span className="text-foreground font-medium">電芯電壓波動</span></>),
-              plain: "電壓抖動小 3.5 倍 — 電壓穩，設備就不會被突波弄到重啟。",
+              label: (<><span className="text-foreground font-medium">電芯電壓波動降低</span> — 電壓穩定，設備不因瞬態突波重啟(GB200 瞬變情境)</>),
               tone: "from-primary to-accent",
             },
             {
               value: 5.7, decimals: 1, prefix: "", suffix: "×",
-              label: (<>LIC 分流後降低 <span className="text-foreground font-medium">LFP 的功率應力</span></>),
-              plain: "最猛的功率衝擊由電容代打，主電池壓力小 5.7 倍，自然老得慢。",
+              label: (<><span className="text-foreground font-medium">LFP 功率應力降低</span> — 瞬間功率衝擊由 LIC 承擔，主電池老化更慢</>),
               tone: "from-accent to-primary",
             },
             {
               value: 25, decimals: 0, prefix: "~", suffix: " %",
               label: (
                 <>
-                  <span className="text-foreground font-medium">LFP 使用壽命優勢</span> ·
-                  BBU 低負載排程(提案 §G.3)
+                  <span className="text-foreground font-medium">LFP 使用壽命優勢</span> — 低負載排程下壽命多約四分之一，更換成本同步下降(提案 §G.3)
                 </>
               ),
-              plain: "電池在較輕鬆的工作型態下運轉，壽命多出約四分之一 — 少換電池就是省錢。",
               tone: "from-success to-accent",
             },
             {
               value: 10, decimals: 0, prefix: "", suffix: " 年",
-              label: (<>SOH &gt;80 % 時的 <span className="text-foreground font-medium">BBU 使用壽命</span>(Severson-fit)</>),
-              plain: "模擬顯示用滿 10 年，電池健康度仍在 80 % 的業界汰換線之上。",
+              label: (<><span className="text-foreground font-medium">BBU 使用壽命</span> — 模擬顯示服役滿 10 年健康度(SOH)仍在 80 % 汰換線之上(Severson-fit)</>),
               tone: "from-primary to-accent",
             },
             {
               value: 33, decimals: 0, prefix: "≈", suffix: " %",
-              label: (<><span className="text-foreground font-medium">10 年 TCO 降幅</span> · 提案 §G.3 基準</>),
-              plain: "10 年總帳(採購+更換+停機+人力)比傳統方案便宜約三分之一。",
+              label: (<><span className="text-foreground font-medium">10 年 TCO 降幅</span> — 採購、更換、停機與人力的 10 年總帳低約三分之一(提案 §G.3 基準)</>),
               tone: "from-accent to-primary",
             },
             mv
@@ -123,17 +115,14 @@ export default async function HomePage() {
                   value: mv.latency.p99_ms, decimals: 2, prefix: "", suffix: " ms",
                   label: (
                     <>
-                      筆電 CPU 上的 <span className="text-foreground font-medium">ONNX p99</span> · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× 優於規格</span>{" "}
-                      · STM32N6 NPU 預估 ≤5 ms
+                      <span className="text-foreground font-medium">壽命預測推論延遲</span> — 快到可於設備本地運算、不需雲端(筆電 CPU ONNX p99 · <span className="text-success font-medium">{(50 / mv.latency.p99_ms).toFixed(0)}× 優於規格</span> · STM32N6 NPU 預估 ≤5 ms)
                     </>
                   ),
-                  plain: "壽命預測在筆電等級的晶片上眨眼間算完 — 快到能放進設備裡，不必上雲付費。",
                   tone: "from-primary to-accent",
                 }
               : {
                   value: 50, decimals: 0, prefix: "<", suffix: " ms",
-                  label: (<><span className="text-foreground font-medium">邊緣推論延遲目標</span> · STM32N6 ONNX 路徑(執行 <code>export_lstm_onnx.py</code> 以填入)</>),
-                  plain: "壽命預測在筆電等級的晶片上眨眼間算完 — 快到能放進設備裡，不必上雲付費。",
+                  label: (<><span className="text-foreground font-medium">邊緣推論延遲目標</span> — 壽命預測於設備本地運算、不需雲端(STM32N6 ONNX 路徑，執行 <code>export_lstm_onnx.py</code> 以填入)</>),
                   tone: "from-primary to-accent",
                 },
           ].map((s, i) => (
@@ -143,7 +132,6 @@ export default async function HomePage() {
                   <CountUp value={s.value} decimals={s.decimals} prefix={s.prefix} suffix={s.suffix} />
                 </div>
                 <div className="text-sm text-muted mt-2 leading-relaxed">{s.label}</div>
-                <div className="text-xs text-accent mt-1.5 leading-relaxed">白話 · {s.plain}</div>
               </CardBody>
             </Card>
           ))}
@@ -176,13 +164,12 @@ export default async function HomePage() {
           cta="執行物理模擬"
           body={
             <>
+              為每一顆電池建立<span className="text-foreground font-medium">虛擬分身</span>，模擬其老化並預測剩餘壽命
+              — 維運從「定期巡檢」轉為「到期才換」。模型基礎：
               <span className="text-foreground font-medium">PyBaMM DFN 物理</span> +{" "}
               <span className="text-foreground font-medium">LSTM RUL</span>，以{" "}
-              <span className="text-foreground font-medium">188 顆 LFP 電芯</span> 訓練(138 顆 Severson 2019 + 50 顆 Severson 錨定合成 BBU 負載)，
-              90 % 預測區間來自 <span className="text-success font-medium">MC Dropout + split conformal</span>。雲端訓練、邊緣(STM32N6)推論。
-              <span className="block mt-2 text-accent text-sm">
-                白話 · 每顆電池在電腦裡有個虛擬分身，模擬它的老化並預測還能用多久 — 維修從「定期巡檢」變成「該換才換」。
-              </span>
+              <span className="text-foreground font-medium">188 顆 LFP 電芯</span>訓練(138 顆 Severson 2019 + 50 顆合成 BBU 負載)，
+              90 % 預測區間來自 <span className="text-success font-medium">MC Dropout + split conformal</span>；雲端訓練、邊緣(STM32N6)推論。
             </>
           }
           visual={<PillarVisual Icon={Cpu} tint="tint-primary" glow="glow-primary" stat="90 %" statLabel="conformal 預測區間涵蓋率" />}
@@ -197,12 +184,9 @@ export default async function HomePage() {
           cta="計算節省"
           body={
             <>
-              輸入機架數量、電價與您現行的 BBU 規格，即可得出{" "}
-              <span className="text-foreground font-medium">10 年 TCO、ROI 與 CO₂ 節省</span>，
-              每一條成本項皆可對照提案 §G.3 與業界依據稽核。
-              <span className="block mt-2 text-accent text-sm">
-                白話 · 輸入您的機房規模與電價，馬上算出 10 年省多少、幾年回本 — 每個數字都能點開看依據。
-              </span>
+              輸入機房規模、電價與現行 BBU 規格，即可得出{" "}
+              <span className="text-foreground font-medium">10 年省多少、幾年回本與 CO₂ 減量</span>
+              — 每一條成本項皆可點開，對照提案 §G.3 與業界依據逐項稽核。
             </>
           }
           visual={<PillarVisual Icon={BarChart3} tint="tint-accent" glow="glow-accent" stat="≈33 %" statLabel="10 年 TCO 降幅 · 提案 §G.3" />}
@@ -216,12 +200,10 @@ export default async function HomePage() {
           cta="開啟儀表板"
           body={
             <>
-              在權重分配於 Texas + Virginia 的{" "}
-              <span className="text-foreground font-medium">1,000 台設備合成機隊</span> 上，視覺化呈現{" "}
-              <span className="text-foreground font-medium">三種服務等級</span> — 即時監測、主動式維護、預測性維運。
-              <span className="block mt-2 text-accent text-sm">
-                白話 · 一個畫面看完 1,000 台設備誰健康、誰快退休；系統自動把該換的排進清單。
-              </span>
+              單一畫面掌握{" "}
+              <span className="text-foreground font-medium">1,000 台設備</span>的健康狀態與汰換順序，系統自動將接近壽命終點的設備排入維運佇列
+              — 三種服務等級(<span className="text-foreground font-medium">即時監測、主動式維護、預測性維運</span>)，
+              合成機隊權重分配於 Texas + Virginia。
             </>
           }
           visual={<PillarVisual Icon={Activity} tint="tint-success" glow="" stat="1,000" statLabel="台合成機隊 · Texas + Virginia" />}
@@ -254,11 +236,9 @@ export default async function HomePage() {
               一座 GB200 NVL72 機架的瞬變約需 <span className="text-foreground font-medium">5 kJ/機架</span> 緩衝能量;
               我們以 <span className="text-foreground font-medium">2× 現成 Eaton XLR 48 V LIC 模組</span> 配置{" "}
               <span className="text-foreground font-medium">345 kJ</span> — 刻意保留{" "}
-              <span className="text-success font-medium">69× 餘量</span>，無須客製電池組。
+              <span className="text-success font-medium">69× 餘量</span>，無須客製電池組
+              — 以標準品的超額配置，取代高成本的客製開發。
             </p>
-            <PlainInline>
-              一次瞬變只需要 5 kJ 緩衝能量，我們用現成模組直接配到 69 倍 — 用便宜的「超額」換掉昂貴的「客製」。
-            </PlainInline>
             <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
               <Mini label="需求" value="5 kJ" />
               <Mini label="配置" value="345 kJ" />
@@ -295,11 +275,9 @@ export default async function HomePage() {
           title={<>Sysblade 在電源保護堆疊中的<span className="gradient-text-accent">定位</span>。</>}
           intro={
             <>
-              以下每一層都有既有廠商 — Sysblade 的論點並非「沒有人做這件事」，而是
-              <span className="text-foreground">「LFP+LIC 混合 BBU + 內嵌孿生，正是 AI 機架在 BBU 層所缺的特定組合。」</span>
-              <span className="block mt-2 text-accent text-sm">
-                白話 · 每一層都有大廠，但「快電容 + 耐用電池 + 壽命預測軟體」這個組合，在機架這一層還沒有人做 — 這就是切入點。
-              </span>
+              以下每一層都有既有廠商 — Sysblade 的論點並非「沒有人做這件事」，而是：
+              <span className="text-foreground">高速電容、長壽命電池與壽命預測軟體的整合組合，在機架層仍是空缺</span>
+              — 這正是切入點。
             </>
           }
           className="max-w-3xl"
