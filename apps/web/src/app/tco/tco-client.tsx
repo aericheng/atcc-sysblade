@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Disclosure } from "@/components/ui/disclosure";
-import { PlainNote, GlossaryPanel } from "@/components/ui/plain";
+import { GlossaryPanel } from "@/components/ui/plain";
 import { Stat } from "@/components/ui/stat";
 import {
   computeTco,
@@ -176,14 +176,13 @@ export function TcoClient() {
           瞬變缺口讓您<span className="gradient-text-accent">付出多少成本</span>？
         </h1>
         <p className="mt-4 text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          <span className="text-foreground font-medium">提案 §G.3 成本模型</span> — 參考基準{" "}
+          「瞬變」是 AI 伺服器毫秒級的劇烈功率波動 — 其造成的電壓驟降、設備重啟與停機，是帳單上看不到的隱形成本。
+          本計算器將這些成本連同採購、更換與維運人力，以{" "}
+          <span className="text-foreground font-medium">提案 §G.3 成本模型</span>併入 10 年總帳 — 參考基準{" "}
           (<span className="text-foreground">$0.10/kWh</span>,{" "}
           <span className="text-foreground">PUE 1.4</span>) 得出{" "}
           <span className="text-success font-medium">主要的 33 % 節省</span>。請依您的情境調整滑桿。
         </p>
-        <PlainNote className="mt-4 max-w-3xl">
-          「瞬變」是 AI 伺服器毫秒級的劇烈用電抖動 — 它造成的電壓驟降、設備重啟與停機，都是帳單上看不到的隱形成本。這個計算器把它們連同採購、更換、人力，一起算成 10 年總帳。
-        </PlainNote>
       </header>
 
       {/* Plain-language glossary for this page's recurring terms. */}
