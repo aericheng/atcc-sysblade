@@ -2,7 +2,7 @@
 
 > **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第 23 屆全國大專院校創業競賽 · 議題 C13(系統電 Sysgration)
 
-[**Live demo**](https://sysblade-atcc.vercel.app) · [**技術白皮書 v1.3**](docs/whitepaper.md) · [**精煉版 v1.3**](docs/whitepaper_restructured.md) · [**實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**RD Brief**](docs/RD_BRIEF.md) · [**Investor Brief**](docs/INVESTOR_BRIEF.md) · [**關於 ATCC 大賽**](https://atcc.co/)
+[**English**](README.en.md) · [**Live demo**](https://sysblade-atcc.vercel.app) · [**技術白皮書 v1.3**](docs/whitepaper.md) · [**精煉版 v1.3**](docs/whitepaper_restructured.md) · [**實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**RD Brief**](docs/RD_BRIEF.md) · [**Investor Brief**](docs/INVESTOR_BRIEF.md) · [**關於 ATCC 大賽**](https://atcc.co/)
 
 ## 專案狀態(2026-07)
 
