@@ -1,5 +1,7 @@
 # Citation backing — verification audit
 
+> **狀態(2026-07)**:歷史紀錄 — 本審計對象為 v2.1 提案 PDF(現行 spec 為 v2.2),競賽已結束,保留為引用查證方法的過程證據,不再更新。
+
 **Audit date**: 2026-05-12
 **Method**: Read the v2.1 proposal PDF (18 pages; 已自 repo 移除,現行 spec 為 v2.2) via
 `pypdf`, grep for each cited §-anchor and verify the referenced text exists

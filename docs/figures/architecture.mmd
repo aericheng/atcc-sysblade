@@ -2,7 +2,7 @@
 flowchart LR
 
   %% ============ EDGE LAYER ============
-  subgraph EDGE["🔋 Edge 機櫃端"]
+  subgraph EDGE["Edge 機櫃端"]
     direction TB
     BAT["LFP 15S BBU<br/>+ LIC 突波吸收"]
     SENSOR["感測<br/>V / I / T<br/>取樣 100 ms"]
@@ -11,7 +11,7 @@ flowchart LR
   end
 
   %% ============ CLOUD / SIMULATION LAYER ============
-  subgraph CLOUD["☁️ 雲端模擬 / 訓練層 (Python · 離線)"]
+  subgraph CLOUD["雲端模擬 / 訓練層 (Python · 離線)"]
     direction TB
     SEV["Severson MIT<br/>Dataset<br/>(124 顆真實 cell)"]
     PYBAMM["PyBaMM DFN<br/>物理模擬<br/>(1000 cell)"]
@@ -23,7 +23,7 @@ flowchart LR
   end
 
   %% ============ FRONTEND / SAAS LAYER ============
-  subgraph FRONT["🖥️ SaaS Demo (Next.js Static Export)"]
+  subgraph FRONT["SaaS Demo (Next.js Static Export)"]
     direction TB
     JSON["Scenario JSONs<br/>4 組 (LFP-only,<br/>Hybrid, Tier-1/2/3)"]
     NEXT["Next.js Server<br/>Components<br/>(build-time fs.read)"]
@@ -33,7 +33,7 @@ flowchart LR
   end
 
   %% ============ USER ============
-  USER["👤 採購 / 車隊管理員<br/>掃 QR 即玩"]
+  USER["採購 / 機隊管理員<br/>掃 QR 即玩"]
 
   %% ============ DATA FLOW ============
   GEN ==>|build time| JSON

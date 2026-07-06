@@ -196,7 +196,7 @@ def edit_appendix(doc):
         "Random split (10-seed median):bagged-GBT (K=24) + xstrict cell filter (cycle_life ≥ 400, n=134) MAPE 8.38 %、R² 0.890、per-seed [5.93, 12.91],7/10 seeds < 10 % — 首次達 v2.1 附件 B 軟體技術棧「< 10 % MAPE」承諾",
         "Cross-batch (b1+b2 → b3 新 protocol):bagged-OLS + xstrict MAPE 13.87 %、R² +0.207 — GBT 在 cross-batch 反退化(17–22 %)因 protocol-specific 過擬合,部署 routing 規則為「同 protocol 用 bagged-GBT、新 protocol fall back bagged-OLS」",
         "Cross-chemistry (Severson → NASA NMC):5/5 feature 全部 OOD、z-distance 5–65 σ — 量化證明跨化學體系需 per-chemistry calibration cycle,不可線性外插",
-        "LSTM fleet 部署:Severson 138 + 50 顆 Severson-anchored synthetic BBU-duty cell(analytic decay + per-cell noise,非 PyBaMM 物理 aging)= 188 cells 訓練;test MAPE 19.10 % / R² 0.86 跨兩個 regime 誠實揭露 — 合成 cell 僅作 regime augmentation,production 信賴度仍以 Severson 真實 cells 為主;fleet 推論用 LSTM,學術 baseline 報 GBT(同模型兩視角)",
+        "LSTM fleet 部署:Severson 138 + 50 顆 Severson-anchored synthetic BBU-duty cell(analytic decay + per-cell noise,非 PyBaMM 物理 aging)= 188 cells 訓練;test MAPE 19.10 % / R² 0.86 跨兩個 regime 誠實揭露 — 合成 cell 僅作 regime augmentation,production 信賴度仍以 Severson 真實 cells 為主;fleet 推論 production 已切 TCN(18.15 %,LSTM 為 baseline),學術 baseline 報 GBT",
     ]
     for b in bullets_d1:
         _ins_before(anchor, "• " + b)

@@ -1,209 +1,209 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 700" font-family="'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif">
-  <defs>
-    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#94A3B8"/>
-    </marker>
-  </defs>
+ <defs>
+   <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+     <path d="M0,0 L0,6 L9,3 z" fill="#94A3B8"/>
+   </marker>
+ </defs>
 
-  <!-- Title -->
-  <text x="620" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">客戶旅程地圖 — Tier-2 Colo 維運主管</text>
-  <text x="620" y="52" text-anchor="middle" font-size="13" fill="#475569">從踩坑到代言:18 個月跨越 5 個關鍵接觸點</text>
+ <!-- Title -->
+ <text x="620" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">客戶旅程地圖 — Tier-2 Colo 維運主管</text>
+ <text x="620" y="52" text-anchor="middle" font-size="13" fill="#475569">從踩坑到代言:18 個月跨越 5 個關鍵接觸點</text>
 
-  <!-- ============ PERSONA CARD (top, full width) ============ -->
-  <rect x="30" y="74" width="1180" height="116" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+ <!-- ============ PERSONA CARD (top, full width) ============ -->
+ <rect x="30" y="74" width="1180" height="116" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
 
-  <!-- Avatar -->
-  <circle cx="92" cy="132" r="38" fill="#1E40AF"/>
-  <text x="92" y="142" text-anchor="middle" font-size="36" font-weight="700" fill="#fff">M</text>
+ <!-- Avatar -->
+ <circle cx="92" cy="132" r="38" fill="#1E40AF"/>
+ <text x="92" y="142" text-anchor="middle" font-size="36" font-weight="700" fill="#fff">M</text>
 
-  <!-- Name + title block -->
-  <text x="148" y="108" font-size="16" font-weight="700" fill="#0F172A">Mark Chen · VP of Infrastructure</text>
-  <text x="148" y="128" font-size="12" fill="#475569">"Lone Star Cloud" (匿名 Tier-2 colo) · 德州 Plano · 1,200 機櫃 · GB200/GB300 AI 推論為主</text>
+ <!-- Name + title block -->
+ <text x="148" y="108" font-size="16" font-weight="700" fill="#0F172A">Mark Chen · VP of Infrastructure</text>
+ <text x="148" y="128" font-size="12" fill="#475569">"Lone Star Cloud" (匿名 Tier-2 colo) · 德州 Plano · 1,200 機櫃 · GB200/GB300 AI 推論為主</text>
 
-  <text x="148" y="156" font-size="12" fill="#475569">42 歲,前 Cisco 基礎設施主管,直接負責 99.99% SLA。</text>
-  <text x="148" y="174" font-size="12" fill="#475569">手上預算可決定 PoC,簽約需向 CFO 提 ROI;偏好可量化、有 demo 的供應商。</text>
+ <text x="148" y="156" font-size="12" fill="#475569">42 歲,前 Cisco 基礎設施主管,直接負責 99.99% SLA。</text>
+ <text x="148" y="174" font-size="12" fill="#475569">手上預算可決定 PoC,簽約需向 CFO 提 ROI;偏好可量化、有 demo 的供應商。</text>
 
-  <!-- Pain pills (right side) -->
-  <g font-size="11">
-    <rect x="700" y="92" width="155" height="22" rx="11" fill="#FEE2E2" stroke="#FCA5A5"/>
-    <text x="778" y="107" text-anchor="middle" fill="#991B1B" font-weight="600">⚠ 隨機 BBU 重啟</text>
+ <!-- Pain pills (right side) -->
+ <g font-size="11">
+   <rect x="700" y="92" width="155" height="22" rx="11" fill="#FEE2E2" stroke="#FCA5A5"/>
+   <text x="778" y="107" text-anchor="middle" fill="#991B1B" font-weight="600"> 隨機 BBU 重啟</text>
 
-    <rect x="864" y="92" width="155" height="22" rx="11" fill="#FEE2E2" stroke="#FCA5A5"/>
-    <text x="942" y="107" text-anchor="middle" fill="#991B1B" font-weight="600">⚠ 2027 HVDC 換代</text>
+   <rect x="864" y="92" width="155" height="22" rx="11" fill="#FEE2E2" stroke="#FCA5A5"/>
+   <text x="942" y="107" text-anchor="middle" fill="#991B1B" font-weight="600"> 2027 HVDC 換代</text>
 
-    <rect x="1028" y="92" width="170" height="22" rx="11" fill="#FEE2E2" stroke="#FCA5A5"/>
-    <text x="1113" y="107" text-anchor="middle" fill="#991B1B" font-weight="600">⚠ 1200 機櫃手動巡檢</text>
+   <rect x="1028" y="92" width="170" height="22" rx="11" fill="#FEE2E2" stroke="#FCA5A5"/>
+   <text x="1113" y="107" text-anchor="middle" fill="#991B1B" font-weight="600"> 1200 機櫃手動巡檢</text>
 
-    <rect x="700" y="120" width="155" height="22" rx="11" fill="#DBEAFE" stroke="#93C5FD"/>
-    <text x="778" y="135" text-anchor="middle" fill="#1E40AF" font-weight="600">🎯 99.99% uptime</text>
+   <rect x="700" y="120" width="155" height="22" rx="11" fill="#DBEAFE" stroke="#93C5FD"/>
+   <text x="778" y="135" text-anchor="middle" fill="#1E40AF" font-weight="600"> 99.99% uptime</text>
 
-    <rect x="864" y="120" width="155" height="22" rx="11" fill="#DBEAFE" stroke="#93C5FD"/>
-    <text x="942" y="135" text-anchor="middle" fill="#1E40AF" font-weight="600">🎯 10 yr 可預測 capex</text>
+   <rect x="864" y="120" width="155" height="22" rx="11" fill="#DBEAFE" stroke="#93C5FD"/>
+   <text x="942" y="135" text-anchor="middle" fill="#1E40AF" font-weight="600"> 10 yr 可預測 capex</text>
 
-    <rect x="1028" y="120" width="170" height="22" rx="11" fill="#DBEAFE" stroke="#93C5FD"/>
-    <text x="1113" y="135" text-anchor="middle" fill="#1E40AF" font-weight="600">🎯 去 China-NMC 風險</text>
+   <rect x="1028" y="120" width="170" height="22" rx="11" fill="#DBEAFE" stroke="#93C5FD"/>
+   <text x="1113" y="135" text-anchor="middle" fill="#1E40AF" font-weight="600"> 去 China-NMC 風險</text>
 
-    <rect x="700" y="148" width="319" height="22" rx="11" fill="#FEF3C7" stroke="#FCD34D"/>
-    <text x="859" y="163" text-anchor="middle" fill="#92400E" font-weight="600">💼 採購偏好:可量化 ROI · 有 demo · BABA Act 合規</text>
+   <rect x="700" y="148" width="319" height="22" rx="11" fill="#FEF3C7" stroke="#FCD34D"/>
+   <text x="859" y="163" text-anchor="middle" fill="#92400E" font-weight="600"> 採購偏好:可量化 ROI · 有 demo · BABA Act 合規</text>
 
-    <rect x="1028" y="148" width="170" height="22" rx="11" fill="#FEF3C7" stroke="#FCD34D"/>
-    <text x="1113" y="163" text-anchor="middle" fill="#92400E" font-weight="600">💼 OCP Summit 常客</text>
-  </g>
+   <rect x="1028" y="148" width="170" height="22" rx="11" fill="#FEF3C7" stroke="#FCD34D"/>
+   <text x="1113" y="163" text-anchor="middle" fill="#92400E" font-weight="600"> OCP Summit 常客</text>
+ </g>
 
-  <!-- ============ EMOTIONAL ARC (curve overlay) ============ -->
-  <path d="M 130 450 Q 360 540 600 380 T 1110 280" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="3,4"/>
-  <text x="40" y="468" font-size="11" fill="#94A3B8" font-style="italic">情緒曲線</text>
+ <!-- ============ EMOTIONAL ARC (curve overlay) ============ -->
+ <path d="M 130 450 Q 360 540 600 380 T 1110 280" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="3,4"/>
+ <text x="40" y="468" font-size="11" fill="#94A3B8" font-style="italic">情緒曲線</text>
 
-  <!-- ============ JOURNEY PANELS (5 stages) ============ -->
-  <!-- Each panel: 220 wide, x positions 35, 275, 515, 755, 995 -->
+ <!-- ============ JOURNEY PANELS (5 stages) ============ -->
+ <!-- Each panel: 220 wide, x positions 35, 275, 515, 755, 995 -->
 
-  <!-- Panel 1 — PAIN -->
-  <g>
-    <rect x="35" y="220" width="220" height="430" rx="8" fill="#FFF1F2" stroke="#FCA5A5" stroke-width="1.5"/>
-    <rect x="35" y="220" width="220" height="40" rx="8" fill="#DC2626"/>
-    <rect x="35" y="252" width="220" height="8" fill="#DC2626"/>
-    <text x="50" y="246" font-size="12" font-weight="700" fill="#fff">① PAIN · 2026 Q3</text>
-    <text x="240" y="246" text-anchor="end" font-size="10" fill="#FECACA">3 個月</text>
+ <!-- Panel 1 — PAIN -->
+ <g>
+   <rect x="35" y="220" width="220" height="430" rx="8" fill="#FFF1F2" stroke="#FCA5A5" stroke-width="1.5"/>
+   <rect x="35" y="220" width="220" height="40" rx="8" fill="#DC2626"/>
+   <rect x="35" y="252" width="220" height="8" fill="#DC2626"/>
+   <text x="50" y="246" font-size="12" font-weight="700" fill="#fff">① PAIN · 2026 Q3</text>
+   <text x="240" y="246" text-anchor="end" font-size="10" fill="#FECACA">3 個月</text>
 
-    <text x="145" y="290" text-anchor="middle" font-size="32">⚠</text>
-    <text x="145" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">GB200 上線後</text>
-    <text x="145" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">BBU 隨機重啟</text>
+   <text x="145" y="290" text-anchor="middle" font-size="32"></text>
+   <text x="145" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">GB200 上線後</text>
+   <text x="145" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">BBU 隨機重啟</text>
 
-    <text x="50" y="375" font-size="11" fill="#475569">▸ 客戶投訴連線斷</text>
-    <text x="50" y="392" font-size="11" fill="#475569">▸ RCA 兩個月查不到根因</text>
-    <text x="50" y="409" font-size="11" fill="#475569">▸ Eaton 答覆「LIC 自己整合」</text>
+   <text x="50" y="375" font-size="11" fill="#475569">▸ 客戶投訴連線斷</text>
+   <text x="50" y="392" font-size="11" fill="#475569">▸ RCA 兩個月查不到根因</text>
+   <text x="50" y="409" font-size="11" fill="#475569">▸ Eaton 答覆「LIC 自己整合」</text>
 
-    <!-- Touchpoint -->
-    <rect x="50" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#FCA5A5"/>
-    <text x="145" y="445" text-anchor="middle" font-size="11" fill="#991B1B" font-weight="600">接觸點:無 (尚未認識 Sysblade)</text>
+   <!-- Touchpoint -->
+   <rect x="50" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#FCA5A5"/>
+   <text x="145" y="445" text-anchor="middle" font-size="11" fill="#991B1B" font-weight="600">接觸點:無 (尚未認識 Sysblade)</text>
 
-    <!-- Quote -->
-    <rect x="50" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#FCA5A5" stroke-dasharray="2,2"/>
-    <text x="62" y="500" font-size="32" fill="#FCA5A5">"</text>
-    <text x="145" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">我們 BBU 跑得好好的,</text>
-    <text x="145" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">為什麼 GB200 一上線</text>
-    <text x="145" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">就一直炸?</text>
-    <text x="145" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, 給供應商的 email</text>
-  </g>
+   <!-- Quote -->
+   <rect x="50" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#FCA5A5" stroke-dasharray="2,2"/>
+   <text x="62" y="500" font-size="32" fill="#FCA5A5">"</text>
+   <text x="145" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">我們 BBU 跑得好好的,</text>
+   <text x="145" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">為什麼 GB200 一上線</text>
+   <text x="145" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">就一直炸?</text>
+   <text x="145" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, 給供應商的 email</text>
+ </g>
 
-  <!-- Arrow -->
-  <line x1="258" y1="435" x2="272" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+ <!-- Arrow -->
+ <line x1="258" y1="435" x2="272" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
 
-  <!-- Panel 2 — DISCOVERY -->
-  <g>
-    <rect x="275" y="220" width="220" height="430" rx="8" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.5"/>
-    <rect x="275" y="220" width="220" height="40" rx="8" fill="#D97706"/>
-    <rect x="275" y="252" width="220" height="8" fill="#D97706"/>
-    <text x="290" y="246" font-size="12" font-weight="700" fill="#fff">② DISCOVERY · 2026 Q4</text>
-    <text x="480" y="246" text-anchor="end" font-size="10" fill="#FED7AA">1 週</text>
+ <!-- Panel 2 — DISCOVERY -->
+ <g>
+   <rect x="275" y="220" width="220" height="430" rx="8" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.5"/>
+   <rect x="275" y="220" width="220" height="40" rx="8" fill="#D97706"/>
+   <rect x="275" y="252" width="220" height="8" fill="#D97706"/>
+   <text x="290" y="246" font-size="12" font-weight="700" fill="#fff">② DISCOVERY · 2026 Q4</text>
+   <text x="480" y="246" text-anchor="end" font-size="10" fill="#FED7AA">1 週</text>
 
-    <text x="385" y="290" text-anchor="middle" font-size="32">💡</text>
-    <text x="385" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">OCP Summit 認識</text>
-    <text x="385" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">Sysblade Demo</text>
+   <text x="385" y="290" text-anchor="middle" font-size="32"></text>
+   <text x="385" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">OCP Summit 認識</text>
+   <text x="385" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">Sysblade Demo</text>
 
-    <text x="290" y="375" font-size="11" fill="#475569">▸ 走過 booth 看到 LIC+LFP demo</text>
-    <text x="290" y="392" font-size="11" fill="#475569">▸ 掃 QR 玩 TCO Calculator</text>
-    <text x="290" y="409" font-size="11" fill="#475569">▸ 看到 33% 10 年節省</text>
+   <text x="290" y="375" font-size="11" fill="#475569">▸ 走過 booth 看到 LIC+LFP demo</text>
+   <text x="290" y="392" font-size="11" fill="#475569">▸ 掃 QR 玩 TCO Calculator</text>
+   <text x="290" y="409" font-size="11" fill="#475569">▸ 看到 33% 10 年節省</text>
 
-    <rect x="290" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#FCD34D"/>
-    <text x="385" y="445" text-anchor="middle" font-size="11" fill="#92400E" font-weight="600">接觸點:Booth + /tco demo</text>
+   <rect x="290" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#FCD34D"/>
+   <text x="385" y="445" text-anchor="middle" font-size="11" fill="#92400E" font-weight="600">接觸點:Booth + /tco demo</text>
 
-    <rect x="290" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#FCD34D" stroke-dasharray="2,2"/>
-    <text x="302" y="500" font-size="32" fill="#FCD34D">"</text>
-    <text x="385" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">這是我看過第一個</text>
-    <text x="385" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">能直接算我家 TCO 的</text>
-    <text x="385" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">BBU 廠商 demo。</text>
-    <text x="385" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, 在 booth 對 PM</text>
-  </g>
+   <rect x="290" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#FCD34D" stroke-dasharray="2,2"/>
+   <text x="302" y="500" font-size="32" fill="#FCD34D">"</text>
+   <text x="385" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">這是我看過第一個</text>
+   <text x="385" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">能直接算我家 TCO 的</text>
+   <text x="385" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">BBU 廠商 demo。</text>
+   <text x="385" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, 在 booth 對 PM</text>
+ </g>
 
-  <line x1="498" y1="435" x2="512" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+ <line x1="498" y1="435" x2="512" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
 
-  <!-- Panel 3 — POC -->
-  <g>
-    <rect x="515" y="220" width="220" height="430" rx="8" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5"/>
-    <rect x="515" y="220" width="220" height="40" rx="8" fill="#2563EB"/>
-    <rect x="515" y="252" width="220" height="8" fill="#2563EB"/>
-    <text x="530" y="246" font-size="12" font-weight="700" fill="#fff">③ PoC · 2027 Q1–Q2</text>
-    <text x="720" y="246" text-anchor="end" font-size="10" fill="#BFDBFE">6 個月</text>
+ <!-- Panel 3 — POC -->
+ <g>
+   <rect x="515" y="220" width="220" height="430" rx="8" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5"/>
+   <rect x="515" y="220" width="220" height="40" rx="8" fill="#2563EB"/>
+   <rect x="515" y="252" width="220" height="8" fill="#2563EB"/>
+   <text x="530" y="246" font-size="12" font-weight="700" fill="#fff">③ PoC · 2027 Q1–Q2</text>
+   <text x="720" y="246" text-anchor="end" font-size="10" fill="#BFDBFE">6 個月</text>
 
-    <text x="625" y="290" text-anchor="middle" font-size="32">🔧</text>
-    <text x="625" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">2 機櫃試裝</text>
-    <text x="625" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">+ Twin SaaS 接線</text>
+   <text x="625" y="290" text-anchor="middle" font-size="32"></text>
+   <text x="625" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">2 機櫃試裝</text>
+   <text x="625" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">+ Twin SaaS 接線</text>
 
-    <text x="530" y="375" font-size="11" fill="#475569">▸ Sysblade BBU 進兩個 GB200 rack</text>
-    <text x="530" y="392" font-size="11" fill="#475569">▸ Twin SaaS 開始收 telemetry</text>
-    <text x="530" y="409" font-size="11" fill="#475569">▸ 28 天 ms-壓降事件清零</text>
+   <text x="530" y="375" font-size="11" fill="#475569">▸ Sysblade BBU 進兩個 GB200 rack</text>
+   <text x="530" y="392" font-size="11" fill="#475569">▸ Twin SaaS 開始收 telemetry</text>
+   <text x="530" y="409" font-size="11" fill="#475569">▸ 28 天 ms-壓降事件清零</text>
 
-    <rect x="530" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#93C5FD"/>
-    <text x="625" y="445" text-anchor="middle" font-size="11" fill="#1E40AF" font-weight="600">接觸點:/twin + Tech Talk</text>
+   <rect x="530" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#93C5FD"/>
+   <text x="625" y="445" text-anchor="middle" font-size="11" fill="#1E40AF" font-weight="600">接觸點:/twin + Tech Talk</text>
 
-    <rect x="530" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#93C5FD" stroke-dasharray="2,2"/>
-    <text x="542" y="500" font-size="32" fill="#93C5FD">"</text>
-    <text x="625" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">看 Twin dashboard 才發現,</text>
-    <text x="625" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">我們以前根本不知道</text>
-    <text x="625" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">哪幾顆 cell 在老化。</text>
-    <text x="625" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, PoC 月會</text>
-  </g>
+   <rect x="530" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#93C5FD" stroke-dasharray="2,2"/>
+   <text x="542" y="500" font-size="32" fill="#93C5FD">"</text>
+   <text x="625" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">看 Twin dashboard 才發現,</text>
+   <text x="625" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">我們以前根本不知道</text>
+   <text x="625" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">哪幾顆 cell 在老化。</text>
+   <text x="625" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, PoC 月會</text>
+ </g>
 
-  <line x1="738" y1="435" x2="752" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+ <line x1="738" y1="435" x2="752" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
 
-  <!-- Panel 4 — ADOPTION -->
-  <g>
-    <rect x="755" y="220" width="220" height="430" rx="8" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1.5"/>
-    <rect x="755" y="220" width="220" height="40" rx="8" fill="#059669"/>
-    <rect x="755" y="252" width="220" height="8" fill="#059669"/>
-    <text x="770" y="246" font-size="12" font-weight="700" fill="#fff">④ ADOPTION · 2027 Q3</text>
-    <text x="960" y="246" text-anchor="end" font-size="10" fill="#A7F3D0">3 個月</text>
+ <!-- Panel 4 — ADOPTION -->
+ <g>
+   <rect x="755" y="220" width="220" height="430" rx="8" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1.5"/>
+   <rect x="755" y="220" width="220" height="40" rx="8" fill="#059669"/>
+   <rect x="755" y="252" width="220" height="8" fill="#059669"/>
+   <text x="770" y="246" font-size="12" font-weight="700" fill="#fff">④ ADOPTION · 2027 Q3</text>
+   <text x="960" y="246" text-anchor="end" font-size="10" fill="#A7F3D0">3 個月</text>
 
-    <text x="865" y="290" text-anchor="middle" font-size="32">📡</text>
-    <text x="865" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">Twin 預警救火</text>
-    <text x="865" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">RUL 提前 800 cycle</text>
+   <text x="865" y="290" text-anchor="middle" font-size="32"></text>
+   <text x="865" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">Twin 預警救火</text>
+   <text x="865" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">RUL 提前 800 cycle</text>
 
-    <text x="770" y="375" font-size="11" fill="#475569">▸ Tier-3 預警觸發 (RUL=820)</text>
-    <text x="770" y="392" font-size="11" fill="#475569">▸ 排夜間 RMA 不掉 SLA</text>
-    <text x="770" y="409" font-size="11" fill="#475569">▸ CFO 簽 1,200 rack 全 fleet 採購</text>
+   <text x="770" y="375" font-size="11" fill="#475569">▸ Tier-3 預警觸發 (RUL=820)</text>
+   <text x="770" y="392" font-size="11" fill="#475569">▸ 排夜間 RMA 不掉 SLA</text>
+   <text x="770" y="409" font-size="11" fill="#475569">▸ CFO 簽 1,200 rack 全 fleet 採購</text>
 
-    <rect x="770" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#6EE7B7"/>
-    <text x="865" y="445" text-anchor="middle" font-size="11" fill="#065F46" font-weight="600">接觸點:/dashboard 預警</text>
+   <rect x="770" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#6EE7B7"/>
+   <text x="865" y="445" text-anchor="middle" font-size="11" fill="#065F46" font-weight="600">接觸點:/dashboard 預警</text>
 
-    <rect x="770" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#6EE7B7" stroke-dasharray="2,2"/>
-    <text x="782" y="500" font-size="32" fill="#6EE7B7">"</text>
-    <text x="865" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">提前 800 cycle 知道</text>
-    <text x="865" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">哪台要換,維運第一次</text>
-    <text x="865" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">有 SLA 可言。</text>
-    <text x="865" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, 給 CFO 簡報</text>
-  </g>
+   <rect x="770" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#6EE7B7" stroke-dasharray="2,2"/>
+   <text x="782" y="500" font-size="32" fill="#6EE7B7">"</text>
+   <text x="865" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">提前 800 cycle 知道</text>
+   <text x="865" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">哪台要換,維運第一次</text>
+   <text x="865" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">有 SLA 可言。</text>
+   <text x="865" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, 給 CFO 簡報</text>
+ </g>
 
-  <line x1="978" y1="435" x2="992" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+ <line x1="978" y1="435" x2="992" y2="435" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
 
-  <!-- Panel 5 — ADVOCACY -->
-  <g>
-    <rect x="995" y="220" width="220" height="430" rx="8" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
-    <rect x="995" y="220" width="220" height="40" rx="8" fill="#15803D"/>
-    <rect x="995" y="252" width="220" height="8" fill="#15803D"/>
-    <text x="1010" y="246" font-size="12" font-weight="700" fill="#fff">⑤ ADVOCACY · 2027 Q4+</text>
-    <text x="1200" y="246" text-anchor="end" font-size="10" fill="#BBF7D0">on-going</text>
+ <!-- Panel 5 — ADVOCACY -->
+ <g>
+   <rect x="995" y="220" width="220" height="430" rx="8" fill="#F0FDF4" stroke="#16A34A" stroke-width="1.5"/>
+   <rect x="995" y="220" width="220" height="40" rx="8" fill="#15803D"/>
+   <rect x="995" y="252" width="220" height="8" fill="#15803D"/>
+   <text x="1010" y="246" font-size="12" font-weight="700" fill="#fff">⑤ ADVOCACY · 2027 Q4+</text>
+   <text x="1200" y="246" text-anchor="end" font-size="10" fill="#BBF7D0">on-going</text>
 
-    <text x="1105" y="290" text-anchor="middle" font-size="32">🎙</text>
-    <text x="1105" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">全 fleet 遷移</text>
-    <text x="1105" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">+ OCP Case Study</text>
+   <text x="1105" y="290" text-anchor="middle" font-size="32"></text>
+   <text x="1105" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">全 fleet 遷移</text>
+   <text x="1105" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A">+ OCP Case Study</text>
 
-    <text x="1010" y="375" font-size="11" fill="#475569">▸ 1,200 rack 全換 Sysblade</text>
-    <text x="1010" y="392" font-size="11" fill="#475569">▸ 10 yr TCO 確認 −33%</text>
-    <text x="1010" y="409" font-size="11" fill="#475569">▸ 上 OCP Summit 演講站台</text>
+   <text x="1010" y="375" font-size="11" fill="#475569">▸ 1,200 rack 全換 Sysblade</text>
+   <text x="1010" y="392" font-size="11" fill="#475569">▸ 10 yr TCO 確認 −33%</text>
+   <text x="1010" y="409" font-size="11" fill="#475569">▸ 上 OCP Summit 演講站台</text>
 
-    <rect x="1010" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#16A34A"/>
-    <text x="1105" y="445" text-anchor="middle" font-size="11" fill="#14532D" font-weight="600">接觸點:Case Study + 推薦</text>
+   <rect x="1010" y="430" width="190" height="22" rx="4" fill="#fff" stroke="#16A34A"/>
+   <text x="1105" y="445" text-anchor="middle" font-size="11" fill="#14532D" font-weight="600">接觸點:Case Study + 推薦</text>
 
-    <rect x="1010" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#16A34A" stroke-dasharray="2,2"/>
-    <text x="1022" y="500" font-size="32" fill="#86EFAC">"</text>
-    <text x="1105" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">10 年 TCO 省 33%、</text>
-    <text x="1105" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">BBU-induced 重啟清零 ——</text>
-    <text x="1105" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">這才叫 BBU 2.0。</text>
-    <text x="1105" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, OCP 2028 演講</text>
-  </g>
+   <rect x="1010" y="475" width="190" height="155" rx="6" fill="#fff" stroke="#16A34A" stroke-dasharray="2,2"/>
+   <text x="1022" y="500" font-size="32" fill="#86EFAC">"</text>
+   <text x="1105" y="515" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">10 年 TCO 省 33%、</text>
+   <text x="1105" y="532" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">BBU-induced 重啟清零 ——</text>
+   <text x="1105" y="549" text-anchor="middle" font-size="11" fill="#374151" font-style="italic">這才叫 BBU 2.0。</text>
+   <text x="1105" y="595" text-anchor="middle" font-size="10" fill="#9CA3AF">— Mark, OCP 2028 演講</text>
+ </g>
 
-  <!-- Footer -->
-  <text x="30" y="680" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.2 §C–§F 18 個月里程碑 · persona 為合成代表(Tier-2 colo IT 主管 archetype)</text>
+ <!-- Footer -->
+ <text x="30" y="680" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.2 §C–§F 18 個月里程碑 · persona 為合成代表(Tier-2 colo IT 主管 archetype)</text>
 </svg>

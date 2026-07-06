@@ -164,7 +164,7 @@ live_demonstrator_bridge.py 等檔對應的 3rd-party 依賴條目)
 
 ### 5.4 · 機構 / 競賽 / 贊助
 
-- **ATCC**(全國大專院校行銷企劃競賽)— 主辦單位商標
+- **ATCC**(全國大專院校創業競賽)— 主辦單位商標
 - **Sysgration® / 系統電工業** — Sysgration Ltd. 商標,本 repo 是 ATCC 第 23 屆 C13
   系統電 議題的學生參賽作品,使用 Sysgration 名稱屬競賽 sponsor context
 - **Toyota Research Institute (TRI)** — Severson 公開資料集贊助方

@@ -1,10 +1,19 @@
 # Sysblade HyperBuffer
 
-> **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第二十三屆全國大專院校行銷企劃競賽 · 議題 C13(系統電 Sysgration)
+> **AI 機房混合 BBU + 嵌入式電池數位孿生 SaaS** · ATCC 第 23 屆全國大專院校創業競賽 · 議題 C13(系統電 Sysgration)
 
 [**Live demo**](https://sysblade-atcc.vercel.app) · [**技術白皮書 v1.3**](docs/whitepaper.md) · [**精煉版 v1.3**](docs/whitepaper_restructured.md) · [**實作計畫 v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**RD Brief**](docs/RD_BRIEF.md) · [**Investor Brief**](docs/INVESTOR_BRIEF.md)
 
-> **v2.0 update (2026-05-27)**:複賽路線從 8S 實機 demonstrator(v1.x M1-M4)pivot 到 **6 條 digital-twin validation chains(V1-V6)**,target 科技業 RD / 顧問 / 投資人。`make verify` 5-6/6 chains PASS in 75s,GitHub `make verify-fast` 一鍵 CI gate。完整 pivot rationale 見 `docs/BBU_IMPLEMENTATION_PLAN.md` v2.0 § 0.5。
+## 專案狀態(2026-07)
+
+**競賽已結束 — repo 進入 archive / maintenance 模式。** 本倉儲保留完整的競賽成果與可重現工程資產;所有 headline 數字由自動化驗證鏈鎖定(見下方「驗證鏈總覽」),`make verify` 一條命令可全部重跑。
+
+| 階段 | 時間 | 交付 |
+|---|---|---|
+| 初賽 | 2026-05-05 | 企劃書 v2.2 + 軟體三件套上線(/tco · /twin · /dashboard) |
+| 複賽 pivot | 2026-05-27 | 8S 實機 demonstrator(v1.x M1-M4)pivot 至 **twin-first 驗證鏈 V1-V6**;硬體全數退貨 |
+| 複賽 | 2026-06-11 | 白皮書 v1.3 + `make verify` CI gate + 業師四層驗證(技術/財務/供應鏈/專利) |
+| 全國決賽 | 2026-07 | V7 pack 篩檢 + V8 監督層閉環 + fleet 推論切換 production TCN;完賽 |
 
 ---
 
@@ -36,6 +45,24 @@
 **6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
 
 > †「~25 %」的主要來源是 **BBU 低 duty 排程**(§G.3 `duty_factor=0.33`,~50 cyc/yr vs Severson 1C/1C 實驗室 cadence),**不是** hybrid 拓樸貢獻;hybrid 拓樸的 per-Ah 損傷差由 rainflow + Wang 2011 獨立驗證(`aging_rainflow_validation.json`)估算為 worst-case ~5 %、demo waveform 近於 neutral。
+
+---
+
+## 驗證鏈總覽(V1-V8 + XCHECK)
+
+每個對外 headline 數字都掛在一條可重跑的驗證鏈上;本地 `make verify` 一鍵全跑(含 V1,需 Severson 資料),CI 於每次 push 自動執行 V2-V5 + V8 + XCHECK(V1 需 8 GB Severson 原始資料,僅本地執行)。
+
+| 鏈 | 驗證什麼 | 判準 / 結果 | Artifact |
+|---|---|---|---|
+| **V1** | PyBaMM Prada2013 vs Severson 實測放電曲線 | RMS 誤差 **2.15 %**(門檻 ≤ 5 %)[v] | `data/processed/pybamm_lfp_fit_error.json` |
+| **V2** | LIC 一階 RC 模型 vs Eaton XLR datasheet(含 4 條非線性延伸) | droop 低估 ≤ **2.93 %**(門檻 10 %)[v] | `scripts/eval_lic_rc_fit.py` |
+| **V3** | 整 rack 60 s graceful 動態模擬(含熱模型) | 電壓 / 溫度 / C-rate 全程合規,DoD 2.66 % [v] | `apps/web/public/scenarios/rack_60s_graceful.json` |
+| **V4** | N-1 容錯:t = 15 s 拔除 1 台 BBU | 剩 7 台撐滿 60 s,單台負載 +14 % 仍合規 [v] | `apps/web/public/scenarios/rack_n_minus_1.json` |
+| **V5** | Severson → BBU duty 跨工況 transfer | MAPE 9.04 % → **80.20 %**(誠實揭露之限制)| `data/processed/severson_transfer_mape.json` |
+| **V6** | `make verify` reproducibility orchestrator | **6/6 chains PASS** | `data/processed/verify_all_report.json` |
+| **V7** | 15S pack 不均衡篩檢(cell spread + 熱梯度 + 2 芯並聯電容 A/B) | 最弱電芯瞬態負擔 **−13.3 %**(screening,非 gate)| `apps/web/public/scenarios/pack_imbalance.json` |
+| **V8** | 監督層閉環(SOH → τ 自適應) | aged pack 峰值 6.06C 越過 6C 設計點 → 閉環回 **5.47C** [v] | `apps/web/public/scenarios/adaptive_split.json` |
+| **XCHECK** | 白皮書 / README / UI 數字交叉一致 | **43/43 assertions** [v] | `scripts/check_whitepaper_numbers.py` |
 
 ---
 
@@ -86,13 +113,10 @@ datasheet 不同規格條目允許區內。
 **完整推導**:[`docs/whitepaper_restructured.md` §2.1.1](docs/whitepaper_restructured.md)
 (含拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師預期追問與答辯六層完整防禦)。
 
-> **Status**:ATCC 2026 提交版本 — **企劃書 v2.2 修訂版**(2026-05-06)+
-> **技術白皮書 v1.3**(2026-05-26 §8.3 加複賽 twin-first validation V1-V6
-> chains)+ **實作計畫 v2.0**(twin-first pivot)+ `/twin` V3/V4 toggle +
-> `/dashboard` V4 fleet-level fault toggle 已 ship。本 repo 公開展示供競賽
-> 評審與學術透明使用,授權詳見 [LICENSE](LICENSE)。儀表板與孿生情境中的
-> 客戶 / 機房名稱**全為示意 persona**,非實際部署資料(`fleet_devices.json`
-> 的 disclaimer 欄位 + UI 上 SIMULATED DATA 浮水印雙重標註)。
+> **授權與資料聲明**:本 repo 公開供學術透明與工程展示使用,授權詳見
+> [LICENSE](LICENSE)。儀表板與孿生情境中的客戶 / 機房名稱**全為示意
+> persona**,非實際部署資料(`fleet_devices.json` 的 disclaimer 欄位 +
+> UI 上 SIMULATED DATA 浮水印雙重標註)。競賽提交版本明細見上方「專案狀態」。
 
 ---
 
@@ -101,7 +125,7 @@ datasheet 不同規格條目允許區內。
 | 路由 | 功能 | 突出技術 |
 |---|---|---|
 | [`/`](https://sysblade-atcc.vercel.app/) | 首頁 — 5 張頭條卡 + 板塊導引 | 從 scenario JSON 動態取真實量測值 |
-| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (LIC, Eaton XLR datasheet anchor)** + LSTM RUL + 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 + **v_lic(t) chart 顯示 UVLO 餘裕** |
+| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (LIC, Eaton XLR datasheet anchor)** + TCN RUL(LSTM baseline)+ 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 + **v_lic(t) chart 顯示 UVLO 餘裕** |
 | [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10 年 TCO 計算器 | 4 個 slider × 3 個 preset · 純 HTML/Tailwind bar chart · **Payback period tile + 5 條 §G.3 source anchor panel** |
 | [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + 三層服務分層 + per-device drilldown(SOH / RUL / 熱 / 操作層 metrics + **LIC bank envelope headroom bar**)· 全頁 SIMULATED DATA 浮水印 · site 名為虛擬 persona |
 
@@ -230,7 +254,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 | ONNX 延遲(laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | 50 ms 規格達標 ~125×;STM32N6 NPU 推估 27–109 µs(靜態 graph 分析,`scripts/onnx_static_analysis.py`)|
 | 不確定性方法 | MC Dropout + split conformal | 100 forward passes,**raw 1910 → conformal 1075 cycles**(縮窄 44 %),test coverage 100 %、≥ 90 % 保證,校準集 37 cells held-out |
 
-LSTM 為 production 推論主力;bagged-GBT 13-feat 為「Severson paper 對齊」的學術 baseline(< 10 % 承諾達標)。
+**Production 推論主力為 TCN**(§3.4.1;LSTM 為文件化 baseline);bagged-GBT 13-feat 為「Severson paper 對齊」的學術 baseline(< 10 % 承諾達標)。
 **MAPE 上升是 regime gap closure 的取捨**,完整論述見白皮書 [§3.3.5](docs/whitepaper.md)。
 
 ---
@@ -269,15 +293,28 @@ atcc/
 │   └── shared/scenarios/                         JSON 雙寫 sink #2
 ├── notebooks/                                    EDA + 訓練 smoke test
 ├── scripts/
-│   ├── generate_twin_scenarios.py                4 個 PyBaMM 場景 + 1000-device fleet
+│   ├── generate_twin_scenarios.py                4 個 PyBaMM 場景 + 1000-device fleet(單一產生器,雙 sink)
+│   ├── generate_full_rack_60s_sim.py             V3 整 rack 60 s graceful sim + 熱模型
+│   ├── generate_n_minus_1_sim.py                 V4 N-1 BBU 容錯 sim
+│   ├── generate_adaptive_split_sim.py            V8 監督層閉環(SOH → τ 自適應)sim
 │   ├── generate_bbu_duty_cells.py                50 顆 Severson-anchored synthetic BBU duty cell(analytic decay)
-│   ├── export_lstm_onnx.py                       訓練 LSTM + ONNX export + MC Dropout + split conformal
+│   ├── eval_pybamm_lfp_fit.py                    V1 PyBaMM vs Severson 實測 fit(2.15 % RMS)
+│   ├── eval_lic_rc_fit.py                        V2 LIC RC vs Eaton datasheet(含非線性延伸)
+│   ├── eval_severson_transfer.py                 V5 跨工況 transfer MAPE
 │   ├── eval_severson_models.py                   OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack 全 sweep
 │   ├── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試
+│   ├── train_tcn_rul.py · export_tcn_onnx.py     production TCN 訓練 + ONNX(QAT / QDQ)匯出
+│   ├── export_lstm_onnx.py                       LSTM baseline + MC Dropout + split conformal
 │   ├── quantize_lstm_onnx.py                     INT8 動態量化 + accuracy 退化 + CPU latency 量測
 │   ├── onnx_static_analysis.py                   STM32N6 NPU 靜態 graph 分析
-│   └── check_whitepaper_numbers.py               whitepaper / README 數字 cross-check gate
+│   ├── hybrid_control_emulator.py                STM32 控制律 Python 鏡像(V3 baseline)
+│   ├── calibrate_from_measured.py                H3 bench 校準:量測 CSV → 取代 datasheet 錨點(EVT 前置)
+│   ├── verify_all.py                             V6 orchestrator(make verify / verify-fast)
+│   └── check_whitepaper_numbers.py               XCHECK:whitepaper / README / UI 數字 cross-check gate
+├── firmware/stm32_hybrid_control/                STM32F411 韌體骨架(v1.x archive;engineering process evidence)
+├── models/                                       .gitignore(LSTM / TCN ONNX 產物,腳本可重生)
 ├── data/raw/  data/processed/                    .gitignore(>8 GB;只 commit derived JSON 給 CI)
+├── Makefile                                      make verify / verify-fast / v8 等驗證入口
 └── DEPLOY.md
 ```
 
@@ -314,7 +351,12 @@ atcc/
 | [`docs/BINDER_README.md`](docs/BINDER_README.md) | 複賽日紙本 PDF binder 印刷順序 + packing checklist + fallback 階梯 |
 | [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
-| [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP |
+| [`docs/HANDOVER.md`](docs/HANDOVER.md) | 交接文件(v2.0 導引 + v1.x archive;§5 headline 數字由 XCHECK 釘住) |
+| [`docs/hardware_characterization_protocol.md`](docs/hardware_characterization_protocol.md) | H3 bench 量測 protocol(真實電芯 / LIC 校準 twin;EVT 前置,配 `scripts/calibrate_from_measured.py`) |
+| [`docs/IP_AUDIT.md`](docs/IP_AUDIT.md) | IP / 授權盤點(法務審閱前草稿) |
+| [`docs/JOINT_PROCUREMENT_STRATEGY.md`](docs/JOINT_PROCUREMENT_STRATEGY.md) | 聯合採購四槓桿供應鏈補充(2026-06 業師回饋後增補) |
+| [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP(EVT 依賴,競賽期未動工) |
+| [`docs/citations_audit.md`](docs/citations_audit.md) | 外部引用查證審計(對象 v2.1,歷史紀錄) |
 
 ---
 

@@ -1,231 +1,231 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 760" font-family="'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif">
-  <!-- Title -->
-  <text x="620" y="28" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">Sysblade HyperBuffer · Business Model Canvas</text>
-  <text x="620" y="48" text-anchor="middle" font-size="12" fill="#475569">9 格商業邏輯 · 數字錨定 v2.2 §A / §G.3 / §F.1</text>
+ <!-- Title -->
+ <text x="620" y="28" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">Sysblade HyperBuffer · Business Model Canvas</text>
+ <text x="620" y="48" text-anchor="middle" font-size="12" fill="#475569">9 格商業邏輯 · 數字錨定 v2.2 §A / §G.3 / §F.1</text>
 
-  <!-- ============ COLUMN 1: KEY PARTNERS (full upper height) ============ -->
-  <rect x="20" y="60" width="240" height="480" rx="6" fill="#F8FAFC" stroke="#1E40AF" stroke-width="1.5"/>
-  <rect x="20" y="60" width="240" height="32" rx="6" fill="#1E40AF"/>
-  <rect x="20" y="86" width="240" height="6" fill="#1E40AF"/>
-  <text x="32" y="82" font-size="13" font-weight="700" fill="#fff">🤝 Key Partners 關鍵夥伴</text>
+ <!-- ============ COLUMN 1: KEY PARTNERS (full upper height) ============ -->
+ <rect x="20" y="60" width="240" height="480" rx="6" fill="#F8FAFC" stroke="#1E40AF" stroke-width="1.5"/>
+ <rect x="20" y="60" width="240" height="32" rx="6" fill="#1E40AF"/>
+ <rect x="20" y="86" width="240" height="6" fill="#1E40AF"/>
+ <text x="32" y="82" font-size="13" font-weight="700" fill="#fff"> Key Partners 關鍵夥伴</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="32" y="115" font-weight="600" fill="#1E40AF">▸ 通路 / 整機</text>
-    <text x="40" y="132">Pegatron(NT$21億策略入股)</text>
-    <text x="40" y="148">系統電 Plano 廠(2025 Q4 量產)</text>
+ <g font-size="11" fill="#1F2937">
+   <text x="32" y="115" font-weight="600" fill="#1E40AF">▸ 通路 / 整機</text>
+   <text x="40" y="132">Pegatron(NT$21億策略入股)</text>
+   <text x="40" y="148">系統電 Plano 廠(2025 Q4 量產)</text>
 
-    <text x="32" y="180" font-weight="600" fill="#1E40AF">▸ 半導體</text>
-    <text x="40" y="197">ST Microelectronics</text>
-    <text x="40" y="213">(STM32N6 + Neural-ART NPU)</text>
+   <text x="32" y="180" font-weight="600" fill="#1E40AF">▸ 半導體</text>
+   <text x="40" y="197">ST Microelectronics</text>
+   <text x="40" y="213">(STM32N6 + Neural-ART NPU)</text>
 
-    <text x="32" y="245" font-weight="600" fill="#1E40AF">▸ 電芯供應</text>
-    <text x="40" y="262">Microvast (Texas)</text>
-    <text x="40" y="278">KORE Power (Arizona)</text>
-    <text x="40" y="294">日韓系備援(避 BABA Act)</text>
+   <text x="32" y="245" font-weight="600" fill="#1E40AF">▸ 電芯供應</text>
+   <text x="40" y="262">Microvast (Texas)</text>
+   <text x="40" y="278">KORE Power (Arizona)</text>
+   <text x="40" y="294">日韓系備援(避 BABA Act)</text>
 
-    <text x="32" y="325" font-weight="600" fill="#1E40AF">▸ 雲端 / 認證</text>
-    <text x="40" y="342">AWS + Vercel(SaaS infra)</text>
-    <text x="40" y="358">UL 1973 / 1989 認證機構</text>
-    <text x="40" y="374">OCP / NVIDIA 生態</text>
+   <text x="32" y="325" font-weight="600" fill="#1E40AF">▸ 雲端 / 認證</text>
+   <text x="40" y="342">AWS + Vercel(SaaS infra)</text>
+   <text x="40" y="358">UL 1973 / 1989 認證機構</text>
+   <text x="40" y="374">OCP / NVIDIA 生態</text>
 
-    <text x="32" y="405" font-weight="600" fill="#1E40AF">▸ 資料</text>
-    <text x="40" y="422">MIT Severson Lab(open</text>
-    <text x="40" y="438">dataset 124 cell)</text>
+   <text x="32" y="405" font-weight="600" fill="#1E40AF">▸ 資料</text>
+   <text x="40" y="422">MIT Severson Lab(open</text>
+   <text x="40" y="438">dataset 124 cell)</text>
 
-    <text x="32" y="470" font-weight="600" fill="#1E40AF">▸ 學界</text>
-    <text x="40" y="487">Faraday Inst / PyBaMM</text>
-    <text x="40" y="503">community(物理引擎)</text>
-  </g>
+   <text x="32" y="470" font-weight="600" fill="#1E40AF">▸ 學界</text>
+   <text x="40" y="487">Faraday Inst / PyBaMM</text>
+   <text x="40" y="503">community(物理引擎)</text>
+ </g>
 
-  <!-- ============ COLUMN 2 TOP: KEY ACTIVITIES ============ -->
-  <rect x="265" y="60" width="240" height="237" rx="6" fill="#F8FAFC" stroke="#2563EB" stroke-width="1.5"/>
-  <rect x="265" y="60" width="240" height="32" rx="6" fill="#2563EB"/>
-  <rect x="265" y="86" width="240" height="6" fill="#2563EB"/>
-  <text x="277" y="82" font-size="13" font-weight="700" fill="#fff">⚙ Key Activities 關鍵活動</text>
+ <!-- ============ COLUMN 2 TOP: KEY ACTIVITIES ============ -->
+ <rect x="265" y="60" width="240" height="237" rx="6" fill="#F8FAFC" stroke="#2563EB" stroke-width="1.5"/>
+ <rect x="265" y="60" width="240" height="32" rx="6" fill="#2563EB"/>
+ <rect x="265" y="86" width="240" height="6" fill="#2563EB"/>
+ <text x="277" y="82" font-size="13" font-weight="700" fill="#fff"> Key Activities 關鍵活動</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="277" y="115">▸ PyBaMM DFN 物理模擬</text>
-    <text x="277" y="135">▸ LSTM RUL 訓練 + INT8 量化</text>
-    <text x="277" y="155">▸ 邊緣 OTA 韌體更新</text>
-    <text x="277" y="175">▸ Twin SaaS 監控 + 預警</text>
-    <text x="277" y="195">▸ OCP ORV3 / NVIDIA 認證</text>
-    <text x="277" y="215">▸ Tier-2 colo PoC 驗證</text>
-    <text x="277" y="235">▸ X-CUBE-AI on-device 部署</text>
-    <text x="277" y="255">▸ 季度模型 retrain (drift</text>
-    <text x="285" y="271">  detection + 客戶 PoC SOP)</text>
-  </g>
+ <g font-size="11" fill="#1F2937">
+   <text x="277" y="115">▸ PyBaMM DFN 物理模擬</text>
+   <text x="277" y="135">▸ LSTM RUL 訓練 + INT8 量化</text>
+   <text x="277" y="155">▸ 邊緣 OTA 韌體更新</text>
+   <text x="277" y="175">▸ Twin SaaS 監控 + 預警</text>
+   <text x="277" y="195">▸ OCP ORV3 / NVIDIA 認證</text>
+   <text x="277" y="215">▸ Tier-2 colo PoC 驗證</text>
+   <text x="277" y="235">▸ X-CUBE-AI on-device 部署</text>
+   <text x="277" y="255">▸ 季度模型 retrain (drift</text>
+   <text x="285" y="271">  detection + 客戶 PoC SOP)</text>
+ </g>
 
-  <!-- ============ COLUMN 2 BOTTOM: KEY RESOURCES ============ -->
-  <rect x="265" y="303" width="240" height="237" rx="6" fill="#F8FAFC" stroke="#3B82F6" stroke-width="1.5"/>
-  <rect x="265" y="303" width="240" height="32" rx="6" fill="#3B82F6"/>
-  <rect x="265" y="329" width="240" height="6" fill="#3B82F6"/>
-  <text x="277" y="325" font-size="13" font-weight="700" fill="#fff">🏭 Key Resources 關鍵資源</text>
+ <!-- ============ COLUMN 2 BOTTOM: KEY RESOURCES ============ -->
+ <rect x="265" y="303" width="240" height="237" rx="6" fill="#F8FAFC" stroke="#3B82F6" stroke-width="1.5"/>
+ <rect x="265" y="303" width="240" height="32" rx="6" fill="#3B82F6"/>
+ <rect x="265" y="329" width="240" height="6" fill="#3B82F6"/>
+ <text x="277" y="325" font-size="13" font-weight="700" fill="#fff"> Key Resources 關鍵資源</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="277" y="358">▸ Plano 廠 + Pegatron 通路</text>
-    <text x="277" y="378">▸ Twin SaaS codebase</text>
-    <text x="277" y="398">▸ Severson-trained LSTM</text>
-    <text x="285" y="414" fill="#475569">  (54k params, MAPE 8.4%)</text>
-    <text x="277" y="434">▸ INT8 ONNX 量化驗證資料</text>
-    <text x="285" y="450" fill="#475569">  (compression 3.49×)</text>
-    <text x="277" y="470">▸ BABA Act 合規供應鏈</text>
-    <text x="277" y="490">▸ ATCC 工程 + 行銷雙軌團隊</text>
-    <text x="277" y="510">▸ v2.2 PDF 18 頁完整論證</text>
-  </g>
+ <g font-size="11" fill="#1F2937">
+   <text x="277" y="358">▸ Plano 廠 + Pegatron 通路</text>
+   <text x="277" y="378">▸ Twin SaaS codebase</text>
+   <text x="277" y="398">▸ Severson-trained LSTM</text>
+   <text x="285" y="414" fill="#475569">  (54k params, MAPE 8.4%)</text>
+   <text x="277" y="434">▸ INT8 ONNX 量化驗證資料</text>
+   <text x="285" y="450" fill="#475569">  (compression 3.49×)</text>
+   <text x="277" y="470">▸ BABA Act 合規供應鏈</text>
+   <text x="277" y="490">▸ ATCC 工程 + 行銷雙軌團隊</text>
+   <text x="277" y="510">▸ v2.2 PDF 18 頁完整論證</text>
+ </g>
 
-  <!-- ============ COLUMN 3: VALUE PROPOSITION (full height, highlighted) ============ -->
-  <rect x="510" y="60" width="240" height="480" rx="6" fill="#ECFDF5" stroke="#059669" stroke-width="2.5"/>
-  <rect x="510" y="60" width="240" height="32" rx="6" fill="#059669"/>
-  <rect x="510" y="86" width="240" height="6" fill="#059669"/>
-  <text x="522" y="82" font-size="13" font-weight="700" fill="#fff">💎 Value Proposition</text>
+ <!-- ============ COLUMN 3: VALUE PROPOSITION (full height, highlighted) ============ -->
+ <rect x="510" y="60" width="240" height="480" rx="6" fill="#ECFDF5" stroke="#059669" stroke-width="2.5"/>
+ <rect x="510" y="60" width="240" height="32" rx="6" fill="#059669"/>
+ <rect x="510" y="86" width="240" height="6" fill="#059669"/>
+ <text x="522" y="82" font-size="13" font-weight="700" fill="#fff"> Value Proposition</text>
 
-  <text x="630" y="120" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">「AI 機房 BBU 2.0」</text>
-  <text x="630" y="138" text-anchor="middle" font-size="11" fill="#065F46">硬體 + Twin SaaS 整合方案</text>
+ <text x="630" y="120" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">「AI 機房 BBU 2.0」</text>
+ <text x="630" y="138" text-anchor="middle" font-size="11" fill="#065F46">硬體 + Twin SaaS 整合方案</text>
 
-  <g font-size="11" fill="#1F2937">
-    <rect x="522" y="155" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="170" text-anchor="middle" font-weight="700" fill="#065F46">10 年 TCO −33%</text>
-    <text x="630" y="184" text-anchor="middle" font-size="10" fill="#475569">$29k → $19.4k 每機櫃</text>
+ <g font-size="11" fill="#1F2937">
+   <rect x="522" y="155" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="170" text-anchor="middle" font-weight="700" fill="#065F46">10 年 TCO −33%</text>
+   <text x="630" y="184" text-anchor="middle" font-size="10" fill="#475569">$29k → $19.4k 每機櫃</text>
 
-    <rect x="522" y="200" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="215" text-anchor="middle" font-weight="700" fill="#065F46">ms 級突波吸收</text>
-    <text x="630" y="229" text-anchor="middle" font-size="10" fill="#475569">LIC 3.5× 改善 ΔV (62→18 mV)</text>
+   <rect x="522" y="200" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="215" text-anchor="middle" font-weight="700" fill="#065F46">ms 級突波吸收</text>
+   <text x="630" y="229" text-anchor="middle" font-size="10" fill="#475569">LIC 3.5× 改善 ΔV (62→18 mV)</text>
 
-    <rect x="522" y="245" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="260" text-anchor="middle" font-weight="700" fill="#065F46">RUL 提前 800 cycle 預警</text>
-    <text x="630" y="274" text-anchor="middle" font-size="10" fill="#475569">Twin SaaS / Severson MAPE 8.4%</text>
+   <rect x="522" y="245" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="260" text-anchor="middle" font-weight="700" fill="#065F46">RUL 提前 800 cycle 預警</text>
+   <text x="630" y="274" text-anchor="middle" font-size="10" fill="#475569">Twin SaaS / Severson MAPE 8.4%</text>
 
-    <rect x="522" y="290" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="305" text-anchor="middle" font-weight="700" fill="#065F46">同時相容 48V / ±400V HVDC</text>
-    <text x="630" y="319" text-anchor="middle" font-size="10" fill="#475569">解除 2027 換代風險</text>
+   <rect x="522" y="290" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="305" text-anchor="middle" font-weight="700" fill="#065F46">同時相容 48V / ±400V HVDC</text>
+   <text x="630" y="319" text-anchor="middle" font-size="10" fill="#475569">解除 2027 換代風險</text>
 
-    <rect x="522" y="335" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="350" text-anchor="middle" font-weight="700" fill="#065F46">8–12 年 LFP 服役壽命</text>
-    <text x="630" y="364" text-anchor="middle" font-size="10" fill="#475569">對齊客戶折舊年限</text>
+   <rect x="522" y="335" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="350" text-anchor="middle" font-weight="700" fill="#065F46">8–12 年 LFP 服役壽命</text>
+   <text x="630" y="364" text-anchor="middle" font-size="10" fill="#475569">對齊客戶折舊年限</text>
 
-    <rect x="522" y="380" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="395" text-anchor="middle" font-weight="700" fill="#065F46">BABA Act 合規供應鏈</text>
-    <text x="630" y="409" text-anchor="middle" font-size="10" fill="#475569">去 China-NMC 風險</text>
+   <rect x="522" y="380" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="395" text-anchor="middle" font-weight="700" fill="#065F46">BABA Act 合規供應鏈</text>
+   <text x="630" y="409" text-anchor="middle" font-size="10" fill="#475569">去 China-NMC 風險</text>
 
-    <rect x="522" y="425" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
-    <text x="630" y="440" text-anchor="middle" font-weight="700" fill="#065F46">30–90 秒 graceful shutdown</text>
-    <text x="630" y="454" text-anchor="middle" font-size="10" fill="#475569">符合 OCP ORV3 BBU rev 1.4</text>
+   <rect x="522" y="425" width="216" height="36" rx="4" fill="#fff" stroke="#10B981"/>
+   <text x="630" y="440" text-anchor="middle" font-weight="700" fill="#065F46">30–90 秒 graceful shutdown</text>
+   <text x="630" y="454" text-anchor="middle" font-size="10" fill="#475569">符合 OCP ORV3 BBU rev 1.4</text>
 
-    <text x="630" y="490" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">━━━━━━━</text>
-    <text x="630" y="510" text-anchor="middle" font-size="11" font-style="italic" fill="#065F46">「市場上唯一同時提供</text>
-    <text x="630" y="526" text-anchor="middle" font-size="11" font-style="italic" fill="#065F46">硬體 + 數位孿生的 BBU」</text>
-  </g>
+   <text x="630" y="490" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">━━━━━━━</text>
+   <text x="630" y="510" text-anchor="middle" font-size="11" font-style="italic" fill="#065F46">「市場上唯一同時提供</text>
+   <text x="630" y="526" text-anchor="middle" font-size="11" font-style="italic" fill="#065F46">硬體 + 數位孿生的 BBU」</text>
+ </g>
 
-  <!-- ============ COLUMN 4 TOP: CUSTOMER RELATIONSHIPS ============ -->
-  <rect x="755" y="60" width="240" height="237" rx="6" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
-  <rect x="755" y="60" width="240" height="32" rx="6" fill="#D97706"/>
-  <rect x="755" y="86" width="240" height="6" fill="#D97706"/>
-  <text x="767" y="82" font-size="13" font-weight="700" fill="#fff">💞 Customer Relationships</text>
+ <!-- ============ COLUMN 4 TOP: CUSTOMER RELATIONSHIPS ============ -->
+ <rect x="755" y="60" width="240" height="237" rx="6" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+ <rect x="755" y="60" width="240" height="32" rx="6" fill="#D97706"/>
+ <rect x="755" y="86" width="240" height="6" fill="#D97706"/>
+ <text x="767" y="82" font-size="13" font-weight="700" fill="#fff"> Customer Relationships</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="767" y="115" font-weight="600" fill="#92400E">獲取階段</text>
-    <text x="767" y="132">▸ OCP Summit booth + demo</text>
-    <text x="767" y="148">▸ /tco 試算 → 業務跟進</text>
+ <g font-size="11" fill="#1F2937">
+   <text x="767" y="115" font-weight="600" fill="#92400E">獲取階段</text>
+   <text x="767" y="132">▸ OCP Summit booth + demo</text>
+   <text x="767" y="148">▸ /tco 試算 → 業務跟進</text>
 
-    <text x="767" y="178" font-weight="600" fill="#92400E">PoC 階段</text>
-    <text x="767" y="195">▸ 2 機櫃試裝(6 個月)</text>
-    <text x="767" y="211">▸ Twin SaaS Beta 全導入</text>
+   <text x="767" y="178" font-weight="600" fill="#92400E">PoC 階段</text>
+   <text x="767" y="195">▸ 2 機櫃試裝(6 個月)</text>
+   <text x="767" y="211">▸ Twin SaaS Beta 全導入</text>
 
-    <text x="767" y="241" font-weight="600" fill="#92400E">維繫階段</text>
-    <text x="767" y="258">▸ SaaS 訂閱 + 24/7 dashboard</text>
-    <text x="767" y="274">▸ 季度 RUL/SOH 健檢報告</text>
-  </g>
+   <text x="767" y="241" font-weight="600" fill="#92400E">維繫階段</text>
+   <text x="767" y="258">▸ SaaS 訂閱 + 24/7 dashboard</text>
+   <text x="767" y="274">▸ 季度 RUL/SOH 健檢報告</text>
+ </g>
 
-  <!-- ============ COLUMN 4 BOTTOM: CHANNELS ============ -->
-  <rect x="755" y="303" width="240" height="237" rx="6" fill="#FFFBEB" stroke="#EA580C" stroke-width="1.5"/>
-  <rect x="755" y="303" width="240" height="32" rx="6" fill="#EA580C"/>
-  <rect x="755" y="329" width="240" height="6" fill="#EA580C"/>
-  <text x="767" y="325" font-size="13" font-weight="700" fill="#fff">📡 Channels 通路</text>
+ <!-- ============ COLUMN 4 BOTTOM: CHANNELS ============ -->
+ <rect x="755" y="303" width="240" height="237" rx="6" fill="#FFFBEB" stroke="#EA580C" stroke-width="1.5"/>
+ <rect x="755" y="303" width="240" height="32" rx="6" fill="#EA580C"/>
+ <rect x="755" y="329" width="240" height="6" fill="#EA580C"/>
+ <text x="767" y="325" font-size="13" font-weight="700" fill="#fff"> Channels 通路</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="767" y="358" font-weight="600" fill="#9A3412">▸ 直銷</text>
-    <text x="775" y="375">系統電北美業務(德州 + 北維)</text>
+ <g font-size="11" fill="#1F2937">
+   <text x="767" y="358" font-weight="600" fill="#9A3412">▸ 直銷</text>
+   <text x="775" y="375">系統電北美業務(德州 + 北維)</text>
 
-    <text x="767" y="405" font-weight="600" fill="#9A3412">▸ OEM 整機通路</text>
-    <text x="775" y="422">Pegatron AI 伺服器 bundle</text>
+   <text x="767" y="405" font-weight="600" fill="#9A3412">▸ OEM 整機通路</text>
+   <text x="775" y="422">Pegatron AI 伺服器 bundle</text>
 
-    <text x="767" y="452" font-weight="600" fill="#9A3412">▸ 展會 + 內容</text>
-    <text x="775" y="469">OCP Summit (40% 行銷預算)</text>
-    <text x="775" y="485">NVIDIA GTC、ST Tech Talk</text>
+   <text x="767" y="452" font-weight="600" fill="#9A3412">▸ 展會 + 內容</text>
+   <text x="775" y="469">OCP Summit (40% 行銷預算)</text>
+   <text x="775" y="485">NVIDIA GTC、ST Tech Talk</text>
 
-    <text x="767" y="515" font-weight="600" fill="#9A3412">▸ 數位</text>
-    <text x="775" y="532">sysblade-atcc.vercel.app demo</text>
-  </g>
+   <text x="767" y="515" font-weight="600" fill="#9A3412">▸ 數位</text>
+   <text x="775" y="532">sysblade-atcc.vercel.app demo</text>
+ </g>
 
-  <!-- ============ COLUMN 5: CUSTOMER SEGMENTS (full upper height) ============ -->
-  <rect x="1000" y="60" width="220" height="480" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"/>
-  <rect x="1000" y="60" width="220" height="32" rx="6" fill="#DC2626"/>
-  <rect x="1000" y="86" width="220" height="6" fill="#DC2626"/>
-  <text x="1012" y="82" font-size="13" font-weight="700" fill="#fff">🎯 Customer Segments</text>
+ <!-- ============ COLUMN 5: CUSTOMER SEGMENTS (full upper height) ============ -->
+ <rect x="1000" y="60" width="220" height="480" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"/>
+ <rect x="1000" y="60" width="220" height="32" rx="6" fill="#DC2626"/>
+ <rect x="1000" y="86" width="220" height="6" fill="#DC2626"/>
+ <text x="1012" y="82" font-size="13" font-weight="700" fill="#fff"> Customer Segments</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="1012" y="115" font-weight="700" fill="#991B1B">主要 Primary</text>
-    <text x="1012" y="135" font-weight="600">北美 Tier-2/3 colo 機房</text>
-    <text x="1012" y="153" fill="#475569">運行 GB200/GB300 訓練 / 推論</text>
+ <g font-size="11" fill="#1F2937">
+   <text x="1012" y="115" font-weight="700" fill="#991B1B">主要 Primary</text>
+   <text x="1012" y="135" font-weight="600">北美 Tier-2/3 colo 機房</text>
+   <text x="1012" y="153" fill="#475569">運行 GB200/GB300 訓練 / 推論</text>
 
-    <text x="1012" y="180" font-weight="600" fill="#991B1B">▸ 地理:</text>
-    <text x="1020" y="197">德州 18.6%(JLL 2025)</text>
-    <text x="1020" y="213">北維吉尼亞 15%</text>
-    <text x="1020" y="229">兩地合計 ~33% 戰場</text>
+   <text x="1012" y="180" font-weight="600" fill="#991B1B">▸ 地理:</text>
+   <text x="1020" y="197">德州 18.6%(JLL 2025)</text>
+   <text x="1020" y="213">北維吉尼亞 15%</text>
+   <text x="1020" y="229">兩地合計 ~33% 戰場</text>
 
-    <text x="1012" y="256" font-weight="600" fill="#991B1B">▸ 規模:</text>
-    <text x="1020" y="273">每客 1,000+ 機櫃</text>
-    <text x="1020" y="289">年新增容量 30 GW (2026)</text>
+   <text x="1012" y="256" font-weight="600" fill="#991B1B">▸ 規模:</text>
+   <text x="1020" y="273">每客 1,000+ 機櫃</text>
+   <text x="1020" y="289">年新增容量 30 GW (2026)</text>
 
-    <text x="1012" y="316" font-weight="600" fill="#991B1B">▸ 採購人:</text>
-    <text x="1020" y="333">VP Infrastructure</text>
-    <text x="1020" y="349">Director of Data Center Ops</text>
+   <text x="1012" y="316" font-weight="600" fill="#991B1B">▸ 採購人:</text>
+   <text x="1020" y="333">VP Infrastructure</text>
+   <text x="1020" y="349">Director of Data Center Ops</text>
 
-    <text x="1012" y="380" font-weight="700" fill="#991B1B">次要 Secondary</text>
-    <text x="1012" y="400" font-weight="600">Tier-1 hyperscaler 二線供應</text>
-    <text x="1012" y="418" fill="#475569">(AWS/Azure/Meta 自研為主,</text>
-    <text x="1012" y="434" fill="#475569">特殊機型外採)</text>
+   <text x="1012" y="380" font-weight="700" fill="#991B1B">次要 Secondary</text>
+   <text x="1012" y="400" font-weight="600">Tier-1 hyperscaler 二線供應</text>
+   <text x="1012" y="418" fill="#475569">(AWS/Azure/Meta 自研為主,</text>
+   <text x="1012" y="434" fill="#475569">特殊機型外採)</text>
 
-    <text x="1012" y="465" font-weight="700" fill="#991B1B">不鎖定 Out-of-scope</text>
-    <text x="1012" y="485" fill="#475569">▸ 住宅儲能(BESS 不同)</text>
-    <text x="1012" y="503" fill="#475569">▸ EV 動力電池(動態完全不同)</text>
-    <text x="1012" y="521" fill="#475569">▸ Tier-1 hyperscaler 主流量</text>
-  </g>
+   <text x="1012" y="465" font-weight="700" fill="#991B1B">不鎖定 Out-of-scope</text>
+   <text x="1012" y="485" fill="#475569">▸ 住宅儲能(BESS 不同)</text>
+   <text x="1012" y="503" fill="#475569">▸ EV 動力電池(動態完全不同)</text>
+   <text x="1012" y="521" fill="#475569">▸ Tier-1 hyperscaler 主流量</text>
+ </g>
 
-  <!-- ============ BOTTOM-LEFT: COST STRUCTURE ============ -->
-  <rect x="20" y="550" width="600" height="170" rx="6" fill="#F8FAFC" stroke="#6B7280" stroke-width="1.5"/>
-  <rect x="20" y="550" width="600" height="32" rx="6" fill="#6B7280"/>
-  <rect x="20" y="576" width="600" height="6" fill="#6B7280"/>
-  <text x="32" y="572" font-size="13" font-weight="700" fill="#fff">💰 Cost Structure 成本結構</text>
+ <!-- ============ BOTTOM-LEFT: COST STRUCTURE ============ -->
+ <rect x="20" y="550" width="600" height="170" rx="6" fill="#F8FAFC" stroke="#6B7280" stroke-width="1.5"/>
+ <rect x="20" y="550" width="600" height="32" rx="6" fill="#6B7280"/>
+ <rect x="20" y="576" width="600" height="6" fill="#6B7280"/>
+ <text x="32" y="572" font-size="13" font-weight="700" fill="#fff"> Cost Structure 成本結構</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="32" y="605" font-weight="700" fill="#374151">▸ 變動成本(隨出貨)</text>
-    <text x="40" y="622">BOM USD 643/套(電芯 50% + LIC 15% + STM32N6 BMS 10% + 機構 25%)</text>
-    <text x="40" y="638" fill="#475569">→ 硬體毛利 40.5%(ASP $1,080)</text>
+ <g font-size="11" fill="#1F2937">
+   <text x="32" y="605" font-weight="700" fill="#374151">▸ 變動成本(隨出貨)</text>
+   <text x="40" y="622">BOM USD 643/套(電芯 50% + LIC 15% + STM32N6 BMS 10% + 機構 25%)</text>
+   <text x="40" y="638" fill="#475569">→ 硬體毛利 40.5%(ASP $1,080)</text>
 
-    <text x="32" y="665" font-weight="700" fill="#374151">▸ 固定成本</text>
-    <text x="40" y="682">R&amp;D + UL/ORV3 認證 · SaaS infra (AWS+Vercel) · Pegatron 通路分潤</text>
-    <text x="40" y="698">行銷 NT$100萬/年(40% OCP Summit + 共同行銷 + 數位投放)</text>
-  </g>
+   <text x="32" y="665" font-weight="700" fill="#374151">▸ 固定成本</text>
+   <text x="40" y="682">R&amp;D + UL/ORV3 認證 · SaaS infra (AWS+Vercel) · Pegatron 通路分潤</text>
+   <text x="40" y="698">行銷 NT$100萬/年(40% OCP Summit + 共同行銷 + 數位投放)</text>
+ </g>
 
-  <!-- ============ BOTTOM-RIGHT: REVENUE STREAMS ============ -->
-  <rect x="625" y="550" width="595" height="170" rx="6" fill="#F0FDF4" stroke="#15803D" stroke-width="1.5"/>
-  <rect x="625" y="550" width="595" height="32" rx="6" fill="#15803D"/>
-  <rect x="625" y="576" width="595" height="6" fill="#15803D"/>
-  <text x="637" y="572" font-size="13" font-weight="700" fill="#fff">💵 Revenue Streams 收入流</text>
+ <!-- ============ BOTTOM-RIGHT: REVENUE STREAMS ============ -->
+ <rect x="625" y="550" width="595" height="170" rx="6" fill="#F0FDF4" stroke="#15803D" stroke-width="1.5"/>
+ <rect x="625" y="550" width="595" height="32" rx="6" fill="#15803D"/>
+ <rect x="625" y="576" width="595" height="6" fill="#15803D"/>
+ <text x="637" y="572" font-size="13" font-weight="700" fill="#fff"> Revenue Streams 收入流</text>
 
-  <g font-size="11" fill="#1F2937">
-    <text x="637" y="605" font-weight="700" fill="#14532D">▸ 硬體銷售(一次性)</text>
-    <text x="645" y="622">ASP USD 1,080/套 × 出貨量 · 含 SaaS site license 後綜合毛利 ~45%</text>
+ <g font-size="11" fill="#1F2937">
+   <text x="637" y="605" font-weight="700" fill="#14532D">▸ 硬體銷售(一次性)</text>
+   <text x="645" y="622">ASP USD 1,080/套 × 出貨量 · 含 SaaS site license 後綜合毛利 ~45%</text>
 
-    <text x="637" y="650" font-weight="700" fill="#14532D">▸ SaaS 訂閱(經常性)</text>
-    <text x="645" y="667">USD 25,000 / site / yr · Twin + Dashboard + RUL 預警 + OTA</text>
+   <text x="637" y="650" font-weight="700" fill="#14532D">▸ SaaS 訂閱(經常性)</text>
+   <text x="645" y="667">USD 25,000 / site / yr · Twin + Dashboard + RUL 預警 + OTA</text>
 
-    <text x="637" y="695" font-weight="700" fill="#14532D">▸ 財務目標</text>
-    <text x="645" y="712">3 年累積 $1.32 億 · 5 年 IRR 22–28% · 2029 Q4 現金流轉正</text>
-  </g>
+   <text x="637" y="695" font-weight="700" fill="#14532D">▸ 財務目標</text>
+   <text x="645" y="712">3 年累積 $1.32 億 · 5 年 IRR 22–28% · 2029 Q4 現金流轉正</text>
+ </g>
 
-  <!-- Footer -->
-  <text x="20" y="745" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.2 §A 市場規模 / §C.1 客戶分析 / §F.1 18 個月里程碑 / §G.3 TCO 與毛利</text>
+ <!-- Footer -->
+ <text x="20" y="745" font-size="10" fill="#94A3B8">資料來源:Sysblade v2.2 §A 市場規模 / §C.1 客戶分析 / §F.1 18 個月里程碑 / §G.3 TCO 與毛利</text>
 </svg>

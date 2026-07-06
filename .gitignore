@@ -108,8 +108,9 @@ docs/Sysblade_HyperBuffer_Proposal_v2.1.pdf
 docs/Sysblade_可行性分析.docx
 # Generated technical white-paper .docx (regenerable from docs/whitepaper.md)
 docs/Sysblade_HyperBuffer_技術白皮書_v1.3.docx
-# Working handoff folder + local demo video — prevent accidental publish
+# Working handoff folder (+ its zipped form) + local demo video — prevent accidental publish
 for_min/
+for_min.zip
 video/
 
 # Personal infographic generators for proposal/whitepaper figures.
