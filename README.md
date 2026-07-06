@@ -6,14 +6,14 @@
 
 ## 專案狀態(2026-07)
 
-**競賽已結束 — repo 進入 archive / maintenance 模式。** 本倉儲保留完整的競賽成果與可重現工程資產;所有 headline 數字由自動化驗證鏈鎖定(見下方「驗證鏈總覽」),`make verify` 一條命令可全部重跑。
+**第 23 屆 ATCC 全國決賽亞軍(2026-07-05)— repo 進入 archive / maintenance 模式。** 本倉儲保留完整的競賽成果與可重現工程資產;所有 headline 數字由自動化驗證鏈鎖定(見下方「驗證鏈總覽」),`make verify` 一條命令可全部重跑。
 
 | 階段 | 時間 | 交付 |
 |---|---|---|
 | 初賽 | 2026-05-05 | 企劃書 v2.2 + 軟體三件套上線(/tco · /twin · /dashboard) |
 | 複賽 pivot | 2026-05-27 | 8S 實機 demonstrator(v1.x M1-M4)pivot 至 **twin-first 驗證鏈 V1-V6**;硬體全數退貨 |
 | 複賽 | 2026-06-11 | 白皮書 v1.3 + `make verify` CI gate + 業師四層驗證(技術/財務/供應鏈/專利) |
-| 全國決賽 | 2026-07 | V7 pack 篩檢 + V8 監督層閉環 + fleet 推論切換 production TCN;完賽 |
+| 全國決賽 | 2026-07-05 | V7 pack 篩檢 + V8 監督層閉環 + fleet 推論切換 production TCN;**全國亞軍** |
 
 ---
 
