@@ -19,7 +19,10 @@
 
 ## 真實產品修訂對照(勘誤 · 2026-06)
 
-> 本 repo 為 ATCC 競賽期成果。在「真正量產上市」的端到端審視下,以下五點需與真實產品規格一致更正;完整真實產品審視 / 料件 BOM / 產品規格 / 量產企劃見 `docs/product_realization/`。
+> 競賽期陳述與「真正量產上市」規格的五點差異(LIC 選型 / 削峰倍率邊界 / DC-DC / NPU 模型 / Tier-C 拆分),誠實列管。
+
+<details>
+<summary><b>展開五點勘誤對照表</b></summary>
 
 | # | 競賽期原陳述 | 更正(真實產品基準) |
 |---|---|---|
@@ -29,7 +32,9 @@
 | 4 | STM32N6 NPU 推論 LSTM(54.7 µs) | Neural-ART **NPU 不支援 LSTM/GRU**;量產 RUL 改 **TCN/1D-CNN**(NPU 原生 + 可 static INT8 量化) |
 | 5 | Tier-C 單晶片整合(含 OpenBMC) | M55 無 MMU 跑不了 OpenBMC;**拆三層**(BMS-AFE + safety MCU + N6 推論),BBU 走 MCTP/PLDM **不自稱 BMC** |
 
-> 另:先發空窗已關;真實 BOM 約 v2.2 之 2.0–2.7×;認證須擴 UL 9540 / 9540A;cell 在地化以 pack 組裝為主、進口走 UFLPA。詳 `docs/product_realization/`。
+> 另:先發空窗已關;真實 BOM 約 v2.2 之 2.0–2.7×;認證須擴 UL 9540 / 9540A;cell 在地化以 pack 組裝為主、進口走 UFLPA。詳 `docs/product_realization/`(本地交付,未公開於 repo)。
+
+</details>
 
 ---
 
@@ -68,11 +73,12 @@
 
 ## 業師最關注點:60 秒 graceful 架構 ── 化解「48C 不可行」誤讀
 
-**先說結論**:Sysblade per-rack BBU 是 **8 台並聯**架構,**每台 BBU 2.5 kWh / 15 kW peak,
-rack 總能量 20 kWh**;rack peak 120 kW 對應每台 BBU **6C peak per cell(非 48C)**;
-60 秒 graceful 是 **動態 ramp power profile**(t = 0–2 s 由 LIC + LFP 共同承擔
-6C peak,t = 2–60 s 由 LFP 以 1.5C 連續放電撐至結束),完全落在車規 LFP cell
-datasheet 不同規格條目允許區內。
+**結論**:per-rack 為 **8 台 BBU 並聯**(每台 2.5 kWh / 15 kW peak,rack 總能量 20 kWh);
+120 kW rack peak 對應 per-cell **6C peak(非 48C)**、60 秒為動態 ramp(2 秒後降至 **1.5C 連續**),
+全部落在車規 LFP datasheet 允許區。「48C 不可行」是拿單台容量除整 rack 功率的 unit-mixing 誤讀。
+
+<details>
+<summary><b>展開完整推導</b>(unit-mixing 防呆 / 60 秒功率曲線 / cell datasheet 合規)</summary>
 
 ### 為什麼這節獨立成段(避免 unit-mixing 誤讀)
 
@@ -113,6 +119,8 @@ datasheet 不同規格條目允許區內。
 **完整推導**:[`docs/whitepaper_restructured.md` §2.1.1](docs/whitepaper_restructured.md)
 (含拓撲層 / 時序層 / cell 工作點層 / GPU 協同 ramp / 業師預期追問與答辯六層完整防禦)。
 
+</details>
+
 > **授權與資料聲明**:本 repo 公開供學術透明與工程展示使用,授權詳見
 > [LICENSE](LICENSE)。儀表板與孿生情境中的客戶 / 機房名稱**全為示意
 > persona**,非實際部署資料(`fleet_devices.json` 的 disclaimer 欄位 +
@@ -151,6 +159,12 @@ scripts/export_lstm_onnx.py               └ apps/web/public/scenarios/
 
 ### 物理層分層 — 為什麼 LIC 不走 PyBaMM
 
+LFP 走 PyBaMM DFN(化學最 critical);LIC 走 closed-form 一階 RC 等效模型,參數錨 Eaton XLR datasheet。
+Demo waveform worst-case droop 2.32 V、距 UVLO 餘裕 10.98 V;droop 95 % 來自 ESR → 降 droop 加並聯模組比加電量有效。
+
+<details>
+<summary><b>展開 RC 參數表與 droop 解析</b></summary>
+
 **LFP cell 走 PyBaMM DFN**(化學最複雜、最 critical);**LIC 側走 closed-form 一階 RC 等效模型**
 (`_simulate_lic_rc()` in `scripts/generate_twin_scenarios.py`),參數錨 Eaton XLR-48-166 × 2 並聯 datasheet:
 
@@ -167,6 +181,8 @@ Demo waveform 跑出來:**worst-case droop 2.32 V**(從 51.3 → 48.98 V)、**he
 **未模**:pseudo-capacitance、temperature-dependent ESR、self-discharge、electrode kinetics
 (Helmholtz layer dynamics)— production 階段以 Eaton in-the-loop 量測校正。`/twin` 第 3 張 ChartCard
 渲染 v_lic(t) 配紅色 dashed line 標 UVLO,業師可直接指螢幕。
+
+</details>
 
 ---
 
@@ -222,8 +238,15 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 
 ## 模型卡
 
-兩條 RUL 預測管線並行,**「one model, two views」**:`/twin` Inference Walkthrough
-與 `/dashboard` 1000 台 fleet RUL 共用同一個 **production TCN**(§3.4.1)推論輸出,確保兩頁面數字一致(LSTM 為文件化 baseline)。
+兩條 RUL 預測管線並行,**「one model, two views」**:`/twin` 與 `/dashboard` 共用同一個
+**production TCN** 推論輸出(白皮書 §3.4.1)。頭條數字:
+
+- **Production TCN(dilated 1D-CNN,NPU-native)**:test MAPE **18.15 % / R² 0.892**;INT8 QAT(ONNX QDQ)實測 **14.54 %**
+- **學術 baseline bagged-GBT(13-feat)**:random-split **8.38 %**(達 < 10 % 承諾);跨批次改用 bagged-OLS **13.9 %**
+- **LSTM 19.10 %** 保留為文件化 baseline 與 regime-augmentation 反證載體
+
+<details>
+<summary><b>展開完整模型卡</b>(Severson 回歸全表 / TCN vs LSTM / augmentation 反證 / INT8 量測)</summary>
 
 ### Severson cycle-life regression(隨機 split,10-seed median)
 
@@ -256,6 +279,8 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 
 **Production 推論主力為 TCN**(§3.4.1;LSTM 為文件化 baseline);bagged-GBT 13-feat 為「Severson paper 對齊」的學術 baseline(< 10 % 承諾達標)。
 **MAPE 上升是 regime gap closure 的取捨**,完整論述見白皮書 [§3.3.5](docs/whitepaper.md)。
+
+</details>
 
 ---
 
@@ -336,27 +361,37 @@ atcc/
 
 ## 文件
 
+核心文件:
+
 | 文件 | 用途 |
 |---|---|
-| `docs/proposal_v2.2_additions/…Proposal_v2.2.docx`(含財務,未公開於 repo) | **競賽企劃書 v2.2 修訂版**(2026-05-06,主要繳交版本;canonical 商業 spec)— 封面加 Live demo / GitHub URL + 摘要補 measured 重點 + 新增附件 D「v2.2 技術交付物實證」|
-| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.3**(2026-05-26,**canonical 完整版**)— 完整證據 + 局限討論 + §8.3 複賽 twin-first validation(V1-V6 chains 取代 v1.x M1-M4)|
-| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.3** — 衍生自 canonical [`whitepaper.md`](docs/whitepaper.md),供複賽 binder 現場 Q&A 快翻(Part 1 速覽 / Part 2 細節 / Part 3 競品 + §2.8 twin-first validation);數字以 canonical 版為準 |
-| [`docs/BBU_IMPLEMENTATION_PLAN.md`](docs/BBU_IMPLEMENTATION_PLAN.md) | 實作計畫 **v2.0**(2026-05-26)— twin-first 6 條 V1-V6 chains;v1.x 硬體路線保留為 archive(engineering process evidence)|
-| [`docs/BBU_PROPOSAL.md`](docs/BBU_PROPOSAL.md) | 對外繳交提案 **v2.0** — Twin-first Validation 實作企劃 |
-| `docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx`(含複賽策略,未公開於 repo) | 複賽實作企劃 **v3.1**(2026-05-28)— 四大面向(軟體深化 + 技術背書 + 商業論證 + IP 法律佈局),取代原 8S 實機 demonstrator 路線;v3.0 → v3.1 校正 KPI #1 LSTM latency 目標、Dashboard 互動模式改 scenario preset switcher、移除已 descope 的 LIVE 元件殘留條目 |
-| [`docs/RD_BRIEF.md`](docs/RD_BRIEF.md) | RD / 顧問 2 頁 executive brief — 跨領域 entry point + Twin-first 工程論述 |
-| [`docs/INVESTOR_BRIEF.md`](docs/INVESTOR_BRIEF.md) | 投資人 1 頁 narrative — 三大廠 strategic moat + 商業含義 |
-| [`docs/archive_v1.x/PURCHASE_LIST.md`](docs/archive_v1.x/PURCHASE_LIST.md) | 採購清單 **v2.0** — v1.x 採購 2026-05-27 全數退貨完成,v2.0 不依賴硬體 |
-| [`docs/MIRROR_SETUP.md`](docs/MIRROR_SETUP.md) | Standby GitLab/Codeberg mirror SOP(GitHub 帳號 contingency)|
-| [`docs/BINDER_README.md`](docs/BINDER_README.md) | 複賽日紙本 PDF binder 印刷順序 + packing checklist + fallback 階梯 |
-| [`DEPLOY.md`](DEPLOY.md) | Vercel CLI + GitHub-import 部署 SOP |
+| `docs/proposal_v2.2_additions/…Proposal_v2.2.docx`(含財務,未公開) | **競賽企劃書 v2.2**(2026-05-06,canonical 商業 spec)|
+| [`docs/whitepaper.md`](docs/whitepaper.md) | 技術白皮書 **v1.3**(**canonical 完整版**:完整證據 + 局限討論 + 驗證鏈)|
+| [`docs/whitepaper_restructured.md`](docs/whitepaper_restructured.md) | 精煉版 **v1.3**(三段式快翻;數字以 canonical 版為準)|
+| [`docs/BBU_IMPLEMENTATION_PLAN.md`](docs/BBU_IMPLEMENTATION_PLAN.md) | 實作計畫 **v2.0**(twin-first;v1.x 硬體路線保留為 archive)|
+| [`docs/RD_BRIEF.md`](docs/RD_BRIEF.md) | RD / 顧問 2 頁 executive brief |
+| [`docs/INVESTOR_BRIEF.md`](docs/INVESTOR_BRIEF.md) | 投資人 1 頁 narrative |
+| [`DEPLOY.md`](DEPLOY.md) | Vercel 部署 SOP |
+
+<details>
+<summary><b>更多文件</b>(交接 / 營運 / 法務 / EVT 前置 / 歷史紀錄)</summary>
+
+| 文件 | 用途 |
+|---|---|
+| [`docs/BBU_PROPOSAL.md`](docs/BBU_PROPOSAL.md) | 對外繳交提案 v2.0 — Twin-first Validation 實作企劃 |
+| `docs/SysBlade_HyperBuffer_複賽實作企劃_v3.1.docx`(未公開) | 複賽實作企劃 v3.1(軟體深化 + 技術背書 + 商業論證 + IP 佈局)|
+| [`docs/HANDOVER.md`](docs/HANDOVER.md) | 交接文件(v2.0 導引 + v1.x archive;§5 數字由 XCHECK 釘住)|
+| [`docs/hardware_characterization_protocol.md`](docs/hardware_characterization_protocol.md) | H3 bench 量測 protocol(EVT 前置,配 `scripts/calibrate_from_measured.py`)|
 | [`docs/severson_download.md`](docs/severson_download.md) | Severson 2019 三層下載備援 SOP |
-| [`docs/HANDOVER.md`](docs/HANDOVER.md) | 交接文件(v2.0 導引 + v1.x archive;§5 headline 數字由 XCHECK 釘住) |
-| [`docs/hardware_characterization_protocol.md`](docs/hardware_characterization_protocol.md) | H3 bench 量測 protocol(真實電芯 / LIC 校準 twin;EVT 前置,配 `scripts/calibrate_from_measured.py`) |
-| [`docs/IP_AUDIT.md`](docs/IP_AUDIT.md) | IP / 授權盤點(法務審閱前草稿) |
-| [`docs/JOINT_PROCUREMENT_STRATEGY.md`](docs/JOINT_PROCUREMENT_STRATEGY.md) | 聯合採購四槓桿供應鏈補充(2026-06 業師回饋後增補) |
-| [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP(EVT 依賴,競賽期未動工) |
-| [`docs/citations_audit.md`](docs/citations_audit.md) | 外部引用查證審計(對象 v2.1,歷史紀錄) |
+| [`docs/MIRROR_SETUP.md`](docs/MIRROR_SETUP.md) | Standby mirror SOP(GitHub 帳號 contingency)|
+| [`docs/BINDER_README.md`](docs/BINDER_README.md) | 複賽日紙本 binder 清單(歷史紀錄)|
+| [`docs/IP_AUDIT.md`](docs/IP_AUDIT.md) | IP / 授權盤點(法務審閱前草稿)|
+| [`docs/JOINT_PROCUREMENT_STRATEGY.md`](docs/JOINT_PROCUREMENT_STRATEGY.md) | 聯合採購四槓桿供應鏈補充 |
+| [`docs/x_cube_ai_install_sop.md`](docs/x_cube_ai_install_sop.md) | STM32N6 X-CUBE-AI 安裝 SOP(EVT 依賴,未動工)|
+| [`docs/citations_audit.md`](docs/citations_audit.md) | 外部引用查證審計(對象 v2.1,歷史紀錄)|
+| [`docs/archive_v1.x/PURCHASE_LIST.md`](docs/archive_v1.x/PURCHASE_LIST.md) | v1.x 採購清單(2026-05-27 全數退貨)|
+
+</details>
 
 ---
 
