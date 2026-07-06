@@ -1,5 +1,7 @@
 # X-CUBE-AI 9.x 安裝與真機 trace SOP
 
+> **狀態(2026-07)**:EVT 依賴 — 需 STM32N6 實機到位後執行;競賽期未動工,保留為 EVT 前置 SOP。競賽已於 2026-07 結束,本文轉為 engineering process 紀錄。
+
 本文是「把附錄 C 從 proxy 升級到實機 trace」的最後一哩。當前(2026-05-03)
 repo 已交付:
 

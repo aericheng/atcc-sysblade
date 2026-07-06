@@ -2,12 +2,12 @@ name: verify
 
 # V6 — Twin-first validation chain reproducibility gate.
 #
-# Run a subset of V1-V6 chains that don't require the 8 GB Severson dataset.
+# Run the subset of chains that don't require the 8 GB Severson dataset.
 # V1 (PyBaMM vs Severson LFP fit) needs raw .mat files in data/raw/severson/
-# which are gitignored, so we skip it in CI and run V2-V5 + xcheck.
+# which are gitignored, so we skip it in CI and run V2-V5 + V8 + xcheck.
 #
-# Local dev with full data:  make verify  (runs V1-V6 + cross-check, ~5 min)
-# CI lane (no Severson):     this workflow runs V2-V5 + xcheck (~50s)
+# Local dev with full data:  make verify  (runs all chains + cross-check, ~5 min)
+# CI lane (no Severson):     this workflow runs V2-V5 + V8 + xcheck (~60s)
 
 on:
   push:
@@ -18,7 +18,7 @@ on:
 
 jobs:
   twin-validation:
-    name: V2-V5 twin sim + xcheck (V1 needs Severson .mat, runs locally only)
+    name: V2-V5 + V8 twin sim + xcheck (V1 needs Severson .mat, runs locally only)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -62,7 +62,10 @@ jobs:
             echo "::notice::severson_cells_features.parquet missing — skipped in CI; run locally"
           fi
 
-      - name: Run whitepaper number cross-check (38 assertions)
+      - name: Run V8 — Aged-pack adaptive split (supervisory closed-loop)
+        run: python scripts/generate_adaptive_split_sim.py
+
+      - name: Run whitepaper number cross-check (XCHECK)
         run: python scripts/check_whitepaper_numbers.py
 
       - name: Upload twin artifacts
@@ -77,4 +80,5 @@ jobs:
             data/processed/severson_transfer_mape.json
             apps/web/public/scenarios/rack_60s_graceful.json
             apps/web/public/scenarios/rack_n_minus_1.json
+            apps/web/public/scenarios/adaptive_split.json
           if-no-files-found: warn

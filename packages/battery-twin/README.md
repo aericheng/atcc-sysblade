@@ -56,6 +56,6 @@ uv pip install -e packages/battery-twin[dev,api]
 
 1. **bagged-GBT + xstrict cell filter** — paper 學術 baseline,提供 random split 8.38 % 的 in-distribution 上界,證明 13-feat 設計確實能達 v2.2 < 10 % 承諾。
 2. **bagged-OLS + xstrict cell filter** — cross-batch / cross-protocol fall-back,GBT 在跨 protocol 退化(17–22 %),bagged-OLS 在 cross-batch 反而最強(13.9 %)。
-3. **LSTM augmented(188 cells)** — production 推論引擎,給 /twin walkthrough 和 /dashboard 1000 台 fleet RUL 共用(one model, two views)。MC Dropout + split conformal calibrated PI 縮窄 44 %,coverage 仍 ≥ 90 %。
+3. **序列模型(188 cells augmented)** — production 推論引擎為 **TCN / dilated 1D-CNN**(NPU-native,test MAPE 18.15 % / R² 0.892,見白皮書 §3.4.1;LSTM 19.10 % 保留為文件化 baseline),給 /twin walkthrough 和 /dashboard 1000 台 fleet RUL 共用(one model, two views)。MC Dropout + split conformal calibrated PI 縮窄 44 %,coverage 仍 ≥ 90 %。
 
-三條共存 — GBT 證 paper 對齊、bagged-OLS 證 cross-batch 穩健、LSTM 提供 calibrated PI 與 BBU regime 涵蓋。
+三條共存 — GBT 證 paper 對齊、bagged-OLS 證 cross-batch 穩健、序列模型(production TCN,LSTM baseline)提供 calibrated PI 與 BBU regime 涵蓋。
