@@ -403,7 +403,7 @@ function ScopeCharts({
     >
       <ChartCard
         title="電芯電壓（V）"
-        subtitle="ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP"
+        subtitle="ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP · 等溫假設"
         plain="線越平越好 — 綠色（混合）比黃色（純電池）穩得多。"
       >
         <ResponsiveContainer width="100%" height={260}>
@@ -448,7 +448,7 @@ function ScopeCharts({
 
       <ChartCard
         title={mode === "hybrid" ? "功率分流：總功率 → LIC + LFP" : "功率：完整曲線經由 LFP"}
-        subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 更高頻成分皆導向 LIC" : "無濾波 — 單級路徑"}
+        subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 更高頻成分皆導向 LIC" : "輸入：80 kW ±30% 方波（High 104 kW / Low 56 kW，每 100 ms 切換）· 無濾波 — 單級路徑"}
         plain={
           mode === "hybrid"
             ? "快於 0.5 秒的變化給電容，慢的給電池。"
@@ -845,7 +845,7 @@ export function TwinClient({
               value={mode === "hybrid" ? pStdHybrid.toFixed(1) : pStdLfp.toFixed(1)}
               unit="kW"
               tone={mode === "hybrid" ? "success" : "warning"}
-              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×` : "完整 ±30 % 波動皆經過電芯"}
+              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×` : "負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受"}
             />
             <Stat
               label="LIC 峰值能量偏移"
