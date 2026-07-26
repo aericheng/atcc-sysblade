@@ -54,7 +54,10 @@ OUT_PNG = REPO / "data" / "processed" / "measured_calibration.png"
 sys.path.insert(0, str(REPO / "scripts"))
 import eval_lic_rc_fit as v2  # noqa: E402
 
-_TRAPZ = getattr(np, "trapezoid", np.trapz)  # np.trapz removed in numpy 2.0
+# np.trapz was removed in numpy 2.0. This must stay lazy: getattr(np,
+# "trapezoid", np.trapz) evaluates the default before the lookup runs, so it
+# raises on exactly the version it exists to support.
+_TRAPZ = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
 
 # Tolerance bands for the calibration verdict (measured vs model anchor).
 # These are "is the measured hardware in the same ballpark as the anchor" gates,

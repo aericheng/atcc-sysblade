@@ -493,7 +493,7 @@ def _temp_stats_2_100(cell: Cell) -> tuple[float, float] | None:
     window lacks usable T or t data — the model needs a complete window so
     rows are comparable across cells.
     """
-    integrate = getattr(np, "trapezoid", np.trapz)
+    integrate = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
     max_T = -np.inf
     total_int = 0.0
     n_valid = 0

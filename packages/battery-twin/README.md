@@ -20,7 +20,11 @@ uv venv .venv --python 3.11
 uv pip install -e packages/battery-twin[dev,api]
 ```
 
-`numpy>=1.26,<2.0` 是 hard pin — `np.trapz` 在 numpy 2.0 被刪,我們用 `getattr(np, "trapezoid", np.trapz)` 兼容,但其他 deps(尤其 PyBaMM 26.x)還沒全部 numpy 2.0 ready。
+`numpy>=1.26,<2.0` 是 hard pin — 其他 deps(尤其 PyBaMM 26.x)還沒全部 numpy 2.0 ready。
+
+`np.trapz` 在 numpy 2.0 被刪,程式裡一律寫成 `np.trapezoid if hasattr(np, "trapezoid") else np.trapz`。**不要**改回 `getattr(np, "trapezoid", np.trapz)`:Python 會先把第三個參數求值,所以那個寫法在 numpy 2.x 上會先拋 `AttributeError`,正好在它想相容的版本上失效。2026-07-23 的 CI 就是這樣掛的。
+
+pin 也必須在**同一道** `pip install` 裡下完。拆成兩道時第二道會自己重新解析相依、把 numpy 升到 2.x,第一道的上限完全管不到(見 `.github/workflows/verify.yml`)。
 
 ## 模組責任
 
