@@ -399,7 +399,7 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
     # series, `lic_peak_excursion_kj` is the max-abs scalar. Not to be
     # confused with ∫|p_lic|·dt, which is two-way throughput.
     # Use a vectorised trapezoidal cumulative integral (O(n) vs O(n²) loop).
-    integrate = getattr(np, "trapezoid", np.trapz)
+    integrate = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
     dt_arr = np.diff(t)
     seg_avg = 0.5 * (p_lic[:-1] + p_lic[1:])
     lic_net_energy_kj = np.concatenate(([0.0], np.cumsum(seg_avg * dt_arr)))
@@ -582,7 +582,7 @@ def scenario_mains_fail(
     v_cell = np.asarray(sim["V_cell"])
 
     # Energy bookkeeping — DoD against full rack-level LFP capacity.
-    integrate = getattr(np, "trapezoid", np.trapz)
+    integrate = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
     energy_delivered_kj = float(integrate(p_kw, t))           # kW·s = kJ
     pack_capacity_kwh = LFP_PACK_KWH * N_BBU_PER_RACK         # 8 × 2.5 = 20 kWh / rack
     energy_capacity_kj = pack_capacity_kwh * 3600.0           # → 72 000 kJ

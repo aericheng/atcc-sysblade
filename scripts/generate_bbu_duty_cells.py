@@ -205,7 +205,7 @@ def _features_9(seq: np.ndarray, cycle_life: int, p: BbuDutyParams) -> dict:
     The 4 thermal/charge features come straight from the synthesised
     sequence.
     """
-    integrate = getattr(np, "trapezoid", np.trapz)
+    integrate = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
     cycle_norm = seq[:, 0]
     qd_max = seq[:, 1]
     v_std = seq[:, 4]
