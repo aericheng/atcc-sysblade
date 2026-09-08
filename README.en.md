@@ -1,6 +1,6 @@
 # Sysblade HyperBuffer
 
-> **Hybrid BBU for AI data centers + embedded battery digital-twin SaaS** · ATCC 23rd National Collegiate Entrepreneurship Competition · Case C13 (Sysgration)
+> **Hybrid BBU for AI data centers + embedded battery digital-twin SaaS** · ATCC 23rd National Collegiate Case Competition · Case C13 (Sysgration)
 
 [**繁體中文**](README.md) · [**Live demo**](https://sysblade-atcc.vercel.app) · [**Whitepaper v1.3**](docs/whitepaper.md) · [**Condensed v1.3**](docs/whitepaper_restructured.md) · [**Implementation Plan v2.0**](docs/BBU_IMPLEMENTATION_PLAN.md) · [**RD Brief**](docs/RD_BRIEF.md) · [**Investor Brief**](docs/INVESTOR_BRIEF.md) · [**About ATCC**](https://atcc.co/)
 
