@@ -1,0 +1,130 @@
+{
+  "_meta": {
+    "generated_at": "2026-10-09T14:54:46+00:00",
+    "generator": "scripts/audit/ml_e1a_mv_regime_metrics.py",
+    "versions": {
+      "python": "3.11.9",
+      "numpy": "1.26.4",
+      "torch": "2.13.0+cpu",
+      "sklearn": "1.9.0",
+      "scipy": "1.17.1",
+      "pandas": "3.0.5"
+    },
+    "rerun": ".venv/Scripts/python.exe scripts/audit/ml_e1a_mv_regime_metrics.py",
+    "source": "web\\public\\scenarios\\model_validation.json",
+    "source_generator": "scripts/export_tcn_onnx.py",
+    "source_torch": "2.11.0+cpu",
+    "note": "Uses MV point predictions ('predicted', deterministic TCN). Test = MV split=='test' (n=37, seed-42). These test cells were ALSO the early-stopping set in the original run (tcn_rul_report.json _meta.protocol)."
+  },
+  "n_test": 37,
+  "n_test_bbu": 14,
+  "n_test_severson": 23,
+  "n_mv_train_rows": 151,
+  "baseline_medians_train151": {
+    "bbu": 6628.5,
+    "severson": 731.0
+  },
+  "tcn_mv": {
+    "all": {
+      "n": 37,
+      "mape_pct": 18.153271662482833,
+      "r2": 0.8916549570615402,
+      "spearman": 0.9184992014238186
+    },
+    "severson": {
+      "n": 23,
+      "mape_pct": 17.55587586072043,
+      "r2": 0.4573900539957403,
+      "spearman": 0.698616600790514
+    },
+    "bbu": {
+      "n": 14,
+      "mape_pct": 19.134707622521077,
+      "r2": 0.21618613444710788,
+      "spearman": 0.8294834502328513
+    }
+  },
+  "baseline_regime_median_train151": {
+    "all": {
+      "n": 37,
+      "mape_pct": 25.546137317172118,
+      "r2": 0.8445053793556143,
+      "spearman": 0.8403713859895763
+    },
+    "severson": {
+      "n": 23,
+      "mape_pct": 29.463888119335756,
+      "r2": -0.25144545121046313,
+      "spearman": NaN
+    },
+    "bbu": {
+      "n": 14,
+      "mape_pct": 19.109832427903278,
+      "r2": -0.11245126594656374,
+      "spearman": NaN
+    }
+  },
+  "baseline_global_median_train151": {
+    "all": {
+      "n": 37,
+      "mape_pct": 51.64663926467708,
+      "r2": -0.5226917925739547,
+      "spearman": NaN
+    },
+    "severson": {
+      "n": 23,
+      "mape_pct": 29.859972610106645,
+      "r2": -0.00011842794307326265,
+      "spearman": NaN
+    },
+    "bbu": {
+      "n": 14,
+      "mape_pct": 87.4390201971856,
+      "r2": -10.190481959184586,
+      "spearman": NaN
+    }
+  },
+  "test_prediction_range": {
+    "bbu_pred": [
+      4419.0,
+      8808.0
+    ],
+    "bbu_actual": [
+      5103.0,
+      12657.0
+    ],
+    "severson_pred": [
+      445.0,
+      1051.0
+    ],
+    "severson_actual": [
+      459.0,
+      1315.0
+    ]
+  },
+  "split_reconstruction_matches_mv": true,
+  "baseline_medians_train114": {
+    "bbu": 6454.0,
+    "severson": 788.0000000000001
+  },
+  "baseline_regime_median_train114": {
+    "all": {
+      "n": 37,
+      "mape_pct": 24.98004427487808,
+      "r2": 0.8362419719286578,
+      "spearman": 0.8403713859895763
+    },
+    "severson": {
+      "n": 23,
+      "mape_pct": 29.08835856861482,
+      "r2": -0.07757504445673957,
+      "spearman": NaN
+    },
+    "bbu": {
+      "n": 14,
+      "mape_pct": 18.230670792310573,
+      "r2": -0.17790734741106107,
+      "spearman": NaN
+    }
+  }
+}

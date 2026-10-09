@@ -60,6 +60,12 @@ data/processed/**
 !data/processed/lstm_latency_pi5.png
 !data/processed/lstm_latency_stm32n6.json
 !data/processed/lstm_latency_stm32n6.png
+# Pre-viva self-audit results (scripts/audit/, summaries in docs/audit/).
+# JSON + PNG are tracked; ml_cache_dataset.npz (0.8 MB) is NOT — rebuild it
+# in ~11 s with scripts/audit/ml_build_cache.py.
+!data/processed/audit/
+!data/processed/audit/*.json
+!data/processed/audit/*.png
 # hybrid_control_emulator.json intentionally NOT whitelisted — reproducible from
 # scripts/hybrid_control_emulator.py in 2 s; keeps git diff clean.
 *.mat

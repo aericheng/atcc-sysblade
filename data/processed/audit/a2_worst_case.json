@@ -1,0 +1,588 @@
+{
+  "_meta": {
+    "script": "scripts/audit/a2_worst_case.py",
+    "run_command": ".venv/Scripts/python scripts/audit/a2_worst_case.py",
+    "date": "2026-10-09",
+    "python": "3.11.9",
+    "numpy": "1.26.4",
+    "scipy": "1.17.1",
+    "pybamm": "26.6.2.0",
+    "params": {
+      "dt_s": 0.02,
+      "duration_s": 60.0,
+      "split_tau_s": 0.5,
+      "lfp_init_kw": 30.0,
+      "n_bbu": 8,
+      "pack_kwh": 2.5,
+      "thermal": {
+        "c_th_j_per_k": 70.0,
+        "r_int_ohm": 0.008,
+        "h_a_w_per_k": 0.1,
+        "t_amb_c": 25.0
+      },
+      "r_int_alt_ohm_dfn_fit_6c": 0.0322246803,
+      "v_bms_cut_v": 2.5,
+      "v_prada_cut_v": 2.0
+    },
+    "assumptions": [
+      "沿用 repo 的 cell 映射：120 kW/8 台 = 15 kW/台 ↔ Prada 2.3 Ah cell 6C；C-rate = 每台 kW / 2.5 kWh",
+      "沿用 repo 熱模型：單 cell 集總、C_th 70 J/K、R 8 mΩ、h·A 0.1 W/K；不含 LIC、DC-DC、pack 熱耦合",
+      "另以 DFN 6C 脈衝擬合的 R0+R1 作熱敏感度（t_cell_rise_c_with_dfn_resistance）",
+      "LFP 初始狀態 = Prada2013 預設（近滿電，OCV ≈ 3.6 V），與 repo 一致",
+      "LIC 側沿用 repo 的 51.3 V / 332 F / 2.5 mΩ RC（僅供對照，其工作點超 Eaton 規格，見 a2_spec_bounds）",
+      "N−1：倖存 7 台平均分攤（對稱假設），不含故障瞬間的電流重分配暫態"
+    ],
+    "notes": [
+      "V_BMS_CUT 出處 docs/BBU_IMPLEMENTATION_PLAN.md:926；6C 設計點出處 generate_twin_scenarios.py:72"
+    ]
+  },
+  "reproduction_check": {
+    "v3": {
+      "dod_pct": {
+        "committed": 2.65625,
+        "rerun": 2.65625,
+        "diff": 0.0
+      },
+      "v_cell_min": {
+        "committed": 3.2218089628,
+        "rerun": 3.2218092681,
+        "diff": 3.053e-07
+      },
+      "v_cell_max": {
+        "committed": 3.489218232,
+        "rerun": 3.489218232,
+        "diff": 0.0
+      },
+      "t_cell_max_c": {
+        "committed": 25.095180505,
+        "rerun": 25.095180505,
+        "diff": 0.0
+      },
+      "v_lic_min": {
+        "committed": 46.9140350877,
+        "rerun": 46.9140350877,
+        "diff": 0.0
+      }
+    },
+    "v4": {
+      "v_cell_min": {
+        "committed": 3.2125013908,
+        "rerun": 3.2125015628,
+        "diff": 1.719e-07
+      },
+      "t_cell_max_c": {
+        "committed": 25.1133375843,
+        "rerun": 25.1133375843,
+        "diff": 0.0
+      }
+    },
+    "note": "dod_pct 為能量算術（不經 PyBaMM），應完全一致；v_cell / T 經 DFN，差值為 PyBaMM 版本漂移"
+  },
+  "scenarios": [
+    {
+      "name": "repro_v3",
+      "fault_t_s": null,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 15.0,
+      "c_rate_demand_per_bbu_peak": 6.0,
+      "p_lfp_per_bbu_peak_kw": 12.1170694912,
+      "c_rate_lfp_per_bbu_peak": 4.8468277965,
+      "c_rate_dfn_cell_peak": 4.8468277965,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 0.02,
+      "time_lfp_ge_5p9c_s": 0.0,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": false,
+      "energy_rack_kj": 1912.5,
+      "dod_rack_pct_repo_definition": 2.65625,
+      "dod_per_surviving_bbu_lfp_pct": 2.655,
+      "dod_dfn_cell_pct": 2.655,
+      "v_cell_min_v": 3.2218092681,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.7218092681,
+      "v_cell_end_v": 3.2218092681,
+      "t_cell_max_c": 25.095180505,
+      "t_cell_rise_c": 0.095180505,
+      "t_cell_rise_c_with_dfn_resistance": 0.3833951676,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 51.7475818859,
+      "lic_energy_out_kj": 34.3682779647,
+      "profile": {
+        "peak_hold_s": 0.5,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    },
+    {
+      "name": "repro_v4",
+      "fault_t_s": 15.0,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 15.0,
+      "c_rate_demand_per_bbu_peak": 6.0,
+      "p_lfp_per_bbu_peak_kw": 12.1170694912,
+      "c_rate_lfp_per_bbu_peak": 4.8468277965,
+      "c_rate_dfn_cell_peak": 4.8468277965,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 0.02,
+      "time_lfp_ge_5p9c_s": 0.0,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": false,
+      "energy_rack_kj": 1912.5,
+      "dod_rack_pct_repo_definition": 2.65625,
+      "dod_per_surviving_bbu_lfp_pct": 2.9229166667,
+      "dod_dfn_cell_pct": 2.9229166667,
+      "v_cell_min_v": 3.2125015628,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.7125015628,
+      "v_cell_end_v": 3.2125015628,
+      "t_cell_max_c": 25.1133375843,
+      "t_cell_rise_c": 0.1133375843,
+      "t_cell_rise_c_with_dfn_resistance": 0.4565334271,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 51.7475818859,
+      "lic_energy_out_kj": 34.3682779647,
+      "profile": {
+        "peak_hold_s": 0.5,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    },
+    {
+      "name": "a_n1_at_peak",
+      "fault_t_s": 0.25,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 17.1428571429,
+      "c_rate_demand_per_bbu_peak": 6.8571428571,
+      "p_lfp_per_bbu_peak_kw": 13.8480794185,
+      "c_rate_lfp_per_bbu_peak": 5.5392317674,
+      "c_rate_dfn_cell_peak": 5.5392317674,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 0.02,
+      "time_lfp_ge_5p9c_s": 0.0,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": true,
+      "energy_rack_kj": 1912.5,
+      "dod_rack_pct_repo_definition": 2.65625,
+      "dod_per_surviving_bbu_lfp_pct": 3.0318637168,
+      "dod_dfn_cell_pct": 3.0318637168,
+      "v_cell_min_v": 3.2122394563,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.7122394563,
+      "v_cell_end_v": 3.2122440206,
+      "t_cell_max_c": 25.12405725,
+      "t_cell_rise_c": 0.12405725,
+      "t_cell_rise_c_with_dfn_resistance": 0.4997131519,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 51.7475818859,
+      "lic_energy_out_kj": 34.3682779647,
+      "profile": {
+        "peak_hold_s": 0.5,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    },
+    {
+      "name": "a2_n1_at_peak_no_lic",
+      "fault_t_s": 0.25,
+      "lic_available": false,
+      "p_demand_per_bbu_peak_kw": 17.1428571429,
+      "c_rate_demand_per_bbu_peak": 6.8571428571,
+      "p_lfp_per_bbu_peak_kw": 17.1428571429,
+      "c_rate_lfp_per_bbu_peak": 6.8571428571,
+      "c_rate_dfn_cell_peak": 6.8571428571,
+      "time_lfp_above_6c_s": 0.5,
+      "time_lfp_ge_6p8c_s": 0.26,
+      "time_lfp_at_peak_c_s": 0.26,
+      "time_lfp_ge_5p9c_s": 0.78,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": true,
+      "exceeds_6c_design_point_demand": true,
+      "energy_rack_kj": 1912.5,
+      "dod_rack_pct_repo_definition": 2.65625,
+      "dod_per_surviving_bbu_lfp_pct": 3.0297619048,
+      "dod_dfn_cell_pct": 3.0297619048,
+      "v_cell_min_v": 3.2050216289,
+      "v_cell_max_v": 3.3764950268,
+      "v_cell_margin_to_bms_2v5_v": 0.7050216289,
+      "v_cell_end_v": 3.2122490752,
+      "t_cell_max_c": 25.1273820643,
+      "t_cell_rise_c": 0.1273820643,
+      "t_cell_rise_c_with_dfn_resistance": 0.5131057867,
+      "lic_bank_i_peak_a": 0.0,
+      "lic_v_min_v_repo_rc": 51.3,
+      "lic_v_max_v_repo_rc": 51.3,
+      "lic_energy_out_kj": 0.0,
+      "profile": {
+        "peak_hold_s": 0.5,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    },
+    {
+      "name": "b_full_load_60s",
+      "fault_t_s": null,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 15.0,
+      "c_rate_demand_per_bbu_peak": 6.0,
+      "p_lfp_per_bbu_peak_kw": 15.0,
+      "c_rate_lfp_per_bbu_peak": 6.0,
+      "c_rate_dfn_cell_peak": 6.0,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 53.12,
+      "time_lfp_ge_5p9c_s": 58.06,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": false,
+      "energy_rack_kj": 7200.0,
+      "dod_rack_pct_repo_definition": 10.0,
+      "dod_per_surviving_bbu_lfp_pct": 9.93625,
+      "dod_dfn_cell_pct": 9.93625,
+      "v_cell_min_v": 3.0813268754,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.5813268754,
+      "v_cell_end_v": 3.0813268754,
+      "t_cell_max_c": 26.2392522161,
+      "t_cell_rise_c": 1.2392522161,
+      "t_cell_rise_c_with_dfn_resistance": 4.9918133027,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 48.6050095117,
+      "lic_energy_out_kj": 45.9,
+      "profile": {
+        "peak_hold_s": 60.0,
+        "ramp_s": 1.5,
+        "continuous_kw": 120.0
+      }
+    },
+    {
+      "name": "b2_full_load_60s_n1",
+      "fault_t_s": 0.25,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 17.1428571429,
+      "c_rate_demand_per_bbu_peak": 6.8571428571,
+      "p_lfp_per_bbu_peak_kw": 17.1428571429,
+      "c_rate_lfp_per_bbu_peak": 6.8571428571,
+      "c_rate_dfn_cell_peak": 6.8571428571,
+      "time_lfp_above_6c_s": 59.1,
+      "time_lfp_ge_6p8c_s": 57.72,
+      "time_lfp_at_peak_c_s": 53.12,
+      "time_lfp_ge_5p9c_s": 59.16,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": true,
+      "exceeds_6c_design_point_demand": true,
+      "energy_rack_kj": 7200.0,
+      "dod_rack_pct_repo_definition": 10.0,
+      "dod_per_surviving_bbu_lfp_pct": 11.3532922882,
+      "dod_dfn_cell_pct": 11.3532922882,
+      "v_cell_min_v": 3.066161124,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.566161124,
+      "v_cell_end_v": 3.066161124,
+      "t_cell_max_c": 26.6183549951,
+      "t_cell_rise_c": 1.6183549951,
+      "t_cell_rise_c_with_dfn_resistance": 6.5188715324,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 48.6050095117,
+      "lic_energy_out_kj": 45.9,
+      "profile": {
+        "peak_hold_s": 60.0,
+        "ramp_s": 1.5,
+        "continuous_kw": 120.0
+      }
+    },
+    {
+      "name": "c_peak_hold_1.0",
+      "fault_t_s": null,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 15.0,
+      "c_rate_demand_per_bbu_peak": 6.0,
+      "p_lfp_per_bbu_peak_kw": 13.6532167716,
+      "c_rate_lfp_per_bbu_peak": 5.4612867086,
+      "c_rate_dfn_cell_peak": 5.4612867086,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 0.02,
+      "time_lfp_ge_5p9c_s": 0.0,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": false,
+      "energy_rack_kj": 1957.5,
+      "dod_rack_pct_repo_definition": 2.71875,
+      "dod_per_surviving_bbu_lfp_pct": 2.7175,
+      "dod_dfn_cell_pct": 2.7175,
+      "v_cell_min_v": 3.2018713257,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.7018713257,
+      "v_cell_end_v": 3.2215414564,
+      "t_cell_max_c": 25.1041266269,
+      "t_cell_rise_c": 0.1041266269,
+      "t_cell_rise_c_with_dfn_resistance": 0.4194309072,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 51.7685038261,
+      "lic_energy_out_kj": 40.5128670865,
+      "profile": {
+        "peak_hold_s": 1.0,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    },
+    {
+      "name": "c_peak_hold_1.5",
+      "fault_t_s": null,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 15.0,
+      "c_rate_demand_per_bbu_peak": 6.0,
+      "p_lfp_per_bbu_peak_kw": 14.4383631747,
+      "c_rate_lfp_per_bbu_peak": 5.7753452699,
+      "c_rate_dfn_cell_peak": 5.7753452699,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 0.02,
+      "time_lfp_ge_5p9c_s": 0.0,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": false,
+      "energy_rack_kj": 2002.5,
+      "dod_rack_pct_repo_definition": 2.78125,
+      "dod_per_surviving_bbu_lfp_pct": 2.78,
+      "dod_dfn_cell_pct": 2.78,
+      "v_cell_min_v": 3.1787095408,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.6787095408,
+      "v_cell_end_v": 3.2212946919,
+      "t_cell_max_c": 25.113355417,
+      "t_cell_rise_c": 0.113355417,
+      "t_cell_rise_c_with_dfn_resistance": 0.4566052586,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 51.7763519974,
+      "lic_energy_out_kj": 43.6534526987,
+      "profile": {
+        "peak_hold_s": 1.5,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    },
+    {
+      "name": "c_peak_hold_2.0",
+      "fault_t_s": null,
+      "lic_available": true,
+      "p_demand_per_bbu_peak_kw": 15.0,
+      "c_rate_demand_per_bbu_peak": 6.0,
+      "p_lfp_per_bbu_peak_kw": 14.780047643,
+      "c_rate_lfp_per_bbu_peak": 5.9120190572,
+      "c_rate_dfn_cell_peak": 5.9120190572,
+      "time_lfp_above_6c_s": 0.0,
+      "time_lfp_ge_6p8c_s": 0.0,
+      "time_lfp_at_peak_c_s": 0.02,
+      "time_lfp_ge_5p9c_s": 0.14,
+      "time_count_note": "樣本數 × dt（dt = 0.02 s），含端點樣本，故 0.25 s 區間計為 0.26 s",
+      "exceeds_6c_design_point_lfp": false,
+      "exceeds_6c_design_point_demand": false,
+      "energy_rack_kj": 2047.5,
+      "dod_rack_pct_repo_definition": 2.84375,
+      "dod_per_surviving_bbu_lfp_pct": 2.8425,
+      "dod_dfn_cell_pct": 2.8425,
+      "v_cell_min_v": 3.1626932108,
+      "v_cell_max_v": 3.489218232,
+      "v_cell_margin_to_bms_2v5_v": 0.6626932108,
+      "v_cell_end_v": 3.2210675496,
+      "t_cell_max_c": 25.1226945113,
+      "t_cell_rise_c": 0.1226945113,
+      "t_cell_rise_c_with_dfn_resistance": 0.4942239247,
+      "lic_bank_i_peak_a": 1754.3859649123,
+      "lic_v_min_v_repo_rc": 46.9140350877,
+      "lic_v_max_v_repo_rc": 51.7792959783,
+      "lic_energy_out_kj": 45.020190572,
+      "profile": {
+        "peak_hold_s": 2.0,
+        "ramp_s": 1.5,
+        "continuous_kw": 30.0
+      }
+    }
+  ],
+  "dcdc_cap_analysis": {
+    "note": "LIC 功率限幅後的 LFP 峰值 C-rate（8 台；N−1 欄為 t=0.25 s 掉一台後 7 台）；純算術，不經 DFN",
+    "caps_kw": [
+      30.0,
+      40.0,
+      60.0,
+      90.0,
+      120.0
+    ],
+    "cases": {
+      "v3_mainsfail_seed30": {
+        "lic_peak_uncapped_kw": 90.0,
+        "rows": [
+          {
+            "cap_kw": 30.0,
+            "lic_peak_kw": 30.0,
+            "lfp_peak_c_8bbu": 4.8468277965,
+            "lfp_peak_c_n1_at_0p25s": 5.5392317674,
+            "lic_energy_out_kj": 20.9223703699
+          },
+          {
+            "cap_kw": 40.0,
+            "lic_peak_kw": 40.0,
+            "lfp_peak_c_8bbu": 4.8468277965,
+            "lfp_peak_c_n1_at_0p25s": 5.5392317674,
+            "lic_energy_out_kj": 25.8056905438
+          },
+          {
+            "cap_kw": 60.0,
+            "lic_peak_kw": 60.0,
+            "lfp_peak_c_8bbu": 4.8468277965,
+            "lfp_peak_c_n1_at_0p25s": 5.5392317674,
+            "lic_energy_out_kj": 32.0686655619
+          },
+          {
+            "cap_kw": 90.0,
+            "lic_peak_kw": 90.0,
+            "lfp_peak_c_8bbu": 4.8468277965,
+            "lfp_peak_c_n1_at_0p25s": 5.5392317674,
+            "lic_energy_out_kj": 35.2682779647
+          },
+          {
+            "cap_kw": 120.0,
+            "lic_peak_kw": 90.0,
+            "lfp_peak_c_8bbu": 4.8468277965,
+            "lfp_peak_c_n1_at_0p25s": 5.5392317674,
+            "lic_energy_out_kj": 35.2682779647
+          }
+        ]
+      },
+      "v3_mainsfail_seed0": {
+        "lic_peak_uncapped_kw": 120.0,
+        "rows": [
+          {
+            "cap_kw": 30.0,
+            "lic_peak_kw": 30.0,
+            "lfp_peak_c_8bbu": 4.5982419116,
+            "lfp_peak_c_n1_at_0p25s": 5.2551336132,
+            "lic_energy_out_kj": 23.4104457954
+          },
+          {
+            "cap_kw": 40.0,
+            "lic_peak_kw": 40.0,
+            "lfp_peak_c_8bbu": 4.5982419116,
+            "lfp_peak_c_n1_at_0p25s": 5.2551336132,
+            "lic_energy_out_kj": 29.2468500148
+          },
+          {
+            "cap_kw": 60.0,
+            "lic_peak_kw": 60.0,
+            "lfp_peak_c_8bbu": 4.5982419116,
+            "lfp_peak_c_n1_at_0p25s": 5.2551336132,
+            "lic_energy_out_kj": 38.3848138667
+          },
+          {
+            "cap_kw": 90.0,
+            "lic_peak_kw": 90.0,
+            "lfp_peak_c_8bbu": 4.5982419116,
+            "lfp_peak_c_n1_at_0p25s": 5.2551336132,
+            "lic_energy_out_kj": 45.9774879077
+          },
+          {
+            "cap_kw": 120.0,
+            "lic_peak_kw": 120.0,
+            "lfp_peak_c_8bbu": 4.5982419116,
+            "lfp_peak_c_n1_at_0p25s": 5.2551336132,
+            "lic_energy_out_kj": 48.3824191156
+          }
+        ]
+      },
+      "full_load_60s_seed30": {
+        "lic_peak_uncapped_kw": 90.0,
+        "rows": [
+          {
+            "cap_kw": 30.0,
+            "lic_peak_kw": 30.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 32.4064862076
+          },
+          {
+            "cap_kw": 40.0,
+            "lic_peak_kw": 40.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 37.3374125791
+          },
+          {
+            "cap_kw": 60.0,
+            "lic_peak_kw": 60.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 43.6003875972
+          },
+          {
+            "cap_kw": 90.0,
+            "lic_peak_kw": 90.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 46.8
+          },
+          {
+            "cap_kw": 120.0,
+            "lic_peak_kw": 90.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 46.8
+          }
+        ]
+      },
+      "full_load_60s_seed0": {
+        "lic_peak_uncapped_kw": 120.0,
+        "rows": [
+          {
+            "cap_kw": 30.0,
+            "lic_peak_kw": 30.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 36.8049282436
+          },
+          {
+            "cap_kw": 40.0,
+            "lic_peak_kw": 40.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 43.2086482768
+          },
+          {
+            "cap_kw": 60.0,
+            "lic_peak_kw": 60.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 52.4023947511
+          },
+          {
+            "cap_kw": 90.0,
+            "lic_peak_kw": 90.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 59.9950687921
+          },
+          {
+            "cap_kw": 120.0,
+            "lic_peak_kw": 120.0,
+            "lfp_peak_c_8bbu": 6.0,
+            "lfp_peak_c_n1_at_0p25s": 6.8571428571,
+            "lic_energy_out_kj": 62.4
+          }
+        ]
+      }
+    }
+  }
+}
