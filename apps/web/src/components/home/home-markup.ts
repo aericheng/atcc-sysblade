@@ -344,7 +344,7 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
       </div>
       <div class="af-col af-was"><span class="af-k mono">原說法</span><p>LFP 功率波動降 5.7×，寫成「理想無損耗上界」；程式註解把 ±30%、每 100&nbsp;ms 切換的示範波形歸給 Choukse 2025。</p></div>
       <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>5.7× 是 0–10 秒全窗的標準差比，窗內含濾波器啟動暫態；同一波形的穩態是 17.2×，乾淨方波長窗穩態 17.4×（解析解 17.36×），所以它不是上界。Choukse 2025 沒有 ±30% 或 100&nbsp;ms 擺盪，主頻帶是 0.2–3&nbsp;Hz；在 0.2–0.25&nbsp;Hz，τ = 0.5&nbsp;s 時 LFP 仍承擔 96–99% 的峰對峰。</p></div>
-      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>5.7× 只當「10 秒全窗示意值」，改用頻率響應說明：τ = 0.5&nbsp;s 的截止頻率是 0.318&nbsp;Hz。要涵蓋 0.2&nbsp;Hz，τ 得拉到約 5&nbsp;s，LFP 承擔降到約 25%，LIC 能量擺幅約 103&nbsp;kJ。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>5.7× 只當「10 秒全窗示意值」，定義有瑕疵，改用頻率響應說明：τ = 0.5&nbsp;s 的截止頻率是 0.318&nbsp;Hz。要涵蓋 0.2&nbsp;Hz，τ 得拉到約 5&nbsp;s，LFP 承擔降到約 25%，LIC 能量擺幅約 103&nbsp;kJ。</p></div>
       <p class="af-foot mono"><span><b>前提</b>　Choukse 式波形為假設：120&nbsp;kW 機櫃、通訊階段 30% TDP、50% duty 方波；LIC 能量未扣 ESR 損耗與 UVLO</span><span>scripts/audit/a1_freq_split_audit.py · a1_dfn_cases.py</span></p>
     </li>
     <li class="af">
@@ -364,11 +364,11 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
         <span class="af-n mono">A2 · 規格邊界</span>
         <h3 class="af-t">電容超出規格</h3>
         <span class="af-tag">超規 · 重新設計</span>
-        <p class="af-num mono"><s>51.3 V</s><i aria-hidden="true">→</i><b>13S3P</b><small>39 顆 LIC</small></p>
+        <p class="af-num mono"><s>51.3 V</s><i aria-hidden="true">→</i><b>13S3P</b><small>建議 39 顆 LIC</small></p>
       </div>
       <div class="af-col af-was"><span class="af-k mono">原說法</span><p>LIC 參數錨定 Eaton XLR-48R6167-R，模擬把滿電電壓設在 51.3&nbsp;V。該型號實為 EDLC，賽後已揭露。</p></div>
       <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>模組端電壓最高 51.81&nbsp;V，超過規格上限 48.6&nbsp;V，三個情境都超。5&nbsp;Hz 示範波形下每模組 RMS 電流 233&nbsp;A，是連續額定 86&nbsp;A 的 2.7 倍；峰值 463–877&nbsp;A 則在 1 秒峰值 2200&nbsp;A 以內。</p></div>
-      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>改用 3300&nbsp;F 級 LIC 單體重算：至少 13 串 3 並、共 39 顆，中點約 3.5&nbsp;V/cell；DC-DC 限在 60&nbsp;kW 時可降到 14 串 2 並、28 顆。綁住尺寸的是單體峰值電流與 ESR 壓降，不是能量。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>改用 3300&nbsp;F 級 LIC 單體重算：建議 13 串 3 並、共 39 顆（最低可行 36 顆；建議值另要求電壓參考可行區間 ≥ 0.2&nbsp;V/cell），中點約 3.5&nbsp;V/cell；DC-DC 限在 60&nbsp;kW 時建議 14 串 2 並、28 顆（最低 26 顆）。綁住尺寸的是單體峰值電流與 ESR 壓降，不是能量。</p></div>
       <p class="af-foot mono"><span><b>前提</b>　LIC 單體參數取自 2012 年原型的暫定值，不是量產規格書；Eaton 的 86&nbsp;A／2200&nbsp;A 只取得官網摘錄</span><span>scripts/audit/a2_spec_bounds_lic_sizing.py</span></p>
     </li>
     <li class="af">
