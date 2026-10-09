@@ -9,7 +9,11 @@ Scenarios produced (under packages/shared/scenarios/):
   1. transient_lfp_only.json
      A 10-second window of GB200-class operation at the rack level. The full
      power profile — baseline 80 kW with a ±30 % square pulse every 100 ms
-     (the AI-training pattern from arXiv 2508.14318 cited in proposal §B.1) —
+     (a self-defined illustrative waveform from the competition period;
+     CORRECTION 2026-10-09: proposal §B.1 attributed it to arXiv 2508.14318
+     (Choukse et al. 2025), but that paper contains no ±30 % / 100 ms pattern
+     — it reports FFT energy concentrated at 0.2–3 Hz, and its only "100ms"
+     is a telemetry latency; see docs/audit/A1-frequency.md) —
      is fed entirely through the LFP cell. BASELINE: what a traditional
      pure-battery BBU does. Voltage swings reflect the cell's inability to
      follow ms-scale current changes without sag.
@@ -450,8 +454,14 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             f"(≈{1.0/(2*np.pi*SPLIT_FILTER_TAU_S):.2f} Hz, τ={SPLIT_FILTER_TAU_S} s) "
             "to the lithium-ion capacitor; the LFP pack sees only the smoothed "
             "average. Cell voltage stays in the plateau, electrode stress drops, "
-            "the power-smoothing ratio is an idealised lossless upper bound, "
-            "not a cycle-life multiplier; "
+            "the power-smoothing ratio (std P_total / std P_LFP ≈ 5.7×) is an "
+            "illustrative value over the full 0–10 s window that includes the "
+            "filter start-up transient — neither an upper bound nor a "
+            "cycle-life multiplier (steady-state ratio ≈ 17×). In frequency "
+            "terms the cutoff is 0.318 Hz at τ=0.5 s, so 0.2–0.25 Hz swings "
+            "(low end of the 0.2–3 Hz band in Choukse et al. 2025) are barely "
+            "split: the LFP still carries 96–99 % of their peak-to-peak "
+            "(docs/audit/A1-frequency.md); "
             "rainflow + Wang 2011 cross-validation shows the hybrid-topology "
             "per-Ah damage component contributes ~5 % on worst-case waveforms "
             "and is ~neutral on the demo waveform (see aging_rainflow_validation.json). "

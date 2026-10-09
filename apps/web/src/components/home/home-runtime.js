@@ -1029,7 +1029,7 @@ const Sections = (function () {
      ========================================================= */
   const VC = [
     ['V1', '物理擬合', '2.15<small>% RMS</small>', 'PyBaMM 放電曲線對照 Severson 實測，門檻 5%（僅 3 顆電芯）', 'pybamm_lfp_fit_error.json:11', ''],
-    ['V2', '電容 RC 模型', '≤2.93<small>% 壓降低估</small>', 'RC 模型對照元件規格書壓降曲線，門檻 10%', 'lic_rc_fit_error.json:66,69', ''],
+    ['V2', '電容 RC 模型', '≤2.93<small>% 壓降低估</small>', '簡單 RC 對 4 個非線性延伸模型的壓降低估（自洽檢查，非實測對照），門檻 10%', 'lic_rc_fit_error.json:66,69', ''],
     ['V3', '斷電 60 秒', '2.66<small>% DoD</small>', '8 台並聯撐整櫃 60 秒（模擬），電芯最高 25.1°C', 'rack_60s_graceful.json → stats', ''],
     ['V4', 'N−1 故障', '1.71<small>C 單台</small>', 't = 15 s 拔一台，其餘 7 台仍在 2.5C 上限內', 'rack_n_minus_1.json → stats', ''],
     ['V5', '跨工況', '80.20<small>% MAPE</small>', 'bagged-GBT 基線（非 TCN）：實驗室工況 9.04% → BBU 工況 80.20%，公開揭露', 'severson_transfer_mape.json:5,31-32', 'disc'],
@@ -1399,7 +1399,7 @@ const Arch = (function () {
   const LAYERS = [
     { id: 'L1', key: 'PHYSICS', status: 'impl', title: '物理模型', tech: 'PyBaMM DFN ＋ LIC 一階 RC', glyph: 'curve', out: '電壓・電流軌跡',
       sum: '用電化學模型算出電池在每一毫秒的電壓與電流；數位孿生的一切都從這一層開始。',
-      facts: [`LFP 電芯：PyBaMM ${n('26.4.1')} 的 DFN 模型，搭配 Prada2013 參數組`, `LIC 電容：封閉形式一階 RC，C = ${n('332 F')}、ESR = ${n('2.5 mΩ')}、額定 ${n('51.3 V')}、UVLO ${n('38 V')}（參數錨定 Eaton XLR 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）`, `上一段的電池動畫就是這一層的輸出：transient_hybrid.json，${n('10 s')}／${n('800')} 點`],
+      facts: [`LFP 電芯：PyBaMM ${n('26.4.1')} 的 DFN 模型，搭配 Prada2013 參數組`, `LIC 電容：封閉形式一階 RC，C = ${n('332 F')}、ESR = ${n('2.5 mΩ')}、滿電電壓設 ${n('51.3 V')}、UVLO ${n('38 V')}（參數錨定 Eaton XLR 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）`, `自我稽核：${n('51.3 V')} 已超過該模組 ${n('48.6 V')} 上限，示範波形下每模組 RMS 電流是連續額定的 ${n('2.7')} 倍；改用 3300 F 級 LIC 單體重算，至少需 ${n('39')} 顆（見自我稽核 A2）`, `上一段的電池動畫就是這一層的輸出：transient_hybrid.json，${n('10 s')}／${n('800')} 點`],
       verify: ['V1', 'V2', 'V7'] },
     { id: 'L2', key: 'CONTROL', status: 'impl', tagNote: 'Python 模擬器', title: '分頻控制', tech: '互補濾波 τ = 0.5 s @ 1 kHz', glyph: 'split', out: '分頻後的功率指令',
       sum: '把負載功率拆成高頻與低頻：高頻瞬態交給 LIC，LFP 只看到平滑過的平均值。',
@@ -1407,7 +1407,7 @@ const Arch = (function () {
       verify: ['V3', 'V4', 'V8'] },
     { id: 'L3', key: 'AI', status: 'impl', title: 'AI 壽命預測', tech: 'TCN ＋ 90% 信心區間', glyph: 'band', out: '剩餘壽命＋區間',
       sum: '從電芯的工況特徵預測剩餘循環壽命（RUL），並給出 90% 預測區間，而不是只給一個數字。',
-      facts: [`TCN：${n('4')} 層膨脹卷積、${n('31,281')} 個參數、輸入 ${n('99 × 7')} 特徵`, `訓練資料 ${n('188')} 顆電芯：Severson 2019 的 ${n('138')} 顆＋${n('50')} 顆合成 BBU 工況`, `MC-Dropout ＋ split conformal，輸出 ${n('90%')} 預測區間`, `測試集 MAPE ${n('18.15%')}、R² ${n('0.892')}（FP32）`],
+      facts: [`TCN：${n('4')} 層膨脹卷積、${n('31,281')} 個參數、輸入 ${n('99 × 7')} 特徵`, `資料共 ${n('188')} 顆電芯：Severson 2019 的 ${n('138')} 顆＋${n('50')} 顆合成 BBU 工況`, `MC-Dropout ＋ split conformal，輸出 ${n('90%')} 預測區間`, `測試集 MAPE ${n('18.15%')}、R² ${n('0.892')}（FP32；單一切分、單一種子）`, `自我稽核：無洩漏 10 種子中位數 ${n('28.2%')}，同切分 bagged-GBT ${n('14.4%')}；精度以 GBT 為準（見自我稽核 A3）`],
       verify: ['V5'] },
     { id: 'L4', key: 'EDGE', status: 'concept', title: '邊緣推論', tech: 'STM32N6 NPU', glyph: 'chip', out: '本地 RUL（規劃中）',
       sum: '目標是在每台 BBU 上本地跑壽命模型、不依賴網路。這一層目前是概念設計，尚未實作。',
@@ -1422,7 +1422,7 @@ const Arch = (function () {
   const VCHECK = {
     V1: { layer: 'L1', name: '物理擬合', line: `放電曲線 RMS 誤差 ${n('2.15%')}（門檻 ${n('5%')}）`, sum: 'PyBaMM 模擬的放電曲線，對照 Severson 2019 的實測資料。',
       facts: [`RMS 誤差 ${n('2.15%')}，門檻 ${n('5%')}`, `樣本限制：僅 ${n('3')} 顆電芯、b1 批次第 ${n('10')} 圈，我們照實標註`] },
-    V2: { layer: 'L1', name: '電容 RC 模型', line: `壓降低估 ≤ ${n('2.93%')}（門檻 ${n('10%')}）`, sum: '一階 RC 電容模型，對照元件規格書的壓降曲線。',
+    V2: { layer: 'L1', name: '電容 RC 模型', line: `壓降低估 ≤ ${n('2.93%')}（門檻 ${n('10%')}）`, sum: '一階 RC 電容模型；V2 檢查它相對 4 個非線性延伸模型低估多少壓降，屬自洽與敏感度檢查，不是對實測曲線的驗證。',
       facts: [`壓降低估 ≤ ${n('2.93%')}，門檻 ${n('10%')}`, `worst-case 壓降 ${n('2.32 V')}，距 UVLO 還有 ${n('10.98 V')} 餘裕`] },
     V3: { layer: 'L2', name: '斷電 60 秒', line: `整櫃放電深度 ${n('2.66%')}，電芯最高 ${n('25.1°C')}`, sum: '8 台 BBU 並聯，模擬市電中斷後撐住整櫃 60 秒。',
       facts: [`放電深度 ${n('2.66%')}：輸出 ${n('1912.5 kJ')}／容量 ${n('72000 kJ')}，能量餘量 ${n('37.6×')}`, `峰值 ${n('6C')} 只持續不到 ${n('2 s')}，之後 ${n('1.5C')} 連續`, `電芯最高溫 ${n('25.1°C')}（模擬）`] },
@@ -1700,16 +1700,35 @@ const Arch = (function () {
     Stage.setFocus(FOC[k]);
   }
 
+  // Hero headline numbers are read from the scenario JSONs at load time; the markup keeps the
+  // build-time value as the no-JS / fetch-failure fallback.
+  function loadHeroNumbers() {
+    const els = [...document.querySelectorAll('.countup[data-json]')];
+    return Promise.all(els.map((el) => fetchData(el.dataset.json)
+      .then((r) => { if (!r.ok) throw new Error(el.dataset.json + ' ' + r.status); return r.json(); })
+      .then((d) => {
+        const v = el.dataset.key.split('.').reduce((o, k) => (o == null ? o : o[k]), d);
+        if (typeof v !== 'number' || !isFinite(v)) throw new Error('not a number: ' + el.dataset.json + ' ' + el.dataset.key);
+        el.dataset.to = String(v);
+        el.textContent = v.toFixed(+el.dataset.dec || 0);
+        el.dataset.live = '1';
+      })
+      .catch((e) => { if (!dead && e !== ABORT) console.warn('[hero] keeping build-time value', e); })));
+  }
+
   async function boot() {
+    const heroNums = loadHeroNumbers();
     try { await Sim.load(); }
     catch (e) {
       if (dead) return;
+      await heroNums;
       HOME_PRE_OFF();
       console.warn('[sim] data load failed', e);
       document.querySelector('.stage-foot').textContent = '資料載入失敗，請重新整理頁面。';
       return;
     }
     if (dead) return;
+    await heroNums; if (dead) return;
     Stage.init();
     Arch.init();
     const extra = [Sections.init(), Outage.init()].map((pr) => pr.catch((e) => { if (!dead) console.warn('[sections] load failed', e); }));
@@ -1733,7 +1752,7 @@ const Arch = (function () {
 
     // ---- hero intro
     gsap.set('.hero .line-in', { yPercent: 108 });
-    gsap.set(['.hero .eyebrow', '.hero .lead', '.stat', '.wave', '.cue'], { opacity: 0, y: 18 });
+    gsap.set(['.hero .eyebrow', '.hero .lead', '.stat', '.stats-src', '.wave', '.cue'], { opacity: 0, y: 18 });
     gsap.set('.hero-sketch', { opacity: 0, y: 30 });
     HOME_PRE_OFF();
     counters.forEach((c) => (c.textContent = (0).toFixed(+c.dataset.dec || 0)));
@@ -1742,6 +1761,7 @@ const Arch = (function () {
       .to('.hero .line-in', { yPercent: 0, duration: 1.15, stagger: 0.12 }, 0.15)
       .to('.hero .lead', { opacity: 1, y: 0, duration: 0.8 }, 0.55)
       .to('.stat', { opacity: 1, y: 0, duration: 0.8, stagger: 0.08 }, 0.65)
+      .to('.stats-src', { opacity: 1, y: 0, duration: 0.8 }, 0.95)
       .add(() => counters.forEach((c) => countUp(c, 1600)), 0.7)
       .to('.wave', { opacity: 1, y: 0, duration: 1 }, 0.85)
       .to('.cue', { opacity: 1, y: 0, duration: 0.8 }, 1.1)
@@ -1792,14 +1812,14 @@ const Arch = (function () {
     gsap.from('.out-tl, .outage .transport, .out-stats > div', { opacity: 0, y: 24, duration: 1, stagger: 0.05, ease: 'power3.out', scrollTrigger: { trigger: '.out-tl', start: 'top 96%', once: true } });
 
     // paper section heads + blocks
-    ['#pain', '#split', '#ai', '#verify', '#demo'].forEach((id) => {
+    ['#pain', '#split', '#ai', '#verify', '#audit', '#demo'].forEach((id) => {
       const el = document.querySelector(id);
       const tl2 = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } })
         .from(el.querySelectorAll('.eyebrow'), { opacity: 0, y: 18, duration: 0.6 })
         .from(el.querySelectorAll('.h2 .line-in'), { yPercent: 105, duration: 1, stagger: 0.1 }, '<0.05')
         .from(el.querySelectorAll('.sec-side'), { opacity: 0, y: 18, duration: 0.7 }, '<0.3');
       ScrollTrigger.create({ trigger: el, start: 'top 72%', once: true, onEnter: () => tl2.play() });
-      const blocks = el.querySelectorAll('.pains li, .cmp-top, .cmp-legend, .cmp-plot, .cmp-stats .cs, .split-ctrl > *, .split-fig, .ai-fig, .ai-side > *, .vrun, .limits, .links li');
+      const blocks = el.querySelectorAll('.pains li, .cmp-top, .cmp-legend, .cmp-plot, .cmp-stats .cs, .split-ctrl > *, .split-fig, .ai-fig, .ai-side > *, .vrun, .limits, .af, .audit-scope, .links li');
       blocks.forEach((b) => gsap.from(b, { opacity: 0, y: 28, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: b, start: 'top 90%', once: true } }));
     });
 

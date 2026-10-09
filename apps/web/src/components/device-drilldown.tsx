@@ -189,7 +189,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             此處列出老化後的可交付功率 + 續航時間,而不只是
             SOH/RUL。續航時間受能量限制(∝&nbsp;SOH);峰值功率能力會隨
             內阻上升而下降(此處 +{Math.round(dcirGrowth(device.soh_lfp) * 100)}%),但
-            毫秒級峰值由電容器處理,因此不會成為機架的瓶頸。
+            峰值與較高頻的擺盪主要由電容承擔(τ = 0.5 s 截止 0.32 Hz;1 Hz 時 LFP 仍承擔約三成),可減輕這項限制(模擬;滿載不降載再掉一台時 LFP 仍會超過 6C 設計點,見首頁自我稽核)。
           </p>
         </section>
 

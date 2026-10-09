@@ -211,8 +211,8 @@ export function AgedPowerWidget() {
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
         續航時間隨容量等比變化（∝ SOH），即使在壽命末期仍遠高於 60 s 承諾值。
         峰值功率能力會隨內阻上升而下降（在此 SOH 下 +{Math.round(dcir * 100)}%）
-        — 但毫秒級的峰值由電容承擔，因此這並不會限制
-        機架。
+        — 峰值與較高頻的擺盪主要由電容承擔（τ = 0.5 s 截止 0.32 Hz；1 Hz 時 LFP
+        仍承擔約三成），可減輕這項限制（模擬；滿載不降載再掉一台時 LFP 仍會超過 6C 設計點，見首頁自我稽核）。
       </p>
     </div>
   );

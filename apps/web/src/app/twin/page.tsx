@@ -4,7 +4,7 @@ import { loadScenario } from "@/lib/load-scenario";
 export const metadata = {
   title: "電池數位孿生 · Sysblade",
   description:
-    "PyBaMM DFN 模擬 LFP 電芯對 GB200 毫秒級功率瞬變的響應,比較有無 LIC 混合緩衝的差異。",
+    "PyBaMM DFN 模擬 LFP 電芯對 GB200 機櫃功率擺盪與斷電峰值的響應,比較有無 LIC 混合緩衝的差異。",
 };
 
 export default async function TwinPage() {

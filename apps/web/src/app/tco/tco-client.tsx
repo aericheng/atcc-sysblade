@@ -186,7 +186,7 @@ export function TcoClient() {
           瞬變缺口讓您<span className="gradient-text-accent">付出多少成本</span>？
         </h1>
         <p className="mt-4 text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
-          「瞬變」= AI 伺服器毫秒級的功率波動，造成的重啟與停機是隱形成本。
+          「瞬變」= AI 伺服器的功率波動；它是否造成重啟與停機，本作品的模擬沒有證明，此處只當作您可調整的假設成本。
           本計算器把它連同採購、更換、人力算成 <span className="text-success font-medium">10 年總帳</span>（依您輸入的假設試算，非保證節省比例）。
           拉動滑桿，試算您的情境。
           <span className="block mt-2 text-xs">

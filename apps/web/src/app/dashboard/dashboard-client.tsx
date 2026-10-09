@@ -140,8 +140,8 @@ export function DashboardClient({
               <CardTitle>單台 BBU 離線,剩 7 台仍完成 60 秒優雅關機(模擬)· N+1 冗餘</CardTitle>
               <Disclosure summary="您看到的是什麼（故障注入模擬細節）" className="mt-2">
                 數位孿生模擬產物 `apps/web/public/scenarios/rack_n_minus_1.json` 是電芯層級的
-                證明:一個機架有 1 顆 BBU 離線(8 → 7)時,每顆 BBU 的連續 C-rate 仍維持在
-                2.5 C 車規 LFP 限值之內。此切換把該結果投射到
+                模擬結果:t = 15 s(負載已降到 30 kW 連續段)有 1 顆 BBU 離線(8 → 7)時,每顆 BBU 的連續 C-rate 仍維持在
+                2.5 C 車規 LFP 限值之內。自我稽核另測最壞情境:滿載 120 kW 不降載時再掉一台,LFP 最高 6.86C、超過 6C 設計點共約 59 秒;峰值當下掉一台時 LIC 吸收峰值、LFP 最高 5.54C,只有 LIC 同時失效才會到 6.86C(見首頁自我稽核、docs/audit/A2)。此切換把該結果投射到
                 1000 設備機隊上:確定性的約 6 % 設備切換為「機架內 1 顆 BBU 降級」
                 模式;依 V4 模擬,這些機架剩 7 台仍完成 60 秒優雅關機(V4 模擬 PASS,非實際營運數據)。
                 底層的模擬波形請見 /twin · V3 / V4 切換。

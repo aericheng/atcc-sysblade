@@ -278,9 +278,9 @@ export function TourClient({
             分屬電化學、電力電子、機器學習三個領域 — 跨領域整合成本高，長期被分開處理。
           </PlainInline>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
-            <PainIconCard icon={<Zap className="h-7 w-7" />} kicker="毫秒瞬態"
-              title="GB200 ±30 % dV/dt"
-              plain="功率驟變會讓設備重啟"
+            <PainIconCard icon={<Zap className="h-7 w-7" />} kicker="功率擺盪＋斷電峰值"
+              title="0.2–3 Hz · 斷電約 6C"
+              plain="斷電瞬間每台 BBU 約 6C 峰值；ORv3 下 BBU 平常不放電"
               className="anim-rotate-in anim-stagger-1" />
             <PainIconCard icon={<Network className="h-7 w-7" />} kicker="HVDC 換代"
               title="48 V → ±400 V"
@@ -379,7 +379,7 @@ export function TourClient({
             純 RC 代入規格書 IPEAK 公式(同一公式反算,僅為自洽檢查):脈衝壓降誤差 0.000 % · 對 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降低估 2.93 %,門檻 10 %
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            壓降低估 ≤ 2.93 %（門檻 10 %）— 對照原廠規格書驗算，不是自己說了算。
+            壓降低估 ≤ 2.93 %（門檻 10 %）— 這是簡單 RC 對 4 個延伸模型的自洽與敏感度檢查，不是對實測曲線的驗證；錨點規格書的元件為 EDLC 超級電容。
           </PlainInline>
         </div>
       </Slide>
@@ -512,7 +512,7 @@ export function TourClient({
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 超越 Severson 2019 論文自身基準
+            13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 自我稽核：8.38% 是多組設定在測試集上挑出的最小值，改巢狀選擇、論文式過濾後中位數 12.69%，在論文條件下並未超越論文（docs/audit/A3-ml-rigor.md）
           </p>
           <p className="mt-2 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             改用較嚴苛的跨批次切分:bagged-GBT 退化至 17.91 %、bagged-OLS 為 13.87 %
@@ -615,7 +615,7 @@ export function TourClient({
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒優雅關機承諾的 8 倍餘量;
-            峰值功率能力仍保 67%(毫秒尖峰由 LIC 扛)。老化模型的內阻增幅採文獻典型值,屬模擬推估、非實測。
+            峰值功率能力仍保 67%(峰值與較高頻的擺盪主要由 LIC 承擔;τ = 0.5 s 截止 0.32 Hz,1 Hz 時 LFP 仍承擔約三成)。老化模型的內阻增幅採文獻典型值,屬模擬推估、非實測。
           </p>
           <div className="mt-6 text-center anim-fade-in anim-stagger-5">
             <Link

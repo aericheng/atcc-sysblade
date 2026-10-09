@@ -9,7 +9,7 @@ abstract: |
   本白皮書是商業企劃書 v2.2 的技術版伴讀文件。商業 PDF 回答「為什麼客戶會買」,
   本文回答「為什麼技術做得到」。Sysblade HyperBuffer 鎖定北美 Tier-2/3 AI 機房
   BBU(電池備援單元)市場,以 LFP 15S × 3.2 V 主電 + 鋰離子電容(LIC)輔助的
-  混合拓撲解決三個痛點(競賽期稱「目前市場上沒有整合方案」,已撤回,見檔頭勘誤):毫秒級電壓瞬態、48 V → ±400 V
+  混合拓撲解決三個痛點(競賽期稱「目前市場上沒有整合方案」,已撤回,見檔頭勘誤):功率擺盪與斷電峰值〔已更正:原寫「毫秒級電壓瞬態」;見 docs/audit/A1-frequency.md〕、48 V → ±400 V
   HVDC 過渡、雲端化維運可視化。在演算法側,我們完整重現 Severson 2019 的循環壽命
   資料庫驅動預測,**13-feature paper-aligned Full model 配合 K=24 bagged
   GradientBoosting ensemble + 嚴格 cell filter(`cycle_life ≥ 400`,134/138 cells),
@@ -48,7 +48,7 @@ abstract: |
 > | Eaton XLR-48R6167-R 為「LIC 鋰離子電容」/Eaton 販售 LIC 單體 | **已更正**。競賽期電容側參數錨定該型號規格書,但其官方 datasheet 實為 **EDLC(超級電容)而非 LIC**;既有模擬的物理結構仍成立,量產設計改採真正的鋰離子電容 **Musashi ULTIMO CPQ3300SD** |
 > | LSTM 為部署/推論模型 | **已更正**。現行 RUL 序列模型為 **TCN(dilated 1D-CNN)**;LSTM 僅為前一版基線(§3.4.1) |
 > | Split conformal 使 PI 縮窄 44 %(raw 1910 → 1075 cycles、q = 0.563) | **已更正**。該組為 LSTM 基線數字;現行 TCN 為 raw 2697 → 1359 cycles、q = 0.504,**縮窄約 50 %**(§3.3.7、`model_validation.json` `uncertainty`) |
-> | 混合拓樸使電池端功率波動下降 5.7× | **成立條件更正**:±30 %/100 ms 參考波形下的理想無損耗上界,非電池壽命倍率;計入 DC-DC 損耗典型 2.4–3.9×,>100 Hz 退至約 1.5×;全部來自模擬,實機波形量測尚未完成 |
+> | 混合拓樸使電池端功率波動下降 5.7× | **成立條件更正**:±30 %/100 ms 參考波形下的理想無損耗上界,非電池壽命倍率;計入 DC-DC 損耗典型 2.4–3.9×,>100 Hz 退至約 1.5×;全部來自模擬,實機波形量測尚未完成〔已更正(2026-10 自我稽核):5.7× 為 0–10 s 全窗示意值、含濾波器啟動暫態,同波形穩態 17.2×,不是上界;DC-DC 平均模型下功率 std 降 3.1–3.9× 對應電流迴路頻寬約 26–42 Hz(假設),電壓 pp 2.4–3.2× 重現不出、已撤回;高頻退化來自迴路頻寬(200 Hz 需約 340 Hz 頻寬才有 1.5×)。見 docs/audit/A1-frequency.md、A2-power-electronics.md〕 |
 >
 > 另:本專案**沒有實體硬體**(競賽期 v1.x 實機 demonstrator 已於 2026-05 descope),`/dashboard` 的 1000 台機隊**全為模擬資料**;文中 EVT／PoC／認證時程均為競賽期規劃,非已完成事項。
 
@@ -61,7 +61,7 @@ abstract: |
 | # | 競賽期原陳述 | 更正(真實產品基準) |
 |---|---|---|
 | 1 | Tier-A 為「LIC 鋰離子電容」,錨定 Eaton XLR-48-166 | Eaton XLR-48R6167-R 經官方 datasheet 為 **EDLC 超級電容**,非 LIC;本文 demo 沿用其 RC 等效。**量產 Tier-A 改採真 LIC(Musashi ULTIMO CPQ3300SD,連續 200A / 脈衝 ≤1300A)** |
-| 2 | 5.7× / 3.5× 削峰 | 為 **±30%/100ms reference 波形下的理想無損耗換流上界**,描述「LFP 看到的訊號乾淨度」非壽命倍率;含 DC-DC 效率 / 迴路頻寬後**典型 2.4–3.9×、>100Hz 退到 ~1.5×** |
+| 2 | 5.7× / 3.5× 削峰 | 為 **±30%/100ms reference 波形下的理想無損耗換流上界**,描述「LFP 看到的訊號乾淨度」非壽命倍率;含 DC-DC 效率 / 迴路頻寬後**典型 2.4–3.9×、>100Hz 退到 ~1.5×**〔已更正(2026-10 自我稽核):5.7× 為 0–10 s 全窗示意值、含濾波器啟動暫態,同波形穩態 17.2×,不是上界;DC-DC 平均模型下功率 std 降 3.1–3.9× 對應電流迴路頻寬約 26–42 Hz(假設),電壓 pp 2.4–3.2× 重現不出、已撤回;高頻退化來自迴路頻寬(200 Hz 需約 340 Hz 頻寬才有 1.5×)。見 docs/audit/A1-frequency.md、A2-power-electronics.md〕 |
 | 3 | 雙向 DC-DC 前級 | OCP ORV3 規範禁 Oring 後 shared bus 放電容 → **LIC 必在 active DC-DC 後,DC-DC 為合規必要件(非可選優化)**;本文 sim 為開環 RC 等效,**DC-DC 電力電子層** closed-loop 為 EVT deliverable。**監督層閉環(SOH/DCIR 估測 → 分頻常數 τ 動態改寫)另已於 V8 模擬驗證**(`adaptive_split.json`,§2.3)— 兩者為不同層,不可混用 |
 | 4 | STM32N6 NPU 推論 LSTM(54.7 µs / INT8 量化) | ST 官方 **Neural-ART NPU 不支援 LSTM / GRU**;54.7 µs 估算與 INT8「無損」對 LSTM 本體不成立(量的是外圍 Gemm)。**量產 RUL 模型改 TCN / 1D-CNN**(NPU 原生 Conv1D + 可 static INT8 量化) |
 | 5 | Tier-C 單晶片 STM32N6 整合 BMS + ML(+ OpenBMC) | M55 無 MMU,跑不了 OpenBMC;安全 BMS 與 ML 共晶片違反 UL 1973 / IEC 61508。**拆三層**:獨立 BMS-AFE(BQ79616-Q1)+ safety MCU(TMS570)+ N6 推論;BBU 以 managed device 走 MCTP/PLDM,**不自稱 BMC** |
@@ -114,7 +114,7 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 
 | Gap | 表現 | 現狀 |
 |-----|------|------|
-| **毫秒級電壓瞬態** | AI inference 突發負載 dV/dt > 50 V/s,純電池 BBU 在 50–200 ms 區段壓降明顯,造成下游 PSU 重啟 | Eaton XLR 等廠商賣鋰離子電容單體,但客戶要自己整合控制律 |
+| **毫秒級電壓瞬態** | AI inference 突發負載 dV/dt > 50 V/s,純電池 BBU 在 50–200 ms 區段壓降明顯,造成下游 PSU 重啟〔已更正:此句無引用,本作品模擬未證明 PSU 會重啟(自家純電池模擬 pack 擺幅約 0.92 V≈1.9%);ORv3 下 BBU 只在 AC 失電時放電。現行口徑:AI 訓練功率 0.2–3 Hz 擺盪(Choukse et al. 2025 §III-A)+斷電瞬間每台 BBU 約 6C 峰值〕 | 現成超級電容／LIC 元件(如 Eaton XLR,實為 EDLC 超級電容模組;LIC 量產候選為 Musashi／JM Energy ULTIMO 系列)需客戶自行整合控制律〔已更正:原誤將 Eaton XLR 寫為鋰離子電容〕 |
 | **HVDC 過渡** | 北美機房 2025–2028 將從 48 V 漸進到 ±400 V,業界缺「同時相容兩階段」的 BBU | Vertiv 等傳統廠商賣 48 V 單一規格,客戶 2027 後要全部換掉 |
 | **維運可視化** | 1000 + 節 fleet 故障多為非同步,人工巡檢 hit-rate 低 | 無公開 SaaS 提供 BBU-level RUL 與三層替換隊列 |
 
@@ -171,7 +171,7 @@ IRFB4115)由 STM32 主動換流,依即時負載做功率分配(主動分頻 ≠ 
 (48.6 V、166 F、容量 54 Wh、ESR ≈ 5 mΩ,per Eaton XLR-48R6167-R datasheet),
 LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULTIMO
 3300F datasheet),負責吸收 < 100 ms 的瞬態尖峰(對應 §3.2 高通濾波器
-時間常數 τ = 0.5 s 的 1/τ ≈ 2 Hz 截止),把 LFP 的負載拉平。
+時間常數 τ = 0.5 s 的截止頻率 f_c = 1/(2πτ) ≈ 0.318 Hz〔已更正:原寫 1/τ ≈ 2 Hz,見 docs/audit/A1-frequency.md §1〕),把 LFP 的負載拉平。
 
 ### 2.2 軟體三件套
 
@@ -306,7 +306,7 @@ LFP 看到的**訊號乾淨度**,不是壽命延長倍數。壽命層面的獨�
 
 業界把超級電容放在**系統輸入端**做輸入電壓穩定(NVIDIA / Schneider 的
 input-side ride-through 設計);Sysblade 把 LIC 放在**電池端(BBU 內)**,
-目的不同——不是穩住系統輸入電壓,而是**把 LFP 從毫秒級瞬態中卸載以延壽**。
+目的不同——不是穩住系統輸入電壓,而是**把 LFP 從功率擺盪與斷電峰值中卸載**〔已更正:原寫「從毫秒級瞬態中卸載以延壽」;τ=0.5 s 截止 0.318 Hz 為 −3 dB 點,1 Hz 時 LFP 仍承擔約三成;延壽效果不在本次自我稽核範圍,不作主張。見 docs/audit/A1-frequency.md〕。
 業師正確指出:**若只是把電容被動併接在電池上,效果僅止於弱濾波**。我們的
 拓樸不是被動併接,有兩個關鍵區別:
 
@@ -324,7 +324,7 @@ input-side ride-through 設計);Sysblade 把 LIC 放在**電池端(BBU 內)**,
 
 | 維度 | 系統輸入端(NVIDIA / Schneider) | 電池端 / BBU 內(Sysblade) |
 |------|--------------------------------|----------------------------|
-| 目的 | 穩住系統輸入電壓、ride-through | **卸載 LFP 毫秒瞬態以延壽 + 削峰** |
+| 目的 | 穩住系統輸入電壓、ride-through | **卸載 LFP 的功率擺盪與斷電峰值 + 削峰**〔已更正:原寫「卸載 LFP 毫秒瞬態以延壽」〕 |
 | 受益對象 | 下游整個 PDU / rack | **LFP 電芯本身**(降 per-Ah 電極應力) |
 | 失效半徑 | 單點電容失效影響整條輸入匯流排 | **per-BBU 隔離**,8 台並聯為 N+1 容錯 |
 | 與壽命 KPI 關係 | 不直接延長電池壽命 | **直接對應 calendar / cycle 壽命 KPI(§3.1)** |

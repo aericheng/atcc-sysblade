@@ -59,7 +59,7 @@ export const GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
   lic: {
     term: "LIC（鋰離子電容）",
     plain:
-      "介於電池與電容之間的儲能元件，充放極快、可承受數十萬次循環，專門吸收毫秒級的功率尖峰。",
+      "介於電池與電容之間的儲能元件，充放極快、循環壽命長（廠商宣稱值，本作品未驗證）；在本設計中主要承擔峰值與較高頻的功率擺盪（τ = 0.5 s 截止 0.32 Hz；1 Hz 時 LFP 仍承擔約三成）。",
     analogy: "短跑選手——爆發力極強、恢復極快，但不負責長時間輸出。",
   },
   soh: {
@@ -132,7 +132,7 @@ export const GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
   transient: {
     term: "瞬變（transient）",
     plain:
-      "AI 伺服器在毫秒之間功率忽高忽低的劇烈抖動（GB200 機架可達 ±30 %）；傳統電力設備反應不過來，會造成電壓驟降甚至設備重啟。",
+      "AI 伺服器的功率隨運算與通訊階段來回擺盪；Choukse et al. 2025（arXiv 2508.14318 §III-A）量到主要能量集中在 0.2–3 Hz。本作品頁面上的 ±30 %、每 100 ms 切換方波是自訂示意波形；「會造成設備重啟」是競賽期說法，本作品的模擬沒有證明。",
     analogy:
       "像家裡有人啟動大功率電器時電燈閃一下——只是這裡規模是 120 kW、而且不停發生。",
   },

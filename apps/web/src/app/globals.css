@@ -55,17 +55,19 @@ body {
 }
 .simulated-watermark::after {
   content: "SIMULATED DATA";
+  /* Size the box to the text and centre it: rotating a full-card (inset: 0)
+     box pushed its corners past the viewport and caused horizontal page
+     scroll on phones (390 px /dashboard, +51 px). */
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  left: 50%;
+  white-space: nowrap;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.25em;
   color: rgba(251, 191, 36, 0.18);
   pointer-events: none;
-  transform: rotate(-12deg);
+  transform: translate(-50%, -50%) rotate(-12deg);
   z-index: 1;
 }
 

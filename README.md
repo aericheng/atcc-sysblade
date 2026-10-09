@@ -27,7 +27,7 @@
 | # | 競賽期原陳述 | 更正(真實產品基準) |
 |---|---|---|
 | 1 | Tier-A「LIC 鋰離子電容」錨定 Eaton XLR | Eaton XLR-48R6167-R 官方 datasheet 為 **EDLC 超級電容**;**量產 Tier-A 改採真 LIC(Musashi ULTIMO CPQ3300SD)** |
-| 2 | 5.7× / 3.5× 削峰 | **±30%/100ms reference 波形理想無損耗上界、非壽命倍率**;含 DC-DC 損耗後典型 **2.4–3.9×、>100Hz 退到 ~1.5×** |
+| 2 | 5.7× / 3.5× 削峰 | **±30%/100ms reference 波形理想無損耗上界、非壽命倍率**;含 DC-DC 損耗後典型 **2.4–3.9×、>100Hz 退到 ~1.5×**〔已更正(2026-10 自我稽核):5.7× 為 0–10 s 全窗示意值、含濾波器啟動暫態,同波形穩態 17.2×,不是上界;DC-DC 平均模型下功率 std 降 3.1–3.9× 對應電流迴路頻寬約 26–42 Hz(假設),電壓 pp 2.4–3.2× 重現不出、已撤回;高頻退化來自迴路頻寬(200 Hz 需約 340 Hz 頻寬才有 1.5×)。見 docs/audit/A1-frequency.md、A2-power-electronics.md〕 |
 | 3 | 雙向 DC-DC 前級 | OCP ORV3 禁 Oring 後 bus 放電容 → **DC-DC 為合規必要件**;sim 為開環等效,**電力電子層** closed-loop 為 EVT deliverable(監督層閉環 SOH→τ 已於 **V8** 模擬驗證,`make v8`) |
 | 4 | STM32N6 NPU 推論 LSTM(競賽期延遲估計,已撤回) | Neural-ART **NPU 不支援 LSTM/GRU**;量產 RUL 改 **TCN/1D-CNN**(NPU 原生 + 可 static INT8 量化) |
 | 5 | Tier-C 單晶片整合(含 OpenBMC) | M55 無 MMU 跑不了 OpenBMC;**拆三層**(BMS-AFE + safety MCU + N6 推論),BBU 走 MCTP/PLDM **不自稱 BMC** |
@@ -43,11 +43,11 @@
 針對**北美 Tier-2/3 AI 機房 BBU 市場**的軟硬整合方案 ——
 **LFP + 鋰離子電容(LIC)混合 BBU** 搭配 **Battery Digital Twin SaaS**,一次解掉:
 
-- **GB200 毫秒級電壓瞬態** — 純電池 BBU 撐不住 50–200 ms 壓降造成下游 PSU 重啟
+- **GB200 功率擺盪與斷電峰值**(原標題「GB200 毫秒級電壓瞬態」)— 純電池 BBU 撐不住 50–200 ms 壓降造成下游 PSU 重啟〔已更正：此為競賽期說法，本作品模擬未證明 PSU 會重啟（自家純電池模擬 pack 擺幅約 0.92 V≈1.9%）；ORv3 架構下 BBU 只在 AC 失電時放電。現行口徑：AI 訓練功率在 0.2–3 Hz 擺盪（Choukse et al. 2025 §III-A）＋斷電瞬間每台 BBU 約 6C 峰值；見 docs/audit/A1-frequency.md〕
 - **48 V → ±400 V HVDC 過渡** — Vertiv 等只賣 48 V,客戶 2027 後須 forklift 換代
 - **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,缺乏可提供 BBU-level RUL 預測的維運工具
 
-**5 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢†〔競賽期推論,已不再引用〕 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(前一版基線 LSTM;現行 TCN 動態 INT8 為 2.36×)(完整推導見[白皮書](docs/whitepaper.md))。
+**5 個關鍵數字**:5.7× 功率波動下降〔已更正:10 s 全窗示意值、非上界,見 docs/audit/A1〕 · ~25 % LFP 浮充壽命優勢†〔競賽期推論,已不再引用〕 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點見下) · 8.38 % RUL 預測 MAPE〔已更正:測試集上挑出的最小值;巢狀選擇論文式過濾 12.69%,見 docs/audit/A3〕 · 3.49× INT8 量化壓縮(前一版基線 LSTM;現行 TCN 動態 INT8 為 2.36×)(完整推導見[白皮書](docs/whitepaper.md))。
 
 > †「~25 %」的主要來源是 **BBU 低 duty 排程**(§G.3 `duty_factor=0.33`,~50 cyc/yr vs Severson 1C/1C 實驗室 cadence),**不是** hybrid 拓樸貢獻;hybrid 拓樸的 per-Ah 損傷差由 rainflow + Wang 2011 獨立驗證(`aging_rainflow_validation.json`)估算為 worst-case ~5 %、demo waveform 近於 neutral。
 
@@ -242,7 +242,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 **production TCN** 推論輸出(白皮書 §3.4.1)。頭條數字:
 
 - **Production TCN(dilated 1D-CNN,NPU-native)**:test MAPE **18.15 % / R² 0.892**;INT8 QAT(ONNX QDQ)實測 **14.54 %**
-- **學術 baseline bagged-GBT(13-feat)**:random-split **8.38 %**(達 < 10 % 承諾);跨批次改用 bagged-OLS **13.9 %**
+- **學術 baseline bagged-GBT(13-feat)**:random-split **8.38 %**(達 < 10 % 承諾);跨批次改用 bagged-OLS **13.9 %**〔已更正(2026-10 自我稽核):8.38% 是 24 組「過濾×模型」設定在測試集上挑出的最小值(xstrict ≥400);巢狀選擇下論文式過濾(≥200)中位數 12.69%、xstrict 9.47%,在論文條件下並未超越論文 9.1%。見 docs/audit/A3-ml-rigor.md〕
 - **LSTM 19.10 %** 保留為文件化 baseline 與 regime-augmentation 反證載體
 
 <details>
@@ -255,10 +255,10 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 | Variance OLS(1-feat / unfilt) | 17.9 % | 15.8 % | 0.57 | 重現 Severson 2019 paper 頭條 |
 | Discharge OLS(5-feat) | 17.5 % | 19.9 % | 0.53 | paper Table 1 5-feat |
 | Full + IR OLS(13-feat) | 14.5 % | 14.5 % | +0.08 | 加 internal-resistance,**cross-batch R² 由負轉正** |
-| **Full + IR bagged-GBT(K=24, xstrict ≥400, n=134)** | **8.38 %** | 17.9 %(GBT 退化) | **0.89** | **首次達企劃書附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 seeds < 10 % |
+| **Full + IR bagged-GBT(K=24, xstrict ≥400, n=134)** | **8.38 %** | 17.9 %(GBT 退化) | **0.89** | **首次達企劃書附件 B 軟體技術棧 < 10 % 承諾**;per-seed [5.93, 12.91],7/10 seeds < 10 %〔已更正:為測試集上挑出的最小值;巢狀選擇論文式過濾 12.69%,見 docs/audit/A3〕 |
 | **Full + IR bagged-OLS(13-feat / xstrict)** | 12.4 % | **13.9 %** | +0.21 | cross-batch generalisation 最佳 |
 
-**達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。
+**達標**:bagged-GBT + xstrict cell filter 把 random-split median MAPE 從 14.51 % 拉到 **8.38 %**。〔已更正(2026-10 自我稽核):8.38% 是 24 組「過濾×模型」設定在測試集上挑出的最小值(xstrict ≥400);巢狀選擇下論文式過濾(≥200)中位數 12.69%、xstrict 9.47%,在論文條件下並未超越論文 9.1%。見 docs/audit/A3-ml-rigor.md〕
 跨 protocol 部署改用 bagged-OLS(13.87 %),GBT 在 cross-batch 因 protocol-specific 過擬合退化。
 
 ### 序列模型(production = TCN,LSTM 為 baseline)

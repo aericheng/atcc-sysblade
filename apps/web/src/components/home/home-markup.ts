@@ -16,6 +16,7 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
       <li><a href="#ai">AI 預測</a></li>
       <li><a href="#arch">架構</a></li>
       <li><a href="#verify">驗證</a></li>
+      <li><a href="#audit">稽核</a></li>
       <li><a href="#demo">Demo</a></li>
     </ul>
     <span class="nav-chip mono" aria-hidden="true"><i></i><span id="nav-chip-v">P_LOAD —</span></span>
@@ -28,14 +29,15 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
   <svg class="hero-sketch" id="hero-sketch" aria-hidden="true"></svg>
   <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>AI 機房備援電源（BBU）· LFP＋LIC 混合儲能 × 數位孿生</p>
   <h1 id="hero-title" class="h1">
-    <span class="line"><span class="line-in">毫秒的危機，</span></span>
+    <span class="line"><span class="line-in">峰值與擺盪，</span></span>
     <span class="line"><span class="line-in">交給<em>電容</em>。</span></span>
   </h1>
   <div class="hero-row">
-    <p class="lead">AI 機櫃的負載在毫秒間劇烈跳動，純電池備援跟不上。HyperBuffer 讓 LIC 電容吸收瞬態、LFP 電池只負責平穩輸出，再用數位孿生預測每一台的剩餘壽命。</p>
+    <p class="lead">AI 機櫃的功率持續擺盪；市電一斷，每台備援電池得瞬間扛約 6C 的峰值。HyperBuffer 讓 LIC 電容先吸收峰值與瞬態、LFP 電池只負責平穩輸出，再用數位孿生預測每一台的剩餘壽命。</p>
+    <div class="stats-wrap">
     <div class="stats" role="list">
       <div class="stat" role="listitem">
-        <div class="stat-v"><span class="countup" data-to="2.66" data-dec="2">2.66</span><small>%</small></div>
+        <div class="stat-v"><span class="countup" data-to="2.66" data-dec="2" data-json="rack_60s_graceful.json" data-key="stats.dod_pct">2.66</span><small>%</small></div>
         <div class="stat-l">斷電 60 秒，整櫃放電深度</div>
         <div class="stat-s">8 台 BBU 並聯 · 模擬</div>
       </div>
@@ -49,6 +51,8 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
         <div class="stat-l">第 23 屆 ATCC 全國決賽</div>
         <div class="stat-s">2026.07</div>
       </div>
+    </div>
+    <p class="stats-src mono">2.66 載入時讀自 rack_60s_graceful.json（stats.dod_pct）· 43 為 XCHECK 斷言數（scripts/check_whitepaper_numbers.py 輸出，未另存 JSON）</p>
     </div>
   </div>
 
@@ -67,11 +71,11 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
 <section class="sec pain" id="pain" aria-labelledby="pain-title">
   <div class="sec-head">
     <p class="eyebrow"><span class="sec-no mono">01</span>痛點</p>
-    <h2 id="pain-title" class="h2"><span class="line"><span class="line-in">電池跟不上</span></span><span class="line"><span class="line-in"><em>毫秒</em>的節奏。</span></span></h2>
+    <h2 id="pain-title" class="h2"><span class="line"><span class="line-in">擺盪與峰值，</span></span><span class="line"><span class="line-in">不該全壓在<em>電池</em>上。</span></span></h2>
     <p class="sec-side">AI 機房的備援電源同時卡在三個問題上，分屬電化學、電力電子與機器學習，整合成本高。</p>
   </div>
   <ol class="pains">
-    <li><span class="p-n mono">01</span><h3>毫秒級電壓瞬態</h3><p>GB200 等 AI 機櫃的負載在毫秒間跳動，純電池 BBU 跟不上 50–200&nbsp;ms 的壓降，下游電源可能因此重啟。</p></li>
+    <li><span class="p-n mono">01</span><h3>秒級功率擺盪＋斷電峰值</h3><p>AI 訓練的機櫃功率在 0.2–3&nbsp;Hz 擺盪（Choukse et al. 2025, arXiv 2508.14318 §III-A）；市電一斷，每台 BBU 瞬間要扛約 6C 的峰值。<small>ORv3 架構下 BBU 平常不放電，混合拓樸在市電正常時參與平滑屬下一步，非本作品已驗證成果。</small></p></li>
     <li><span class="p-n mono">02</span><h3>48 V → ±400 V HVDC 換代</h3><p>機房配電正在換代，2027 年後既有 BBU 需要整批汰換。</p></li>
     <li><span class="p-n mono">03</span><h3>千台級機隊維運</h3><p>動輒上千台 BBU，卻缺少單台等級的剩餘壽命（RUL）預測。</p></li>
   </ol>
@@ -87,10 +91,11 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
     <div class="cmp-plot"><canvas id="cmp" role="img" aria-label="純電池 BBU 與 HyperBuffer 的電池功率與電芯電壓對照"></canvas><div class="cmp-tip mono" id="cmp-tip" hidden></div></div>
     <div class="cmp-stats">
       <div class="cs"><span class="cs-k">電芯電壓穩態峰對峰</span><span class="cs-v mono"><b class="bad">61.6</b> → <b class="good">17.5</b> <small>mV</small></span></div>
-      <div class="cs"><span class="cs-k">電池端功率標準差</span><span class="cs-v mono"><b class="bad">24.0</b> → <b class="good">4.2</b> <small>kW</small></span></div>
-      <div class="cs"><span class="cs-k">負載波形</span><span class="cs-v mono">56 ↔ 104 <small>kW · 每 100 ms 切換</small></span></div>
+      <div class="cs"><span class="cs-k">電池端功率標準差 · 約 5.7×，10 秒全窗示意值</span><span class="cs-v mono"><b class="bad">24.0</b> → <b class="good">4.2</b> <small>kW</small></span></div>
+      <div class="cs"><span class="cs-k">負載波形 · 自訂示意波形</span><span class="cs-v mono">56 ↔ 104 <small>kW · 每 100 ms 切換</small></span></div>
     </div>
-    <p class="src mono">資料：transient_lfp_only / _hybrid.json（PyBaMM DFN；stats.v_cell_pp_stable 穩態窗 4–6 s、p_lfp_std_kw）· 全部為模擬 · 功率降幅為理想無損耗上界、非壽命倍率，計入 DC-DC 損耗約 2.4–3.9×</p>
+    <p class="cmp-note"><b>這個倍率怎麼讀。</b>約 5.7× 是 0–10 秒全窗、含濾波器啟動暫態算出的示意值，不是上界，也不是壽命倍率。看頻率響應比較準：τ = 0.5 s 的截止頻率是 <span class="mono">0.318 Hz</span>，1 Hz 的擺盪 LFP 仍承擔約三成；在 <span class="mono">0.2–0.25 Hz</span>（Choukse 2025 主頻帶的低端）幾乎不分流，LFP 仍扛 <span class="mono">96–99%</span> 的峰對峰。<a href="#audit">見自我稽核 A1</a></p>
+    <p class="src mono">資料：transient_lfp_only / _hybrid.json（PyBaMM DFN；stats.v_cell_pp_stable 穩態窗 4–6 s、p_lfp_std_kw）· 全部為模擬 · 計入 DC-DC 電流迴路（頻寬假設 26–42 Hz）後，功率標準差約降 3.1–3.9×；原「電壓峰對峰 2.4–3.2×」重現不出，已撤回 · 稽核：docs/audit/A1-frequency.md、A2-power-electronics.md</p>
   </figure>
 </section>
 <!-- ============ 3 · STAGE (full-bleed dark) ============ -->
@@ -101,7 +106,7 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
         <p class="kicker mono"><span class="k-no">02</span>即時模擬 · transient_hybrid.json</p>
         <h2 id="stage-title" class="sr">混合儲能即時模擬</h2>
         <ol class="steps" id="steps">
-          <li class="step" data-step="0"><span class="step-n mono">01 / 04</span><h3 class="step-t">負載在毫秒間<br>跳動。</h3><p class="step-s">AI 機櫃的功率在 56 與 104&nbsp;kW 之間來回切換，每 100&nbsp;ms 一次。</p></li>
+          <li class="step" data-step="0"><span class="step-n mono">01 / 04</span><h3 class="step-t">負載每 100&nbsp;ms<br>跳一次。</h3><p class="step-s">AI 機櫃的功率在 56 與 104&nbsp;kW 之間來回切換，每 100&nbsp;ms 一次。</p></li>
           <li class="step" data-step="1"><span class="step-n mono">02 / 04</span><h3 class="step-t">電容先<br><em class="c-lic">接住尖峰</em>。</h3><p class="step-s">LIC 瞬間吐出最高 47.5&nbsp;kW；負載一回落，就由電池慢慢補回。</p></li>
           <li class="step" data-step="2"><span class="step-n mono">03 / 04</span><h3 class="step-t">電池只管<br><em class="c-lfp">平穩輸出</em>。</h3><p class="step-s">LFP 只看到濾波後的平均功率，平穩收斂在 80&nbsp;kW 附近。</p></li>
           <li class="step" data-step="3"><span class="step-n mono">04 / 04</span><h3 class="step-t">τ = 0.5 s，<br>切開高低頻。</h3><p class="step-s">一階互補濾波在 1&nbsp;kHz 控制迴圈中分配功率。畫面是 PyBaMM 模擬的真實資料（慢動作）。</p></li>
@@ -234,14 +239,25 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
       <div class="cmp-legend mono"><span class="lg-l lg-dot lg-train"><i></i>訓練 114＋校準 37 顆</span><span class="lg-l lg-dot lg-test"><i></i>測試 37 顆</span><span class="lg-l lg-dot lg-bbu"><i></i>其中合成 BBU 工況</span><span class="lg-l lg-diag"><i></i>預測 = 實際</span></div>
       <div class="ai-plot"><svg id="scatter" role="img" aria-label="188 顆電芯的預測壽命對實際壽命散點圖（對數座標）"></svg><div class="cmp-tip mono" id="ai-tip" hidden></div></div>
       <p class="src mono">資料：model_validation.json（predicted_vs_actual 188 筆；metrics；uncertainty；model.n_parameters）· 對數座標，單位 cycles</p>
+      <div class="ai-audit">
+        <span class="mono">自我稽核 · 2026-10-09 · 這張圖的數字要這樣讀</span>
+        <b>18.15% 是單一切分、單一種子，而且 early-stop 看了測試集。</b>
+        <dl class="ai-audit-row">
+          <div><dt>TCN · 無洩漏 10 種子</dt><dd class="mono">28.2<small>% 中位數</small></dd></div>
+          <div><dt>bagged-GBT · 同切分</dt><dd class="mono">14.4<small>% · 10/10 勝</small></dd></div>
+          <div><dt>conformal 90% · 換批次</dt><dd class="mono">39.8<small>% 覆蓋</small></dd></div>
+        </dl>
+        <p>改用獨立驗證集做 early-stop、跑 10 個種子：TCN 中位數 28.2%，其中 3 個種子超過 60%；同一切分下 bagged-GBT 為 14.4 ± 1.9%，每個種子都比 TCN 好。conformal 90% 區間只在同分布成立（同分布 91.6%，整批換成未見過的 Severson b3 只剩 39.8%）。精度以 GBT 為準；TCN 留著，只因它能完整靜態 INT8 量化，定位為部署管線示範。</p>
+        <small class="mono">scripts/audit/ml_e1_tcn_multiseed.py → data/processed/audit/ml_e1_tcn_multiseed.json · docs/audit/A3-ml-rigor.md</small>
+      </div>
     </figure>
     <div class="ai-side">
       <div class="ai-k"><span class="mono">MODEL</span><b>TCN · <span class="mono">31,281</span> 個參數</b><small class="mono">4 層膨脹卷積 · 輸入 99 × 7 特徵</small></div>
-      <div class="ai-k"><span class="mono">TEST · n = 37</span><b>MAPE <span class="mono">18.15%</span> · R² <span class="mono">0.892</span></b><small class="mono">random 60/20/20 split · seed 42 · FP32</small></div>
+      <div class="ai-k"><span class="mono">TEST · n = 37</span><b>MAPE <span class="mono">18.15%</span> · R² <span class="mono">0.892</span></b><small class="mono">random 60/20/20 split · 單一種子 seed 42 · FP32 · 稽核見散點圖下方</small></div>
       <div class="ai-k ai-pi"><span class="mono">90% 預測區間 · 中位寬（cycles）</span>
         <div class="pi-row"><span>MC-Dropout 原始</span><i class="pi-bar" style="--w:100%"></i><b class="mono">2,697</b></div>
         <div class="pi-row"><span>Split conformal</span><i class="pi-bar pi-good" style="--w:50.4%"></i><b class="mono">1,359</b></div>
-        <small class="mono">測試集覆蓋率 100%（37 顆）</small></div>
+        <small class="mono">測試集覆蓋率 100%（37 顆，同分布）</small></div>
       <div class="ai-k"><span class="mono">LATENCY</span><b>p99 <span class="mono">0.098 ms</span></b><small class="mono">筆電 CPU · ONNX Runtime · 邊緣 NPU 尚未實測</small></div>
       <div class="ai-warn"><span class="mono">V5 · 公開揭露 · bagged-GBT 基線</span><b>基線模型換到 BBU 工況，誤差從 <span class="mono">9.04%</span> 升到 <span class="mono">80.20%</span>。</b><p>V5 測的是以 Severson 實驗室工況訓練的 bagged-GBT 基線，不是上方的 TCN：直接套到 BBU 工況時誤差大幅上升，量化了工況落差。這是目前最大的已知限制。</p><small class="mono">severson_transfer_mape.json:5、:31-32</small></div>
     </div>
@@ -310,10 +326,90 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
   </div>
 </section>
 
-<!-- ============ 9 · DEMO ENTRY (paper) ============ -->
+<!-- ============ 9 · SELF-AUDIT (paper) — every number traces to docs/audit/A1–A3 ============ -->
+<section class="sec audit" id="audit" aria-labelledby="audit-title">
+  <div class="sec-head">
+    <p class="eyebrow"><span class="sec-no mono">08</span>自我稽核 · 2026-10-09</p>
+    <h2 id="audit-title" class="h2"><span class="line"><span class="line-in">口試前，</span></span><span class="line"><span class="line-in">我用同一套驗證鏈</span></span><span class="line"><span class="line-in"><em>稽核了自己</em>。</span></span></h2>
+    <p class="sec-side">作品說明書已經繳交，內容不再更動。繳交後，我把競賽期的頭條數字放回同一套驗證鏈：重跑、換協定、找反例。下面五項是需要更正的說法，每項列出原本怎麼說、稽核量到什麼、現在怎麼說。全部是模擬或公開資料集上的重算，前提假設寫在每項底下。</p>
+  </div>
+
+  <ol class="audit-list">
+    <li class="af">
+      <div class="af-id">
+        <span class="af-n mono">A1 · 頻域</span>
+        <h3 class="af-t">5.7× 的定義</h3>
+        <span class="af-tag">定義更正</span>
+        <p class="af-num mono"><s>5.7× 上界</s><i aria-hidden="true">→</i><b>f<sub>c</sub> 0.318 Hz</b></p>
+      </div>
+      <div class="af-col af-was"><span class="af-k mono">原說法</span><p>LFP 功率波動降 5.7×，寫成「理想無損耗上界」；程式註解把 ±30%、每 100&nbsp;ms 切換的示範波形歸給 Choukse 2025。</p></div>
+      <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>5.7× 是 0–10 秒全窗的標準差比，窗內含濾波器啟動暫態；同一波形的穩態是 17.2×，乾淨方波長窗穩態 17.4×（解析解 17.36×），所以它不是上界。Choukse 2025 沒有 ±30% 或 100&nbsp;ms 擺盪，主頻帶是 0.2–3&nbsp;Hz；在 0.2–0.25&nbsp;Hz，τ = 0.5&nbsp;s 時 LFP 仍承擔 96–99% 的峰對峰。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>5.7× 只當「10 秒全窗示意值」，改用頻率響應說明：τ = 0.5&nbsp;s 的截止頻率是 0.318&nbsp;Hz。要涵蓋 0.2&nbsp;Hz，τ 得拉到約 5&nbsp;s，LFP 承擔降到約 25%，LIC 能量擺幅約 103&nbsp;kJ。</p></div>
+      <p class="af-foot mono"><span><b>前提</b>　Choukse 式波形為假設：120&nbsp;kW 機櫃、通訊階段 30% TDP、50% duty 方波；LIC 能量未扣 ESR 損耗與 UVLO</span><span>scripts/audit/a1_freq_split_audit.py · a1_dfn_cases.py</span></p>
+    </li>
+    <li class="af">
+      <div class="af-id">
+        <span class="af-n mono">A2 · 電力電子</span>
+        <h3 class="af-t">計入 DC-DC 的倍率</h3>
+        <span class="af-tag">半撤回</span>
+        <p class="af-num mono"><s>2.4–3.9×</s><i aria-hidden="true">→</i><b>3.1–3.9×</b><small>只剩功率</small></p>
+      </div>
+      <div class="af-col af-was"><span class="af-k mono">原說法</span><p>計入 DC-DC 後典型約 2.4–3.9×，其中電壓峰對峰 2.4–3.2×。這個區間是賽後審查的估計，沒有對應的腳本。</p></div>
+      <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>補寫雙向 DC-DC 平均值模型後，功率標準差降 3.1× 與 3.9× 分別需要約 26&nbsp;Hz 與 42&nbsp;Hz 的電流迴路頻寬。電壓峰對峰在迴路頻寬 ≤ 1&nbsp;kHz 時全部小於 1（0.55–0.57），比沒有 LIC 還差，重現不出來。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>只講功率倍率 3.1–3.9×，並附上迴路頻寬 26–42&nbsp;Hz 的假設；電壓那一半撤回。高頻也要看迴路：200&nbsp;Hz 的波形需要約 340&nbsp;Hz 頻寬才有 1.5×。</p></div>
+      <p class="af-foot mono"><span><b>前提</b>　平均值模型：一階電流迴路、50&nbsp;µs 控制延遲、η 0.95、無 bus 大電容、理想方波，皆為假設</span><span>scripts/audit/a2_dcdc_average_model.py</span></p>
+    </li>
+    <li class="af">
+      <div class="af-id">
+        <span class="af-n mono">A2 · 規格邊界</span>
+        <h3 class="af-t">電容超出規格</h3>
+        <span class="af-tag">超規 · 重新設計</span>
+        <p class="af-num mono"><s>51.3 V</s><i aria-hidden="true">→</i><b>13S3P</b><small>39 顆 LIC</small></p>
+      </div>
+      <div class="af-col af-was"><span class="af-k mono">原說法</span><p>LIC 參數錨定 Eaton XLR-48R6167-R，模擬把滿電電壓設在 51.3&nbsp;V。該型號實為 EDLC，賽後已揭露。</p></div>
+      <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>模組端電壓最高 51.81&nbsp;V，超過規格上限 48.6&nbsp;V，三個情境都超。5&nbsp;Hz 示範波形下每模組 RMS 電流 233&nbsp;A，是連續額定 86&nbsp;A 的 2.7 倍；峰值 463–877&nbsp;A 則在 1 秒峰值 2200&nbsp;A 以內。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>改用 3300&nbsp;F 級 LIC 單體重算：至少 13 串 3 並、共 39 顆，中點約 3.5&nbsp;V/cell；DC-DC 限在 60&nbsp;kW 時可降到 14 串 2 並、28 顆。綁住尺寸的是單體峰值電流與 ESR 壓降，不是能量。</p></div>
+      <p class="af-foot mono"><span><b>前提</b>　LIC 單體參數取自 2012 年原型的暫定值，不是量產規格書；Eaton 的 86&nbsp;A／2200&nbsp;A 只取得官網摘錄</span><span>scripts/audit/a2_spec_bounds_lic_sizing.py</span></p>
+    </li>
+    <li class="af">
+      <div class="af-id">
+        <span class="af-n mono">A3 · ML 方法</span>
+        <h3 class="af-t">Severson 頭條數字</h3>
+        <span class="af-tag">頭條下修</span>
+        <p class="af-num mono"><s>8.38%</s><i aria-hidden="true">→</i><b>12.69%</b><small>巢狀選擇</small></p>
+      </div>
+      <div class="af-col af-was"><span class="af-k mono">原說法</span><p>Severson 資料集 MAPE 8.38%，「優於」論文的 9.1%。</p></div>
+      <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>8.38% 可以逐位重現，但它是 24 組「過濾 × 模型」在測試集上比出來的最小值，並用了 cycle_life ≥ 400 的過濾。改成巢狀選擇（設定只在訓練資料內交叉驗證挑選）後，論文式過濾（≥ 200）的中位數是 12.69%；≥ 400 過濾是 9.47%，但測試母體已排除最短命的電芯。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>在論文的過濾條件下，我們沒有超越論文。頭條改引巢狀選擇的 12.69%（10 種子中位數）。</p></div>
+      <p class="af-foot mono"><span><b>前提</b>　隨機 70/30 切分、10 種子；論文的固定切分沒有重現，兩邊不能直接比優劣</span><span>scripts/audit/ml_e3_severson_nested.py</span></p>
+    </li>
+    <li class="af">
+      <div class="af-id">
+        <span class="af-n mono">A3 · ML 方法</span>
+        <h3 class="af-t">TCN 壽命模型</h3>
+        <span class="af-tag">模型降級</span>
+        <p class="af-num mono"><s>18.15%</s><i aria-hidden="true">→</i><b>28.2%</b><small>GBT 14.4%</small></p>
+      </div>
+      <div class="af-col af-was"><span class="af-k mono">原說法</span><p>TCN 測試 MAPE 18.15%，搭配 conformal 校準的 90% 預測區間。</p></div>
+      <div class="af-col af-found"><span class="af-k mono">→ 稽核結果</span><p>18.15% 是單一切分、單一種子，early-stop 也看了測試集。改用獨立驗證集、跑 10 個種子：中位數 28.2%，3 個種子超過 60%；同切分 bagged-GBT 為 14.4 ± 1.9%，10 個種子全勝。conformal 在同分布覆蓋 91.6%，整批換成 Severson b3 只剩 39.8%。</p></div>
+      <div class="af-col af-now"><span class="af-k mono">→ 現在怎麼說</span><p>精度以 GBT 為準。TCN 保留的理由只有部署格式：能完整靜態 INT8 量化，定位為部署管線示範。conformal 區間只宣稱在同分布成立，新批次要用現場資料重新校準。</p></div>
+      <p class="af-foot mono"><span><b>前提</b>　每個種子測試 37 顆；其中 BBU 電芯是合成資料，標籤與特徵出自同一個生成器，不代表真實 BBU 精度</span><span>scripts/audit/ml_e1_tcn_multiseed.py</span></p>
+    </li>
+  </ol>
+
+  <div class="audit-end">
+    <p class="audit-scope">另有 A4：元件級公開價格與競品公開規格對照，只算元件價格量級、不是量產報價，只放在文件裡。四組稽核的腳本與輸出 JSON、圖都在 repo，每組附重跑指令；稽核沒有改動任何既有模擬數值，上方各段的模擬數字維持原樣，改的是說法。</p>
+    <ul class="links links-sm">
+      <li><a href="https://github.com/aericheng/atcc-sysblade/tree/main/docs/audit" target="_blank" rel="noopener"><span class="ln mono">docs/audit/</span><span class="lt">完整稽核紀錄</span><span class="ld">A1 頻域、A2 電力電子、A3 ML 方法、A4 成本與競品；每個數字附 JSON 欄位出處</span><span class="la" aria-hidden="true">↗</span></a></li>
+      <li><a href="https://github.com/aericheng/atcc-sysblade/tree/main/scripts/audit" target="_blank" rel="noopener"><span class="ln mono">scripts/audit/</span><span class="lt">重跑腳本</span><span class="ld">結果寫入 data/processed/audit/，不覆寫既有 JSON，也不改動 make verify 的輸出</span><span class="la" aria-hidden="true">↗</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 10 · DEMO ENTRY (paper) ============ -->
 <section class="sec demo" id="demo" aria-labelledby="demo-title">
   <div class="sec-head">
-    <p class="eyebrow"><span class="sec-no mono">08</span>深入展示</p>
+    <p class="eyebrow"><span class="sec-no mono">09</span>深入展示</p>
     <h2 id="demo-title" class="h2"><span class="line"><span class="line-in">想看更多，</span></span><span class="line"><span class="line-in">打開<em>孿生</em>。</span></span></h2>
     <p class="sec-side">以下連結會開新視窗。儀表板中的所有設備資料皆為模擬。</p>
   </div>

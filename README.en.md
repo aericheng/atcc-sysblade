@@ -29,7 +29,7 @@
 | # | Competition-stage claim | Correction (production baseline) |
 |---|---|---|
 | 1 | Tier-A "LIC" anchored to Eaton XLR | The official Eaton XLR-48R6167-R datasheet is an **EDLC supercapacitor**; **production Tier-A moves to a true LIC (Musashi ULTIMO CPQ3300SD)** |
-| 2 | 5.7× / 3.5× peak shaving | **Ideal lossless upper bound on the ±30 %/100 ms reference waveform, not a lifetime multiplier**; with DC-DC losses typically **2.4–3.9×, degrading to ~1.5× above 100 Hz** |
+| 2 | 5.7× / 3.5× peak shaving | **Ideal lossless upper bound on the ±30 %/100 ms reference waveform, not a lifetime multiplier**; with DC-DC losses typically **2.4–3.9×, degrading to ~1.5× above 100 Hz** [Corrected (Oct 2026 self-audit): 5.7× is an illustrative full 0–10 s window value that includes the filter start-up transient; the same waveform's steady state is 17.2×, so it is not an upper bound. In a DC-DC average model, a 3.1–3.9× power-std reduction needs ≈26–42 Hz current-loop bandwidth (assumed); the 2.4–3.2× voltage-pp half could not be reproduced and is withdrawn; high-frequency degradation comes from loop bandwidth (200 Hz needs ≈340 Hz for 1.5×). See docs/audit/A1-frequency.md, A2-power-electronics.md] |
 | 3 | Bidirectional DC-DC front end | OCP ORV3 forbids capacitors behind the Oring on the bus → **DC-DC is a compliance necessity**; the sim is an open-loop equivalent, the **power-electronics** closed loop is an EVT deliverable (the supervisory SOH→τ loop is sim-verified in **V8**, `make v8`) |
 | 4 | STM32N6 NPU running LSTM (competition-era latency estimate, withdrawn) | Neural-ART **NPU does not support LSTM/GRU**; production RUL moves to **TCN/1D-CNN** (NPU-native + static-INT8 quantizable) |
 | 5 | Tier-C single-chip integration (incl. OpenBMC) | The M55 has no MMU and cannot run OpenBMC; **split into three layers** (BMS-AFE + safety MCU + N6 inference), the BBU speaks MCTP/PLDM and **does not claim to be a BMC** |
@@ -45,11 +45,11 @@
 A hardware + software play for the **North-American Tier-2/3 AI data-center BBU market** —
 an **LFP + lithium-ion-capacitor (LIC) hybrid BBU** paired with a **Battery Digital Twin SaaS**, addressing three pains at once:
 
-- **GB200 millisecond-scale voltage transients** — battery-only BBUs cannot ride the 50–200 ms sags that reboot downstream PSUs
+- **GB200 power swings and mains-failure peaks** (original heading: "GB200 millisecond-scale voltage transients") — battery-only BBUs cannot ride the 50–200 ms sags that reboot downstream PSUs [Corrected: competition-period claim; our own simulation does not show PSU reboots (battery-only pack swing ≈0.92 V, ≈1.9 %), and in ORv3 the BBU discharges only on AC loss. Current framing: AI-training power swings at 0.2–3 Hz (Choukse et al. 2025 §III-A) plus a ≈6C per-BBU peak at the moment of mains failure; see docs/audit/A1-frequency.md]
 - **48 V → ±400 V HVDC transition** — incumbents sell 48 V only; customers face a forklift upgrade after 2027
 - **1000+ node fleet operations** — manual inspection has a low hit-rate; operators lack tools that predict BBU-level RUL
 
-**Five key numbers**: 5.7× lower power ripple on the battery · ~25 % LFP float-life advantage† [competition-stage inference, no longer cited] · 60 s graceful shutdown at 120 kW **rack** peak (**8 BBUs in parallel per rack**, dynamic ramp profile — see the mentor-focus section below) · 8.38 % RUL prediction MAPE · 3.49× INT8 quantization compression (previous-baseline LSTM; the current TCN's dynamic INT8 is 2.36×) (full derivations in the [whitepaper](docs/whitepaper.md)).
+**Five key numbers**: 5.7× lower power ripple on the battery [corrected: illustrative 10 s full-window value, not an upper bound; see docs/audit/A1] · ~25 % LFP float-life advantage† [competition-stage inference, no longer cited] · 60 s graceful shutdown at 120 kW **rack** peak (**8 BBUs in parallel per rack**, dynamic ramp profile — see the mentor-focus section below) · 8.38 % RUL prediction MAPE [corrected: minimum picked on the test set; nested selection with the paper-style filter gives 12.69 %; see docs/audit/A3] · 3.49× INT8 quantization compression (previous-baseline LSTM; the current TCN's dynamic INT8 is 2.36×) (full derivations in the [whitepaper](docs/whitepaper.md)).
 
 > † The "~25 %" comes primarily from **low BBU duty scheduling** (§G.3 `duty_factor=0.33`, ~50 equivalent cycles/yr vs the Severson 1C/1C lab cadence), **not** from the hybrid topology; the topology's per-Ah damage delta is independently checked with rainflow counting + the Wang 2011 model (`aging_rainflow_validation.json`): worst-case ~5 %, near-neutral on the demo waveform.
 
@@ -251,7 +251,7 @@ Two RUL pipelines run side by side — **"one model, two views"**: `/twin` and `
 the same **production TCN** inference output (whitepaper §3.4.1). Headline numbers:
 
 - **Production TCN (dilated 1D-CNN, NPU-native)**: test MAPE **18.15 % / R² 0.892**; INT8 QAT (ONNX QDQ) measured at **14.54 %**
-- **Academic baseline bagged-GBT (13-feat)**: random-split **8.38 %** (meets the < 10 % commitment); cross-batch falls back to bagged-OLS at **13.9 %**
+- **Academic baseline bagged-GBT (13-feat)**: random-split **8.38 %** (meets the < 10 % commitment); cross-batch falls back to bagged-OLS at **13.9 %** [Corrected (Oct 2026 self-audit): 8.38 % is the minimum of 24 filter × model configurations picked on the test set (xstrict ≥400); with nested selection the paper-style filter (≥200) gives a 12.69 % median and xstrict 9.47 %, so under the paper's conditions we do not beat the paper's 9.1 %. See docs/audit/A3-ml-rigor.md]
 - **LSTM 19.10 %** retained as the documented baseline and the regime-augmentation counter-evidence carrier
 
 <details>
@@ -264,11 +264,11 @@ the same **production TCN** inference output (whitepaper §3.4.1). Headline numb
 | Variance OLS (1-feat / unfiltered) | 17.9 % | 15.8 % | 0.57 | reproduces the Severson 2019 headline |
 | Discharge OLS (5-feat) | 17.5 % | 19.9 % | 0.53 | paper Table 1, 5 features |
 | Full + IR OLS (13-feat) | 14.5 % | 14.5 % | +0.08 | adds internal resistance, **cross-batch R² turns positive** |
-| **Full + IR bagged-GBT (K=24, xstrict ≥400, n=134)** | **8.38 %** | 17.9 % (GBT degrades) | **0.89** | **first to meet the proposal Appendix B < 10 % commitment**; per-seed [5.93, 12.91], 7/10 seeds < 10 % |
+| **Full + IR bagged-GBT (K=24, xstrict ≥400, n=134)** | **8.38 %** | 17.9 % (GBT degrades) | **0.89** | **first to meet the proposal Appendix B < 10 % commitment**; per-seed [5.93, 12.91], 7/10 seeds < 10 % [corrected: minimum picked on the test set; nested selection with the paper-style filter gives 12.69 %; see docs/audit/A3] |
 | **Full + IR bagged-OLS (13-feat / xstrict)** | 12.4 % | **13.9 %** | +0.21 | best cross-batch generalisation |
 
 **Target met**: bagged-GBT + the xstrict cell filter pulls the random-split median MAPE from 14.51 %
-down to **8.38 %**. Cross-protocol deployment uses bagged-OLS instead (13.87 %) — GBT overfits
+down to **8.38 %**. [Corrected (Oct 2026 self-audit): 8.38 % is the minimum of 24 filter × model configurations picked on the test set (xstrict ≥400); with nested selection the paper-style filter (≥200) gives a 12.69 % median and xstrict 9.47 %, so under the paper's conditions we do not beat the paper's 9.1 %. See docs/audit/A3-ml-rigor.md] Cross-protocol deployment uses bagged-OLS instead (13.87 %) — GBT overfits
 protocol-specific features and degrades cross-batch.
 
 ### Sequence models (production = TCN, LSTM as baseline)

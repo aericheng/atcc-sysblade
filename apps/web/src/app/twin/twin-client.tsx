@@ -449,7 +449,7 @@ function ScopeCharts({
 
       <ChartCard
         title={mode === "hybrid" ? "功率分流：總功率 → LIC + LFP" : "功率：完整曲線經由 LFP"}
-        subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 更高頻成分皆導向 LIC" : "輸入：80 kW ±30% 方波（High 104 kW / Low 56 kW，每 100 ms 切換）· 無濾波 — 單級路徑"}
+        subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 較高頻成分主要由 LIC 承擔（1 Hz 時 LFP 仍承擔約三成）" : "輸入：80 kW ±30% 方波（High 104 kW / Low 56 kW，每 100 ms 切換）· 無濾波 — 單級路徑"}
         plain={
           mode === "hybrid"
             ? "快於 0.5 秒的變化給電容，慢的給電池。"
@@ -787,11 +787,11 @@ export function TwinClient({
         <div className="text-xs uppercase tracking-[0.22em] text-primary font-medium">電池數位孿生 · PyBaMM DFN (LFP) + 一階 LIC 等效模型</div>
         <div className="accent-rule bg-primary mt-3 mb-1" />
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-          模擬：以電容分流 <span className="gradient-text">GB200 毫秒級瞬變</span>。
+          模擬：以電容分流 <span className="gradient-text">GB200 的功率擺盪與斷電峰值</span>。
         </h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
           電池的<span className="text-foreground font-medium">數位孿生</span>：物理模型重現真實電池行為，
-          已對齊公開實測與原廠規格書。切換按鈕，看<span className="text-success font-medium">電容分流讓電池輕鬆多少</span>。
+          參數錨定公開實測與規格書；Eaton XLR 實為 EDLC，模擬工作點超出其額定（見首頁自我稽核）。切換按鈕，看<span className="text-success font-medium">電容分流讓電池輕鬆多少</span>。
         </p>
         <p className="text-xs text-muted max-w-3xl leading-relaxed">
           方法：PyBaMM DFN 求解 LFP 電芯 · LIC 側以 R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（資料表為基準，非電化學模型）
@@ -821,7 +821,7 @@ export function TwinClient({
               <CardTitle>{mode === "hybrid" ? "混合 · 功率分流 + 電芯響應" : "基準 · 純 LFP 電芯響應"}</CardTitle>
               <Disclosure summary="您看到的是什麼" className="mt-2">
                 {mode === "hybrid"
-                  ? "DC-DC 控制律將 LPF 截止頻率(≈0.32 Hz,τ=0.5 s)以上的高頻成分導入鋰離子電容;LFP 電池組只承受平滑後的平均功率,電芯電壓維持在平台區、電極應力下降(此處只模擬功率波動,不換算為壽命倍率)。模型範圍:PyBaMM DFN 僅求解 LFP 電芯,LIC 以一階 R_esr × C_bulk 等效模型表示（參數錨定 Eaton XLR-48R6167-R 規格書，賽後查證該型號為 EDLC 而非 LIC）,量產時以量產選型 Musashi ULTIMO CPQ3300SD 的資料表曲線驗證。"
+                  ? "DC-DC 控制律以一階低通濾波(τ=0.5 s,截止 ≈0.32 Hz)分流:較高頻成分主要導入鋰離子電容,但截止頻率是 −3 dB 點而非分界,1 Hz 時 LFP 仍承擔約三成;LFP 電池組承受的是平滑後的功率,電芯電壓維持在平台區、電極應力下降(此處只模擬功率波動,不換算為壽命倍率)。模型範圍:PyBaMM DFN 僅求解 LFP 電芯,LIC 以一階 R_esr × C_bulk 等效模型表示（參數錨定 Eaton XLR-48R6167-R 規格書，賽後查證該型號為 EDLC 而非 LIC）,量產時以量產選型 Musashi ULTIMO CPQ3300SD 的資料表曲線驗證。"
                   : "基準情境:傳統純電池 BBU 承受完整的 ±30 % 功率波動,LFP 電芯電壓追隨每個脈衝,使化學體系承受應力並增加局部發熱。"}
               </Disclosure>
               <PlainInline className="mt-2">
@@ -853,7 +853,7 @@ export function TwinClient({
               value={mode === "hybrid" ? pStdHybrid.toFixed(1) : pStdLfp.toFixed(1)}
               unit="kW"
               tone={mode === "hybrid" ? "success" : "warning"}
-              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×（±30 %／100 ms 參考波形下的理想無損耗上界,非電池壽命倍率;計入 DC-DC 轉換損耗後典型值約 2.4–3.9×）` : "負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受"}
+              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×（自訂 ±30 %／100 ms 示意波形下的 10 秒全窗示意值，含濾波器啟動暫態，不是上界也不是電池壽命倍率；τ = 0.5 s 截止 0.318 Hz，0.2–0.25 Hz 的擺盪幾乎不分流。計入 DC-DC 電流迴路〔頻寬假設 26–42 Hz〕後功率約降 3.1–3.9×，電壓峰對峰倍率已撤回；見 docs/audit/A1、A2）` : "負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受"}
             />
             <Stat
               label="LIC 峰值能量偏移"
@@ -1679,7 +1679,7 @@ export function TwinClient({
               value={modelValidation.metrics.test_mape_pct.toFixed(1)}
               unit="%"
               tone="primary"
-              hint={`橫跨 Severson + BBU 工況的 ${modelValidation.metrics.n_test} 顆保留電芯 · TCN 以單一工況的精準度換取跨工況的誠實度（僅 Severson 的 13 特徵 bagged-GBT 達成 8.4 % 對齊論文的基準,見 whitepaper §3.3.3）。v2.2 §B <10 % 承諾由 bagged-GBT 集成路徑達成；此 TCN 區塊為量產路徑採用的壽命預測模型。方法揭露:訓練時 early stopping 以測試集監控(val = test,見 tcn_rul_report.json _meta.protocol)、無獨立驗證集,此測試 MAPE 可能略為樂觀。`}
+              hint={`橫跨 Severson + BBU 工況的 ${modelValidation.metrics.n_test} 顆保留電芯 · 方法揭露：此值為單一切分、單一種子，訓練時 early stopping 以測試集監控（val = test，見 tcn_rul_report.json _meta.protocol）。自我稽核改用獨立驗證集、10 個種子重跑：TCN 中位數 28.2%（3/10 種子 >60%），同切分 bagged-GBT 14.4%、10/10 種子較佳；精度以 GBT 為準，TCN 因可完整靜態 INT8 量化而保留，定位為部署管線示範（docs/audit/A3-ml-rigor.md）。`}
             />
             <Stat
               label="ONNX 延遲 · 筆電 CPU"
