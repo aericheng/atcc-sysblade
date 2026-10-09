@@ -25,6 +25,7 @@ export type GlossaryKey =
   | "mape"
   | "pybamm_dfn"
   | "lstm"
+  | "tcn"
   | "onnx_int8"
   | "uvlo"
   | "transient"
@@ -81,7 +82,7 @@ export const GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
   n_redundancy: {
     term: "N-1 / N+1 冗餘",
     plain:
-      "比實際需求多配一台備援，任一台故障其餘照常運作、服務不中斷；「N-1 測試」就是故意拿掉一台來驗證這件事。",
+      "比實際需求多配一台備援，任一台故障時由其餘幾台分擔負載；「N-1 測試」就是故意拿掉一台，驗證剩下的仍能完成任務（本專案為模擬驗證）。",
   },
   hvdc: {
     term: "HVDC ±400 V（高壓直流換代）",
@@ -109,9 +110,14 @@ export const GLOSSARY: Record<GlossaryKey, GlossaryEntry> = {
     analogy: "像先在風洞裡吹過，才上路。",
   },
   lstm: {
-    term: "LSTM（時間序列 AI 模型）",
+    term: "LSTM（前一版基線模型，已由 TCN 取代）",
     plain:
-      "一種擅長從時間序列找規律的 AI 模型；這裡讀取電池每一次循環的健康紀錄，預測它還能用多久。",
+      "一種擅長從時間序列找規律的 AI 模型；本專案前一版基線曾用它預測電池剩餘壽命，現行模型為 TCN。",
+  },
+  tcn: {
+    term: "TCN（時間序列 AI 模型）",
+    plain:
+      "一種擅長從時間序列找規律的 AI 模型（以多層擴張卷積讀取歷史）；這裡讀取電池每一次循環的健康紀錄，預測它還能用多久。",
   },
   onnx_int8: {
     term: "ONNX / INT8（模型打包與瘦身）",
@@ -169,6 +175,7 @@ export const GLOSSARY_ORDER: GlossaryKey[] = [
   "pybamm_dfn",
   "severson",
   "lstm",
+  "tcn",
   "mape",
   "onnx_int8",
   "uvlo",

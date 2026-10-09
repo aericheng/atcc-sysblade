@@ -38,7 +38,9 @@ export const STATUS_LABEL: Record<DeviceStatus, string> = {
 /**
  * LIC bank RC envelope — system-level reference derived from the PyBaMM
  * hybrid transient scenario (closed-form RC: v_lic = V_nominal − Q/C − i × ESR,
- * Eaton XLR-48-166 × 2 parallel anchor). Used by /dashboard's per-device
+ * parameters anchored to the Eaton XLR-48R6167-R datasheet × 2 parallel —
+ * that part is an EDLC, not a LIC; production part is Musashi ULTIMO
+ * CPQ3300SD). Used by /dashboard's per-device
  * drilldown to surface fleet-wide LIC headroom-to-UVLO under the demo
  * waveform. Production telemetry will replace this with per-device
  * readings once the FastAPI backend lands (v2.2 §F.3 W3+).

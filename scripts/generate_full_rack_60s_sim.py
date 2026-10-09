@@ -273,7 +273,7 @@ def main() -> int:
         "title": "Rack-level 60-second graceful event with thermal model",
         "description": (
             f"V3 整 rack 60s graceful 整合 sim,8 BBU 並聯(symmetric assumption)+ "
-            f"LIC bank 2×Eaton XLR-48-166 並聯 + 一階互補濾波器 τ={SPLIT_FILTER_TAU_S}s + "
+            f"LIC bank 2 組 48 V 模組並聯(參數錨定 Eaton XLR-48R6167-R 規格書,該型號實為 EDLC;量產改用 Musashi ULTIMO CPQ3300SD) + 一階互補濾波器 τ={SPLIT_FILTER_TAU_S}s + "
             f"GPU power-cap 3-stage ramp(peak hold {PEAK_HOLD_S}s / linear ramp "
             f"{RAMP_S}s / continuous {DURATION_S-PEAK_HOLD_S-RAMP_S:.1f}s)+ lumped "
             f"cell thermal model。Per-BBU peak {peak_c_rate:.1f}C pulse < 2s,"
@@ -284,7 +284,7 @@ def main() -> int:
             "lfp_per_bbu_kwh": LFP_PACK_KWH,
             "rack_capacity_kwh": LFP_PACK_KWH * N_BBU_PER_RACK,
             "lic_bank_modules": 2,
-            "lic_bank_topology": "parallel (Eaton XLR-48-166 × 2)",
+            "lic_bank_topology": "parallel (2 × 48 V modules; parameters anchored to Eaton XLR-48R6167-R datasheet, an EDLC; production: Musashi ULTIMO CPQ3300SD)",
             "control_law": f"first-order complementary filter τ={SPLIT_FILTER_TAU_S}s @ 1 kHz",
             "symmetric_assumption": "All 8 BBUs see identical scaled current; one PyBaMM cell represents all 8 in symmetric load-sharing case. N-1 asymmetric case is V4.",
         },

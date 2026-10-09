@@ -131,7 +131,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           <div>
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-muted">SOH（LIC 超級電容）</span>
+              <span className="text-muted">SOH（LIC 鋰離子電容）</span>
               <span className="font-mono font-medium tabular-nums">{licPct.toFixed(1)} %</span>
             </div>
             <div className="relative h-2 overflow-hidden rounded-full bg-border">
@@ -143,7 +143,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           </div>
 
           <p className="text-[11px] leading-relaxed text-muted">
-            <span className="text-foreground">soh_lic</span> 由資料表推導（依 Eaton XLR / JM Energy 規格,LIC ≥ 100 k cycles）。LIC 公開循環資料對 ML 而言過於稀少;
+            <span className="text-foreground">soh_lic</span> 以規格假設推導（假設 LIC ≥ 100 k 額定循環,依 ULTIMO 系列 LIC 廠商標稱壽命;屬廠商宣稱值、未經本專案驗證）。LIC 公開循環資料對 ML 而言過於稀少;
             BBU 工作負載不會將 LIC 推近其極限（whitepaper §6.2）。
           </p>
         </section>
@@ -186,7 +186,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
             />
           </div>
           <p className="text-[11px] leading-relaxed text-muted">
-            這是資料中心採購方最先詢問的問題 — 老化後的可交付功率 + 續航時間,而不只是
+            此處列出老化後的可交付功率 + 續航時間,而不只是
             SOH/RUL。續航時間受能量限制(∝&nbsp;SOH);峰值功率能力會隨
             內阻上升而下降(此處 +{Math.round(dcirGrowth(device.soh_lfp) * 100)}%),但
             毫秒級峰值由電容器處理,因此不會成為機架的瓶頸。
@@ -237,7 +237,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           <p className="text-[11px] leading-relaxed text-muted">
             點估計來自部署於{" "}
-            <span className="text-foreground">/twin</span> 的同一個 LSTM(一個模型,兩種視角)。≫&nbsp;10&nbsp;yr
+            <span className="text-foreground">/twin</span> 的同一個 TCN(一個模型,兩種視角)。≫&nbsp;10&nbsp;yr
             這個數字是循環衰減餘量(cycles&nbsp;÷&nbsp;50&nbsp;cyc/yr);真正的限制是{" "}
             <span className="text-foreground">日曆/儲存壽命 ~8–12&nbsp;yr</span>(proposal §G.3 /
             附件 C),因此 Tier-3 納入幾乎完全由{" "}
@@ -256,7 +256,9 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
         {/* LIC bank RC envelope — system-level reference, not per-device
             telemetry. Sourced from /twin hybrid scenario (closed-form RC
-            model anchored to Eaton XLR datasheet). Shown here so a Tier-3
+            model; parameters anchored to the Eaton XLR-48R6167-R datasheet, an
+            EDLC rather than a LIC — production part is Musashi ULTIMO
+            CPQ3300SD). Shown here so a Tier-3
             queue reviewer can quickly confirm: even on this aging device,
             the rack's LIC bank still clears the UVLO under the demo
             transient waveform. */}
@@ -335,7 +337,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           {licRcEnvelope.passes_cutoff ? (
             <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[11px] text-success">
-              在 v2.2 §B.1 展示瞬態波形下通過 Eaton XLR UVLO（{licRcEnvelope.v_min_datasheet.toFixed(0)} V）
+              在 v2.2 §B.1 展示瞬態波形下通過規格書 UVLO（{licRcEnvelope.v_min_datasheet.toFixed(0)} V）
               — 至截止點尚有 {licRcEnvelope.headroom_to_cutoff_v.toFixed(2)} V
               餘量。
             </div>
@@ -347,7 +349,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
 
           <p className="text-[11px] leading-relaxed text-muted">
             <span className="font-medium text-warning">系統層級參考值</span>,而非
-            單一設備遙測 — LIC 電容組拓樸（Eaton XLR-48-166 × 2 並聯）依 v2.2 §E.1
+            單一設備遙測 — LIC 電容組拓樸（48 V 模組 × 2 並聯）依 v2.2 §E.1
             為所有機架層級 Sysblade BBU 所共用。單一設備的 LIC 電壓
             遙測將隨 FastAPI 後端（W3+）一併推出。壓降由 ESR 主導
             (926 A 峰值下約 95 %),因此超過 8 BBU/rack 的量產擴充主要會增加
@@ -355,12 +357,17 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
           </p>
           <p className="text-[11px] leading-relaxed text-muted">
             <span className="font-medium text-warning">電流額定閾值尚未建模:</span>{" "}
-            RC 模型驗證電壓包絡（v_min &gt; 38 V),但並未針對 Eaton XLR-48-166
+            RC 模型驗證電壓包絡（v_min &gt; 38 V),但並未針對電容模組
             資料表的額定脈衝電流,檢查每模組 463 A 峰值(2 並聯共 926 A)。
-            此尺寸的典型 48 V LIC 模組可在 30 s 內短暫
+            此尺寸的典型 48 V 電容模組可在 30 s 內短暫
             承受 500–1500 A,因此 100 ms 脈衝應在
-            規格範圍內 — 但量產前須在 Eaton 特定批次的資料表上
+            規格範圍內 — 但量產前須以量產選型 Musashi ULTIMO CPQ3300SD 的資料表
             完成驗證,再進行設計凍結（見 <code className="text-foreground">docs/citations_audit.md</code>)。
+          </p>
+          <p className="text-[11px] leading-relaxed text-muted">
+            <span className="font-medium text-warning">參數錨定:</span>{" "}
+            Eaton XLR-48R6167-R 規格書（賽後查證該型號為 EDLC 超級電容、而非 LIC;量產選型已改為
+            Musashi ULTIMO CPQ3300SD,模擬的物理結構不受影響）。
           </p>
         </section>
 

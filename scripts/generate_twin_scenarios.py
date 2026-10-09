@@ -121,18 +121,20 @@ def _json_default(obj):
     return str(obj)
 
 
-def _save(name: str, payload: dict) -> list[Path]:
+def _save(name: str, payload: dict, extra_meta: dict | None = None) -> list[Path]:
     """Serialize once and write to every sink, sharing one timestamp.
 
     Sharing a single _meta.generated_at across both copies means the SHA-256
     of the two files matches, which lets CI / pre-commit hooks easily detect
-    drift.
+    drift. ``extra_meta`` (optional) is merged into ``_meta`` — e.g. the
+    fleet scenario records which RUL model produced ``rul_cycles``.
     """
     payload["_meta"] = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "generator": "scripts/generate_twin_scenarios.py",
         "pybamm_version": pybamm.__version__,
         "source_proposal": "Sysblade_HyperBuffer_Proposal_v2.2.pdf",
+        **(extra_meta or {}),
     }
     body = json.dumps(payload, separators=(",", ":"), default=_json_default)
     paths: list[Path] = []
@@ -224,10 +226,16 @@ def _simulate_lfp_cell(
 ) -> dict[str, np.ndarray]:
     """Run a single LFP cell through PyBaMM DFN with the given pack-power profile.
 
-    Returns time series on the SAME `t` grid the caller passed in (via
-    `t_eval=t`), so `t[i]`, `V_cell[i]`, `I_cell[i]` are sampled at the same
-    instant. We map pack power → cell current via P/V at nominal pack voltage
-    (the cell stays in plateau ~3.25 V × 15S ≈ 48 V over the demo window).
+    Returns the solver's OWN time grid in `t` together with `V_cell` and
+    `I_cell` sampled on it. NOTE: with PyBaMM 26.x `sim.solve(t_eval=t)` does
+    NOT return values on the caller's grid — `sol["Time [s]"]` follows the
+    adaptive solver steps (e.g. 2 002 input points → ~7 700 output points).
+    `V_cell[i]` / `I_cell[i]` therefore pair with `sim["t"][i]`, NOT with the
+    caller's `t[i]`. Stats are computed on these native arrays; any series
+    that is index-paired with the caller's `t` (JSON `series`) must first be
+    resampled via `_on_input_grid`. We map pack power → cell current via P/V
+    at nominal pack voltage (the cell stays in plateau ~3.25 V × 15S ≈ 48 V
+    over the demo window).
     """
     p_per_bbu_w = power_kw * 1000.0 / N_BBU_PER_RACK
     i_pack = p_per_bbu_w / LFP_PACK_NOMINAL_V  # A through the pack
@@ -247,9 +255,9 @@ def _simulate_lfp_cell(
         t, i_sim, pybamm.t, name="profile", interpolator="linear"
     )
     sim = pybamm.Simulation(model, parameter_values=params)
-    # t_eval=t forces the solver to return values at the exact input grid so
-    # caller-side arrays line up by index. Without this, sol["Time [s]"]
-    # follows the adaptive solver and drifts away from `t`.
+    # t_eval=t does NOT pin the output to the input grid under PyBaMM 26.x:
+    # sol["Time [s]"] follows the adaptive solver steps. Callers that pair
+    # these arrays with `t` by index must resample via _on_input_grid.
     sol = sim.solve(t_eval=t)
 
     return {
@@ -257,6 +265,19 @@ def _simulate_lfp_cell(
         "V_cell": np.asarray(sol["Voltage [V]"].entries),
         "I_cell": np.asarray(sol["Current [A]"].entries),
     }
+
+
+def _on_input_grid(sim: dict[str, np.ndarray], t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Resample a `_simulate_lfp_cell` result onto the caller's uniform `t`.
+
+    Used ONLY for the JSON `series` (which are index-paired with `t` and the
+    load profile). Headline `stats` keep using the native solver arrays so
+    previously published numbers are unchanged.
+    """
+    sim_t = np.asarray(sim["t"])
+    v_on_t = np.interp(t, sim_t, np.asarray(sim["V_cell"]))
+    i_on_t = np.interp(t, sim_t, np.asarray(sim["I_cell"]))
+    return v_on_t, i_on_t
 
 
 def _simulate_lic_rc(
@@ -349,6 +370,8 @@ def scenario_transient_lfp_only(duration_s: float = 10.0, dt: float = 0.005) -> 
     n = 800
     v_cell = np.asarray(sim["V_cell"])
     sim_t = np.asarray(sim["t"])
+    # Series only: resample solver output onto `t` so it lines up with p_kw.
+    v_cell_t, i_cell_t = _on_input_grid(sim, t)
 
     payload = {
         "title": "Pure LFP under GB200 transient — voltage sag",
@@ -364,9 +387,9 @@ def scenario_transient_lfp_only(duration_s: float = 10.0, dt: float = 0.005) -> 
         "series": {
             "t": _decimate(t, n).tolist(),
             "p_total_kw": _decimate(p_kw, n).tolist(),
-            "v_cell": _decimate(v_cell, n).tolist(),
-            "v_pack": _decimate(v_cell * 15, n).tolist(),
-            "i_cell": _decimate(np.asarray(sim["I_cell"]), n).tolist(),
+            "v_cell": _decimate(v_cell_t, n).tolist(),
+            "v_pack": _decimate(v_cell_t * 15, n).tolist(),
+            "i_cell": _decimate(i_cell_t, n).tolist(),
         },
         "stats": {
             "v_cell_min": float(np.min(v_cell)),
@@ -388,6 +411,8 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
     n = 800
     v_cell = np.asarray(sim["V_cell"])
     sim_t = np.asarray(sim["t"])
+    # Series only: resample solver output onto `t` so it lines up with p_lfp.
+    v_cell_t, i_cell_t = _on_input_grid(sim, t)
 
     # Peak cumulative net-energy excursion seen by the LIC (kJ).
     # ∫ p_lic·dt is the running net energy that has flowed INTO the LIC; its
@@ -425,9 +450,8 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             f"(≈{1.0/(2*np.pi*SPLIT_FILTER_TAU_S):.2f} Hz, τ={SPLIT_FILTER_TAU_S} s) "
             "to the lithium-ion capacitor; the LFP pack sees only the smoothed "
             "average. Cell voltage stays in the plateau, electrode stress drops, "
-            "expected cycle life extends ~25 % per the proposal §A "
-            "— note this 25 % is primarily a BBU-low-duty-schedule contribution "
-            "(§G.3 duty_factor 0.33, ~50 cyc/yr vs Severson 1C/1C lab cadence); "
+            "the power-smoothing ratio is an idealised lossless upper bound, "
+            "not a cycle-life multiplier; "
             "rainflow + Wang 2011 cross-validation shows the hybrid-topology "
             "per-Ah damage component contributes ~5 % on worst-case waveforms "
             "and is ~neutral on the demo waveform (see aging_rainflow_validation.json). "
@@ -435,7 +459,11 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             "LIC is represented by its first-order R_esr × C_bulk equivalent "
             "(see _split_with_lic docstring). LIC pseudo-capacitance, "
             "electrode kinetics, and self-discharge are out of scope for this "
-            "demo and validated in production via Eaton XLR datasheet curves."
+            "demo. LIC parameters were anchored to the Eaton XLR-48R6167-R "
+            "datasheet, which post-competition review found to be an EDLC "
+            "rather than a LIC; the production design uses the Musashi ULTIMO "
+            "CPQ3300SD, whose datasheet curves have not yet been used to "
+            "validate this model."
         ),
         "duration_s": duration_s,
         "split_filter_tau_s": SPLIT_FILTER_TAU_S,
@@ -444,9 +472,9 @@ def scenario_transient_hybrid(duration_s: float = 10.0, dt: float = 0.005) -> No
             "p_total_kw": _decimate(p_kw, n).tolist(),
             "p_lfp_kw": _decimate(p_lfp, n).tolist(),
             "p_lic_kw": _decimate(p_lic, n).tolist(),
-            "v_cell": _decimate(v_cell, n).tolist(),
-            "v_pack": _decimate(v_cell * 15, n).tolist(),
-            "i_cell": _decimate(np.asarray(sim["I_cell"]), n).tolist(),
+            "v_cell": _decimate(v_cell_t, n).tolist(),
+            "v_pack": _decimate(v_cell_t * 15, n).tolist(),
+            "i_cell": _decimate(i_cell_t, n).tolist(),
             # LIC RC physics-layer trajectories. Same time grid as the rest
             # (so a chart can overlay v_lic on top of p_lic without
             # interpolation). v_lic is what the DC-DC's input rail sees,
@@ -580,6 +608,8 @@ def scenario_mains_fail(
 
     n = 800
     v_cell = np.asarray(sim["V_cell"])
+    # Series only: resample solver output onto `t` so it lines up with p_lfp.
+    v_cell_t, i_cell_t = _on_input_grid(sim, t)
 
     # Energy bookkeeping — DoD against full rack-level LFP capacity.
     integrate = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
@@ -629,9 +659,9 @@ def scenario_mains_fail(
             "p_total_kw": _decimate(p_kw, n).tolist(),
             "p_lfp_kw": _decimate(p_lfp, n).tolist(),
             "p_lic_kw": _decimate(p_lic, n).tolist(),
-            "v_cell": _decimate(v_cell, n).tolist(),
-            "v_pack": _decimate(v_cell * 15, n).tolist(),
-            "i_cell": _decimate(np.asarray(sim["I_cell"]), n).tolist(),
+            "v_cell": _decimate(v_cell_t, n).tolist(),
+            "v_pack": _decimate(v_cell_t * 15, n).tolist(),
+            "i_cell": _decimate(i_cell_t, n).tolist(),
             "v_lic": _decimate(v_lic_full, n).tolist(),
             "i_lic_a": _decimate(i_lic_full, n).tolist(),
         },
@@ -855,8 +885,7 @@ def scenario_aging_lfp(n_cycles: int = 3000) -> None:
             "BBU duty uses a 0.33 effective-cycle factor: at calendar cycle N the "
             "pack has accumulated N × 0.33 effective full-cycle equivalents, so "
             "an 80 % SOH calendar age maps to a much later wall-clock date than "
-            "the equivalent 1C/1C bench test. Halved replacement frequency is one "
-            "of several lines that together produce the §G.3 10-year TCO delta. "
+            "the equivalent 1C/1C bench test. "
             "NOTE: cycle fade is NOT the binding constraint for DC-backup duty — "
             "the pack sits mostly idle at high SOC, where calendar/storage fade "
             "dominates. soh_calendar overlays the Naumann-2018 √t calendar model "
@@ -1487,8 +1516,8 @@ def scenario_pack_imbalance() -> None:
                 "parallel-then-series (per-cell cap) cuts the weak cell's transient "
                 f"stress ~{weak_reduction_pct:.0f}% vs series-then-parallel AND self-"
                 "balances (cap sheds more from the high-R cell), at the same 2-cap "
-                "count but per-cell placement. A candidate imbalance-mitigation "
-                "selling point to validate at EVT."
+                "count but per-cell placement. First-order screening only; to be "
+                "validated at EVT."
             ),
         },
         "model": {
@@ -1573,6 +1602,56 @@ def _load_lstm_for_fleet_rul() -> dict | None:
     }
 
 
+def _load_tcn_for_fleet_rul() -> dict | None:
+    """Load the production TCN + BBU-duty trajectories for fleet RUL inference.
+
+    Uses ``models/tcn_rul.fleet.pt`` — the checkpoint written by
+    ``scripts/export_tcn_onnx.py`` alongside ``model_validation.json``, i.e.
+    the exact model the /twin page's Inference Walkthrough shows (31,281
+    params, test MAPE 18.15 %). Input interface is identical to the LSTM:
+    (N, 99, 7) per-cycle summary features (``PER_CYCLE_FEATURE_NAMES``),
+    z-scored per feature with the ``FeatureScaler`` stored in the checkpoint
+    (fit on the TCN's own training split). Output is 10**log10(cycle_life).
+
+    Returns ``None`` (caller falls back to synthetic decay) if the checkpoint
+    or BBU pickle is missing.
+    """
+    import pickle as _pickle
+
+    import torch
+
+    ckpt_path = _REPO / "models" / "tcn_rul.fleet.pt"
+    bbu_pkl = _REPO / "data" / "processed" / "bbu_duty_cells.pkl"
+    if not ckpt_path.exists() or not bbu_pkl.exists():
+        return None
+
+    try:
+        sys.path.insert(0, str(_REPO / "packages" / "battery-twin"))
+        from tcn_rul.model import FeatureScaler, TcnRulModel, predict_cycles  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"  TCN import failed, falling back to synthetic RUL: {exc}")
+        return None
+
+    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+    model = TcnRulModel()  # default arch = the one export_tcn_onnx.py trains
+    model.load_state_dict(ckpt["state_dict"])
+    model.eval()
+    scaler = FeatureScaler.from_dict(ckpt["scaler"])
+    bbu_cells = _pickle.loads(bbu_pkl.read_bytes())
+    sequences = np.stack([c["sequence"] for c in bbu_cells])     # (n_bbu, 99, 7)
+    severities = np.array([c["duty"]["severity"] for c in bbu_cells])
+    return {
+        "model": model,
+        "scaler": scaler,
+        "predict_cycles": predict_cycles,
+        "sequences": sequences,
+        "severities": severities,
+        "checkpoint": str(ckpt_path.relative_to(_REPO)).replace("\\", "/"),
+        "n_parameters": int(sum(p.numel() for p in model.parameters())),
+        "test_mape_pct": float(ckpt.get("meta", {}).get("test_mape", float("nan"))),
+    }
+
+
 def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
     logger.info(f"=== Scenario 4: synthetic {n}-device fleet ===")
     rng = np.random.default_rng(seed)
@@ -1601,17 +1680,21 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
             age_months[i] = rng.uniform(72, 108)
             rul[i] = rng.uniform(200, 1200)
 
-    # Override the synthetic RUL with LSTM inference per device when the
-    # trained model + BBU trajectories are available. Each device is
+    # Override the synthetic RUL with TCN inference per device when the
+    # production model + BBU trajectories are available. Each device is
     # assigned a BBU-duty trajectory whose severity matches the device's
     # operating-condition bucket (young → gentle, mid → moderate, old →
-    # harsh). Same LSTM that /twin's Inference Walkthrough demonstrates,
-    # so dashboard RUL and walkthrough RUL come from one model.
-    lstm_state = _load_lstm_for_fleet_rul()
+    # harsh). Same TCN checkpoint (models/tcn_rul.fleet.pt) that /twin's
+    # Inference Walkthrough demonstrates (model_validation.json, written by
+    # scripts/export_tcn_onnx.py), so dashboard RUL and walkthrough RUL come
+    # from one model. The competition-era LSTM loader above is kept only as
+    # the documented baseline; the fleet path no longer calls it.
+    tcn_state = _load_tcn_for_fleet_rul()
     rul_source = "synthetic_decay"
-    if lstm_state is not None:
-        n_traj = lstm_state["sequences"].shape[0]
-        sev_sorted = np.argsort(lstm_state["severities"])
+    fleet_model_meta: dict = {"rul_model": "synthetic_decay"}
+    if tcn_state is not None:
+        n_traj = tcn_state["sequences"].shape[0]
+        sev_sorted = np.argsort(tcn_state["severities"])
         # Three pools by severity tercile — gentle / moderate / harsh.
         gentle_pool = sev_sorted[: n_traj // 3]
         moderate_pool = sev_sorted[n_traj // 3 : 2 * n_traj // 3]
@@ -1622,10 +1705,10 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         for i, b in enumerate(age_buckets):
             traj_idx[i] = rng.choice(pools_by_bucket[int(b)])
 
-        # Single batched LSTM forward pass over all 1000 devices.
-        x_per_device = lstm_state["sequences"][traj_idx]              # (n, 99, 7)
-        pred_cycle_life = lstm_state["predict_cycles"](
-            lstm_state["model"], lstm_state["scaler"], x_per_device
+        # Single batched TCN forward pass over all 1000 devices.
+        x_per_device = tcn_state["sequences"][traj_idx]               # (n, 99, 7)
+        pred_cycle_life = tcn_state["predict_cycles"](
+            tcn_state["model"], tcn_state["scaler"], x_per_device
         )                                                              # (n,)
 
         # Elapsed cycles per device from age, assuming this paper's
@@ -1635,16 +1718,24 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         # count). RUL = max(0, predicted_total_life - elapsed).
         cycles_per_year = 50.0
         elapsed_cycles = age_months / 12.0 * cycles_per_year
-        rul_lstm = np.maximum(0.0, pred_cycle_life - elapsed_cycles)
-        rul = rul_lstm
-        rul_source = "lstm_inference_on_bbu_trajectory"
+        rul_tcn = np.maximum(0.0, pred_cycle_life - elapsed_cycles)
+        rul = rul_tcn
+        rul_source = "tcn_inference_on_bbu_trajectory"
+        fleet_model_meta = {
+            "rul_model": "TCN (dilated 1D-CNN) — same checkpoint as /twin model_validation.json",
+            "rul_model_checkpoint": tcn_state["checkpoint"],
+            "rul_model_n_parameters": tcn_state["n_parameters"],
+            "rul_model_test_mape_pct": round(tcn_state["test_mape_pct"], 3),
+            "rul_inputs": "bbu_duty_cells.pkl per-cycle features (99x7), severity-tercile matched to age bucket",
+            "rul_elapsed_cycles_per_year": cycles_per_year,
+        }
         logger.info(
-            f"  RUL via LSTM: median={int(np.median(rul))}  "
+            f"  RUL via TCN: median={int(np.median(rul))}  "
             f"min={int(np.min(rul))}  max={int(np.max(rul))}  "
             f"(n_traj={n_traj} BBU trajectories)"
         )
     else:
-        logger.info("  RUL via synthetic decay (LSTM checkpoint or BBU pickle missing)")
+        logger.info("  RUL via synthetic decay (TCN checkpoint or BBU pickle missing)")
 
     # Per-device telemetry snapshot.
     # Status is now DERIVED from SOH / RUL / temperature so it is internally
@@ -1704,7 +1795,7 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         "title": f"Synthetic fleet — {n} Sysblade BBU devices",
         "disclaimer": "Simulated Data. Not from any production deployment.",
         "n_devices": n,
-        "rul_source": rul_source,                      # "lstm_inference_on_bbu_trajectory" | "synthetic_decay"
+        "rul_source": rul_source,                      # "tcn_inference_on_bbu_trajectory" | "synthetic_decay"
         "geographic_distribution": {
             "Texas":    sum(1 for d in devices if _state_code(d["location"]) == "TX"),
             "Virginia": sum(1 for d in devices if _state_code(d["location"]) == "VA"),
@@ -1725,7 +1816,7 @@ def scenario_fleet_devices(n: int = 1000, seed: int = 7) -> None:
         ),
         "devices": devices,
     }
-    _save("fleet_devices.json", payload)
+    _save("fleet_devices.json", payload, extra_meta=fleet_model_meta)
 
 
 # ---------------------------------------------------------------------------

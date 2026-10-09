@@ -29,7 +29,7 @@ import { CalendarWidget, AgedPowerWidget, PackThermalWidget } from "@/components
 
 // Per-cycle feature definitions for the walkthrough chart. These mirror
 // packages/battery-twin/data_loaders/severson_parser.py and must stay in
-// sync with what scripts/export_lstm_onnx.py emits. `color` is used by the
+// sync with what scripts/export_tcn_onnx.py emits. `color` is used by the
 // combined-trend chart so each line is identifiable in the legend.
 const PER_CYCLE_FEATURES: Array<{
   key: string;
@@ -93,7 +93,8 @@ interface Scenario {
     lic_throughput_kj?: number;
     lic_energy_kj_capacity?: number;
     lic_headroom_ratio?: number;
-    // LIC RC physics layer (Eaton XLR 48V × 2 parallel datasheet anchor)
+    // LIC RC physics layer (parameters anchored to Eaton XLR-48R6167-R datasheet × 2 parallel;
+    // that part is an EDLC, not a LIC — production part is Musashi ULTIMO CPQ3300SD)
     lic_v_nominal?: number;
     lic_v_min?: number;
     lic_v_max?: number;
@@ -283,7 +284,7 @@ interface ModelValidation {
     batch: string;
     label: string;
     fleet_status: "healthy" | "warning" | "early_aging" | "critical";
-    fleet_pct: number;            // % of LSTM training-cell distribution in this status bucket (NOT the live /dashboard fleet, which uses 3 physical-state buckets)
+    fleet_pct: number;            // % of TCN training-cell distribution in this status bucket (NOT the live /dashboard fleet, which uses 3 physical-state buckets)
     actual: number;
     predicted: number;
     pi_median: number;            // 50th-percentile MC Dropout estimate (point pred)
@@ -300,7 +301,7 @@ interface ModelValidation {
     test_coverage_90pct: number;        // alias of conformal_test_coverage_90pct
     median_pi_width_cycles: number;     // alias of conformal_median_pi_width_cycles
     // Split-conformal-adaptive post-processing of the raw PI; populated by
-    // scripts/export_lstm_onnx.py since commit f77eee1.
+    // scripts/export_tcn_onnx.py since commit f77eee1.
     raw_test_coverage_90pct?: number;
     raw_median_pi_width_cycles?: number;
     conformal_method?: string;
@@ -497,12 +498,15 @@ function ScopeCharts({
 
       {/* LIC voltage trajectory — only rendered in hybrid mode (LFP-only
           baseline has no LIC engaged). Shows v_lic(t) from the closed-form
-          RC model with a hard reference line at the Eaton XLR datasheet
-          UVLO cutoff so the headroom is visually obvious. */}
+          RC model with a hard reference line at the datasheet UVLO cutoff
+          (parameters anchored to the Eaton XLR-48R6167-R datasheet, which
+          post-competition review found is an EDLC, not a LIC — production
+          part is now Musashi ULTIMO CPQ3300SD) so the headroom is visually
+          obvious. */}
       {mode === "hybrid" && licCutoffV != null && licNominalV != null && (
         <ChartCard
           title="LIC 電容組電壓（閉合解形式 RC 模型）"
-          subtitle={`Eaton XLR 48 V × 2 並聯 · C = ${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
+          subtitle={`48 V 模組 × 2 並聯 · C =${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
           plain="綠線離紅色保護線越遠越安全 — 餘裕充足。"
         >
           <ResponsiveContainer width="100%" height={220}>
@@ -517,7 +521,7 @@ function ScopeCharts({
               />
               <Tooltip content={<DarkTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
-              {/* Eaton datasheet UVLO cutoff — dashed red, labelled. If
+              {/* Datasheet UVLO cutoff — dashed red, labelled. If
                   v_lic ever crosses this line the production design fails
                   for that waveform. The check_whitepaper_numbers.py gate
                   asserts v_min > cutoff at scenario regeneration time. */}
@@ -569,13 +573,17 @@ function ScopeCharts({
             </LineChart>
           </ResponsiveContainer>
           <p className="text-xs text-muted mt-2">
-            從最壞情況壓降到 Eaton XLR UVLO 之間有{" "}
+            從最壞情況壓降到規格書 UVLO 之間有{" "}
             <span className="text-success font-medium">{(licHeadroomV ?? 0).toFixed(2)} V 餘量</span>。壓降{" "}
             <span className="text-foreground">由 ESR 主導</span>：{" "}
             {(((licPeakKw ?? 0) * 1000) / (licNominalV ?? 51.3)).toFixed(0)} A 峰值 ×{" "}
             {((licESR ?? 0) * 1000).toFixed(2)} mΩ ≈ {(licDroopV ?? 0).toFixed(2)} V，
-            而累積電荷項（∫i·dt / C）在峰值能量偏移時貢獻剩餘的約 0.78 V。量產階段會與
-            Eaton 在迴路中驗證 ESR(SOC) + bulk-C(V) 曲線。
+            而累積電荷項（∫i·dt / C）在峰值能量偏移時貢獻剩餘的約 0.78 V。量產階段將以量產選型
+            Musashi ULTIMO CPQ3300SD 的資料表驗證 ESR(SOC) + bulk-C(V) 曲線。
+          </p>
+          <p className="text-xs text-muted mt-1.5">
+            參數錨定：Eaton XLR-48R6167-R 規格書（賽後查證該型號為 EDLC 超級電容、而非 LIC；量產選型已改為
+            Musashi ULTIMO CPQ3300SD，模擬的物理結構不受影響）。
           </p>
         </ChartCard>
       )}
@@ -779,7 +787,7 @@ export function TwinClient({
         <div className="text-xs uppercase tracking-[0.22em] text-primary font-medium">電池數位孿生 · PyBaMM DFN (LFP) + 一階 LIC 等效模型</div>
         <div className="accent-rule bg-primary mt-3 mb-1" />
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-          解決 <span className="gradient-text">GB200 毫秒級瞬變</span>。
+          模擬：以電容分流 <span className="gradient-text">GB200 毫秒級瞬變</span>。
         </h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
           電池的<span className="text-foreground font-medium">數位孿生</span>：物理模型重現真實電池行為，
@@ -795,7 +803,7 @@ export function TwinClient({
       <GlossaryPanel
         termKeys={[
           "digital_twin", "pybamm_dfn", "lfp", "lic", "transient", "c_rate", "uvlo", "graceful",
-          "n_redundancy", "soh", "rul", "calendar_aging", "severson", "lstm", "mape", "onnx_int8",
+          "n_redundancy", "soh", "rul", "calendar_aging", "severson", "tcn", "mape", "onnx_int8",
         ]}
       />
 
@@ -813,7 +821,7 @@ export function TwinClient({
               <CardTitle>{mode === "hybrid" ? "混合 · 功率分流 + 電芯響應" : "基準 · 純 LFP 電芯響應"}</CardTitle>
               <Disclosure summary="您看到的是什麼" className="mt-2">
                 {mode === "hybrid"
-                  ? "DC-DC 控制律將 LPF 截止頻率(≈0.32 Hz,τ=0.5 s)以上的高頻成分導入鋰離子電容;LFP 電池組只承受平滑後的平均功率,電芯電壓維持在平台區、電極應力下降,預期循環壽命延長 ~25 %(提案 §A;此 25 % 主要來自 BBU 低負載排程 §G.3 duty_factor 0.33)。模型範圍:PyBaMM DFN 僅求解 LFP 電芯,LIC 以一階 R_esr × C_bulk 等效模型表示,量產時以 Eaton XLR 資料表曲線驗證。"
+                  ? "DC-DC 控制律將 LPF 截止頻率(≈0.32 Hz,τ=0.5 s)以上的高頻成分導入鋰離子電容;LFP 電池組只承受平滑後的平均功率,電芯電壓維持在平台區、電極應力下降(此處只模擬功率波動,不換算為壽命倍率)。模型範圍:PyBaMM DFN 僅求解 LFP 電芯,LIC 以一階 R_esr × C_bulk 等效模型表示（參數錨定 Eaton XLR-48R6167-R 規格書，賽後查證該型號為 EDLC 而非 LIC）,量產時以量產選型 Musashi ULTIMO CPQ3300SD 的資料表曲線驗證。"
                   : "基準情境:傳統純電池 BBU 承受完整的 ±30 % 功率波動,LFP 電芯電壓追隨每個脈衝,使化學體系承受應力並增加局部發熱。"}
               </Disclosure>
               <PlainInline className="mt-2">
@@ -845,7 +853,7 @@ export function TwinClient({
               value={mode === "hybrid" ? pStdHybrid.toFixed(1) : pStdLfp.toFixed(1)}
               unit="kW"
               tone={mode === "hybrid" ? "success" : "warning"}
-              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×` : "負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受"}
+              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×（±30 %／100 ms 參考波形下的理想無損耗上界,非電池壽命倍率;計入 DC-DC 轉換損耗後典型值約 2.4–3.9×）` : "負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受"}
             />
             <Stat
               label="LIC 峰值能量偏移"
@@ -881,7 +889,7 @@ export function TwinClient({
               }
               hint={
                 mode === "hybrid"
-                  ? `閉合解形式 RC · C ${(hybrid.stats.lic_c_f ?? 0).toFixed(0)} F · ESR ${((hybrid.stats.lic_esr_ohm ?? 0) * 1000).toFixed(2)} mΩ · v_min ${(hybrid.stats.lic_v_min ?? 0).toFixed(2)} V（距 Eaton XLR ${(hybrid.stats.lic_v_min_datasheet ?? 0).toFixed(0)} V 截止有 ${(hybrid.stats.lic_headroom_to_cutoff_v ?? 0).toFixed(1)} V）`
+                  ? `閉合解形式 RC · C ${(hybrid.stats.lic_c_f ?? 0).toFixed(0)} F · ESR ${((hybrid.stats.lic_esr_ohm ?? 0) * 1000).toFixed(2)} mΩ · v_min ${(hybrid.stats.lic_v_min ?? 0).toFixed(2)} V（距規格書 ${(hybrid.stats.lic_v_min_datasheet ?? 0).toFixed(0)} V 截止有 ${(hybrid.stats.lic_headroom_to_cutoff_v ?? 0).toFixed(1)} V）`
                   : "基準情況下未啟用"
               }
             />
@@ -929,7 +937,7 @@ export function TwinClient({
                 若市電中斷，機架能維持供電多久 — 現在以及歷經數年老化之後？
               </div>
               <p className="text-xs text-muted mb-3">
-                這是資料中心採購方最先問的唯一問題。拖動電池組的健康狀態 —
+                此卡以模擬回答這個問題。拖動電池組的健康狀態 —
                 備援續航時間直到壽命末期都遠高於 60 秒優雅關機承諾。
               </p>
               <AgedPowerWidget />
@@ -955,7 +963,7 @@ export function TwinClient({
               value={((mainsFail.stats.lic_v_droop_v as number) ?? 0).toFixed(2)}
               unit="V（相對額定）"
               tone={mainsFail.stats.lic_passes_cutoff ? "success" : "danger"}
-              hint={`v_min ${((mainsFail.stats.lic_v_min as number) ?? 0).toFixed(2)} V · 距 Eaton XLR ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 0).toFixed(0)} V 截止有 ${((mainsFail.stats.lic_headroom_to_cutoff_v as number) ?? 0).toFixed(1)} V 餘量（2× XLR-48-166 並聯）`}
+              hint={`v_min ${((mainsFail.stats.lic_v_min as number) ?? 0).toFixed(2)} V · 距規格書 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 0).toFixed(0)} V 截止有 ${((mainsFail.stats.lic_headroom_to_cutoff_v as number) ?? 0).toFixed(1)} V 餘量（2 組 48 V 模組並聯）`}
             />
             <Stat
               label="LFP 電芯電壓波動"
@@ -1021,7 +1029,11 @@ export function TwinClient({
                   </tbody>
                 </table>
               </div>
-              <p className="text-[11px] leading-relaxed text-muted mt-2">{mainsFail.aged.model?.note}</p>
+              <p className="text-[11px] leading-relaxed text-muted mt-2">
+                連續供電為 {mainsFail.aged.continuous_c_rate_at_eol ?? 1.5} C，老化至 EOL 時仍高於截止電壓，因此連續備援時間受能量而非功率限制（EOL 時仍為 60 s 承諾的{" "}
+                {(mainsFail.aged.runtime_margin_vs_commitment_eol ?? 8).toFixed(0)}×）。6 C 峰值是由 LIC 主導、短於 100 ms 的脈衝（transient_hybrid.json），
+                LFP 老化後的峰值功率保持率不決定系統峰值；表中該列只是揭露 LFP 單電芯本身的數字。內阻增幅採文獻典型值，屬模擬推估、非實測。
+              </p>
             </div>
           )}
 
@@ -1046,7 +1058,7 @@ export function TwinClient({
 
           <ChartCard
             title="LIC 電容組電壓包絡 · 閉合解形式 RC"
-            subtitle={`2× Eaton XLR-48-166 並聯 · v_nominal 51.3 V · 資料表截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`}
+            subtitle={`2 組 48 V 模組並聯（參數錨定 Eaton XLR-48R6167-R 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）· v_nominal 51.3 V · 資料表截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`}
             plain="全程遠離紅色保護線 — 餘裕充足。"
           >
             <ResponsiveContainer width="100%" height={240}>
@@ -1082,7 +1094,7 @@ export function TwinClient({
               <Disclosure summary="您看到的是什麼" className="mt-2">
                 {rackMode === "n-1"
                   ? "V4 故障注入模擬:60 s graceful 事件中於 t=15.0 s 強制 1 台 BBU 離線,由剩餘 7 台分擔原本 8 台的負載。故障後每 BBU 連續 C-rate 由 1.50 C 升至 1.71 C(車規 LFP 連續安全上限 2.5 C → PASS)。整 rack N-1 容錯在實體上極難重現,孿生層只需調整 n_bbu_arr 即可直接驗證。"
-                  : "V3 整 rack 60 s graceful 整合模擬:8 BBU 並聯 + LIC bank(2× Eaton XLR-48-166 並聯)+ 一階互補濾波器 τ=0.5 s + GPU power-cap 三段降載(峰值保持 0.5 s / 線性降載 1.5 s / 連續 58 s)+ 集總電芯熱模型。每 BBU 峰值 6.0 C 脈衝 < 2 s、連續 1.50 C,皆在車規 LFP 資料表允許區內。"}
+                  : "V3 整 rack 60 s graceful 整合模擬:8 BBU 並聯 + 電容組(2 組 48 V 模組並聯,參數錨定 Eaton XLR-48R6167-R 規格書;賽後查證該型號為 EDLC 而非 LIC,量產選型改為 Musashi ULTIMO CPQ3300SD)+ 一階互補濾波器 τ=0.5 s + GPU power-cap 三段降載(峰值保持 0.5 s / 線性降載 1.5 s / 連續 58 s)+ 集總電芯熱模型。每 BBU 峰值 6.0 C 脈衝 < 2 s、連續 1.50 C,皆在車規 LFP 資料表允許區內。"}
               </Disclosure>
               <PlainInline className="mt-2">
                 故意弄壞 1 台：剩 7 台照樣完成 60 秒任務，出力仍在上限內。
@@ -1172,7 +1184,24 @@ export function TwinClient({
               value={((activeRack.stats.v_lic_droop_v as number | undefined) ?? 0).toFixed(2)}
               unit="V（相對額定）"
               tone={activeRack.pass_criteria?.pass_lic_headroom !== false ? "success" : "danger"}
-              hint={`v_min ${((activeRack.stats.v_lic_min as number | undefined) ?? 0).toFixed(2)} V · 距 UVLO 38 V 有 ${((activeRack.stats.v_lic_headroom_to_uvlo_v as number | undefined) ?? 0).toFixed(2)} V 餘量 · LIC 電容組不受 BBU 損失影響`}
+              // rack_n_minus_1.json has no stats.v_lic_min — fall back to the
+              // minimum of series.v_lic (the generator derives the UVLO headroom
+              // from that same series min); hide any reading that is missing
+              // rather than printing a placeholder 0.
+              hint={(() => {
+                const vLic = activeRack.series?.v_lic;
+                const vMin =
+                  (activeRack.stats.v_lic_min as number | undefined) ??
+                  (vLic && vLic.length ? Math.min(...vLic) : undefined);
+                const headroom = activeRack.stats.v_lic_headroom_to_uvlo_v as number | undefined;
+                return [
+                  vMin != null ? `v_min ${vMin.toFixed(2)} V` : null,
+                  headroom != null ? `距 UVLO 38 V 有 ${headroom.toFixed(2)} V 餘量` : null,
+                  "LIC 電容組不受 BBU 損失影響",
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+              })()}
             />
           </div>
 
@@ -1611,24 +1640,31 @@ export function TwinClient({
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] leading-relaxed text-muted mt-2">{pi.topology_ab.verdict}</p>
+            <p className="text-[11px] leading-relaxed text-muted mt-2">
+              先並後串（每電芯獨立電容）相較先串後並，弱電芯瞬變負擔降低約{" "}
+              {pi.topology_ab.weak_cell_transient_reduction_pct.toFixed(0)}%，且高內阻電芯會把較多電流分給電容而自然平衡；兩者電容數相同（2 顆），差別只在擺放位置。
+              此為一階篩檢模擬，尚待工程驗證階段（EVT）實機確認。
+            </p>
           </div>
 
-          <p className="text-[11px] leading-relaxed text-muted">{pi.string.note}</p>
+          <p className="text-[11px] leading-relaxed text-muted">
+            串聯電芯電流相同，整串可用容量受最弱電芯限制，老化速度則由最熱的電芯決定。
+            主動平衡（BoM 規劃採 JK-BMS 8S 主動平衡板）可讓每顆電芯都貢獻容量、減少不均衡損失；此為設計規劃，尚未實測。
+          </p>
         </CardBody>
       </Card>
 
-      {/* Model Validation — real LSTM trained on Severson 2019 + 50 PyBaMM BBU-duty cells */}
+      {/* Model Validation — real TCN trained on Severson 2019 + 50 Severson-anchored synthetic BBU-duty cells (analytic decay, not PyBaMM aging — scripts/generate_bbu_duty_cells.py) */}
       <Card>
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>模型驗證 · 在 Severson + PyBaMM BBU 工作模式上訓練的 LSTM</CardTitle>
+              <CardTitle>模型驗證 · 在 Severson 實測 + Severson 錨定的合成 BBU 工況上訓練的 TCN</CardTitle>
               <Disclosure summary="關於此模型" className="mt-2">
-                {"PyTorch 2 層 LSTM(hidden=64),以 188 顆 LFP 電芯的逐循環摘要特徵訓練(138 顆 Severson 2019 batch 1+2+3 + 50 顆 Severson 錨定的合成 BBU-duty 電芯;解析式衰減 + 各電芯雜訊,非 PyBaMM 老化 — 合成電芯與其標籤共用衰減函數,僅作為工況擴增,見 whitepaper §3.3.5/§3.3.8)。匯出為 ONNX 並於 onnxruntime CPU 上量測,作為 STM32N6 NPU 部署路徑的代理基準。"}
+                {"PyTorch TCN(時間卷積網路:4 層 dilated Conv1d,31,281 參數),以 188 顆 LFP 電芯的逐循環摘要特徵訓練(138 顆 Severson 2019 batch 1+2+3 + 50 顆 Severson 錨定的合成 BBU-duty 電芯;解析式衰減 + 各電芯雜訊,非 PyBaMM 老化 — 合成電芯與其標籤共用衰減函數,僅作為工況擴增,見 whitepaper §3.3.5/§3.3.8)。匯出為 ONNX 並於 onnxruntime CPU 上量測,作為 STM32N6 NPU 部署路徑的代理基準。"}
               </Disclosure>
               <PlainInline className="mt-2">
-                AI 以上百顆電芯的公開實測訓練 — 準與不準的情境都如實標示。
+                AI 以 138 顆公開實測電芯＋50 顆合成 BBU 工況電芯訓練 — 準與不準的情境都如實標示。
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
@@ -1639,25 +1675,31 @@ export function TwinClient({
         <CardBody className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <Stat
-              label="LSTM 測試 MAPE（實測）"
+              label="TCN MAPE（測試集）"
               value={modelValidation.metrics.test_mape_pct.toFixed(1)}
               unit="%"
               tone="primary"
-              hint={`橫跨 Severson + BBU 工況的 ${modelValidation.metrics.n_test} 顆保留電芯 · LSTM 以單一工況的精準度換取跨工況的誠實度（僅 Severson 的 13 特徵 bagged-GBT 達成 8.4 % 對齊論文的基準,見 whitepaper §3.3.3）。v2.2 §B <10 % 承諾由 bagged-GBT 集成路徑達成；此 LSTM 區塊為部署的機隊推論引擎。`}
+              hint={`橫跨 Severson + BBU 工況的 ${modelValidation.metrics.n_test} 顆保留電芯 · TCN 以單一工況的精準度換取跨工況的誠實度（僅 Severson 的 13 特徵 bagged-GBT 達成 8.4 % 對齊論文的基準,見 whitepaper §3.3.3）。v2.2 §B <10 % 承諾由 bagged-GBT 集成路徑達成；此 TCN 區塊為量產路徑採用的壽命預測模型。方法揭露:訓練時 early stopping 以測試集監控(val = test,見 tcn_rul_report.json _meta.protocol)、無獨立驗證集,此測試 MAPE 可能略為樂觀。`}
             />
             <Stat
               label="ONNX 延遲 · 筆電 CPU"
               value={modelValidation.latency.p99_ms.toFixed(2)}
               unit="ms (p99)"
               tone="success"
-              hint={`筆電 CPU 上 FP32 p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms / p99 ${modelValidation.latency.p99_ms.toFixed(2)} ms · INT8 實測 p50 0.23 ms / p99 0.40 ms（3.49× ONNX 壓縮,ΔMAPE +0.10 pp）· STM32N6 NPU 估計 ≤5 ms（ST X-CUBE-AI 規格）· 皆遠低於 50 ms 目標`}
+              // TCN FP32 latency from model_validation.json → latency (generator
+              // scripts/export_tcn_onnx.py). No NPU number is shown: edge
+              // deployment is a concept design and has not been run on hardware.
+              hint={`TCN FP32 ONNX 於筆電 CPU（onnxruntime,${modelValidation.latency.samples} 次）p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms / p99 ${modelValidation.latency.p99_ms.toFixed(2)} ms,遠低於 ${modelValidation.latency.target_ms} ms 目標 · STM32N6 NPU 部署為概念設計、未上板,不列 NPU 延遲`}
             />
             <Stat
               label="ONNX 大小"
               value={modelValidation.model.onnx_size_kb.toFixed(1)}
               unit="KiB"
               tone="default"
-              hint={`FP32 計算圖；權重總計 219 KiB FP32 → 63 KiB INT8（實測）· 可放入 STM32N6 1.6 MB ML FLASH · 與 PyTorch 數值誤差在 ${modelValidation.model.onnx_torch_max_diff.toExponential(1)} 以內`}
+              // INT8 numbers from data/processed/tcn_rul_report.json → tcn_quantisation
+              // (fp32_onnx_kib 127.66, dynamic_int8_kib 54.18,
+              // dynamic_compression_ratio 2.356, dynamic_int8_delta_mape_pp 0.162).
+              hint={`TCN FP32 計算圖；動態 INT8（僅量化權重）127.7 → 54.2 KiB（2.36× 壓縮,ΔMAPE +0.16 pp）；說明書所列 219 → 63 KiB／3.49×（ΔMAPE +0.10 pp）為前一版基線模型的量化結果 · 邊緣端 STM32N6 為概念設計、未上板 · 與 PyTorch 數值誤差在 ${modelValidation.model.onnx_torch_max_diff.toExponential(1)} 以內`}
             />
             <Stat
               label="測試 R²"
@@ -1667,7 +1709,7 @@ export function TwinClient({
             />
           </div>
 
-          {/* Conformal sharpening summary — shows the 44 % PI tightening
+          {/* Conformal sharpening summary — shows the PI tightening (computed below)
               from split-conformal post-processing without taking up a
               whole headline tile. Only renders when the JSON ships the
               new conformal_* keys (commit f77eee1 onwards). */}
@@ -1719,7 +1761,11 @@ export function TwinClient({
           return (
           <ChartCard
             title={`預測 vs 實際循環壽命 · 全部 ${modelValidation.predicted_vs_actual.length} 顆電芯`}
-            subtitle={`切分 ${modelValidation.metrics.split} · ${modelValidation.metrics.n_train} 訓練 · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} 校準 · ${modelValidation.metrics.n_test} 測試`}
+            // Split label: model_validation.json metrics.split reads "random_80_20_seed42"
+            // (generator label bug — TEST_SIZE only); the actual protocol is
+            // random_60_20_20_seed42 per tcn_rul_report.json _meta.split and the
+            // same JSON's description ("Same seed=42 / 60-20-20 split").
+            subtitle={`切分 random 60/20/20（seed 42）· ${modelValidation.metrics.n_train} 訓練 · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} 校準 · ${modelValidation.metrics.n_test} 測試`}
             plain="點越貼近對角線，預測越準 — 中間空白是模型沒看過的區間。"
           >
             <ResponsiveContainer width="100%" height={360}>
@@ -1796,7 +1842,7 @@ export function TwinClient({
                   legendType="none"
                   isAnimationActive={false}
                 />
-                {/* Four series: regime (Severson lab fast-charge vs PyBaMM
+                {/* Four series: regime (Severson lab fast-charge vs synthetic
                     BBU-duty) × split (train vs held-out test). Colour family
                     encodes regime, brightness encodes split — so the
                     "regime gap" between Severson lifetimes (≤2,000) and BBU
@@ -1817,14 +1863,14 @@ export function TwinClient({
                   fill="rgba(34,211,238,0.95)"
                 />
                 <Scatter
-                  name="PyBaMM BBU · 訓練"
+                  name="合成 BBU 工況 · 訓練"
                   data={modelValidation.predicted_vs_actual.filter(
                     (p) => p.batch === "bbu" && p.split === "train",
                   )}
                   fill="rgba(251,191,36,0.55)"
                 />
                 <Scatter
-                  name="PyBaMM BBU · 測試"
+                  name="合成 BBU 工況 · 測試"
                   data={modelValidation.predicted_vs_actual.filter(
                     (p) => p.batch === "bbu" && p.split === "test",
                   )}
@@ -1834,7 +1880,7 @@ export function TwinClient({
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
               冷藍色 = <span className="text-foreground font-medium">Severson 2019 電芯</span>（100–2,000 循環）；
-              暖琥珀色 = <span className="text-foreground font-medium">PyBaMM BBU 工作模式電芯</span>（5,000–13,000 循環）。
+              暖琥珀色 = <span className="text-foreground font-medium">Severson 錨定的合成 BBU 工況電芯</span>（5,000–13,000 循環）。
               兩者之間的 <span className="text-warning font-medium">2,000–4,000 空白</span>就是{" "}
               <span className="text-warning font-medium">工況落差</span>。
             </p>
@@ -1843,7 +1889,12 @@ export function TwinClient({
               因此要填補中段需要中等應力的合成電芯。
               跨化學體系遷移（NASA NMC、CALCE LCO）已測試並排除（whitepaper §B）；
               答案是增加 LFP 涵蓋範圍,而非增加化學體系。下方逐顆檢視中的 90 % 預測區間 —
-              MC Dropout 經 split conformal 後處理,相較原始取樣器收窄 44 % 同時維持涵蓋率 ≥90 % —
+              MC Dropout 經 split conformal 後處理,相較原始取樣器收窄{" "}
+              {modelValidation.uncertainty?.conformal_median_pi_width_cycles != null &&
+              modelValidation.uncertainty?.raw_median_pi_width_cycles
+                ? `${((1 - modelValidation.uncertainty.conformal_median_pi_width_cycles / modelValidation.uncertainty.raw_median_pi_width_cycles) * 100).toFixed(0)} %`
+                : "（未提供）"}{" "}
+              同時維持涵蓋率 ≥90 % —
               逐顆電芯量化跨越落差區的不確定性。
             </Disclosure>
           </ChartCard>
@@ -1857,6 +1908,15 @@ export function TwinClient({
             overallMapePct={modelValidation.metrics.test_mape_pct}
             conformalQFactor={modelValidation.uncertainty?.conformal_q_factor}
             conformalNCalibration={modelValidation.uncertainty?.conformal_n_calibration}
+            conformalNarrowingPct={
+              modelValidation.uncertainty?.conformal_median_pi_width_cycles != null &&
+              modelValidation.uncertainty?.raw_median_pi_width_cycles
+                ? (1 -
+                    modelValidation.uncertainty.conformal_median_pi_width_cycles /
+                      modelValidation.uncertainty.raw_median_pi_width_cycles) *
+                  100
+                : undefined
+            }
           />
 
           <div className="rounded-md border border-border bg-background/30 px-4 py-2.5">
@@ -1869,7 +1929,7 @@ export function TwinClient({
         </CardBody>
       </Card>
 
-      {/* Inference walkthrough — pick a cell, see exactly what the LSTM did */}
+      {/* Inference walkthrough — pick a cell, see exactly what the TCN did */}
       {modelValidation.walkthroughs && modelValidation.walkthroughs.length > 0 && (
         <InferenceWalkthrough walkthroughs={modelValidation.walkthroughs} />
       )}
@@ -1900,7 +1960,7 @@ export function TwinClient({
                 <span className="text-foreground font-medium">τ = 0.5 s</span>,截止 ≈ 0.32 Hz。
               </>
             }
-            details="LIC 側以其 R_esr × C_bulk 主導時間常數表示（Eaton XLR 48 V / 166 F · ~5 mΩ ESR → τ ≈ 0.83 s）；展示刻意採用較緊的控制律設定點 τ = 0.5 s,使 DC-DC 比被動耦合推送更多高頻成分到 LIC。高於截止的成分導向 LIC,緩慢殘量導向 LFP。10 Hz GB200 脈衝遠高於截止；30–90 s 優雅關機事件遠低於截止。此處未建模 LIC 偽電容、電極動力學與自放電 — 量產階段使用 Eaton 資料表的 ESR(SOC) + bulk-C(V) 曲線或迴路內量測。"
+            details="LIC 側以其 R_esr × C_bulk 主導時間常數表示（參數錨定 Eaton XLR-48R6167-R 規格書 48 V / 166 F · ~5 mΩ ESR → τ ≈ 0.83 s；該型號賽後查證為 EDLC 而非 LIC）；展示刻意採用較緊的控制律設定點 τ = 0.5 s,使 DC-DC 比被動耦合推送更多高頻成分到 LIC。高於截止的成分導向 LIC,緩慢殘量導向 LFP。10 Hz GB200 脈衝遠高於截止；30–90 s 優雅關機事件遠低於截止。此處未建模 LIC 偽電容、電極動力學與自放電 — 量產階段使用量產選型 Musashi ULTIMO CPQ3300SD 資料表的 ESR(SOC) + bulk-C(V) 曲線或迴路內量測。"
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}
@@ -2017,10 +2077,12 @@ function Method({
 //   - a bar (left axis) for cell count per bucket
 //   - a line (right axis) for that bucket's MAPE
 // Story (post BBU-duty augmentation): the Long bucket is now dominated by
-// PyBaMM BBU cells (5,000–13,000 cycle lifetimes) rather than the few
+// synthetic BBU-duty cells (5,000–13,000 cycle lifetimes) rather than the few
 // Severson long cells, so adding BBU cells widened the model's regime
-// coverage at the cost of nudging overall test MAPE up to ~19 % from the
-// Severson-only ~16 % baseline. The Short bucket (n≈4 cells) still shows
+// coverage; overall TCN test MAPE is 18.1 %. (For reference only: the
+// previous-baseline LSTM trained on Severson alone scored 16.2 % —
+// data/processed/lstm_severson_only_eval.json — different model and test
+// split, so not a like-for-like delta.) The Short bucket (n≈4 cells) still shows
 // the model's worst miss because Severson early failures are sparse.
 
 type Bucket = {
@@ -2089,11 +2151,13 @@ function ErrorByLifetimeBucket({
   overallMapePct,
   conformalQFactor,
   conformalNCalibration,
+  conformalNarrowingPct,
 }: {
   data: ModelValidation["predicted_vs_actual"];
   overallMapePct: number;
   conformalQFactor?: number;
   conformalNCalibration?: number;
+  conformalNarrowingPct?: number;
 }) {
   const buckets = useMemo(() => buildBuckets(data), [data]);
 
@@ -2181,16 +2245,17 @@ function ErrorByLifetimeBucket({
         <span className="text-warning font-medium">MAPE 最大</span>,因為 Severson 僅有少數幾顆{" "}
         <span className="text-foreground font-medium">早期失效電芯</span>。
       </p>
-      <Disclosure summary={`為何 LSTM MAPE 約為 ~${overallMapePct.toFixed(0)} % 以及 PIs 如何處理它`} className="mt-2">
+      <Disclosure summary={`為何 TCN MAPE 約為 ~${overallMapePct.toFixed(0)} % 以及 PIs 如何處理它`} className="mt-2">
         長壽命分組現在由 50 顆以 Severson 為基準、循環壽命 5,000–13,000 的合成 BBU 工作模式電芯主導 —
-        加入它們拓寬了模型的工況涵蓋範圍,使其能描述實際的 BBU 運作點,
-        但將整體測試 MAPE 從僅 Severson 的 ~16 % 提升到 {overallMapePct.toFixed(1)} %（whitepaper §3.3.7 / §3.3.8）。
+        加入它們拓寬了模型的工況涵蓋範圍,使其能描述實際的 BBU 運作點。
+        目前 TCN 整體測試 MAPE 為 {overallMapePct.toFixed(1)} %（whitepaper §3.3.7 / §3.3.8）。供參考：前一版基線（LSTM）僅用 Severson 訓練時為 16.2 %（lstm_severson_only_eval.json），模型與測試集不同，非同條件比較。
         短壽命分組是最明顯的資料缺口（Severson 早期失效電芯稀少）。
         跨化學體系遷移（NASA NMC、CALCE LCO）已測試並排除
         （§3.3.5 / 附錄 B）；答案是增加 LFP 早期失效資料,而非增加化學體系。上方逐顆檢視為每顆電芯回報 90 % 預測區間 —
         MC Dropout 經 split conformal 後處理（q_factor{" "}
         {conformalQFactor != null ? conformalQFactor.toFixed(2) : "0.56"}{" "}
-        於 {conformalNCalibration ?? 37} 顆電芯的校準集,§3.3.7）,相較原始收窄 44 %
+        於 {conformalNCalibration ?? 37} 顆電芯的校準集,§3.3.7）,
+        {conformalNarrowingPct != null ? `中位區間寬度相較原始收窄 ${conformalNarrowingPct.toFixed(0)} %,` : ""}
         同時維持涵蓋率 ≥90 %。
       </Disclosure>
     </ChartCard>
@@ -2221,7 +2286,7 @@ function RotatedTick(props: { x?: number; y?: number; payload?: { value: string 
 
 // ---------------------------------------------------------------------------
 // Inference walkthrough — pick a cell, see the per-cycle measurements the
-// LSTM ingested over its first 100 cycles. Earlier versions also showed
+// TCN ingested over its first 100 cycles. Earlier versions also showed
 // hidden-state activation, cumulative prediction, and the dense-head
 // breakdown; those were removed because the input charts alone already
 // carry the demo's story (and adding more was noise for non-ML viewers).
@@ -2284,7 +2349,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                   而非 PyBaMM 老化（完整 PyBaMM 100 顆電芯 × 10k 循環在運算上
                   不可行）。它們僅作為<em>工況擴增</em> — 量產證據建立在真實的 Severson 電芯上。
                 </span>{" "}
-                LSTM 在兩種工況上訓練（共 188 顆電芯）,使其能描述
+                TCN 在兩種工況上訓練（共 188 顆電芯）,使其能描述
                 實際的 BBU 運作點 — 挑選一顆 `bbu_*` 電芯,觀察模型在您客戶電池組將實際運作的
                 工況上會如何預測。Whitepaper
                 §3.3.5 涵蓋校準方法論。
@@ -2313,7 +2378,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             label="機隊狀態"
             value={STATUS_LABEL[cell.fleet_status]}
             tone={STATUS_TONE[cell.fleet_status]}
-            hint={`${cell.fleet_status} · 約佔 LSTM 訓練電芯分布的 ~${cell.fleet_pct.toFixed(0)}%`}
+            hint={`${cell.fleet_status} · 約佔 TCN 訓練電芯分布的 ~${cell.fleet_pct.toFixed(0)}%`}
           />
           <Stat
             label="實際循環壽命"
@@ -2322,14 +2387,14 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             tone="default"
           />
           <Stat
-            label="預測（中位數）"
-            value={cell.pi_median.toLocaleString()}
+            label="預測（點預測）"
+            value={cell.predicted.toLocaleString()}
             unit="循環"
             tone="primary"
-            hint={`90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout 100 個樣本 + split conformal`}
+            hint={`誤差欄以此點預測計算 · MC Dropout 中位數 ${cell.pi_median.toLocaleString()} · 90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout 100 個樣本 + split conformal`}
           />
           <Stat
-            label="誤差"
+            label="誤差（點預測 vs 實際）"
             value={`${errorPct >= 0 ? "+" : ""}${errorPct.toFixed(1)}`}
             unit="%"
             tone={
@@ -2352,7 +2417,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <div>
             <h4 className="text-sm font-medium">每循環量測（循環 2 → 100）</h4>
             <p className="text-xs text-muted leading-relaxed mt-1">
-              <span className="text-foreground font-medium">全部七項 LSTM 輸入特徵</span>,逐條正規化至{" "}
+              <span className="text-foreground font-medium">全部七項 TCN 輸入特徵</span>,逐條正規化至{" "}
               <span className="text-foreground font-medium">[0, 1]</span>。游標懸停以查看原始數值。
             </p>
           </div>

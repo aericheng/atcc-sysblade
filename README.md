@@ -29,7 +29,7 @@
 | 1 | Tier-A「LIC 鋰離子電容」錨定 Eaton XLR | Eaton XLR-48R6167-R 官方 datasheet 為 **EDLC 超級電容**;**量產 Tier-A 改採真 LIC(Musashi ULTIMO CPQ3300SD)** |
 | 2 | 5.7× / 3.5× 削峰 | **±30%/100ms reference 波形理想無損耗上界、非壽命倍率**;含 DC-DC 損耗後典型 **2.4–3.9×、>100Hz 退到 ~1.5×** |
 | 3 | 雙向 DC-DC 前級 | OCP ORV3 禁 Oring 後 bus 放電容 → **DC-DC 為合規必要件**;sim 為開環等效,**電力電子層** closed-loop 為 EVT deliverable(監督層閉環 SOH→τ 已於 **V8** 模擬驗證,`make v8`) |
-| 4 | STM32N6 NPU 推論 LSTM(54.7 µs) | Neural-ART **NPU 不支援 LSTM/GRU**;量產 RUL 改 **TCN/1D-CNN**(NPU 原生 + 可 static INT8 量化) |
+| 4 | STM32N6 NPU 推論 LSTM(競賽期延遲估計,已撤回) | Neural-ART **NPU 不支援 LSTM/GRU**;量產 RUL 改 **TCN/1D-CNN**(NPU 原生 + 可 static INT8 量化) |
 | 5 | Tier-C 單晶片整合(含 OpenBMC) | M55 無 MMU 跑不了 OpenBMC;**拆三層**(BMS-AFE + safety MCU + N6 推論),BBU 走 MCTP/PLDM **不自稱 BMC** |
 
 > 另:先發空窗已關;真實 BOM 約 v2.2 之 2.0–2.7×;認證須擴 UL 9540 / 9540A;cell 在地化以 pack 組裝為主、進口走 UFLPA。詳 `docs/product_realization/`(本地交付,未公開於 repo)。
@@ -45,9 +45,9 @@
 
 - **GB200 毫秒級電壓瞬態** — 純電池 BBU 撐不住 50–200 ms 壓降造成下游 PSU 重啟
 - **48 V → ±400 V HVDC 過渡** — Vertiv 等只賣 48 V,客戶 2027 後須 forklift 換代
-- **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,業界無公開 SaaS 提供 BBU-level RUL
+- **1000+ 節 fleet 維運** — 人工巡檢 hit-rate 低,缺乏可提供 BBU-level RUL 預測的維運工具
 
-**6 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢† · 33 % 客戶 10 年 TCO 下降 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(完整推導見[白皮書](docs/whitepaper.md))。
+**5 個關鍵數字**:5.7× 功率波動下降 · ~25 % LFP 浮充壽命優勢†〔競賽期推論,已不再引用〕 · 60 sec graceful @ 120 kW **rack** peak(**8 台 BBU 並聯 / per rack**,動態 ramp profile,業師最關注點見下) · 8.38 % RUL 預測 MAPE · 3.49× INT8 量化壓縮(前一版基線 LSTM;現行 TCN 動態 INT8 為 2.36×)(完整推導見[白皮書](docs/whitepaper.md))。
 
 > †「~25 %」的主要來源是 **BBU 低 duty 排程**(§G.3 `duty_factor=0.33`,~50 cyc/yr vs Severson 1C/1C 實驗室 cadence),**不是** hybrid 拓樸貢獻;hybrid 拓樸的 per-Ah 損傷差由 rainflow + Wang 2011 獨立驗證(`aging_rainflow_validation.json`)估算為 worst-case ~5 %、demo waveform 近於 neutral。
 
@@ -60,7 +60,7 @@
 | 鏈 | 驗證什麼 | 判準 / 結果 | Artifact |
 |---|---|---|---|
 | **V1** | PyBaMM Prada2013 vs Severson 實測放電曲線 | RMS 誤差 **2.15 %**(門檻 ≤ 5 %)[v] | `data/processed/pybamm_lfp_fit_error.json` |
-| **V2** | LIC 一階 RC 模型 vs Eaton XLR datasheet(含 4 條非線性延伸) | droop 低估 ≤ **2.93 %**(門檻 10 %)[v] | `scripts/eval_lic_rc_fit.py` |
+| **V2** | 電容一階 RC 模型 vs Eaton XLR datasheet(該型號實為 EDLC,見勘誤 #1;含 4 條非線性延伸) | droop 低估 ≤ **2.93 %**(門檻 10 %)[v] | `scripts/eval_lic_rc_fit.py` |
 | **V3** | 整 rack 60 s graceful 動態模擬(含熱模型) | 電壓 / 溫度 / C-rate 全程合規,DoD 2.66 % [v] | `apps/web/public/scenarios/rack_60s_graceful.json` |
 | **V4** | N-1 容錯:t = 15 s 拔除 1 台 BBU | 剩 7 台撐滿 60 s,單台負載 +14 % 仍合規 [v] | `apps/web/public/scenarios/rack_n_minus_1.json` |
 | **V5** | Severson → BBU duty 跨工況 transfer | MAPE 9.04 % → **80.20 %**(誠實揭露之限制)| `data/processed/severson_transfer_mape.json` |
@@ -98,7 +98,7 @@
 
 | 時段 | rack 負載 | 每台 BBU | per-cell C-rate | 主導機制 |
 |---|---:|---:|:--:|---|
-| **t = 0–500 ms** | 120 kW 滿載 | 15 kW | **6C peak** | LIC 主導(2× XLR-48-166 共 ~290 kJ usable,可單獨撐 ~2.4 秒)|
+| **t = 0–500 ms** | 120 kW 滿載 | 15 kW | **6C peak** | 電容主導(2× XLR-48-166 共 ~290 kJ usable,可單獨撐 ~2.4 秒;XLR 實為 EDLC,見勘誤 #1)|
 | **t = 500 ms–2 s** | 120 → 30 kW(線性 ramp)| 15 → 3.75 kW | 6C → 1.5C | BMC 觸發 GPU power-cap,LIC + LFP 共同 ramp down |
 | **t = 2–60 s** | 30 kW 穩態(checkpoint + idle)| 3.75 kW | **1.5C 連續** | LFP 獨撐(LIC 已耗盡進入待機)|
 
@@ -132,9 +132,9 @@
 
 | 路由 | 功能 | 突出技術 |
 |---|---|---|
-| [`/`](https://sysblade-atcc.vercel.app/) | 首頁 — 5 張頭條卡 + 板塊導引 | 從 scenario JSON 動態取真實量測值 |
-| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (LIC, Eaton XLR datasheet anchor)** + TCN RUL(LSTM baseline)+ 90 % MC-Dropout PI 經 split conformal 縮窄 44 % + 示波器掃描動畫 + **v_lic(t) chart 顯示 UVLO 餘裕** |
-| [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10 年 TCO 計算器 | 4 個 slider × 3 個 preset · 純 HTML/Tailwind bar chart · **Payback period tile + 5 條 §G.3 source anchor panel** |
+| [`/`](https://sysblade-atcc.vercel.app/) | 首頁 — 單頁滾動敘事(痛點／即時模擬／分頻／斷電 60 秒／AI／架構／驗證) | 從 scenario JSON 動態取模擬輸出值 |
+| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (電容側, Eaton XLR datasheet anchor;該型號實為 EDLC)** + TCN RUL(LSTM baseline)+ 90 % MC-Dropout PI 經 split conformal 縮窄約 50 %(中位寬度 2,697→1,359 cycles) + 示波器掃描動畫 + **v_lic(t) chart 顯示 UVLO 餘裕** |
+| `/tco`(不設連結) | 競賽期 10 年 TCO 試算工具,已從導覽移除 | 數字依使用者輸入的假設試算,非實際或保證節省;不引用任何固定節省比例 |
 | [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000 台機隊 Fleet Dashboard | US fleet map + 三層服務分層 + per-device drilldown(SOH / RUL / 熱 / 操作層 metrics + **LIC bank envelope headroom bar**)· 全頁 SIMULATED DATA 浮水印 · site 名為虛擬 persona |
 
 ![Sysblade architecture](docs/figures/architecture.png)
@@ -159,14 +159,14 @@ scripts/export_lstm_onnx.py               └ apps/web/public/scenarios/
 
 ### 物理層分層 — 為什麼 LIC 不走 PyBaMM
 
-LFP 走 PyBaMM DFN(化學最 critical);LIC 走 closed-form 一階 RC 等效模型,參數錨 Eaton XLR datasheet。
+LFP 走 PyBaMM DFN(化學最 critical);LIC 走 closed-form 一階 RC 等效模型,參數錨 Eaton XLR datasheet(該型號實為 EDLC 超級電容,量產改採 Musashi ULTIMO LIC,見勘誤 #1)。
 Demo waveform worst-case droop 2.32 V、距 UVLO 餘裕 10.98 V;droop 95 % 來自 ESR → 降 droop 加並聯模組比加電量有效。
 
 <details>
 <summary><b>展開 RC 參數表與 droop 解析</b></summary>
 
 **LFP cell 走 PyBaMM DFN**(化學最複雜、最 critical);**LIC 側走 closed-form 一階 RC 等效模型**
-(`_simulate_lic_rc()` in `scripts/generate_twin_scenarios.py`),參數錨 Eaton XLR-48-166 × 2 並聯 datasheet:
+(`_simulate_lic_rc()` in `scripts/generate_twin_scenarios.py`),參數錨 Eaton XLR-48-166 × 2 並聯 datasheet(EDLC,見勘誤 #1):
 
 | 參數 | 值 | 來源 |
 |---|---:|---|
@@ -179,7 +179,7 @@ Demo waveform 跑出來:**worst-case droop 2.32 V**(從 51.3 → 48.98 V)、**he
 `passes_cutoff = true`。Droop 組成:**95 % 來自 ESR drop**(926 A peak × 2.5 mΩ)、5 % 來自累積電容放電
 (13.31 kJ ÷ 332 F)— 換句話說 production 若需降 droop,加並聯模組(降 ESR)比加電量(加 C)有效。
 **未模**:pseudo-capacitance、temperature-dependent ESR、self-discharge、electrode kinetics
-(Helmholtz layer dynamics)— production 階段以 Eaton in-the-loop 量測校正。`/twin` 第 3 張 ChartCard
+(Helmholtz layer dynamics)— production 階段以實際選用元件 in-the-loop 量測校正。`/twin` 第 3 張 ChartCard
 渲染 v_lic(t) 配紅色 dashed line 標 UVLO,業師可直接指螢幕。
 
 </details>
@@ -193,7 +193,7 @@ Demo waveform 跑出來:**worst-case droop 2.32 V**(從 51.3 → 48.98 V)、**he
 cd apps/web && pnpm install
 pnpm dev                                      # → http://localhost:3000
 
-# 2. Python 環境(可選 — 跑 PyBaMM / LSTM 訓練才需要)
+# 2. Python 環境(可選 — 跑 PyBaMM / RUL 模型訓練才需要)
 python -m uv venv .venv --python 3.11
 .venv/Scripts/activate                        # Windows bash
 python -m uv pip install -e "packages/battery-twin[dev,api]"
@@ -216,13 +216,13 @@ Severson .mat v7.3 訓練資料(8.3 GB)需手動下載,流程見 [`docs/severson
 <summary><b>更多 reproducibility commands</b>(LSTM 重訓 / 全 sweep / INT8 量化 / cross-dataset / NPU 靜態分析)</summary>
 
 ```bash
-# 重訓 LSTM + 匯出 ONNX(~3 min CPU)
+# 重訓前一版基線 LSTM + 匯出 ONNX(~3 min CPU;會覆寫 model_validation.json,現行 TCN 以 scripts/export_tcn_onnx.py 重產)
 python scripts/export_lstm_onnx.py            # → apps/web/public/scenarios/model_validation.json
 
 # OLS / GBT / bagged-* 全 sweep(模型卡那張表)
 python scripts/eval_severson_models.py        # → data/processed/severson_model_eval.json
 
-# INT8 動態量化驗證(白皮書附錄 C.5,~ 30 s)
+# INT8 動態量化驗證(前一版基線 LSTM;白皮書附錄 C.5,~ 30 s)
 python scripts/quantize_lstm_onnx.py          # → data/processed/lstm_quantization_report.json
 
 # Cross-dataset(Severson → NASA NMC)跨化學測試
@@ -274,7 +274,7 @@ python scripts/onnx_static_analysis.py        # → data/processed/x_cube_ai_sta
 | Test R² | **0.86** | 跨 regime trade-off 後仍維持高解釋度 |
 | ONNX size | FP32 219 KiB → **INT8 63 KiB(3.49× 壓縮 measured)** | 遠小於 STM32N6 1.6 MB ML FLASH;`scripts/quantize_lstm_onnx.py` 量測 |
 | INT8 精度退化 | **ΔMAPE +0.10 pp**(19.10 → 19.20 %),R² 不變 | 平均預測偏移 0.57 %,STM32N6 部署的 go/no-go 證據 |
-| ONNX 延遲(laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | 50 ms 規格達標 ~125×;STM32N6 NPU 推估 27–109 µs(靜態 graph 分析,`scripts/onnx_static_analysis.py`)|
+| ONNX 延遲(laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | 50 ms 規格達標 ~125×;STM32N6 NPU 為概念設計、延遲未上板實測(靜態 graph 分析見 `scripts/onnx_static_analysis.py`)|
 | 不確定性方法 | MC Dropout + split conformal | 100 forward passes,**raw 1910 → conformal 1075 cycles**(縮窄 44 %),test coverage 100 %、≥ 90 % 保證,校準集 37 cells held-out |
 
 **Production 推論主力為 TCN**(§3.4.1;LSTM 為文件化 baseline);bagged-GBT 13-feat 為「Severson paper 對齊」的學術 baseline(< 10 % 承諾達標)。
@@ -324,7 +324,7 @@ atcc/
 │   ├── generate_adaptive_split_sim.py            V8 監督層閉環(SOH → τ 自適應)sim
 │   ├── generate_bbu_duty_cells.py                50 顆 Severson-anchored synthetic BBU duty cell(analytic decay)
 │   ├── eval_pybamm_lfp_fit.py                    V1 PyBaMM vs Severson 實測 fit(2.15 % RMS)
-│   ├── eval_lic_rc_fit.py                        V2 LIC RC vs Eaton datasheet(含非線性延伸)
+│   ├── eval_lic_rc_fit.py                        V2 電容 RC vs Eaton datasheet(EDLC;含非線性延伸)
 │   ├── eval_severson_transfer.py                 V5 跨工況 transfer MAPE
 │   ├── eval_severson_models.py                   OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack 全 sweep
 │   ├── eval_cross_dataset.py                     Severson → NASA NMC 跨化學測試

@@ -9,7 +9,7 @@ const links = [
   { href: "/", label: "首頁" },
   { href: "/tour", label: "導覽" },
   { href: "/twin", label: "電池數位孿生" },
-  { href: "/tco", label: "TCO 計算器" },
+  // /tco is hidden from the nav (page and URL kept) — 2026-10 decision.
   { href: "/dashboard", label: "機隊儀表板" },
 ];
 

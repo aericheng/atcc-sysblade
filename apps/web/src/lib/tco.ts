@@ -61,7 +61,7 @@ export const TCO_LINE_ITEM_SOURCES: Array<{
     label: "瞬變停機成本",
     source: "v2.2 §G.3 Table 6, row 3",
     anchor:
-      "電壓驟降導致重啟的停機成本,保守採用 Uptime Institute 停電分析常引用的機架級瞬變事件成本區間估算（方向性 — 具體期數 + 頁碼由團隊待補）。傳統 NMC 在 80 kW × 100 ms 下約每年 ~6 次驟降重啟 ≈ $4800/rack/10y；Sysblade LIC 吸收次秒級事件 → 降低約 ~75 % 至 $1200/rack/10y（依 §B.1 LFP 功率應力下降 5.7×）。",
+      "電壓驟降導致重啟的停機成本,保守採用 Uptime Institute 停電分析常引用的機架級瞬變事件成本區間估算（方向性 — 具體期數 + 頁碼由團隊待補）。傳統 NMC 在 80 kW × 100 ms 下約每年 ~6 次驟降重啟 ≈ $4800/rack/10y；Sysblade LIC 吸收次秒級事件 → 降低約 ~75 % 至 $1200/rack/10y（依 §B.1 LFP 功率應力下降 5.7×；此為 ±30%／100 ms 參考波形下的理想無損耗上界，非電池壽命倍率，計入 DC-DC 損耗典型 2.4–3.9×、波動頻率 >100 Hz 時約 1.5×，且全部來自模擬）。",
   },
   {
     key: "ops",

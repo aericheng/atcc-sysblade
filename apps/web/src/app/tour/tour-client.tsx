@@ -51,9 +51,7 @@ const SLIDES = [
   { id: "v4-crate",      label: "V4 C-rate",     ms: 4900 },
   { id: "v5-mape",       label: "V5 MAPE",       ms: 4400 },
   { id: "v5-honest",     label: "V5 揭露",       ms: 6400 },
-  { id: "edge",          label: "Edge AI",       ms: 4700 },
-  { id: "tco-headline",  label: "TCO",           ms: 3200 },
-  { id: "tco-scenarios", label: "TCO scenarios", ms: 3600 },
+  { id: "edge",          label: "Edge 概念",     ms: 5200 },
   { id: "ride",          label: "Ride-through",  ms: 3800 },
   { id: "verify",        label: "Reproduce",     ms: 4500 },
   { id: "cta",           label: "CTA",           ms: 3500 },
@@ -274,10 +272,10 @@ export function TourClient({
         <div className="max-w-5xl mx-auto px-6 w-full">
           <Tag>痛點</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            北美 Tier-2/3 AI 機房,沒有整合方案。
+            北美 Tier-2/3 AI 機房的三個痛點
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            三個痛點、三套方案 — 市場缺一個整合解。
+            分屬電化學、電力電子、機器學習三個領域 — 跨領域整合成本高，長期被分開處理。
           </PlainInline>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             <PainIconCard icon={<Zap className="h-7 w-7" />} kicker="毫秒瞬態"
@@ -303,7 +301,7 @@ export function TourClient({
           <h2 className="mt-4 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight anim-flip-in">
             <span className="block">LFP + LIC</span>
             <span className="block text-primary anim-pulse-glow">混合拓樸</span>
-            <span className="block text-3xl sm:text-4xl text-muted mt-3">+ AI 數位孿生 SaaS</span>
+            <span className="block text-3xl sm:text-4xl text-muted mt-3">+ 數位孿生 AI 維運服務</span>
           </h2>
         </div>
       </Slide>
@@ -316,7 +314,7 @@ export function TourClient({
             8 BBU 並聯 per rack,N+1 容錯
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            8 台一組、多留 1 台 — 壞一台，服務照常。
+            8 台一組、多留 1 台 — 壞一台，剩 7 台仍完成 60 秒任務（模擬）。
           </PlainInline>
           <div className="mt-10 rounded-2xl border border-border bg-surface/40 p-6 sm:p-10">
             <div className="flex flex-wrap justify-center gap-2.5">
@@ -369,19 +367,19 @@ export function TourClient({
         <div className="max-w-4xl mx-auto px-6 text-center w-full">
           <Tag>V2 · Datasheet 自洽</Tag>
           <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-            LIC RC 與 Maxwell 廠商 IPEAK 公式完全對齊
+            電容 RC 等效電路 vs 廠商規格書
           </h2>
-          <CountUpNumber active={active === 5} target={0} decimals={3} unit="% 脈衝誤差" />
+          <CountUpNumber active={active === 5} target={2.93} decimals={2} unit="% 壓降低估" />
           <FormulaCard className="mt-8 anim-slide-right anim-stagger-3"
             formula="IPEAK = (V_R / 2) ÷ (Δt/C + R)"
             substitution="190 A = 8 V / (1.16 s / 58 F + 22 mΩ)"
             check="模型 V drop @ Δt=1.16s = 8.00 V · 規格書 8.00 V"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            加 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降誤差 2.93 % &lt; 10 %
+            純 RC 代入規格書 IPEAK 公式(同一公式反算,僅為自洽檢查):脈衝壓降誤差 0.000 % · 對 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降低估 2.93 %,門檻 10 %
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            與原廠規格書完全一致 — 不是自己說了算。
+            壓降低估 ≤ 2.93 %（門檻 10 %）— 對照原廠規格書驗算，不是自己說了算。
           </PlainInline>
         </div>
       </Slide>
@@ -389,7 +387,7 @@ export function TourClient({
       {/* 7 — V3 rack power chart (Recharts animated draw) */}
       <Slide idx={6} active={active === 6} refCb={(el) => (sectionRefs.current[6] = el)}>
         <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>V3 · 整 rack 60 秒</Tag>
+          <Tag>V3 · 整 rack 60 秒模擬</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             120 kW 峰值 → 30 kW 連續,LIC 吃瞬態
           </h2>
@@ -431,7 +429,7 @@ export function TourClient({
             className="mt-8 anim-slide-up anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            集總熱模型 · I²R 發熱 vs 對流散熱 · 熱失控風險近乎零
+            集總熱模型 · I²R 發熱 vs 對流散熱 · 模擬值遠低於 50 °C 警戒線
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
             全程只升溫 0.1 度 — 離上限很遠。
@@ -442,12 +440,12 @@ export function TourClient({
       {/* 9 — V4 fault chart (with flashing marker) */}
       <Slide idx={8} active={active === 8} refCb={(el) => (sectionRefs.current[8] = el)}>
         <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>V4 · N-1 容錯</Tag>
+          <Tag>V4 · N-1 容錯模擬</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
             t = {fault_t} s 時 1 台 BBU 離線,剩 7 台撐到 60 s
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            故意壞 1 台，7 台照樣完成任務 — 零中斷。
+            故意壞 1 台，剩下 7 台仍完成 60 秒任務（模擬，V4 PASS）。
           </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={260}>
@@ -486,7 +484,7 @@ export function TourClient({
             className="mt-8 anim-zoom-in anim-stagger-2"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            整機架 N-1 容錯在實體上極難重現,孿生層卻能直接驗證 — 這正是 twin {">"} hardware 的價值
+            整機架 N-1 容錯在實體上難以重現,孿生層可先行驗證 — 實機波形量測仍待完成
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
             故障後每台多扛 14 % — 仍遠低於原廠上限。
@@ -498,7 +496,7 @@ export function TourClient({
       <Slide idx={10} active={active === 10} refCb={(el) => (sectionRefs.current[10] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>V5 · RUL 預測</Tag>
+            <Tag>RUL 預測 · 隨機切分</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
               Severson 134 顆電芯隨機切分 MAPE
             </h2>
@@ -516,8 +514,11 @@ export function TourClient({
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 超越 Severson 2019 論文自身基準
           </p>
+          <p className="mt-2 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
+            改用較嚴苛的跨批次切分:bagged-GBT 退化至 17.91 %、bagged-OLS 為 13.87 %
+          </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            預測誤差 8.4 % — 比原論文基準更準。
+            隨機切分下誤差 8.4 % — 比原論文基準更準;換切分方式會變差,一併列出。
           </PlainInline>
         </div>
       </Slide>
@@ -528,7 +529,7 @@ export function TourClient({
           <div className="text-center">
             <Tag>V5 · 誠實揭露</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              同模型放在 BBU 浮充工況,MAPE 退化到
+              9 特徵 bagged-GBT 基線（非 TCN）放到 BBU 工況,MAPE 退化到
             </h2>
             <CountUpNumber active={active === 11} target={80.20} decimals={2} unit="%" tone="warning" />
           </div>
@@ -551,105 +552,62 @@ export function TourClient({
         </div>
       </Slide>
 
-      {/* 13 — Edge AI: BoxComparison 219 KiB vs 63 KiB */}
+      {/* 13 — Edge inference (concept): TCN dynamic INT8 size comparison.
+          All numbers from data/processed/tcn_rul_report.json → tcn_quantisation
+          (fp32_onnx_kib, dynamic_int8_kib, dynamic_compression_ratio,
+          dynamic_int8_delta_mape_pp, static_int8_delta_mape_pp, qat_int8_mape_pp),
+          accuracy_head_to_head_test_set (n_parameters) and
+          the *_quant_reference block (previous baseline). Edge deployment is a
+          concept design — no on-hardware NPU latency has been measured. */}
       <Slide idx={12} active={active === 12} refCb={(el) => (sectionRefs.current[12] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>邊緣推論</Tag>
+            <Tag>邊緣推論 · 概念設計</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              ONNX INT8 量化,LSTM 模型大小
+              ONNX INT8 動態量化,TCN 模型大小
             </h2>
-            <CountUpNumber active={active === 12} target={3.49} decimals={2} unit="× 壓縮" />
+            <CountUpNumber active={active === 12} target={2.36} decimals={2} unit="× 壓縮" />
           </div>
           <BoxComparison
             items={[
-              { label: "FP32", value: 219, color: "var(--muted)" },
-              { label: "INT8 量化", value: 63, color: "var(--primary)" },
+              { label: "FP32", value: 127.7, color: "var(--muted)" },
+              { label: "INT8 動態量化", value: 54.2, color: "var(--primary)" },
             ]}
             unit="KiB"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            ΔMAPE +0.10 pp · STM32N6 Neural-ART NPU 估算 27–109 µs · 本地推論,客戶不為每次推論付費
+            動態量化(僅量化權重)ΔMAPE +0.16 pp · 若要上 NPU 須全靜態 INT8:訓練後量化 ΔMAPE +8.80 pp,
+            改用量化感知訓練(QAT)可補回(MAPE 14.68 %)
+          </p>
+          <p className="mt-2 text-center text-xs text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
+            模型只含 Conv / ReLU / Pool / Gemm 等 NPU 原生運算子、無遞迴層 · STM32N6 NPU 部署為概念設計,延遲未上板實測 ·
+            前一版基線 RUL 模型以同法量化為 219 → 63 KiB(3.49×、ΔMAPE +0.10 pp);TCN 參數較少(31,281 vs 54,081),FP32 本身已較小
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            壓縮 3.5 倍、放進晶片本地算 — 免雲端費用，斷網照跑。
+            模型夠小、運算子可上 NPU — 但邊緣端目前仍是概念設計,尚未上板實測。
           </PlainInline>
         </div>
       </Slide>
 
-      {/* 14 — TCO headline + two-bar Baseline vs Sysblade */}
-      <Slide idx={13} active={active === 13} refCb={(el) => (sectionRefs.current[13] = el)}>
-        <div className="max-w-4xl mx-auto px-6 w-full">
-          <div className="text-center">
-            <Tag>客戶價值</Tag>
-            <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              10 年每機架 TCO
-            </h2>
-            <CountUpNumber active={active === 13} target={33} decimals={0} unit="% 節省" tone="success" />
-          </div>
-          <TwoBar
-            items={[
-              { label: "基準 BBU + LFP", value: 29.0, color: "var(--muted)" },
-              { label: "Sysblade 混合", value: 19.4, color: "var(--success)" },
-            ]}
-            maxValue={32}
-            unit="k USD / rack / 10 yr"
-            className="mt-8 anim-fade-in anim-stagger-3"
-          />
-          <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            回收期 2.3 年 · Hyperscale 500-rack 場景客戶年省 USD 482.9 k
-          </p>
-        </div>
-      </Slide>
-
-      {/* 15 — TCO 3 personas (rotate-in stagger) */}
-      <Slide idx={14} active={active === 14} refCb={(el) => (sectionRefs.current[14] = el)}>
-        <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>三個客戶人物誌</Tag>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            回收期全部落在 2.3 – 2.6 年
-          </h2>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            <PersonaCard kicker="Hyperscale" location="Virginia · 500 機架"
-              value="USD 482.9 k" caption="33.2 % 節省 · 2.3 年" tone="success"
-              className="anim-rotate-in anim-stagger-1" />
-            <PersonaCard kicker="中階託管商" location="Texas · 50 機架"
-              value="USD 44.6 k" caption="31.8 % 節省 · 2.4 年" tone="primary"
-              className="anim-rotate-in anim-stagger-2" />
-            <PersonaCard kicker="Edge AI" location="Pacific NW · 10 機架"
-              value="USD 8.0 k" caption="29.9 % 節省 · 2.6 年" tone="default"
-              className="anim-rotate-in anim-stagger-3" />
-          </div>
-          <div className="mt-8 text-center anim-fade-in anim-stagger-4">
-            <Link
-              href="/tco"
-              className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-4 py-2 text-sm font-medium hover:bg-primary/25 transition-colors"
-            >
-              拉 slider 自己算 → /tco
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-      </Slide>
-
-      {/* 16 — Ride-through: backup hold-time, new vs aged (customer reliability climax).
+      {/* 14 — Ride-through: backup hold-time, new vs aged (customer reliability climax).
           Numbers sourced from mains_fail_profile.json aged block (BoL 600s @ rack peak →
-          EOL 480s at 80% SOH = 8× the 60s commitment; peak-power retention 67%). Hardcoded
+          EOL 480s at 80% SOH = 8× the 60s commitment; peak-power retention 67%; aged_label
+          says ~year 10, so no "7 years" claim). Hardcoded
           to match the deck's curated-number style; see /twin for the live interactive model. */}
-      <Slide idx={15} active={active === 15} refCb={(el) => (sectionRefs.current[15] = el)}>
+      <Slide idx={13} active={active === 13} refCb={(el) => (sectionRefs.current[13] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
             <Tag>客戶最在乎</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              斷電當下,機櫃還能撐多久 —— 用了 7 年也一樣?
+              斷電當下,機櫃還能撐多久 —— 電池老化到壽命末期也一樣?
             </h2>
-            <CountUpNumber active={active === 15} target={8} decimals={0} unit="× 於 60s 承諾" tone="success" />
+            <CountUpNumber active={active === 13} target={8} decimals={0} unit="× 於 60s 承諾" tone="success" />
           </div>
           <TwoBar
             items={[
               { label: "新品備援續航時間", value: 600, color: "var(--muted)" },
-              { label: "用 7 年後(EOL · 80% SOH)", value: 480, color: "var(--success)" },
+              { label: "壽命末期(EOL · 80% SOH)", value: 480, color: "var(--success)" },
             ]}
             maxValue={640}
             unit="秒 @ 機架峰值功率"
@@ -657,7 +615,7 @@ export function TourClient({
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
             就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒優雅關機承諾的 8 倍餘量;
-            峰值功率能力仍保 67%(毫秒尖峰由 LIC 扛)。客戶買的不是新電池規格,是「老化後還能用」。
+            峰值功率能力仍保 67%(毫秒尖峰由 LIC 扛)。老化模型的內阻增幅採文獻典型值,屬模擬推估、非實測。
           </p>
           <div className="mt-6 text-center anim-fade-in anim-stagger-5">
             <Link
@@ -671,19 +629,19 @@ export function TourClient({
         </div>
       </Slide>
 
-      {/* 17 — V6 verify (typewriter terminal) */}
-      <Slide idx={16} active={active === 16} refCb={(el) => (sectionRefs.current[16] = el)}>
+      {/* 15 — V6 verify (typewriter terminal) */}
+      <Slide idx={14} active={active === 14} refCb={(el) => (sectionRefs.current[14] = el)}>
         <div className="max-w-3xl mx-auto px-6 w-full text-center">
           <Tag>V6 · 一鍵重現</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            RD 審查者 30 分鐘自我檢查
+            任何審查者都能自行重跑
           </h2>
-          <TypewriterTerminal active={active === 16} className="mt-10" />
+          <TypewriterTerminal active={active === 14} className="mt-10" />
         </div>
       </Slide>
 
-      {/* 18 — CTA (bounce-in buttons) */}
-      <Slide idx={17} active={active === 17} refCb={(el) => (sectionRefs.current[17] = el)} last>
+      {/* 16 — CTA (bounce-in buttons) */}
+      <Slide idx={15} active={active === 15} refCb={(el) => (sectionRefs.current[15] = el)} last>
         <div className="text-center max-w-4xl mx-auto px-6">
           <Tag>下一步</Tag>
           <h2 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight anim-scale-in">
@@ -820,7 +778,7 @@ function BarGauge({
   );
 }
 
-/** Two-bar comparison — for V5 MAPE-vs-paper, V5 honest, TCO old-vs-new. */
+/** Two-bar comparison — for MAPE-vs-paper, V5 honest, ride-through new-vs-aged. */
 function TwoBar({
   items, maxValue, unit, className,
 }: {
@@ -856,7 +814,7 @@ function TwoBar({
   );
 }
 
-/** Box-size comparison — for INT8 quantization 219 → 63 KiB. */
+/** Box-size comparison — for TCN INT8 dynamic quantization 127.7 → 54.2 KiB. */
 function BoxComparison({
   items, unit, className,
 }: {
@@ -1053,10 +1011,10 @@ function TypewriterTerminal({ active, className }: { active: boolean; className?
       {showOutput && (
         <>
           <div className="text-muted text-xs mt-3 anim-fade-in" style={{ animationDelay: "1.2s" }}>
-            [V6] V2 PASS · V3 PASS · V4 PASS · V5 PASS · XCHECK PASS
+            [V6] V2 PASS · V3 PASS · V4 PASS · V5 PASS · V8 PASS · XCHECK PASS
           </div>
           <div className="text-success font-medium anim-fade-in" style={{ animationDelay: "1.5s" }}>
-            5/5 條驗證鏈 PASS · 耗時 70 s · 整體 PASS
+            6/6 PASS · 整體 PASS(verify-fast 略過 V1;V1 需另下載 8.3 GB Severson 資料集,make verify 含 V1)
           </div>
         </>
       )}
@@ -1096,29 +1054,6 @@ function Mini({ value, unit, label }: { value: string; unit?: string; label: str
         {unit && <span className="text-sm text-muted">{unit}</span>}
       </div>
       <p className="mt-1 text-xs text-muted uppercase tracking-wider">{label}</p>
-    </div>
-  );
-}
-
-function PersonaCard({
-  kicker, location, value, caption, tone = "default", className,
-}: {
-  kicker: string; location: string; value: string; caption: string;
-  tone?: "success" | "primary" | "default"; className?: string;
-}) {
-  const toneClass: Record<string, string> = {
-    success: "text-success",
-    primary: "text-primary",
-    default: "text-foreground",
-  };
-  return (
-    <div className={`rounded-xl border border-border bg-surface/40 p-5 text-center ${className ?? ""}`}>
-      <p className="text-xs uppercase tracking-wider text-muted">{kicker}</p>
-      <p className="mt-0.5 text-xs text-foreground/80">{location}</p>
-      <p className={`mt-4 text-2xl sm:text-3xl font-semibold tabular-nums tracking-tight ${toneClass[tone]}`}>
-        {value}
-      </p>
-      <p className="mt-2 text-xs text-muted">{caption}</p>
     </div>
   );
 }

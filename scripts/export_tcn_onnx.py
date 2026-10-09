@@ -180,7 +180,7 @@ def main() -> None:
             "n_train": len(tr), "n_test": len(te),
             "train_mape_pct": m_tr["mape_pct"], "test_mape_pct": m_te["mape_pct"],
             "test_rmse_cycles": m_te["rmse_cycles"], "test_r2": m_te["r2"],
-            "split": f"random_{int(round((1-TEST_SIZE)*100))}_{int(round(TEST_SIZE*100))}_seed{SEED}",
+            "split": f"random_{int(round((1-TEST_SIZE-CALIB_SIZE)*100))}_{int(round(CALIB_SIZE*100))}_{int(round(TEST_SIZE*100))}_seed{SEED}",
         },
         "latency": {
             "device": "CPU (laptop) via onnxruntime", "samples": 1000,

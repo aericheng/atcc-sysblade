@@ -168,6 +168,13 @@ export function TcoClient() {
 
   return (
     <div className="space-y-12 reveal-stagger">
+      <div
+        role="note"
+        className="rounded-md border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-foreground/90 leading-relaxed"
+      >
+        <span className="font-semibold text-warning">競賽期試算工具：</span>
+        數字依您輸入的假設試算，非實際或保證節省；不屬於中技社說明書的主張。
+      </div>
       <header className="relative">
         <div
           aria-hidden
@@ -180,7 +187,7 @@ export function TcoClient() {
         </h1>
         <p className="mt-4 text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
           「瞬變」= AI 伺服器毫秒級的功率波動，造成的重啟與停機是隱形成本。
-          本計算器把它連同採購、更換、人力算成 <span className="text-success font-medium">10 年總帳（省 33 %）</span>。
+          本計算器把它連同採購、更換、人力算成 <span className="text-success font-medium">10 年總帳</span>（依您輸入的假設試算，非保證節省比例）。
           拉動滑桿，試算您的情境。
           <span className="block mt-2 text-xs">
             成本模型：提案 §G.3 · 參考基準 $0.10/kWh、PUE 1.4
@@ -264,13 +271,13 @@ export function TcoClient() {
               label="機隊 10 年節省"
               value={formatUsd(result.fleet.savingUsd)}
               tone="success"
-              hint={`較傳統 BBU 低 ${(result.fleet.savingPct * 100).toFixed(1)} %`}
+              hint={`依目前輸入試算：較傳統 BBU 低 ${(result.fleet.savingPct * 100).toFixed(1)} %`}
             />
             <Stat
               label="每機架節省"
               value={formatUsd(result.perRack.saving)}
               tone="primary"
-              hint={`每機架 ${(result.perRack.savingPct * 100).toFixed(1)} %`}
+              hint={`依目前輸入試算：每機架 ${(result.perRack.savingPct * 100).toFixed(1)} %`}
             />
             <Stat
               label="回收期"
@@ -286,7 +293,7 @@ export function TcoClient() {
               }
               hint={
                 Number.isFinite(result.fleet.paybackYears) && result.fleet.paybackYears > 0
-                  ? `額外 CAPEX 透過預測性維運 + 瞬變 + 更換頻率的節省回收 · ${(result.perRack.savingPct * 100).toFixed(1)} % TCO 節省為模型的依據`
+                  ? "依目前輸入的假設試算：額外 CAPEX 由預測性維運 + 瞬變 + 更換頻率的差額攤回（非保證）"
                   : inputs.racks === 0
                     ? "請設定機架數量 > 0 以計算回收期"
                     : "在此情境下營運節省 ≤ 0 — 詳見成本項目表了解原因"
@@ -361,7 +368,7 @@ export function TcoClient() {
                     ${result.perRack.sysblade.total.toLocaleString()}
                   </td>
                   <td className="py-3 text-right tabular-nums text-success">
-                    −${result.perRack.saving.toLocaleString()} ({(result.perRack.savingPct * 100).toFixed(0)} %)
+                    −${result.perRack.saving.toLocaleString()}
                   </td>
                 </tr>
               </tbody>

@@ -9,7 +9,7 @@ abstract: |
   本白皮書是商業企劃書 v2.2 的技術版伴讀文件。商業 PDF 回答「為什麼客戶會買」,
   本文回答「為什麼技術做得到」。Sysblade HyperBuffer 鎖定北美 Tier-2/3 AI 機房
   BBU(電池備援單元)市場,以 LFP 15S × 3.2 V 主電 + 鋰離子電容(LIC)輔助的
-  混合拓撲解決三個目前市場上沒有整合方案的痛點:毫秒級電壓瞬態、48 V → ±400 V
+  混合拓撲解決三個痛點(競賽期稱「目前市場上沒有整合方案」,已撤回,見檔頭勘誤):毫秒級電壓瞬態、48 V → ±400 V
   HVDC 過渡、雲端化維運可視化。在演算法側,我們完整重現 Severson 2019 的循環壽命
   資料庫驅動預測,**13-feature paper-aligned Full model 配合 K=24 bagged
   GradientBoosting ensemble + 嚴格 cell filter(`cycle_life ≥ 400`,134/138 cells),
@@ -32,6 +32,25 @@ abstract: |
 > Live demo: <https://sysblade-atcc.vercel.app>
 >
 > 本文為 **canonical 完整技術白皮書**;另有精煉版 `docs/whitepaper_restructured.md`(複賽 binder 現場 Q&A 快翻用),其內容與數字以本文為準。
+
+---
+
+## 勘誤與口徑說明(2026-10)
+
+> **請先讀本段。** 本白皮書為 ATCC 競賽期版本(v1.3,2026-05),保留作為競賽歷史紀錄。下列競賽期數字與說法**已撤回或更正**,現行口徑以中技社《創意作品說明書》定稿為準;正文中對應位置已就地加註「〔競賽期數字,已撤回／已更正〕」。
+>
+> | 競賽期說法 | 現行口徑(已撤回／已更正) |
+> |---|---|
+> | 10 年 TCO 節省 33 %(含 31.8 % 等各 preset 比例、43 % 推升版) | **已撤回**。推估基礎不夠紮實,不再引用任何固定節省比例;`/tco` 僅為依使用者自行輸入假設的試算工具,非實際或保證節省 |
+> | 軟體服務訂閱定價(USD 25k/site/yr SaaS 訂閱) | **已撤回**。商業模式(硬體一次性採購＋軟體維運服務)仍屬構想階段,不引用任何訂閱定價數字 |
+> | 18–24 個月先發者空窗/「市場上沒有整合方案」「業界無人在做」 | **已撤回**。空窗已關閉:Eaton、Vertiv、Schneider×NVIDIA、KULR、Skeleton、Delta 均已進入同一品類;差異化落在可重跑的驗證方法論,而非先發優勢 |
+> | STM32N6 NPU 推論延遲 54.7 µs(±2× 區間 27–109 µs)、「0.3 ms」等 NPU 延遲數字 | **已撤回**。ST Neural-ART NPU 不支援 LSTM/GRU,該估算不成立;邊緣端部署目前僅為**概念,尚未上板**,不引用任何 NPU 延遲數字 |
+> | Eaton XLR-48R6167-R 為「LIC 鋰離子電容」/Eaton 販售 LIC 單體 | **已更正**。競賽期電容側參數錨定該型號規格書,但其官方 datasheet 實為 **EDLC(超級電容)而非 LIC**;既有模擬的物理結構仍成立,量產設計改採真正的鋰離子電容 **Musashi ULTIMO CPQ3300SD** |
+> | LSTM 為部署/推論模型 | **已更正**。現行 RUL 序列模型為 **TCN(dilated 1D-CNN)**;LSTM 僅為前一版基線(§3.4.1) |
+> | Split conformal 使 PI 縮窄 44 %(raw 1910 → 1075 cycles、q = 0.563) | **已更正**。該組為 LSTM 基線數字;現行 TCN 為 raw 2697 → 1359 cycles、q = 0.504,**縮窄約 50 %**(§3.3.7、`model_validation.json` `uncertainty`) |
+> | 混合拓樸使電池端功率波動下降 5.7× | **成立條件更正**:±30 %/100 ms 參考波形下的理想無損耗上界,非電池壽命倍率;計入 DC-DC 損耗典型 2.4–3.9×,>100 Hz 退至約 1.5×;全部來自模擬,實機波形量測尚未完成 |
+>
+> 另:本專案**沒有實體硬體**(競賽期 v1.x 實機 demonstrator 已於 2026-05 descope),`/dashboard` 的 1000 台機隊**全為模擬資料**;文中 EVT／PoC／認證時程均為競賽期規劃,非已完成事項。
 
 ---
 
@@ -84,13 +103,14 @@ TX/VA 集中度,這是本文模擬假設,目的是凸顯 AI BBU 客群比整體 
 聲明此放大係模擬權重而非 JLL 直接引用**。Tier-1 hyperscale(AWS、Azure、
 Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 推論
 工作負載,仍依賴外採 BBU。對單體儲能元件(電容、LFP 模組)的廠商,
-客戶議價力有限;且目前市場上**無一家現成廠商提供「軟體 + 硬體 + 維運」
-整合方案** —— 這是我們鎖定的市場縫隙。
+客戶議價力有限。〔競賽期說法,已撤回:原文主張「目前市場上無一家現成廠商提供『軟體 + 硬體 + 維運』整合方案」;賽後查核 Eaton、Vertiv、Schneider×NVIDIA、KULR、Skeleton、Delta 均已進入同一品類,見檔頭勘誤。〕
 
 > 完整市場數字(年增容量 GW、年 BBU 出貨量、ASP)詳商業企劃書 v2.2 §A 摘要
 > + §C.1 市場規模與地理集中度,本白皮書不重複論證商業面。
 
 ### 1.2 三個目前市場上沒有整合方案的 gap
+
+> 〔競賽期說法,已撤回:標題與下表「現狀」欄的「沒有整合方案／無公開 SaaS」前提已不成立(空窗已關閉);Eaton XLR 實為 EDLC 超級電容而非鋰離子電容。見檔頭勘誤。〕
 
 | Gap | 表現 | 現狀 |
 |-----|------|------|
@@ -102,7 +122,7 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 
 | 廠商 | 賣什麼 | 與 Sysblade 差異 |
 |------|--------|------------------|
-| **Eaton XLR** | LIC 單體 + 開發包 | 我們把 LIC + LFP + 數位孿生整合,客戶不需自寫控制律 |
+| **Eaton XLR** | 〔已更正:競賽期誤稱 LIC;官方 datasheet 實為 EDLC 超級電容〕電容模組 + 開發包 | 我們把 LIC + LFP + 數位孿生整合,客戶不需自寫控制律 |
 | **Vertiv Liebert** | 傳統 48 V VRLA / NMC BBU | 我們同時相容 48 V / ±400 V HVDC,規避客戶 2027 換代風險 |
 | **Schneider Galaxy VS** | 集中式 UPS | 我們是 rack-level BBU,部署粒度更細,沒有單點故障 |
 
@@ -147,7 +167,7 @@ Meta)多以自研架構消化內需,而 Tier-2 / Tier-3 colo 為對外服務 AI 
 輔助元件:**鋰離子電容(LIC)**,與 LFP 共用 rack DC bus,但**不是被動併接
 在 LFP 端子上**——LIC 經一組 MOSFET half-bridge(UCC27282 gate driver +
 IRFB4115)由 STM32 主動換流,依即時負載做功率分配(主動分頻 ≠ 被動濾波的
-論述見 §3.2.0)。以 Eaton **XLR-48-166** 模組為錨
+論述見 §3.2.0)。〔已更正:下述 Eaton XLR 型號官方 datasheet 實為 EDLC 超級電容而非 LIC;競賽期僅以其規格做參數錨定,量產改採 Musashi ULTIMO CPQ3300SD。〕以 Eaton **XLR-48-166** 模組為錨
 (48.6 V、166 F、容量 54 Wh、ESR ≈ 5 mΩ,per Eaton XLR-48R6167-R datasheet),
 LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULTIMO
 3300F datasheet),負責吸收 < 100 ms 的瞬態尖峰(對應 §3.2 高通濾波器
@@ -157,8 +177,8 @@ LIC cell 級比能量約 10–30 Wh/kg、功率密度 5–10 kW/kg(JM Energy ULT
 
 | 模組 | 路徑 | 角色 |
 |------|------|------|
-| **Battery Digital Twin** | `/twin` | 物理引擎(PyBaMM)+ 機器學習 RUL 預測 + LSTM 推論視覺化 |
-| **TCO Calculator** | `/tco` | 客戶業務談判工具,US$25k/site/yr SaaS 訂閱可帶走(對齊 v2.2 §G.3) |
+| **Battery Digital Twin** | `/twin` | 物理引擎(PyBaMM)+ 機器學習 RUL 預測 + 序列模型推論視覺化(現行 TCN;LSTM 為前一版基線) |
+| **TCO Calculator** | `/tco` | 依使用者自行輸入假設的 10 年成本試算工具(〔競賽期訂閱定價已撤回,見檔頭勘誤〕) |
 | **Fleet Dashboard** | `/dashboard` | 三層售後(Tier-1/2/3)即時監控,標註 SIMULATED DATA |
 
 ### 2.3 資料流程(離線預算 / 線上呈現)
@@ -186,8 +206,8 @@ PyBaMM DFN (Python, offline)
 
 1. **物理引擎** — PyBaMM Doyle-Fuller-Newman (DFN) PDE 求解器
 2. **混合控制律** — LFP / LIC 頻譜分頻負載分配
-3. **RUL 預測** — Severson 2019 重現 + 13-feature Full model + bagged-GBT ensemble + LSTM
-4. **邊緣端佈署** — ONNX 匯出 + STM32N6 NPU 推論
+3. **RUL 預測** — Severson 2019 重現 + 13-feature Full model + bagged-GBT ensemble + 序列模型(現行 TCN;LSTM 為前一版基線,§3.4.1)
+4. **邊緣端佈署** — ONNX 匯出 + STM32N6 NPU 推論〔已更正:邊緣端部署目前為概念、尚未上板,見檔頭勘誤〕
 
 ### 3.1 物理引擎 — PyBaMM DFN
 
@@ -217,7 +237,7 @@ MW/s ramp + 頻域規範,未直接給 cell-level 數值**),SPM 會低估 solid-p
 | `transient_hybrid.json` | 同負載,LFP+LIC 混合應對(τ = 0.5 s 一階互補濾波器)| ΔV ≈ 18 mV (steady-state pp,3.5× 改善) |
 | `aging_lfp.json` | 3000 cycle BBU duty cycle-fade + **Naumann √t calendar/storage fade overlay**(§3.1.1)| cycle-fade 80 % SOH @ ~3360 cyc(≈67 yr);**calendar binds ≈10 yr**(校準 v2.2 附件 C) |
 | `aging_rainflow_validation.json` | Rainflow + Wang 2011 對 hybrid 與 LFP-only 各自的 LFP cell 電流跑 cycle-aging 預測,獨立交叉驗證 `aging_lfp.json` 的 hybrid-vs-solo 排序(見 §3.2.1) | demo 波形 hybrid/LFP-only damage ratio = 1.012,worst-case (10C peaks) ratio = 0.945 |
-| `model_validation.json` | LSTM 推論逐 cycle trajectory + actual | 9 個 curated cells |
+| `model_validation.json` | 序列模型推論逐 cycle trajectory + actual(現由 production TCN 產出;競賽期為 LSTM) | 9 個 curated cells |
 | `adaptive_split.json` | **V8 監督層閉環**:60 s graceful profile 上做 SOH sweep [1.00→0.80] × {固定 τ, 自適應 τ(SOH)},老化以 DCIR overlay(+50 % @ SOH 0.80,同步 `lib/aging.ts`)表示,τ_adapt = τ0 × (1 + dcir_growth) | SOH 0.80 固定 τ 峰值 C-rate 6.06C **跨越 6C 設計點**、swing +4.4 %;閉環改寫 τ→0.75 s 後峰值 **5.47C 回設計點內**、swing 回 BOL 包絡(267 mV)、LIC UVLO 餘裕不變;SOH 高估 5 pp 的 robustness 檢查亦過(`make v8`) |
 
 > 上述 JSON 是 `/twin` 與 `/dashboard` 所有數字的單一資料源,SHA-256
@@ -571,7 +591,7 @@ NMC 2.0 Ah 對 LFP 1.1 Ah 的容量 scale 差。
 > 沒有意義。對 Sysblade 客戶而言,這意味著:每一批新採購的 LFP 模組
 > (即使同 vendor 不同 batch)都應跑一遍 calibration cycle 再部署。
 
-#### 3.3.6 LSTM PyTorch model
+#### 3.3.6 LSTM PyTorch model(競賽期基線;現行 production 模型為 TCN,§3.4.1)
 
 13-feature OLS / bagged-GBT 是 cycle-life 點預測的最佳線性 / 樹型 baseline
 (§3.3.3 / §3.3.4)。為了捕捉 cycle 序列的非線性 pattern 並 span BBU duty
@@ -587,7 +607,7 @@ regime(§3.3.8),我們訓了一個 2-layer LSTM(hidden = 64,input shape =
 * Per-feature z-score normalisation(`FeatureScaler` 物件持久化進 ONNX)
 
 `/twin` 頁面下半段的 **Inference Walkthrough** 從 9 顆精選 cell 中
-讓使用者選一顆,顯示 LSTM 的 **per-cycle input series**(99 cycle × 7
+讓使用者選一顆,顯示序列模型(現行為 production TCN;競賽期為 LSTM)的 **per-cycle input series**(99 cycle × 7
 feature,normalised 0–1 per-line,raw 物理單位 hover 可見)與該 cell 的
 **90 % conformal-sharpened PI bar**。
 
@@ -696,7 +716,7 @@ ground truth 仍須回到真實 Severson cells + 客戶 PoC 累積資料。每�
 | Severson b3 | 44 | 14.47 % |
 | **BBU duty** | **50** | **17.88 %** ← BBU regime 學到合成軌跡 |
 
-> **Production 更新**:`model_validation.json`(/twin、/dashboard 消費)現由 `scripts/export_tcn_onnx.py` 產出 **production TCN**:**整體 test MAPE 18.1 %、R² 0.89**(§3.4.1)。本節上方 per-batch breakdown 與 §3.3.7 conformal 表為 **LSTM baseline run** 的分析(`scripts/export_lstm_onnx.py` 可重現),保留作 regime-augmentation 論述。
+> **Production 更新**:`model_validation.json`(/twin、/dashboard 消費)現由 `scripts/export_tcn_onnx.py` 產出 **production TCN**:**整體 test MAPE 18.1 %、R² 0.89**(§3.4.1)。〔已更正：本節上方 per-batch breakdown 與 §3.3.7 conformal 表的數字與現行 model_validation.json(production TCN)一致〕原註:本節上方表格為 **LSTM baseline run** 的分析(`scripts/export_lstm_onnx.py` 可重現),保留作 regime-augmentation 論述。
 
 LSTM baseline 整體 test MAPE 19.1 %、R² 0.86(`metrics` 區塊)— 比 §3.3.3 OLS/GBT
 ensemble 在 Severson-only 上的 8.38 % 顯著高,因為模型現在 span 完整 regime
@@ -714,7 +734,7 @@ duty cell 從未訓練過),augmented LSTM 對兩個 regime 都誠實。
 | Test R² | 0.862 | **0.553** |
 | Conformal PI median width | 1075 cycles | **793 cycles** |
 | n_train / cal / test | 114 / 37 / 37 | **84 / 27 / 27** |
-| ONNX 匯出 | [v] 生產 `model_validation.json` 推論主力 | (!) 跳過(避免污染 production checkpoint) |
+| ONNX 匯出 | [v] 競賽期曾為 `model_validation.json` 推論主力〔已更正：現行為 TCN〕 | (!) 跳過(避免污染 production checkpoint) |
 
 (完整 JSON 在 `data/processed/lstm_severson_only_eval.json`,
 gitignore 白名單,CI 守門可比對。)
@@ -740,6 +760,8 @@ gitignore 白名單,CI 守門可比對。)
 
 ### 3.4 邊緣端佈署 — ONNX + STM32N6 NPU
 
+> 〔競賽期內容,部分已撤回:本節以 LSTM 為對象;現行模型為 TCN(§3.4.1)。邊緣端部署目前僅為概念、**尚未上板**;下文 NPU 延遲估算(54.7 µs、27–109 µs、0.3 ms 比較)**已撤回**,不再引用。見檔頭勘誤。〕
+
 LSTM 已透過 `scripts/export_lstm_onnx.py` 匯出為 `models/lstm_rul.onnx`
 (IR opset 17),配合外部資料 `lstm_rul.onnx.data`。**FP32 total 219 KiB
 (graph 8.2 + external data 211)**;經 `scripts/quantize_lstm_onnx.py`
@@ -760,7 +782,7 @@ test 集上,FP32 MAPE 19.10 % → INT8 MAPE 19.20 %,**ΔMAPE = +0.10 pp,
 
 兩者都 << 50 ms 目標。
 
-**STM32N6 NPU 預估延遲**:`scripts/onnx_static_analysis.py` 靜態圖分析
+〔競賽期數字,已撤回:以下 NPU 延遲估算對 LSTM 不成立(Neural-ART NPU 不支援 LSTM/GRU),且尚未上板量測。〕**STM32N6 NPU 預估延遲**:`scripts/onnx_static_analysis.py` 靜態圖分析
 約 **54.7 µs**(40 % NPU utilisation 假設,±2× 不確定區間 27–109 µs);
 對比 ST datasheet Neural-ART INT8 LSTM typical latency 0.3 ms,worst-case
 109 µs 仍有 3× margin。完整實機 trace 流程見
@@ -806,7 +828,7 @@ test 集上,FP32 MAPE 19.10 % → INT8 MAPE 19.20 %,**ΔMAPE = +0.10 pp,
 
 * 1000 台 fleet 的 SOH / RUL / status 即時表
 * 健康狀態總計、預警燈號、地理散布快速摘要
-* SaaS pricing 上對應 USD 25k/site/yr 訂閱中「日常監控」項目
+* 〔競賽期訂閱定價(USD 25k/site/yr)已撤回,見檔頭勘誤〕對應軟體維運服務中的「日常監控」項目
 
 ### 4.2 Tier-2 地理分布
 
@@ -863,6 +885,8 @@ PyBaMM trajectory 可校準 PI)。實作 `apps/web/src/components/device-drilldo
 
 ## 第五章 TCO 模型
 
+> 〔競賽期數字,已撤回:本章的「33 % 節省」及 §5.2–§5.3 推導出的各種固定節省比例(33.1 %、43 %、29.9–33.2 %、31.8 %)與 payback 年數,推估基礎不夠紮實,**一律不再引用**。`/tco` 僅保留為依使用者自行輸入假設的試算工具,結果非實際或保證節省。見檔頭勘誤。〕
+
 `apps/web/src/lib/tco.ts` 把 v2.2 §G.3 的成本表寫成 elasticity model,
 讓客戶能拉動 rack 數量、電價、PUE、carbon intensity 即時看 10 年成本差。
 
@@ -875,7 +899,7 @@ PyBaMM trajectory 可校準 PI)。實作 `apps/web/src/components/device-drilldo
 | `pue` | Power Usage Effectiveness | 1.4 |
 | `gridCarbonKgPerKwh` | 區域 grid 排放係數 | 0.40 |
 
-### 5.2 33 % 節省的推導
+### 5.2 33 % 節省的推導〔競賽期數字,已撤回〕
 
 每 rack 10 年成本(USD,對齊 v2.2 §G.3):
 
@@ -892,7 +916,7 @@ $$
 \text{Saving} = \frac{29{,}000 - 19{,}400}{29{,}000} = 33.1\,\%
 $$
 
-頁首頭條 **33 %** 來源即此。
+〔已撤回:競賽期頁首頭條「33 %」來源即此;現行網站與說明書均不再使用此比例。〕
 
 > **LFP 單位成本對稱性說明(誠實邊界)**:細心讀者會留意「LFP+LIC 初次採購
 > 8,640」與「10 年內替換 5,760」表面上不能用同一個 single-unit price 推出。
@@ -902,10 +926,11 @@ $$
 > LFP+LIC 單位成本已接近 NMC 同價**。第二,Sysblade 採「refurbish 而非整套
 > 換」策略,替換時僅更換衰退電芯,保留 BMC、機箱與電氣分層介面,壓低替換
 > BOM。若改用較激進「LFP+LIC initial 也採 5,760」假設,壽命延長將直接貢獻
-> USD 2,880 / rack / 10y 替換節省,**33 % saving 會推升到 43 %**。本案 §5.2
-> 採保守版本,**33.1 % 是 lower bound**。
+> USD 2,880 / rack / 10y 替換節省。〔競賽期此處另主張「33 % 會推升到 43 %、33.1 % 是 lower bound」,已撤回。〕
 
-### 5.3 敏感度分析(數值對齊 live demo `apps/web/src/app/tco/tco-client.tsx`)
+### 5.3 敏感度分析(數值對齊 live demo `apps/web/src/app/tco/tco-client.tsx`)〔競賽期數字,已撤回〕
+
+> 〔下表與觀察段為競賽期 preset 試算結果,節省比例與 payback 均已撤回,不作為主張;保留僅供說明試算公式行為。〕
 
 直接用 `tco.ts` 公式於三個 preset 計算:
 
@@ -949,23 +974,23 @@ $$
 | 13-feat Full **bagged-GBT (K=24) + xstrict cell filter** / random split | **median 8.38 %** test MAPE,**R² = 0.89**,per-seed [5.93, 12.91],7/10 seeds < 10 % | xstrict 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell;134 vs paper 124 仍寬鬆;**達 v2.2 附件 B 軟體技術棧的「MAPE < 10 %」承諾** |
 | 13-feat Full **bagged-OLS + xstrict** / cross-batch | **median 13.87 %** test MAPE,**R² = +0.21** | cross-batch 最佳 generalisation;GBT 在 cross-batch 反而退化到 17–22 %(protocol-specific overfit) |
 | **訓練情境 ≠ 產品情境(regime gap)** | Severson cell 在 3.6C–8C 快充壓力測試;我們產品 BBU duty 是 0.05C float + 偶爾深放電,年循環 ~50 而非 lab 的 ~365。**訓練集加入 50 顆 Severson-anchored synthetic BBU-duty cell**(`scripts/generate_bbu_duty_cells.py`,§3.3.8;analytic decay + per-cell noise,**not** PyBaMM aging)| BBU 樣本 MAPE = 16.49 %(全 188-cell 切面),Severson 全切面 b1 17.02 % / b2 33.45 % / b3 14.72 %,整體 test MAPE 19.10 %、R² 0.86,**模型 span 兩個 regime**。**caveat**:合成 cell 的 cycle_life label 由同一條 Severson-fit 公式產出 → 對 bbu_* test cell 的「預測」本質上是「重現 generator 函數」,屬輕度 data leakage 風險;**production 推論信賴度仍須以 Severson 真實 cells + 客戶 PoC 為主**。BBU 合成 cell 僅作 *regime coverage*,不獨立作為物理證據 |
-| **LIC 不在 RUL 模型裡(scope),但 transient 模擬有 closed-form RC 物理層** | 產品是 LIC + LFP 混合,LSTM **僅預測 LFP** 的 RUL。Transient 模擬中 LIC 走 **closed-form 一階 RC 等效**(`_simulate_lic_rc()`,`generate_twin_scenarios.py`):v_lic(t) = V_nominal − Q/C − i × R_esr,參數錨 **Eaton XLR-48-166 × 2 並聯**(C = 332 F,ESR = 2.5 mΩ,V_nominal = 51.3 V,V_min = 38 V)。Demo waveform 跑出 worst-case droop **2.32 V**(從 51.3 → 48.98 V),距離 datasheet UVLO 38 V **餘裕 10.98 V**(`passes_cutoff = true`)。Droop 95 % 由 ESR drop(926 A peak × 2.5 mΩ)主導,5 % 由累積電容放電(13.31 kJ / 332 F);production 若需降 droop,加並聯模組(降 ESR)比加電量(加 C)有效。**未模**:pseudo-capacitance、temperature-dependent ESR、self-discharge、Helmholtz layer electrode kinetics — 這些 production 階段以 Eaton in-the-loop 量測校正。Dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),由 datasheet calendar curve 建 lookup table 處理(LIC 公開實驗資料極少,不適合 LSTM 學)|
+| **LIC 不在 RUL 模型裡(scope),但 transient 模擬有 closed-form RC 物理層** | 產品是 LIC + LFP 混合,RUL 序列模型(現行 TCN;競賽期為 LSTM)**僅預測 LFP** 的 RUL。Transient 模擬中 LIC 走 **closed-form 一階 RC 等效**(`_simulate_lic_rc()`,`generate_twin_scenarios.py`):v_lic(t) = V_nominal − Q/C − i × R_esr,參數錨 **Eaton XLR-48-166 × 2 並聯**〔已更正:該型號官方 datasheet 實為 EDLC 超級電容而非 LIC,僅作參數錨定;量產改採 Musashi ULTIMO CPQ3300SD〕(C = 332 F,ESR = 2.5 mΩ,V_nominal = 51.3 V,V_min = 38 V)。Demo waveform 跑出 worst-case droop **2.32 V**(從 51.3 → 48.98 V),距離 datasheet UVLO 38 V **餘裕 10.98 V**(`passes_cutoff = true`)。Droop 95 % 由 ESR drop(926 A peak × 2.5 mΩ)主導,5 % 由累積電容放電(13.31 kJ / 332 F);production 若需降 droop,加並聯模組(降 ESR)比加電量(加 C)有效。**未模**:pseudo-capacitance、temperature-dependent ESR、self-discharge、Helmholtz layer electrode kinetics — 這些 production 階段以 Eaton in-the-loop 量測校正。Dashboard 的 `soh_lic` 為 datasheet 反推的合成數,非 LSTM 推論結果 | **物理上 OK** — LIC 標稱循環壽命 ≥ 100,000 cycles(Eaton **XLR-48-166 module datasheet** rev 2023 + JM Energy **ULTIMO 3300F cell datasheet** 2022),BBU duty 整個 8–12 年壽命內 LIC SOH 預期 ≥ 95 %(由 datasheet 1.5 % DoD calendar life curve 外推,非實測;為產品設計目標)。**LFP 才是壽命瓶頸**。LIC 失效模式為日曆老化(thermal-driven calendar life),由 datasheet calendar curve 建 lookup table 處理(LIC 公開實驗資料極少,不適合 LSTM 學)|
 | **不**承諾 < 5 % MAPE | v2.2 附件 B 軟體技術棧明文「未上實機資料前不承諾 < 5 %」 | 即使模型達到也不在白皮書聲明 |
 | **達 v2.2 §B「< 10 % MAPE」承諾** | v2.2 §B 對齊 paper 9.1 % baseline 承諾 < 10 %;**bagged-GBT (K=24) + extra-strict cell filter(`cycle_life ≥ 400`,n=134)random split 10-seed median = 8.38 %、R² = 0.890**(per-seed [5.93, 12.91],7/10 seeds < 10 %)。Cross-batch 由 bagged-OLS 達 13.87 %、R² = +0.21 | 三條 caveat 必須同步聲明:(a) **xstrict filter 篩掉 4/138 顆 `cycle_life < 400` 的早夭 cell**,134 vs paper 124 仍寬鬆,但**已超出原始 `cycle_life ≥ 200` paper-style 篩選**;若有人質疑 cherry-pick,需指 §6.2 表第 5 行;(b) **GBT 在 cross-batch 退化到 17–22 %**,跨 protocol 部署仍須 fall back 到 bagged-OLS 或 per-protocol 校準;(c) **小樣本(n_test ≈ 41)+ 10-seed 雜訊 ±3 pp**,7/10 seeds < 10 %、3/10 seeds 在 [11.21, 12.91],**單一新 batch 評估值有 5 pp 浮動風險**。簡報 / 投資人對話可引用 8.38 % median 但**必須加註 xstrict filter + bagged-GBT + random split** 三個前提 |
 | Cross-batch 改善幅度(paper-style filter,n_test=44)| 19.25 %(5-feat OLS,R² -0.13)→ 14.54 %(13-feat OLS,R² +0.08)→ 13.87 %(bagged-OLS xstrict,R² +0.21)| bagged-OLS 在 cross-batch 是最佳;GBT 在 cross-batch 退化(17–22 %)驗證了 protocol-specific overfit 假設 |
 | 跨化學需 per-chemistry calibration | 5/5 feature OOD,z = 5–65 σ | **不可一般化**到任意電池 |
-| **MC Dropout + Split Conformal 90 % PI 涵蓋率** | 100 % test coverage(≥ 90 % 保證) | Conformal **q_factor = 0.563** 縮窄 PI 44 %;coverage 仍 100 % 是因 test 比 cal 容易 |
-| **PI 中位數寬度** | 1075 cycles(split conformal 從 raw 1910 cycles 縮窄 44 %) | b2c1 critical PI [144, 332] / b1c44 warning [506, 1254] — Tier-3 admission 變得 actionable |
-| LSTM 推論 < 1 ms 筆電 CPU | onnxruntime profiling(FP32 p50 0.267 ms / p99 0.411 ms;**INT8 p50 0.241 ms / p99 0.413 ms,p50 1.11× 加速 measured**) | 非 STM32N6 實機;NPU 估算 27–109 µs(附錄 C 靜態圖分析)|
+| **MC Dropout + Split Conformal 90 % PI 涵蓋率** | 100 % test coverage(≥ 90 % 保證) | 〔已更正:44 % / q 0.563 為 LSTM 基線數字;現行 TCN 為 q_factor = 0.504、縮窄約 50 %(§3.3.7)〕Conformal **q_factor = 0.563** 縮窄 PI 44 %;coverage 仍 100 % 是因 test 比 cal 容易 |
+| **PI 中位數寬度** | 〔已更正:現行 TCN 為 raw 2697 → 1359 cycles(約 −50 %);下列為 LSTM 基線〕1075 cycles(split conformal 從 raw 1910 cycles 縮窄 44 %) | b2c1 critical PI [144, 332] / b1c44 warning [506, 1254] — Tier-3 admission 變得 actionable |
+| LSTM(競賽期基線,現行為 TCN)推論 < 1 ms 筆電 CPU | onnxruntime profiling(FP32 p50 0.267 ms / p99 0.411 ms;**INT8 p50 0.241 ms / p99 0.413 ms,p50 1.11× 加速 measured**) | 非 STM32N6 實機;〔競賽期 NPU 延遲估算(27–109 µs)已撤回,邊緣端未上板〕 |
 | **INT8 量化幾乎無精度損失(measured)** | `scripts/quantize_lstm_onnx.py`:FP32 19.10 % → INT8 19.20 % MAPE,**ΔMAPE = +0.10 pp**,R² 0.862 不變,平均預測偏移 0.57 % | onnxruntime CPU INT8 ≠ STM32N6 NPU INT8;ST 工具的量化策略可能略有差異(±0.5 pp);詳附錄 C |
 | **ONNX 容量(measured)** | FP32 total 219.18 KiB(graph 8.2 + external data 211.0)→ INT8 62.87 KiB,**3.49× 壓縮 measured** | 仍 << STM32N6 NPU 1.6 MB FLASH 上限;activation peak SRAM 32 KB << 1 MB |
-| STM32N6 NPU < 1 ms 預估 | ST datasheet + `scripts/onnx_static_analysis.py` 靜態圖分析 54.7 µs(40 % NPU utilisation 假設,±2× 區間 27–109 µs);對比 ST datasheet typical 0.3 ms 仍有 3× margin | 真實 trace 流程見 SOP `docs/x_cube_ai_install_sop.md` |
+| STM32N6 NPU < 1 ms 預估〔競賽期數字,已撤回:NPU 不支援 LSTM/GRU,且未上板;不引用任何 NPU 延遲數字〕 | ST datasheet + `scripts/onnx_static_analysis.py` 靜態圖分析 54.7 µs(40 % NPU utilisation 假設,±2× 區間 27–109 µs);對比 ST datasheet typical 0.3 ms 仍有 3× margin | 真實 trace 流程見 SOP `docs/x_cube_ai_install_sop.md` |
 
 ### 6.3 商業層聲稱
 
 | 聲稱 | 證據 | 局限 |
 |------|------|------|
-| 33 % TCO 節省 | `tco.ts` 公式對齊 v2.2 §G.3 | 默認 mid-tier preset;rack 數 / 電價變化會偏移 |
+| 〔已撤回〕33 % TCO 節省 | `tco.ts` 公式對齊 v2.2 §G.3 | 推估基礎不夠紮實,不再引用任何固定節省比例;`/tco` 僅為依使用者輸入假設的試算工具 |
 | 1000 台 fleet | seeded RNG 模擬 | **明標 SIMULATED DATA**,絕非真客戶資料 |
 | Texas 49 % / Virginia 27 % fleet 模擬權重 | **本文模擬假設**(AI 機房密度加權);v2.2 §C.1 引 JLL 2025 全美在建容量為 18.6 % / 15 % | 放大係模擬,非 JLL 直接引用,業師若挑戰須聲明此差異 |
 | **未** 部署到 OCP | v2.2 §F.1 18 個月里程碑 | 2027 Q3 才送認證 |
@@ -990,7 +1015,7 @@ $$
 
 | 風險 | 影響 | 應對 |
 |------|------|------|
-| LIC vendor lock-in | 高(目前只 Eaton + JM Energy 兩家有規格) | 並行 qualify Maxwell + Ningbo CRRC 替代品(§8.2 規劃)|
+| LIC vendor lock-in | 高(競賽期判斷「目前只 Eaton + JM Energy 兩家有規格」;〔已更正:Eaton XLR 實為 EDLC 非 LIC,量產改採 Musashi ULTIMO CPQ3300SD〕) | 並行 qualify Maxwell + Ningbo CRRC 替代品(§8.2 規劃)|
 | LFP 模組熱失控傳播 | 高(NFPA 855 認證需要) | abuse 測試:單體穿刺、過充、外短路(§8.2 規劃)|
 | STM32N6 NPU op 不支援度 | 中(LSTM 在某些 X-CUBE-AI 版本部分 op fallback CPU) | 實機 X-CUBE-AI trace 量化後備案(§8.2 規劃)|
 | 跨化學模型遷移 | 中(已知 5/5 feature OOD) | per-chemistry calibration 流程列入產品 SOP |
@@ -1007,7 +1032,7 @@ $$
 | 風險 | 應對 |
 |------|------|
 | Tier-1 玩家 ⊃ Sysblade 自研 | 鎖定 Tier-2/3 colo,避免直接競爭 |
-| Tier-2/3 對「軟體訂閱」買單意願 | 第一年免費試用 + USD 25k/site/yr 訂閱可隨時取消 |
+| Tier-2/3 對「軟體訂閱」買單意願 | 〔競賽期訂閱定價(USD 25k/site/yr、首年免費試用)已撤回;商業模式仍屬構想階段,尚未經客戶採購驗證〕 |
 
 ### 7.4 法規 / ESG 風險
 
@@ -1034,10 +1059,10 @@ $$
 | ML — random split | bagged-GBT (K=24) + xstrict filter median MAPE **8.38 %、R² 0.89**,**達 v2.2 附件 B「< 10 %」承諾** | [v] |
 | ML — cross-batch | bagged-OLS + xstrict (b1+b2 → b3) median MAPE **13.87 %、R² +0.21** | [v] |
 | ML — cross-dataset | Severson → NASA 5/5 feature OOD,z = 5–65 σ → per-chemistry 校準 SOP(§3.3.5)| [v] |
-| ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 1910 → 1075 cycles(−44 %),test coverage 100 %(§3.3.7)| [v] |
+| ML — 機率輸出 | MC Dropout 100 sample + Split Conformal calibration,PI 中位寬 2697 → 1359 cycles(約 −50 %,production TCN;〔已更正:競賽期 1910 → 1075 / −44 % 為 LSTM 基線〕),test coverage 100 %(§3.3.7)| [v] |
 | ML — regime augmentation | 50 顆 **Severson-anchored synthetic BBU-duty cell**(analytic decay + per-cell noise,**non-PyBaMM**)加入訓練,LSTM span Severson + BBU 兩 regime(§3.3.8);僅作 regime coverage,production 信賴度仍以 Severson 真實 cells 為主 | [v] |
 | 邊緣部署(measured)| ONNX export(opset 17)+ INT8 dynamic quant:**3.49× 壓縮、ΔMAPE +0.10 pp、CPU INT8 p50 1.11× 加速**(附錄 C)| [v] |
-| 邊緣部署(estimate)| STM32N6 X-CUBE-AI 靜態圖分析,NPU latency **54.7 µs**(±2× 區間 27–109 µs,40 % NPU util 假設,附錄 C)| [v] |
+| 邊緣部署(estimate)| 〔競賽期數字,已撤回:STM32N6 NPU latency 54.7 µs(27–109 µs)估算不成立;邊緣端為概念、尚未上板〕 | [x] 撤回 |
 | Live demo | `/twin` Battery Twin · `/tco` TCO Calculator · `/dashboard` 1000-台 fleet(seeded RNG 模擬,SIMULATED DATA watermark)| [v] |
 
 ### 8.2 後續產品里程碑(對應商業 PDF §F.1)
@@ -1105,7 +1130,7 @@ $$
 | **PyBaMM DFN 4 scenario**(`transient_lfp_only` / `transient_hybrid` / `aging_lfp` / `aging_rainflow_validation`)| V3 整 rack sim 直接 scale-up;V5 BBU-duty cell 生成器 reference |
 | **Severson bagged-GBT MAPE 8.38 %**(R² = 0.89,Severson 138 cells, 10-seed random split)| V5 transfer test 的 source model |
 | **INT8 LSTM measured ΔMAPE +0.10 pp · 3.49× 壓縮 · CPU INT8 p50 1.11× 加速** | V5 推論側量化證據(沿用)|
-| **STM32N6 X-CUBE-AI 靜態圖分析 NPU latency 27-109 µs** | 沿用為 estimated baseline;實機 trace 留 EVT |
+| **STM32N6 X-CUBE-AI 靜態圖分析 NPU latency 27-109 µs**〔競賽期數字,已撤回〕 | 不再沿用;邊緣端為概念、尚未上板(見檔頭勘誤) |
 | **8S scaled sim gate 5.72× / 3.52×** | V3 整 rack sim 的 reference baseline(scaled-down 對 full-scale 的 transfer 已 PASS)|
 | **`hybrid_control_emulator.py` Python 控制律 emulator** | V3 控制律 sim 的核心(STM32 韌體規格的 reference implementation)|
 | **Dashboard SaaS 三件套**(`/twin` `/tco` `/dashboard`) | v2.0 加 `/twin` V3/V4 toggle + `/dashboard` V4 fleet fault toggle;v1.x LiveDemonstratorCard 已隨硬體退貨於 2026-05-27 移除 |
@@ -1117,12 +1142,12 @@ $$
 | §2.1.1 / `/dashboard` headline「**8 BBU per rack** · 60 s graceful · GB200 NVL72 整 rack ~120 kW」 | **V3 整 rack 60 s graceful sim** 直接把這條曲線跑出來(原本只是承諾,v2.0 變成 sim artifact)| [v] **強化** |
 | §2.3 / `/twin` 5.7× LFP RMS 削峰 · 3.5× V_cell pp 收斂 | sim 數字不變;V1 PyBaMM 對車規 LFP fit error 量化後給「sim 對 reality 的可信度區間」 | [v] |
 | §3.3.3 / 附錄 A bagged-GBT (K=24) + xstrict cell filter random split MAPE **8.38 %** | 不變;V5 在 PyBaMM-generated BBU-duty cells 上加一個 transfer MAPE 數字(誠實揭露 cross-regime degradation) | [v] **強化** |
-| 附錄 C INT8 LSTM measured ΔMAPE +0.10 pp · 63 KB · 3.49× 壓縮 | 不變;Pi 5 + STM32N6 仍為 estimated / measured 分軌 | [v] |
+| 附錄 C INT8 LSTM measured ΔMAPE +0.10 pp · 63 KB · 3.49× 壓縮 | 不變;Pi 5 + STM32N6 仍為 estimated / measured 分軌〔NPU 延遲估算部分已撤回,見檔頭勘誤〕 | [v] |
 | §2.6.3 / `/dashboard` 1000 台 SIMULATED + watermark | **V3/V4 sim 餵新 row 仍標 SIMULATED**(不是 real device telemetry);watermark **不弱化** | [v] |
 | LFP **15S**(v2.2 §修訂 #4 commitment) | v2.0 不修訂 spec;EVT 階段 15S 仍是承諾;V3 整 rack sim 直接用 15S 配置 | [v] **更直接** |
 | 「不承諾 MAPE < 5 %」(v2.2 附件 B) | V5 transfer test 出來的 cross-regime MAPE 若 ≥ 10 % 仍誠實寫進報告,**不修飾數字**;v2.2 < 10 % 承諾仍是針對 random split | [v] |
 | §6.1 PyBaMM 用 Prada2013 generic LFP 未對齊車規 cell 之邊界揭露 | **V1 把這條邊界量化為 fit error % 數字**;原本「未對齊」現在變「對齊到 X % RMS V error 內」 | [v] **強化** |
-| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values 未對齊 measured | **V2 把這條邊界量化為 droop RMS error %**;原本「typical 假設」現在變「對齊到 X % droop error」 | [v] **強化** |
+| §2.3.0 LIC RC anchor 到 Eaton datasheet typical values 未對齊 measured〔已更正:該 Eaton 型號實為 EDLC,僅作參數錨定〕 | **V2 把這條邊界量化為 droop RMS error %**;原本「typical 假設」現在變「對齊到 X % droop error」 | [v] **強化** |
 
 **v2.0 沒有任何結果會改寫本白皮書既有 spec / 數字承諾**;V1-V6 是「對 spec
 主張的 sim 重現 + 對 spec 邊界的量化揭露」,不是 spec 的修訂。**反而 V1+V2
@@ -1312,6 +1337,8 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 
 ## 附錄 C — STM32N6 X-CUBE-AI 混合分析(measured size+accuracy + estimated NPU latency)
 
+> 〔競賽期內容,部分已撤回:本附錄以 LSTM 為對象。ST Neural-ART NPU 不支援 LSTM/GRU,C.3 的 op dispatch 判讀與 C.4 的 NPU 延遲估算(54.7 µs、27–109 µs)及 0.3 ms 比較**均已撤回**;邊緣端部署目前為概念、**尚未上板**,不引用任何 NPU 延遲數字。現行 RUL 模型為 TCN(§3.4.1)。見檔頭勘誤。〕
+
 > **混合報告**:本附錄合併兩條證據鏈 ——
 >
 > 1. **靜態 graph 分析(proxy)**:用 Python `onnx` library + ST 公開資料
@@ -1371,10 +1398,10 @@ NASA NMC 的預測沒有意義」,而非「模型可改進到 X %」。**真正�
 | 總 MAC | 3,281,954 |
 | NPU MAC | 3,281,954(100 %) |
 | CPU MAC | 0 |
-| **估算 NPU latency** | **54.7 µs** |
-| **估算 ±2× 區間** | **27–109 µs** |
+| **估算 NPU latency**〔已撤回〕 | **54.7 µs** |
+| **估算 ±2× 區間**〔已撤回〕 | **27–109 µs** |
 
-**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms ≈ 300 µs(本文 §3.4 引述,v2.2 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字)**:本估算 54.7 µs **遠低於 ST datasheet typical 上限
+〔競賽期比較,已撤回〕**對比 ST datasheet Neural-ART NPU INT8 LSTM typical latency 0.3 ms ≈ 300 µs(本文 §3.4 引述,v2.2 §E.1 Tier-C 僅言「ms 級 SOH 推論」未具體承諾數字)**:本估算 54.7 µs **遠低於 ST datasheet typical 上限
 上限**,即使打 ±2× 不確定區間,worst-case 109 µs 仍有 3× margin。
 
 ### C.5 真實 INT8 量化驗證(measured,2026-05-03)
@@ -1410,7 +1437,7 @@ X-CUBE-AI 實機 trace(SOP: `docs/x_cube_ai_install_sop.md`)涵蓋以下五項
 5. **STM32N6 上的 INT8 精度**(對齊本附錄 onnxruntime CPU INT8 ΔMAPE +0.10 pp;
    ST 工具策略差異容許區間 ±0.5 pp)
 
-> v2.2 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
+> 〔競賽期說法,已撤回:「STM32N6 NPU 0.3 ms 推論」聲稱不再引用。〕v2.2 商業 PDF 中「STM32N6 NPU 0.3 ms 推論」聲稱目前由
 > (a) ST datasheet 廠商 spec + (b) 本靜態分析 estimate + (c) onnxruntime
 > CPU INT8 measured baseline 共同支持。
 

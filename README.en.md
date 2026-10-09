@@ -31,7 +31,7 @@
 | 1 | Tier-A "LIC" anchored to Eaton XLR | The official Eaton XLR-48R6167-R datasheet is an **EDLC supercapacitor**; **production Tier-A moves to a true LIC (Musashi ULTIMO CPQ3300SD)** |
 | 2 | 5.7× / 3.5× peak shaving | **Ideal lossless upper bound on the ±30 %/100 ms reference waveform, not a lifetime multiplier**; with DC-DC losses typically **2.4–3.9×, degrading to ~1.5× above 100 Hz** |
 | 3 | Bidirectional DC-DC front end | OCP ORV3 forbids capacitors behind the Oring on the bus → **DC-DC is a compliance necessity**; the sim is an open-loop equivalent, the **power-electronics** closed loop is an EVT deliverable (the supervisory SOH→τ loop is sim-verified in **V8**, `make v8`) |
-| 4 | STM32N6 NPU running LSTM (54.7 µs) | Neural-ART **NPU does not support LSTM/GRU**; production RUL moves to **TCN/1D-CNN** (NPU-native + static-INT8 quantizable) |
+| 4 | STM32N6 NPU running LSTM (competition-era latency estimate, withdrawn) | Neural-ART **NPU does not support LSTM/GRU**; production RUL moves to **TCN/1D-CNN** (NPU-native + static-INT8 quantizable) |
 | 5 | Tier-C single-chip integration (incl. OpenBMC) | The M55 has no MMU and cannot run OpenBMC; **split into three layers** (BMS-AFE + safety MCU + N6 inference), the BBU speaks MCTP/PLDM and **does not claim to be a BMC** |
 
 > Also: the first-mover window has closed; a realistic BOM is ~2.0–2.7× the v2.2 estimate; certification must extend to UL 9540 / 9540A; cell localisation is pack-assembly-first with imports handled under UFLPA. Details in `docs/product_realization/` (local deliverable, not published in this repo).
@@ -47,9 +47,9 @@ an **LFP + lithium-ion-capacitor (LIC) hybrid BBU** paired with a **Battery Digi
 
 - **GB200 millisecond-scale voltage transients** — battery-only BBUs cannot ride the 50–200 ms sags that reboot downstream PSUs
 - **48 V → ±400 V HVDC transition** — incumbents sell 48 V only; customers face a forklift upgrade after 2027
-- **1000+ node fleet operations** — manual inspection has a low hit-rate; no public SaaS offers BBU-level RUL
+- **1000+ node fleet operations** — manual inspection has a low hit-rate; operators lack tools that predict BBU-level RUL
 
-**Six key numbers**: 5.7× lower power ripple on the battery · ~25 % LFP float-life advantage† · 33 % customer 10-year TCO reduction · 60 s graceful shutdown at 120 kW **rack** peak (**8 BBUs in parallel per rack**, dynamic ramp profile — see the mentor-focus section below) · 8.38 % RUL prediction MAPE · 3.49× INT8 quantization compression (full derivations in the [whitepaper](docs/whitepaper.md)).
+**Five key numbers**: 5.7× lower power ripple on the battery · ~25 % LFP float-life advantage† [competition-stage inference, no longer cited] · 60 s graceful shutdown at 120 kW **rack** peak (**8 BBUs in parallel per rack**, dynamic ramp profile — see the mentor-focus section below) · 8.38 % RUL prediction MAPE · 3.49× INT8 quantization compression (previous-baseline LSTM; the current TCN's dynamic INT8 is 2.36×) (full derivations in the [whitepaper](docs/whitepaper.md)).
 
 > † The "~25 %" comes primarily from **low BBU duty scheduling** (§G.3 `duty_factor=0.33`, ~50 equivalent cycles/yr vs the Severson 1C/1C lab cadence), **not** from the hybrid topology; the topology's per-Ah damage delta is independently checked with rainflow counting + the Wang 2011 model (`aging_rainflow_validation.json`): worst-case ~5 %, near-neutral on the demo waveform.
 
@@ -62,7 +62,7 @@ Every externally quoted headline number hangs off a re-runnable validation chain
 | Chain | What it validates | Criterion / result | Artifact |
 |---|---|---|---|
 | **V1** | PyBaMM Prada2013 vs measured Severson discharge curves | RMS error **2.15 %** (gate ≤ 5 %) [v] | `data/processed/pybamm_lfp_fit_error.json` |
-| **V2** | First-order LIC RC model vs Eaton XLR datasheet (+ 4 nonlinear extensions) | droop under-estimate ≤ **2.93 %** (gate 10 %) [v] | `scripts/eval_lic_rc_fit.py` |
+| **V2** | First-order capacitor RC model vs Eaton XLR datasheet (that part is actually an EDLC — see erratum #1; + 4 nonlinear extensions) | droop under-estimate ≤ **2.93 %** (gate 10 %) [v] | `scripts/eval_lic_rc_fit.py` |
 | **V3** | Full-rack 60 s graceful dynamic sim (with thermal model) | voltage / temperature / C-rate compliant throughout, DoD 2.66 % [v] | `apps/web/public/scenarios/rack_60s_graceful.json` |
 | **V4** | N-1 fault tolerance: 1 BBU dropped at t = 15 s | remaining 7 finish the full 60 s, +14 % per-unit load, still compliant [v] | `apps/web/public/scenarios/rack_n_minus_1.json` |
 | **V5** | Severson → BBU-duty cross-regime transfer | MAPE 9.04 % → **80.20 %** (an honestly disclosed limitation) | `data/processed/severson_transfer_mape.json` |
@@ -101,7 +101,7 @@ Cross-consistent sources (architecture precedes documentation):
 
 | Window | Rack load | Per BBU | Per-cell C-rate | Dominant mechanism |
 |---|---:|---:|:--:|---|
-| **t = 0–500 ms** | 120 kW full load | 15 kW | **6C peak** | LIC-led (2× XLR-48-166, ~290 kJ usable, can hold ~2.4 s alone) |
+| **t = 0–500 ms** | 120 kW full load | 15 kW | **6C peak** | Capacitor-led (2× XLR-48-166, ~290 kJ usable, can hold ~2.4 s alone; the XLR is an EDLC — see erratum #1) |
 | **t = 500 ms–2 s** | 120 → 30 kW (linear ramp) | 15 → 3.75 kW | 6C → 1.5C | BMC triggers GPU power-cap; LIC + LFP ramp down together |
 | **t = 2–60 s** | 30 kW steady (checkpoint + idle) | 3.75 kW | **1.5C continuous** | LFP alone (LIC exhausted, standing by) |
 
@@ -136,9 +136,9 @@ and pins the 60-second continuous point at 1.5C — two different datasheet line
 
 | Route | What it does | Highlights |
 |---|---|---|
-| [`/`](https://sysblade-atcc.vercel.app/) | Landing — 5 headline cards + section guide | values pulled dynamically from scenario JSONs |
-| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (LIC, Eaton XLR datasheet anchor)** + TCN RUL (LSTM baseline) + 90 % MC-Dropout PI narrowed 44 % via split conformal + oscilloscope sweep animation + **v_lic(t) chart showing UVLO headroom** |
-| [`/tco`](https://sysblade-atcc.vercel.app/tco) | 10-year TCO calculator | 4 sliders × 3 presets · pure HTML/Tailwind bar chart · **payback-period tile + 5-item §G.3 source-anchor panel** |
+| [`/`](https://sysblade-atcc.vercel.app/) | Landing — single-page scroll narrative (pain point / live simulation / split / 60 s outage / AI / architecture / verification) | simulated values pulled dynamically from scenario JSONs |
+| [`/twin`](https://sysblade-atcc.vercel.app/twin) | Battery Digital Twin | PyBaMM DFN (LFP) + **closed-form RC (capacitor side, Eaton XLR datasheet anchor; that part is an EDLC)** + TCN RUL (LSTM baseline) + 90 % MC-Dropout PI narrowed ~50 % via split conformal (median width 2,697→1,359 cycles) + oscilloscope sweep animation + **v_lic(t) chart showing UVLO headroom** |
+| `/tco` (not linked) | Competition-era 10-year TCO estimator, removed from navigation | Outputs are estimates from the user's own input assumptions, not actual or guaranteed savings; no fixed savings ratio is claimed |
 | [`/dashboard`](https://sysblade-atcc.vercel.app/dashboard) | 1000-device fleet dashboard | US fleet map + three service tiers + per-device drilldown (SOH / RUL / thermal / operational metrics + **LIC bank envelope headroom bar**) · page-wide SIMULATED DATA watermark · fictional site personas |
 
 ![Sysblade architecture](docs/figures/architecture.png)
@@ -164,7 +164,7 @@ scripts/export_lstm_onnx.py               └ apps/web/public/scenarios/
 ### Physics layering — why the LIC does not go through PyBaMM
 
 LFP gets PyBaMM DFN (the chemistry-critical side); the LIC gets a closed-form first-order RC
-equivalent anchored to the Eaton XLR datasheet. Demo-waveform worst-case droop is 2.32 V with
+equivalent anchored to the Eaton XLR datasheet (that part is an EDLC supercapacitor; production moves to a Musashi ULTIMO LIC — see erratum #1). Demo-waveform worst-case droop is 2.32 V with
 10.98 V of headroom to UVLO; 95 % of the droop is ESR — so paralleling modules (lowering ESR)
 beats adding capacitance if production needs less droop.
 
@@ -173,7 +173,7 @@ beats adding capacitance if production needs less droop.
 
 **The LFP cell runs PyBaMM DFN** (most complex, most critical chemistry); **the LIC side runs a
 closed-form first-order RC equivalent** (`_simulate_lic_rc()` in `scripts/generate_twin_scenarios.py`),
-parameters anchored to the Eaton XLR-48-166 × 2-in-parallel datasheet:
+parameters anchored to the Eaton XLR-48-166 × 2-in-parallel datasheet (EDLC — see erratum #1):
 
 | Parameter | Value | Source |
 |---|---:|---|
@@ -187,7 +187,7 @@ On the demo waveform: **worst-case droop 2.32 V** (51.3 → 48.98 V), **10.98 V 
 cumulative capacitive discharge (13.31 kJ ÷ 332 F) — i.e. if production needs lower droop, adding
 parallel modules (lower ESR) beats adding capacitance. **Not modelled**: pseudo-capacitance,
 temperature-dependent ESR, self-discharge, electrode kinetics (Helmholtz layer dynamics) — to be
-calibrated with Eaton in-the-loop measurements at the production stage. The third ChartCard on
+calibrated with in-the-loop measurements of the selected part at the production stage. The third ChartCard on
 `/twin` renders v_lic(t) with a red dashed UVLO line a mentor can point at on screen.
 
 </details>
@@ -225,13 +225,13 @@ gitignored (only `.gitkeep` and 4 derived JSONs are committed for the number che
 <summary><b>More reproducibility commands</b> (LSTM retrain / full sweep / INT8 quantization / cross-dataset / NPU static analysis)</summary>
 
 ```bash
-# Retrain LSTM + export ONNX (~3 min CPU)
+# Retrain the previous-baseline LSTM + export ONNX (~3 min CPU; overwrites model_validation.json — the current TCN is regenerated by scripts/export_tcn_onnx.py)
 python scripts/export_lstm_onnx.py            # → apps/web/public/scenarios/model_validation.json
 
 # OLS / GBT / bagged-* full sweep (the model-card table)
 python scripts/eval_severson_models.py        # → data/processed/severson_model_eval.json
 
-# INT8 dynamic-quantization check (whitepaper Appendix C.5, ~30 s)
+# INT8 dynamic-quantization check (previous-baseline LSTM; whitepaper Appendix C.5, ~30 s)
 python scripts/quantize_lstm_onnx.py          # → data/processed/lstm_quantization_report.json
 
 # Cross-dataset (Severson → NASA NMC) cross-chemistry test
@@ -296,7 +296,7 @@ protocol-specific features and degrades cross-batch.
 | Test R² | **0.86** | high explanatory power despite the cross-regime trade-off |
 | ONNX size | FP32 219 KiB → **INT8 63 KiB (3.49× compression, measured)** | far below the STM32N6 1.6 MB ML FLASH; measured by `scripts/quantize_lstm_onnx.py` |
 | INT8 accuracy cost | **ΔMAPE +0.10 pp** (19.10 → 19.20 %), R² unchanged | mean prediction shift 0.57 %; the go/no-go evidence for STM32N6 deployment |
-| ONNX latency (laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | ~125× inside the 50 ms spec; STM32N6 NPU estimated 27–109 µs (static graph analysis, `scripts/onnx_static_analysis.py`) |
+| ONNX latency (laptop CPU p99) | FP32 0.44 ms / INT8 0.40 ms | ~125× inside the 50 ms spec; STM32N6 NPU is a concept design — latency not yet measured on hardware (static graph analysis in `scripts/onnx_static_analysis.py`) |
 | Uncertainty method | MC Dropout + split conformal | 100 forward passes, **raw 1910 → conformal 1075 cycles** (44 % narrower), test coverage 100 % with a ≥ 90 % guarantee, 37 held-out calibration cells |
 
 **Production inference runs on the TCN** (§3.4.1; LSTM is the documented baseline); bagged-GBT
@@ -348,7 +348,7 @@ atcc/
 │   ├── generate_adaptive_split_sim.py            V8 supervisory closed loop (SOH → τ adaptation) sim
 │   ├── generate_bbu_duty_cells.py                50 Severson-anchored synthetic BBU-duty cells (analytic decay)
 │   ├── eval_pybamm_lfp_fit.py                    V1 PyBaMM vs measured Severson fit (2.15 % RMS)
-│   ├── eval_lic_rc_fit.py                        V2 LIC RC vs Eaton datasheet (incl. nonlinear extensions)
+│   ├── eval_lic_rc_fit.py                        V2 capacitor RC vs Eaton datasheet (EDLC; incl. nonlinear extensions)
 │   ├── eval_severson_transfer.py                 V5 cross-regime transfer MAPE
 │   ├── eval_severson_models.py                   OLS / bagged-OLS / GBT / bagged-GBT / HistGBT / stack sweep
 │   ├── eval_cross_dataset.py                     Severson → NASA NMC cross-chemistry test

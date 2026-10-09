@@ -503,7 +503,7 @@ PUE / grid carbon)+ 三個 preset(Mid-tier · TX / Hyperscale · VA / Edge AI ·
 > 替換 LFP pack。**客戶不需自己 monitor、不會踩 SLA、Sysgration 收維運年費**。
 
 > **Admission 分支揭露**:本案模擬 fleet 中 77 台 early_aging 全由 `SOH < 0.85`
-> 觸發,`RUL < 800` 分支零觸發(fleet RUL 分布 4389–7130 cycles)。完整 admission
+> 觸發,`RUL < 800` 分支零觸發(77 台 early_aging 的 TCN RUL 分布 3045–6343 cycles)。完整 admission
 > rule 仍是 `SOH < 0.85 OR RUL < 800`(對齊 v2.2 §F)。
 
 **產品內容**(對齊 v2.2 §E.3 三層服務承諾):
