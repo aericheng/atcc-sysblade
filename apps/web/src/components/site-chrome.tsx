@@ -4,11 +4,12 @@ import { SiteNav } from "@/components/site-nav";
 
 /**
  * Shared header / container / footer for the app pages (/twin, /dashboard, /tour, /tco).
- * The home page ("/") is a full-bleed scroll story with its own nav and footer, so it renders bare.
+ * The home page ("/", and its English version "/en/") is a full-bleed scroll story with its own nav
+ * and footer, so it renders bare.
  */
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/") return <>{children}</>;
+  if (pathname === "/" || pathname === "/en" || pathname === "/en/") return <>{children}</>;
   return (
     <>
       <SiteNav />

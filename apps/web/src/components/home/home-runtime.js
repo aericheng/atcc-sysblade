@@ -5,6 +5,9 @@
 // tracked and released by the returned dispose().
 export function initHome(HOME, env) {
   const { gsap, ScrollTrigger, base, fonts } = env;
+  // UI copy: tr(zh, en). lang defaults to 'zh', where every string is the original Chinese, unchanged.
+  const EN = env.lang === 'en';
+  const tr = (zh, en) => (EN ? en : zh);
   const FONT = { mono: fonts.mono + ', monospace', zh: fonts.zh + ', sans-serif' };
   const SHARED = { ink: null };
   const disposers = [];
@@ -311,9 +314,9 @@ const Stage = (function () {
       lv.textContent = '—'; E[liveId] = lv;
     };
     const aL = P(LFP.x, y1, 3.9), aC = P(8.5, 4.7, TRAY.dz + CAN_H + 0.02), aR = P(13.2, 2.3, RACK.dz);
-    callout('f-lfp', aL[0] + 8, aL[1] + 4, aL[0] - 30, aL[1] - 54, aL[0] - 170, 'LFP 電池', 'PyBaMM DFN · Prada2013', 'cvLfp', '#ffb23e');
-    callout('f-lic', aC[0], aC[1] - 4, aC[0], aC[1] - 86, aC[0] + 150, 'LIC 電容組', '332 F · ESR 2.5 mΩ · UVLO 38 V', 'cvLic', '#3dff9a');
-    callout('f-load', aR[0], aR[1] - 2, aR[0], aR[1] - 70, aR[0] + 150, 'AI 機櫃負載', '56 ↔ 104 kW · 5 Hz', 'cvLoad', '#f2f5f3');
+    callout('f-lfp', aL[0] + 8, aL[1] + 4, aL[0] - 30, aL[1] - 54, aL[0] - 170, tr('LFP 電池', 'LFP battery'), 'PyBaMM DFN · Prada2013', 'cvLfp', '#ffb23e');
+    callout('f-lic', aC[0], aC[1] - 4, aC[0], aC[1] - 86, aC[0] + 150, tr('LIC 電容組', 'LIC bank'), '332 F · ESR 2.5 mΩ · UVLO 38 V', 'cvLic', '#3dff9a');
+    callout('f-load', aR[0], aR[1] - 2, aR[0], aR[1] - 70, aR[0] + 150, tr('AI 機櫃負載', 'AI rack load'), '56 ↔ 104 kW · 5 Hz', 'cvLoad', '#f2f5f3');
 
     // focus points for the camera
     FOCI.load = P(13.0, 2.3, 5.2); FOCI.lic = P(8.5, 5.3, 1.6); FOCI.lfp = P(3.2, 5.35, 2.6);
@@ -438,7 +441,7 @@ const Stage = (function () {
       els.vcell.textContent = vc.toFixed(3);
       const hot = pl > 1;
       els.roLic.classList.toggle('hot', hot);
-      els.licState.textContent = hot ? '放電 · 吸收瞬態' : pl < -1 ? '回充 · 由 LFP 補能' : '待機';
+      els.licState.textContent = hot ? tr('放電 · 吸收瞬態', 'Discharging · absorbing transient') : pl < -1 ? tr('回充 · 由 LFP 補能', 'Recharging from LFP') : tr('待機', 'Idle');
       E.cvLfp.textContent = `P ${pf.toFixed(1)} kW · V_cell ${vc.toFixed(3)} V`;
       E.cvLic.textContent = `P ${(pl >= 0 ? '+' : '−') + Math.abs(pl).toFixed(1)} kW · V_LIC ${vl.toFixed(2)} V`;
       E.cvLoad.textContent = `P ${pt_.toFixed(1)} kW`;
@@ -486,7 +489,7 @@ const Stage = (function () {
       let th = t0 + (o.hoverX / o.w) * WINs; if (th < 0) th += DUR;
       const j = idx(th);
       tip.hidden = false;
-      tip.innerHTML = `t ${T[j].toFixed(3)} s　<b style="color:#f2f5f3;font-weight:500">LOAD ${S.p_total_kw[j].toFixed(1)}</b> · <b style="color:#3dff9a;font-weight:500">LIC ${S.p_lic_kw[j].toFixed(1)}</b> · <b style="color:#ffb23e;font-weight:500">LFP ${S.p_lfp_kw[j].toFixed(1)}</b> kW`;
+      tip.innerHTML = `t ${T[j].toFixed(3)} s${tr('　', '&emsp;')}<b style="color:#f2f5f3;font-weight:500">LOAD ${S.p_total_kw[j].toFixed(1)}</b> · <b style="color:#3dff9a;font-weight:500">LIC ${S.p_lic_kw[j].toFixed(1)}</b> · <b style="color:#ffb23e;font-weight:500">LFP ${S.p_lfp_kw[j].toFixed(1)}</b> kW`;
       tip.style.left = Math.min(Math.max(0, o.hoverX + 12), o.w - tip.offsetWidth) + 'px';
     } else tip.hidden = true;
   }
@@ -573,7 +576,7 @@ const Stage = (function () {
     const setUI = () => {
       const p = Sim.playing;
       stage.classList.toggle('paused', !p);
-      $('btn-play').setAttribute('aria-label', p ? '暫停' : '播放');
+      $('btn-play').setAttribute('aria-label', p ? tr('暫停', 'Pause') : tr('播放', 'Play'));
       $('btn-play').setAttribute('aria-pressed', String(p));
     };
     $('btn-play').addEventListener('click', () => { if (Sim.playing) Sim.pause(); else Sim.play(); setUI(); });
@@ -733,7 +736,7 @@ const Sections = (function () {
     const ev = snap ? near : pain.feat; // the edge we annotate
 
     // lane frames + labels
-    const laneLbl = [['a', 'P_LOAD 負載功率', 40, 120, (v) => v + ' kW', [56, 104]], ['b', '電池端功率', 40, 120, (v) => v + ' kW', [56, 104]], ['c', '電芯電壓 V_cell', pain.vlo, pain.vhi, null, []]];
+    const laneLbl = [['a', tr('P_LOAD 負載功率', 'P_LOAD load power'), 40, 120, (v) => v + ' kW', [56, 104]], ['b', tr('電池端功率', 'Battery-side power'), 40, 120, (v) => v + ' kW', [56, 104]], ['c', tr('電芯電壓 V_cell', 'Cell voltage V_cell'), pain.vlo, pain.vhi, null, []]];
     laneLbl.forEach(([k, lbl, lo, hi, f, ticks]) => {
       const [a, b] = lanes[k];
       cx.strokeStyle = C.grid; cx.lineWidth = 1;
@@ -751,7 +754,7 @@ const Sections = (function () {
     // x axis
     cx.fillStyle = C.dim; cx.textAlign = 'center';
     for (let t = pain.t0; t <= pain.t1 + 1e-6; t += 0.5) cx.fillText(t.toFixed(1) + ' s', Math.min(L + pw - 16, Math.max(L + 16, X(t))), h - 8);
-    if (!narrow) { cx.textAlign = 'right'; cx.fillText('穩態窗 4–6 s', L + pw, T + ph * lanes.c[0] - 7); }
+    if (!narrow) { cx.textAlign = 'right'; cx.fillText(tr('穩態窗 4–6 s', 'Steady-state window 4–6 s'), L + pw, T + ph * lanes.c[0] - 7); }
 
     const rx = L + pw * pain.reveal;
     cx.save(); cx.beginPath(); cx.rect(0, 0, rx + 1, h); cx.clip();
@@ -828,7 +831,7 @@ const Sections = (function () {
       const yb = Math.max(yVb0, yVb1) + 22;
       if (pain.alpha.bad > 0.5) {
         cx.font = '600 16px ' + FONT.mono; cx.fillStyle = BAD;
-        cx.fillText(`純電池 ${dVb > 0 ? '+' : '−'}${Math.abs(dVb).toFixed(1)} mV`, ax, yb);
+        cx.fillText(`${tr('純電池', 'Battery-only')} ${dVb > 0 ? '+' : '−'}${Math.abs(dVb).toFixed(1)} mV`, ax, yb);
       }
       if (pain.alpha.good > 0.5) {
         mono('600'); cx.fillStyle = C.good;
@@ -836,7 +839,7 @@ const Sections = (function () {
       }
       // instant label at the top of the guide
       mono(); cx.fillStyle = C.ink; cx.globalAlpha = 0.8;
-      cx.fillText(`${up ? '負載上跳' : '負載下降'}瞬間 · t = ${pain.T[i].toFixed(3)} s`, ax, T + ph * lanes.a[0] - 7);
+      cx.fillText(`${up ? tr('負載上跳', 'Load steps up') : tr('負載下降', 'Load steps down')}${tr('瞬間', '')} · t = ${pain.T[i].toFixed(3)} s`, ax, T + ph * lanes.a[0] - 7);
       cx.globalAlpha = 1;
     }
 
@@ -850,7 +853,7 @@ const Sections = (function () {
         cx.textAlign = 'left'; mono('600');
         const ly = below ? y1 + 15 : y0 + 4;
         cx.fillText(lbl, x + 6, ly);
-        if (!narrow) { mono(); cx.globalAlpha = a * 0.75; cx.fillText('峰對峰', x + 6, ly + 13); }
+        if (!narrow) { mono(); cx.globalAlpha = a * 0.75; cx.fillText(tr('峰對峰', 'pk-pk'), x + 6, ly + 13); }
         cx.globalAlpha = 1;
       };
       br(pain.eBad, pain.ppBad, BAD, pain.alpha.bad, 6, (pain.ppBad * 1000).toFixed(1) + ' mV', false);
@@ -863,8 +866,8 @@ const Sections = (function () {
       if (!snap) { cx.strokeStyle = C.ink; cx.globalAlpha = 0.35; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x + 0.5, T - 6); cx.lineTo(x + 0.5, T + ph); cx.stroke(); cx.globalAlpha = 1; }
       const i = snap ? near : best;
       const tip = pain.tip; tip.hidden = false;
-      tip.innerHTML = `t ${pain.T[i].toFixed(3)} s · 負載 <b>${pain.load[i].toFixed(0)} kW</b>${snap ? ' · 切換瞬間' : ''}<br>` +
-        `<span style="color:#ff8a80">純電池</span> ${pain.pBad[i].toFixed(1)} kW · ${pain.vBad[i].toFixed(4)} V<br>` +
+      tip.innerHTML = `t ${pain.T[i].toFixed(3)} s · ${tr('負載', 'load')} <b>${pain.load[i].toFixed(0)} kW</b>${snap ? tr(' · 切換瞬間', ' · switching instant') : ''}<br>` +
+        `<span style="color:#ff8a80">${tr('純電池', 'Battery-only')}</span> ${pain.pBad[i].toFixed(1)} kW · ${pain.vBad[i].toFixed(4)} V<br>` +
         `<span style="color:#6fe3a7">HyperBuffer</span> ${pain.pGood[i].toFixed(1)} kW · ${pain.vGood[i].toFixed(4)} V`;
       const tw = tip.offsetWidth, xx = X(pain.T[i]);
       tip.style.left = Math.max(0, Math.min(w - tw, xx + 12 + tw > w ? xx - tw - 12 : xx + 12)) + 'px';
@@ -920,8 +923,13 @@ const Sections = (function () {
     $('m-exc').textContent = fmt(split.exc, 1);
     $('tau').style.setProperty('--p', (((tau - 0.05) / 1.95) * 100).toFixed(2) + '%');
     $('tau-badge').classList.toggle('alt', !adopt);
-    $('tau-badge-t').textContent = adopt ? '採用值 · 與 PyBaMM 模擬同一控制律' : '前端示意計算 · 不是 PyBaMM 結果';
-    $('split-note').innerHTML = adopt
+    $('tau-badge-t').textContent = adopt ? tr('採用值 · 與 PyBaMM 模擬同一控制律', 'Adopted value · same control law as the PyBaMM simulation') : tr('前端示意計算 · 不是 PyBaMM 結果', 'Illustrative, computed in the browser · not a PyBaMM result');
+    $('split-note').innerHTML = EN ? (adopt
+      ? `At τ = 0.5 s, the P_LFP recomputed in the browser differs from the PyBaMM result by RMS <b class="mono">${fmt(split.rms, 2)} kW</b> (max ${fmt(split.maxe, 1)} kW). PyBaMM reference: ripple <b class="mono">${fmt(split.refRipple, 1)} kW</b> (same method), LIC peak <b class="mono">${fmt(split.ref05.peak, 1)} kW</b>, energy swing <b class="mono">${fmt(split.ref05.exc, 1)} kJ</b>.`
+      : tau > 0.5
+        ? `A larger τ makes the LFP smoother (ripple <b class="mono">${fmt(split.rip, 1)} kW</b>), but the LIC has to absorb more energy (swing <b class="mono">${fmt(split.exc, 1)} kJ</b>; the LIC module has ${fmt(split.capKJ, 0)} kJ available). This is an illustrative calculation in the browser, not a PyBaMM result.`
+        : `A smaller τ lightens the load on the LIC (swing <b class="mono">${fmt(split.exc, 1)} kJ</b>), but the LFP takes more of the steps directly (ripple <b class="mono">${fmt(split.rip, 1)} kW</b>). This is an illustrative calculation in the browser, not a PyBaMM result.`)
+      : adopt
       ? `τ = 0.5 s 時，前端重算的 P_LFP 與 PyBaMM 結果相差 RMS <b class="mono">${fmt(split.rms, 2)} kW</b>（最大 ${fmt(split.maxe, 1)} kW）。PyBaMM 對照：漣波 <b class="mono">${fmt(split.refRipple, 1)} kW</b>（同法計算）、LIC 峰值 <b class="mono">${fmt(split.ref05.peak, 1)} kW</b>、能量擺幅 <b class="mono">${fmt(split.ref05.exc, 1)} kJ</b>。`
       : tau > 0.5
         ? `τ 越大，LFP 越平穩（漣波 <b class="mono">${fmt(split.rip, 1)} kW</b>），但 LIC 得吸收更多能量（擺幅 <b class="mono">${fmt(split.exc, 1)} kJ</b>；LIC 模組可用 ${fmt(split.capKJ, 0)} kJ）。此為前端示意計算，不是 PyBaMM 結果。`
@@ -943,7 +951,7 @@ const Sections = (function () {
     [[56, Yt], [80, Yt], [104, Yt]].forEach(([v, f]) => { const y = f(v); cx.strokeStyle = C.grid; cx.setLineDash([2, 4]); cx.beginPath(); cx.moveTo(L, y); cx.lineTo(L + pw, y); cx.stroke(); cx.setLineDash([]); cx.fillStyle = C.dim; cx.textAlign = 'left'; cx.fillText(v + ' kW', L + pw + 8, y + 3.5); });
     [[50, Yb], [0, Yb], [-50, Yb]].forEach(([v, f]) => { const y = f(v); cx.strokeStyle = v ? C.grid : C.dim; cx.globalAlpha = v ? 1 : 0.5; cx.setLineDash(v ? [2, 4] : []); cx.beginPath(); cx.moveTo(L, y); cx.lineTo(L + pw, y); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1; cx.fillStyle = C.dim; cx.fillText((v > 0 ? '+' : '') + v + ' kW', L + pw + 8, y + 3.5); });
     cx.font = '500 11px ' + FONT.zh; cx.fillStyle = C.dim; cx.textAlign = 'left';
-    cx.fillText('LIC 分到的功率（＋放電／−充電）', L, T + ph * bot[0] - 8);
+    cx.fillText(tr('LIC 分到的功率（＋放電／−充電）', 'Power to the LIC (+ discharge / − charge)'), L, T + ph * bot[0] - 8);
     cx.font = '10.5px ' + FONT.mono; cx.textAlign = 'center';
     for (let t = t0; t <= t1 + 1e-6; t += 0.5) cx.fillText(t.toFixed(1) + ' s', Math.min(L + pw - 16, Math.max(L + 16, X(t))), h - 8);
 
@@ -982,10 +990,10 @@ const Sections = (function () {
       mk('text', { x: X(v), y: H - b + 18, 'text-anchor': 'middle', style: 'fill:var(--fg2);font-size:11px' }, g).textContent = lb;
       mk('text', { x: l - 8, y: Y(v) + 4, 'text-anchor': 'end', style: 'fill:var(--fg2);font-size:11px' }, g).textContent = lb;
     });
-    mk('text', { x: (l + W - r) / 2, y: H - 8, 'text-anchor': 'middle', style: 'fill:var(--fg2);font-size:11.5px;font-family:var(--f-zh)' }, g).textContent = '實際壽命（cycles）';
-    mk('text', { x: 14, y: (t + H - b) / 2, 'text-anchor': 'middle', transform: `rotate(-90 14 ${(t + H - b) / 2})`, style: 'fill:var(--fg2);font-size:11.5px;font-family:var(--f-zh)' }, g).textContent = '預測壽命（cycles）';
+    mk('text', { x: (l + W - r) / 2, y: H - 8, 'text-anchor': 'middle', style: 'fill:var(--fg2);font-size:11.5px;font-family:var(--f-zh)' }, g).textContent = tr('實際壽命（cycles）', 'Actual life (cycles)');
+    mk('text', { x: 14, y: (t + H - b) / 2, 'text-anchor': 'middle', transform: `rotate(-90 14 ${(t + H - b) / 2})`, style: 'fill:var(--fg2);font-size:11.5px;font-family:var(--f-zh)' }, g).textContent = tr('預測壽命（cycles）', 'Predicted life (cycles)');
     mk('line', { x1: X(100), y1: Y(100), x2: X(30000), y2: Y(30000), style: 'stroke:var(--fg2);stroke-width:1.2;stroke-dasharray:5 5' }, g);
-    mk('text', { x: X(22000), y: Y(22000) + 18, 'text-anchor': 'end', style: 'fill:var(--fg2);font-size:10.5px;font-family:var(--f-zh)' }, g).textContent = '預測 = 實際';
+    mk('text', { x: X(22000), y: Y(22000) + 18, 'text-anchor': 'end', style: 'fill:var(--fg2);font-size:10.5px;font-family:var(--f-zh)' }, g).textContent = tr('預測 = 實際', 'Predicted = actual');
     const cnt = mk('text', { x: l + 12, y: t + 22, style: 'fill:var(--fg);font-size:13px;font-weight:500' }, g);
     const pts = M.predicted_vs_actual.slice().sort((a, b2) => a.actual - b2.actual);
     const pg = mk('g', {}, svg);
@@ -996,7 +1004,7 @@ const Sections = (function () {
       c._p = p; return c;
     });
     const nTest = pts.filter((p) => p.split === 'test').length;
-    const show = (n) => { for (let i = 0; i < n; i++) nodes[i].style.opacity = 1; cnt.textContent = `${n} / ${pts.length} 顆電芯 · 測試 ${nTest}`; };
+    const show = (n) => { for (let i = 0; i < n; i++) nodes[i].style.opacity = 1; cnt.textContent = EN ? `${n} / ${pts.length} cells · test ${nTest}` : `${n} / ${pts.length} 顆電芯 · 測試 ${nTest}`; };
     show(0);
     onView(svg, (inst) => {
       if (inst) { show(nodes.length); return; }
@@ -1012,7 +1020,7 @@ const Sections = (function () {
       if (!best) { tip.hidden = true; return; }
       const p = best._p, err = ((p.predicted - p.actual) / p.actual) * 100;
       tip.hidden = false;
-      tip.innerHTML = `${p.cell_id} · ${p.batch === 'bbu' ? '合成 BBU 工況' : '批次 ' + p.batch} · ${p.split === 'test' ? '測試' : '訓練／校準'}<br>實際 <b>${Math.round(p.actual).toLocaleString()}</b> · 預測 <b>${Math.round(p.predicted).toLocaleString()}</b> · 誤差 ${err > 0 ? '+' : ''}${err.toFixed(1)}%`;
+      tip.innerHTML = `${p.cell_id} · ${p.batch === 'bbu' ? tr('合成 BBU 工況', 'synthetic BBU duty') : tr('批次 ', 'batch ') + p.batch} · ${p.split === 'test' ? tr('測試', 'test') : tr('訓練／校準', 'train / calibration')}<br>${tr('實際', 'actual')} <b>${Math.round(p.actual).toLocaleString()}</b> · ${tr('預測', 'predicted')} <b>${Math.round(p.predicted).toLocaleString()}</b> · ${tr('誤差', 'error')} ${err > 0 ? '+' : ''}${err.toFixed(1)}%`;
       const px = best.cx.baseVal.value / s, py = best.cy.baseVal.value / s, tw = tip.offsetWidth;
       tip.style.left = Math.max(0, Math.min(r0.width - tw, px + 14 + tw > r0.width ? px - tw - 14 : px + 14)) + 'px';
       tip.style.top = Math.max(0, py - 52) + 'px';
@@ -1028,18 +1036,18 @@ const Sections = (function () {
      4 · VERIFY — V1–V8 light up, then 43/43
      ========================================================= */
   const VC = [
-    ['V1', '物理擬合', '2.15<small>% RMS</small>', 'PyBaMM 放電曲線對照 Severson 實測，門檻 5%（僅 3 顆電芯）', 'pybamm_lfp_fit_error.json:11', ''],
-    ['V2', '電容 RC 模型', '≤2.93<small>% 壓降低估</small>', '簡單 RC 對 4 個非線性延伸模型的壓降低估（自洽檢查，非實測對照），門檻 10%', 'lic_rc_fit_error.json:66,69', ''],
-    ['V3', '斷電 60 秒', '2.66<small>% DoD</small>', '8 台並聯撐整櫃 60 秒（模擬），電芯最高 25.1°C', 'rack_60s_graceful.json → stats', ''],
-    ['V4', 'N−1 故障', '1.71<small>C 單台</small>', 't = 15 s 拔一台，其餘 7 台仍在 2.5C 上限內', 'rack_n_minus_1.json → stats', ''],
-    ['V5', '跨工況', '80.20<small>% MAPE</small>', 'bagged-GBT 基線（非 TCN）：實驗室工況 9.04% → BBU 工況 80.20%，公開揭露', 'severson_transfer_mape.json:5,31-32', 'disc'],
-    ['V6', '一鍵全驗', '6/6<small> · 55.2 s</small>', '6/6 PASS（略過 V1：需另下載 8.3 GB）；V7 為獨立腳本', 'verify_all_report.json:5-7', ''],
-    ['V7', '電芯不均衡', '−13.3<small>% 最弱電芯</small>', '15 串參數不一致時的最弱電芯瞬態負擔；篩檢項，非門檻', 'README.md:68', 'scr'],
-    ['V8', '自適應分頻', '6.06→5.47<small>C</small>', '老化到 80% 後 τ 調到 0.75 s，峰值倍率降回', 'adaptive_split.json → stats', ''],
+    ['V1', tr('物理擬合', 'Physics fit'), '2.15<small>% RMS</small>', tr('PyBaMM 放電曲線對照 Severson 實測，門檻 5%（僅 3 顆電芯）', 'PyBaMM discharge curves vs. Severson measurements, threshold 5% (only 3 cells)'), 'pybamm_lfp_fit_error.json:11', ''],
+    ['V2', tr('電容 RC 模型', 'Capacitor RC model'), tr('≤2.93<small>% 壓降低估</small>', '≤2.93<small>% drop underestimate</small>'), tr('簡單 RC 對 4 個非線性延伸模型的壓降低估（自洽檢查，非實測對照），門檻 10%', 'Voltage-drop underestimate of a simple RC vs. 4 nonlinear extended models (self-consistency check, not compared with measurements), threshold 10%'), 'lic_rc_fit_error.json:66,69', ''],
+    ['V3', tr('斷電 60 秒', '60 s outage'), '2.66<small>% DoD</small>', tr('8 台並聯撐整櫃 60 秒（模擬），電芯最高 25.1°C', '8 units in parallel carry the whole rack for 60 s (simulated), peak cell 25.1°C'), 'rack_60s_graceful.json → stats', ''],
+    ['V4', tr('N−1 故障', 'N−1 fault'), tr('1.71<small>C 單台</small>', '1.71<small>C per unit</small>'), tr('t = 15 s 拔一台，其餘 7 台仍在 2.5C 上限內', 'One unit pulled at t = 15 s; the other 7 stay within the 2.5C limit'), 'rack_n_minus_1.json → stats', ''],
+    ['V5', tr('跨工況', 'Cross-duty transfer'), '80.20<small>% MAPE</small>', tr('bagged-GBT 基線（非 TCN）：實驗室工況 9.04% → BBU 工況 80.20%，公開揭露', 'bagged-GBT baseline (not the TCN): lab duty 9.04% → BBU duty 80.20%, publicly disclosed'), 'severson_transfer_mape.json:5,31-32', 'disc'],
+    ['V6', tr('一鍵全驗', 'One-command run'), '6/6<small> · 55.2 s</small>', tr('6/6 PASS（略過 V1：需另下載 8.3 GB）；V7 為獨立腳本', '6/6 PASS (V1 skipped: needs a separate 8.3 GB download); V7 is a standalone script'), 'verify_all_report.json:5-7', ''],
+    ['V7', tr('電芯不均衡', 'Cell imbalance'), tr('−13.3<small>% 最弱電芯</small>', '−13.3<small>% weakest cell</small>'), tr('15 串參數不一致時的最弱電芯瞬態負擔；篩檢項，非門檻', 'Transient load on the weakest cell when 15 series cells have mismatched parameters; a screening item, not a threshold'), 'README.md:68', 'scr'],
+    ['V8', tr('自適應分頻', 'Adaptive split'), '6.06→5.47<small>C</small>', tr('老化到 80% 後 τ 調到 0.75 s，峰值倍率降回', 'After aging to 80%, τ moves to 0.75 s and the peak rate comes back down'), 'adaptive_split.json → stats', ''],
   ];
   function verifySetup() {
     const ol = $('vgrid');
-    ol.innerHTML = VC.map(([id, name, m, n, s, k]) => `<li class="vc ${k}"><div class="vc-top"><span>${id}</span><span class="vc-st">${k === 'disc' ? '揭露' : k === 'scr' ? '篩檢' : '通過'}</span></div><span class="vc-name">${name}</span><span class="vc-m">${m}</span><span class="vc-n">${n}</span><span class="vc-s">${s}</span></li>`).join('');
+    ol.innerHTML = VC.map(([id, name, m, n, s, k]) => `<li class="vc ${k}"><div class="vc-top"><span>${id}</span><span class="vc-st">${k === 'disc' ? tr('揭露', 'Disclosed') : k === 'scr' ? tr('篩檢', 'Screening') : tr('通過', 'Pass')}</span></div><span class="vc-name">${name}</span><span class="vc-m">${m}</span><span class="vc-n">${n}</span><span class="vc-s">${s}</span></li>`).join('');
     const cards = [...ol.children], vx = $('v-x'), big = document.querySelector('.vrun-big');
     onView(ol, (inst) => {
       if (inst) { cards.forEach((c) => c.classList.add('lit')); vx.textContent = '43'; big.classList.add('done'); return; }
@@ -1181,10 +1189,10 @@ const Outage = (function () {
       labels.push([x2, y, txt, sub, anchor]);
     };
     const fz = (z) => P(X0, Y0 + DY, DZ - z / SC);
-    call(fz(31), -70, 'LIC ×2', '吸收前 2 秒的峰值', 'end');
-    call(fz(104 + 4 * 38 - 2), -70, 'BBU ×8', '每台 2.5 kWh LFP', 'end');
+    call(fz(31), -70, 'LIC ×2', tr('吸收前 2 秒的峰值', 'absorbs the first 2 s of peak'), 'end');
+    call(fz(104 + 4 * 38 - 2), -70, 'BBU ×8', tr('每台 2.5 kWh LFP', '2.5 kWh LFP each'), 'end');
     const [rx, ry] = P(X0 + DX, Y0 + DY * 0.5, DZ * 0.62);
-    call([rx, ry], 62, '並聯輸出', '→ 機櫃負載', 'start');
+    call([rx, ry], 62, tr('並聯輸出', 'Parallel output'), tr('→ 機櫃負載', '→ rack load'), 'start');
     E.geoBB = g.getBBox ? g.getBBox() : null;
     E.calls = labels.map(([x2, y, txt, sub, anchor], n) => {
       const lg = mk('g', { transform: `translate(${f1(x2)},${f1(y)})` }, g);
@@ -1222,7 +1230,7 @@ const Outage = (function () {
   /* ---------------- list ---------------- */
   function buildList() {
     const ol = $('bbu-list');
-    ol.innerHTML = '<li class="bh" aria-hidden="true"><span>台</span><span>LFP 輸出功率</span><span style="text-align:right">剩餘電量</span><span style="text-align:right">C-rate</span></li>' +
+    ol.innerHTML = '<li class="bh" aria-hidden="true"><span>' + tr('台', 'Unit') + '</span><span>' + tr('LFP 輸出功率', 'LFP output') + '</span><span style="text-align:right">' + tr('剩餘電量', 'SoC') + '</span><span style="text-align:right">C-rate</span></li>' +
       Array.from({ length: 8 }, (_, k) => `<li><span class="bn">BBU-${k + 1}</span><span class="bb"><i></i></span><span class="bs">100.00%</span><span class="bc">—</span></li>`).join('');
     E.rows = [...ol.querySelectorAll('li:not(.bh)')].map((li) => ({ li, bar: li.querySelector('.bb i'), soc: li.querySelector('.bs'), c: li.querySelector('.bc') }));
   }
@@ -1246,8 +1254,8 @@ const Outage = (function () {
     band(0, 0.5, '', 'rgba(255,79,26,.08)');
     band(0.5, 2, '', 'rgba(255,178,62,.05)');
     cx.fillStyle = C.dim; cx.textAlign = 'left';
-    cx.fillText(narrow ? '峰值→斜降' : '峰值 0.5 s → 斜降 1.5 s', X(0) + 4, T - 8);
-    cx.fillStyle = C.dim; cx.fillText(narrow ? '連續 30 kW' : '連續輸出 30 kW · 58 s', X(3) + 6, T - 8);
+    cx.fillText(narrow ? tr('峰值→斜降', 'Peak→ramp') : tr('峰值 0.5 s → 斜降 1.5 s', 'Peak 0.5 s → ramp 1.5 s'), X(0) + 4, T - 8);
+    cx.fillStyle = C.dim; cx.fillText(narrow ? tr('連續 30 kW', '30 kW cont.') : tr('連續輸出 30 kW · 58 s', 'Continuous 30 kW · 58 s'), X(3) + 6, T - 8);
     cx.strokeStyle = C.dim2; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(X(3) + 0.5, T - 4); cx.lineTo(X(3) + 0.5, T + ph); cx.stroke(); cx.setLineDash([]);
     // grid
     // 0 and 30 kW sit close on short timelines: nudge their labels apart instead of overlapping
@@ -1259,7 +1267,7 @@ const Outage = (function () {
     if (fault != null) {
       const x = X(fault);
       cx.strokeStyle = C.bad; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(x + 0.5, T - 4); cx.lineTo(x + 0.5, T + ph); cx.stroke(); cx.setLineDash([]);
-      cx.fillStyle = C.bad; cx.textAlign = 'left'; cx.fillText(narrow ? 'N−1' : 'BBU-8 離線', x + 5, T + 10);
+      cx.fillStyle = C.bad; cx.textAlign = 'left'; cx.fillText(narrow ? 'N−1' : tr('BBU-8 離線', 'BBU-8 offline'), x + 5, T + 10);
     }
     const series = (arr, col, lw, fill) => {
       cx.beginPath(); for (let i = 0; i < s.t.length; i++) { const x = X(s.t[i]), y = Y(arr[i]); if (i) cx.lineTo(x, y); else cx.moveTo(x, y); }
@@ -1282,14 +1290,14 @@ const Outage = (function () {
     const d = D[st.sc], s = d.s, i = idx(st.t), t = st.t;
     const n = d.n ? d.n[i] : 8;
     const stg = $('o-stage');
-    stg.textContent = t < 0.5 ? '峰值保持' : t < 2 ? '斜降' : '連續輸出';
+    stg.textContent = t < 0.5 ? tr('峰值保持', 'Peak hold') : t < 2 ? tr('斜降', 'Ramp down') : tr('連續輸出', 'Continuous');
     $('o-p').textContent = s.p_total_kw[i].toFixed(1);
     const plv = Math.abs(s.p_lic_kw[i]) < 0.05 ? 0 : s.p_lic_kw[i];
     $('o-lic').textContent = (plv < 0 ? '−' : '') + Math.abs(plv).toFixed(1);
-    $('o-lic-s').textContent = plv > 0.05 ? '放電 · 吸收峰值' : plv < -0.05 ? '回充' : '待命';
+    $('o-lic-s').textContent = plv > 0.05 ? tr('放電 · 吸收峰值', 'Discharging · absorbing peak') : plv < -0.05 ? tr('回充', 'Recharging') : tr('待命', 'Standby');
     const pb = d.per[0][i];
     $('o-c').textContent = (pb / 2.5).toFixed(2);
-    const on = $('o-n'); on.textContent = n < 8 ? '7 台運作 · BBU-8 離線' : '8 台運作'; on.classList.toggle('warn', n < 8);
+    const on = $('o-n'); on.textContent = n < 8 ? tr('7 台運作 · BBU-8 離線', '7 units running · BBU-8 offline') : tr('8 台運作', '8 units running'); on.classList.toggle('warn', n < 8);
     $('o-temp').textContent = s.t_cell_c[i].toFixed(2);
     $('o-tc').textContent = (t < 10 ? '0' : '') + t.toFixed(1);
     const sc = $('o-scrub'); sc.value = t.toFixed(2); sc.style.setProperty('--p', ((t / 60) * 100).toFixed(2) + '%');
@@ -1312,7 +1320,7 @@ const Outage = (function () {
       row.li.classList.toggle('off', off);
       row.bar.style.width = (Math.min(1, p / PMAX_BBU) * 100).toFixed(1) + '%';
       row.soc.textContent = d.soc[k][i].toFixed(2) + '%';
-      row.c.textContent = off ? '離線' : (p / 2.5).toFixed(2) + 'C';
+      row.c.textContent = off ? tr('離線', 'Offline') : (p / 2.5).toFixed(2) + 'C';
     });
     if (E.out) E.out.textContent = s.p_total_kw[i].toFixed(1) + ' kW';
     if (n !== lastN && n < 8 && gsap && !RM) {
@@ -1327,7 +1335,7 @@ const Outage = (function () {
   function setPlaying(p) {
     st.playing = p;
     $('outage').classList.toggle('paused-o', !p);
-    $('o-play').setAttribute('aria-label', p ? '暫停' : '播放');
+    $('o-play').setAttribute('aria-label', p ? tr('暫停', 'Pause') : tr('播放', 'Play'));
     $('o-play').setAttribute('aria-pressed', String(p));
   }
   let last = 0;
@@ -1394,32 +1402,59 @@ const Arch = (function () {
   const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (id) => document.getElementById(id);
   const n = (s) => `<span class="num">${s}</span>`;
-  const STATUS = { impl: '已實作', sim: '模擬資料', concept: '概念設計' };
+  const STATUS = { impl: tr('已實作', 'Implemented'), sim: tr('模擬資料', 'Simulated data'), concept: tr('概念設計', 'Concept design') };
 
   const LAYERS = [
-    { id: 'L1', key: 'PHYSICS', status: 'impl', title: '物理模型', tech: 'PyBaMM DFN ＋ LIC 一階 RC', glyph: 'curve', out: '電壓・電流軌跡',
-      sum: '用電化學模型算出電池在每一毫秒的電壓與電流；數位孿生的一切都從這一層開始。',
-      facts: [`LFP 電芯：PyBaMM ${n('26.4.1')} 的 DFN 模型，搭配 Prada2013 參數組`, `LIC 電容：封閉形式一階 RC，C = ${n('332 F')}、ESR = ${n('2.5 mΩ')}、滿電電壓設 ${n('51.3 V')}、UVLO ${n('38 V')}（參數錨定 Eaton XLR 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）`, `自我稽核：${n('51.3 V')} 已超過該模組 ${n('48.6 V')} 上限，示範波形下每模組 RMS 電流是連續額定的 ${n('2.7')} 倍；改用 3300 F 級 LIC 單體重算，至少需 ${n('39')} 顆（見自我稽核 A2）`, `上一段的電池動畫就是這一層的輸出：transient_hybrid.json，${n('10 s')}／${n('800')} 點`],
+    { id: 'L1', key: 'PHYSICS', status: 'impl', title: tr('物理模型', 'Physics model'), tech: tr('PyBaMM DFN ＋ LIC 一階 RC', 'PyBaMM DFN + LIC first-order RC'), glyph: 'curve', out: tr('電壓・電流軌跡', 'Voltage and current traces'),
+      sum: tr('用電化學模型算出電池在每一毫秒的電壓與電流；數位孿生的一切都從這一層開始。', 'An electrochemical model computes the battery voltage and current for every millisecond; everything in the digital twin starts from this layer.'),
+      facts: EN
+        ? [`LFP cell: the DFN model in PyBaMM ${n('26.4.1')}, with the Prada2013 parameter set`, `LIC bank: closed-form first-order RC, C = ${n('332 F')}, ESR = ${n('2.5 mΩ')}, full-charge voltage set to ${n('51.3 V')}, UVLO ${n('38 V')} (parameters anchored to the Eaton XLR datasheet; that part is actually an EDLC; production would use the Musashi ULTIMO CPQ3300SD)`, `Self-audit: ${n('51.3 V')} exceeds the module's ${n('48.6 V')} limit, and under the demo waveform the RMS current per module is ${n('2.7')} times the continuous rating; recomputed with 3300 F-class LIC cells, at least ${n('39')} cells are needed (see self-audit A2)`, `The battery animation in the section above is this layer's output: transient_hybrid.json, ${n('10 s')} / ${n('800')} points`]
+        : [`LFP 電芯：PyBaMM ${n('26.4.1')} 的 DFN 模型，搭配 Prada2013 參數組`, `LIC 電容：封閉形式一階 RC，C = ${n('332 F')}、ESR = ${n('2.5 mΩ')}、滿電電壓設 ${n('51.3 V')}、UVLO ${n('38 V')}（參數錨定 Eaton XLR 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）`, `自我稽核：${n('51.3 V')} 已超過該模組 ${n('48.6 V')} 上限，示範波形下每模組 RMS 電流是連續額定的 ${n('2.7')} 倍；改用 3300 F 級 LIC 單體重算，至少需 ${n('39')} 顆（見自我稽核 A2）`, `上一段的電池動畫就是這一層的輸出：transient_hybrid.json，${n('10 s')}／${n('800')} 點`],
       verify: ['V1', 'V2', 'V7'] },
-    { id: 'L2', key: 'CONTROL', status: 'impl', tagNote: 'Python 模擬器', title: '分頻控制', tech: '互補濾波 τ = 0.5 s @ 1 kHz', glyph: 'split', out: '分頻後的功率指令',
-      sum: '把負載功率拆成高頻與低頻：高頻瞬態交給 LIC，LFP 只看到平滑過的平均值。',
-      facts: [`一階互補濾波，τ = ${n('0.5 s')}（截止約 ${n('0.32 Hz')}），控制迴圈 ${n('1 kHz')}`, `模擬資料中，負載在 ${n('56')} 與 ${n('104 kW')} 間跳動；LIC 峰值吐出 ${n('47.5 kW')}，LFP 平穩收斂在 ${n('80 kW')} 附近`, `V8 監督層讓 τ 隨電池健康度調整，老化後仍壓得住峰值倍率`, `誠實說明：控制律目前以 Python 模擬器為準，STM32 韌體仍是骨架`],
+    { id: 'L2', key: 'CONTROL', status: 'impl', tagNote: tr('Python 模擬器', 'Python simulator'), title: tr('分頻控制', 'Frequency-split control'), tech: tr('互補濾波 τ = 0.5 s @ 1 kHz', 'Complementary filter τ = 0.5 s @ 1 kHz'), glyph: 'split', out: tr('分頻後的功率指令', 'Split power commands'),
+      sum: tr('把負載功率拆成高頻與低頻：高頻瞬態交給 LIC，LFP 只看到平滑過的平均值。', 'Splits load power into high and low frequencies: high-frequency transients go to the LIC, and the LFP sees only the smoothed average.'),
+      facts: EN
+        ? [`First-order complementary filter, τ = ${n('0.5 s')} (cutoff about ${n('0.32 Hz')}), ${n('1 kHz')} control loop`, `In the simulated data the load jumps between ${n('56')} and ${n('104 kW')}; the LIC delivers a peak of ${n('47.5 kW')}, and the LFP settles steadily around ${n('80 kW')}`, `The V8 supervisory layer adjusts τ with battery health, so the peak rate stays down even after aging`, `To be clear: the Python simulator is currently the reference for the control law; the STM32 firmware is still a skeleton`]
+        : [`一階互補濾波，τ = ${n('0.5 s')}（截止約 ${n('0.32 Hz')}），控制迴圈 ${n('1 kHz')}`, `模擬資料中，負載在 ${n('56')} 與 ${n('104 kW')} 間跳動；LIC 峰值吐出 ${n('47.5 kW')}，LFP 平穩收斂在 ${n('80 kW')} 附近`, `V8 監督層讓 τ 隨電池健康度調整，老化後仍壓得住峰值倍率`, `誠實說明：控制律目前以 Python 模擬器為準，STM32 韌體仍是骨架`],
       verify: ['V3', 'V4', 'V8'] },
-    { id: 'L3', key: 'AI', status: 'impl', title: 'AI 壽命預測', tech: 'TCN ＋ 90% 信心區間', glyph: 'band', out: '剩餘壽命＋區間',
-      sum: '從電芯的工況特徵預測剩餘循環壽命（RUL），並給出 90% 預測區間，而不是只給一個數字。',
-      facts: [`TCN：${n('4')} 層膨脹卷積、${n('31,281')} 個參數、輸入 ${n('99 × 7')} 特徵`, `資料共 ${n('188')} 顆電芯：Severson 2019 的 ${n('138')} 顆＋${n('50')} 顆合成 BBU 工況`, `MC-Dropout ＋ split conformal，輸出 ${n('90%')} 預測區間`, `測試集 MAPE ${n('18.15%')}、R² ${n('0.892')}（FP32；單一切分、單一種子）`, `自我稽核：無洩漏 10 種子中位數 ${n('28.2%')}，同切分 bagged-GBT ${n('14.4%')}；精度以 GBT 為準（見自我稽核 A3）`],
+    { id: 'L3', key: 'AI', status: 'impl', title: tr('AI 壽命預測', 'AI lifetime prediction'), tech: tr('TCN ＋ 90% 信心區間', 'TCN + 90% interval'), glyph: 'band', out: tr('剩餘壽命＋區間', 'RUL + interval'),
+      sum: tr('從電芯的工況特徵預測剩餘循環壽命（RUL），並給出 90% 預測區間，而不是只給一個數字。', 'Predicts remaining cycle life (RUL) from a cell\'s duty-cycle features and returns a 90% prediction interval, not just a single number.'),
+      facts: EN
+        ? [`TCN: ${n('4')} dilated conv layers, ${n('31,281')} parameters, input ${n('99 × 7')} features`, `${n('188')} cells in total: ${n('138')} from Severson 2019 + ${n('50')} with synthetic BBU duty`, `MC-Dropout + split conformal, outputs a ${n('90%')} prediction interval`, `Test-set MAPE ${n('18.15%')}, R² ${n('0.892')} (FP32; single split, single seed)`, `Self-audit: leak-free 10-seed median ${n('28.2%')}, bagged-GBT on the same splits ${n('14.4%')}; accuracy claims rest on the GBT (see self-audit A3)`]
+        : [`TCN：${n('4')} 層膨脹卷積、${n('31,281')} 個參數、輸入 ${n('99 × 7')} 特徵`, `資料共 ${n('188')} 顆電芯：Severson 2019 的 ${n('138')} 顆＋${n('50')} 顆合成 BBU 工況`, `MC-Dropout ＋ split conformal，輸出 ${n('90%')} 預測區間`, `測試集 MAPE ${n('18.15%')}、R² ${n('0.892')}（FP32；單一切分、單一種子）`, `自我稽核：無洩漏 10 種子中位數 ${n('28.2%')}，同切分 bagged-GBT ${n('14.4%')}；精度以 GBT 為準（見自我稽核 A3）`],
       verify: ['V5'] },
-    { id: 'L4', key: 'EDGE', status: 'concept', title: '邊緣推論', tech: 'STM32N6 NPU', glyph: 'chip', out: '本地 RUL（規劃中）',
-      sum: '目標是在每台 BBU 上本地跑壽命模型、不依賴網路。這一層目前是概念設計，尚未實作。',
-      facts: [`目標晶片：STM32N6 Neural-ART NPU（尚未上板）`, `目前唯一的實測延遲來自筆電 CPU：TCN ONNX p99 ${n('0.098 ms')}`, `NPU 上的延遲尚未實測，因此這裡不列任何 NPU 數字`],
-      verify: [], none: '這一層還沒有驗證關卡，所以標為概念設計。' },
-    { id: 'L5', key: 'CLOUD', status: 'sim', title: '機隊儀表板', tech: '1000 台 · 模擬資料', glyph: 'map', out: '汰換佇列・警示',
-      sum: '把每台 BBU 的健康度、剩餘壽命與警示集中在一張地圖上。目前所有設備資料都是模擬產生。',
-      facts: [`${n('1000')} 台模擬設備：Texas ${n('492')}、Virginia ${n('275')}、其他 ${n('233')}`, `狀態分布：健康 ${n('903')}、熱警示 ${n('20')}、早期老化 ${n('77')}`, `儀表板設全頁模擬資料聲明，機隊資料面板帶「SIMULATED DATA」浮水印`, `Next.js 靜態輸出，部署於 Vercel`],
-      verify: [], none: '顯示層，沒有獨立驗證關卡；資料來源一律標示為模擬。' },
+    { id: 'L4', key: 'EDGE', status: 'concept', title: tr('邊緣推論', 'Edge inference'), tech: 'STM32N6 NPU', glyph: 'chip', out: tr('本地 RUL（規劃中）', 'On-device RUL (planned)'),
+      sum: tr('目標是在每台 BBU 上本地跑壽命模型、不依賴網路。這一層目前是概念設計，尚未實作。', 'The goal is to run the lifetime model locally on each BBU, without depending on the network. This layer is currently a concept design, not yet implemented.'),
+      facts: EN
+        ? [`Target chip: STM32N6 Neural-ART NPU (not yet on a board)`, `The only measured latency so far comes from a laptop CPU: TCN ONNX p99 ${n('0.098 ms')}`, `Latency on the NPU has not been measured, so no NPU figures are listed here`]
+        : [`目標晶片：STM32N6 Neural-ART NPU（尚未上板）`, `目前唯一的實測延遲來自筆電 CPU：TCN ONNX p99 ${n('0.098 ms')}`, `NPU 上的延遲尚未實測，因此這裡不列任何 NPU 數字`],
+      verify: [], none: tr('這一層還沒有驗證關卡，所以標為概念設計。', 'This layer has no verification gate yet, so it is labeled as concept design.') },
+    { id: 'L5', key: 'CLOUD', status: 'sim', title: tr('機隊儀表板', 'Fleet dashboard'), tech: tr('1000 台 · 模擬資料', '1000 units · simulated data'), glyph: 'map', out: tr('汰換佇列・警示', 'Replacement queue, alerts'),
+      sum: tr('把每台 BBU 的健康度、剩餘壽命與警示集中在一張地圖上。目前所有設備資料都是模擬產生。', 'Brings each BBU\'s health, remaining life and alerts together on one map. All device data is currently simulated.'),
+      facts: EN
+        ? [`${n('1000')} simulated devices: Texas ${n('492')}, Virginia ${n('275')}, other ${n('233')}`, `Status breakdown: healthy ${n('903')}, thermal warning ${n('20')}, early aging ${n('77')}`, `The dashboard carries a full-page simulated-data disclaimer, and the fleet-data panels carry a "SIMULATED DATA" watermark`, `Next.js static export, deployed on Vercel`]
+        : [`${n('1000')} 台模擬設備：Texas ${n('492')}、Virginia ${n('275')}、其他 ${n('233')}`, `狀態分布：健康 ${n('903')}、熱警示 ${n('20')}、早期老化 ${n('77')}`, `儀表板設全頁模擬資料聲明，機隊資料面板帶「SIMULATED DATA」浮水印`, `Next.js 靜態輸出，部署於 Vercel`],
+      verify: [], none: tr('顯示層，沒有獨立驗證關卡；資料來源一律標示為模擬。', 'Display layer with no verification gate of its own; its data sources are always labeled as simulated.') },
   ];
 
-  const VCHECK = {
+  const VCHECK = EN ? {
+    V1: { layer: 'L1', name: 'Physics fit', line: `discharge-curve RMS error ${n('2.15%')} (threshold ${n('5%')})`, sum: 'Discharge curves simulated with PyBaMM, compared with Severson 2019 measurements.',
+      facts: [`RMS error ${n('2.15%')}, threshold ${n('5%')}`, `Sample limitation: only ${n('3')} cells, batch b1, cycle ${n('10')}; we state this as is`] },
+    V2: { layer: 'L1', name: 'Capacitor RC model', line: `voltage-drop underestimate ≤ ${n('2.93%')} (threshold ${n('10%')})`, sum: 'First-order RC capacitor model; V2 checks how much it underestimates the voltage drop relative to 4 nonlinear extended models. It is a self-consistency and sensitivity check, not validation against measured curves.',
+      facts: [`Voltage-drop underestimate ≤ ${n('2.93%')}, threshold ${n('10%')}`, `Worst-case drop ${n('2.32 V')}, leaving ${n('10.98 V')} of margin to UVLO`] },
+    V3: { layer: 'L2', name: '60 s outage', line: `rack depth of discharge ${n('2.66%')}, peak cell ${n('25.1°C')}`, sum: '8 BBUs in parallel; simulates carrying the whole rack for 60 s after a utility outage.',
+      facts: [`Depth of discharge ${n('2.66%')}: output ${n('1912.5 kJ')} / capacity ${n('72000 kJ')}, energy headroom ${n('37.6×')}`, `The ${n('6C')} peak lasts less than ${n('2 s')}, then ${n('1.5C')} continuous`, `Peak cell temperature ${n('25.1°C')} (simulated)`] },
+    V4: { layer: 'L2', name: 'N−1 fault', line: `with 1 unit pulled, the rest run at ${n('1.71C')} each`, sum: 'Pulls 1 unit at t = 15 s and checks whether the remaining 7 can carry the load.',
+      facts: [`With ${n('7')} units left, each runs at ${n('1.71C')} continuous (${n('+14.3%')})`, `Voltage swing ${n('277 mV')}, temperature ${n('25.1°C')}`] },
+    V5: { layer: 'L3', name: 'Cross-duty transfer', kind: 'disclose', line: `MAPE ${n('9.04%')} → ${n('80.20%')} (bagged-GBT baseline, not the TCN; disclosed)`, sum: 'V5 tests the bagged-GBT baseline model, not this layer\'s TCN: moving from lab duty to BBU duty makes the error rise sharply. This is currently the largest known limitation, and we disclose it publicly.',
+      facts: [`Model under test: bagged-GBT (K = ${n('24')}, ${n('9')} features), not the TCN`, `MAPE on Severson duty ${n('9.04%')}`, `MAPE on BBU duty ${n('80.20%')}, a ${n('8.87×')} degradation`, `The model cannot yet be applied directly to field BBU data`] },
+    V6: { layer: null, name: 'One-command full run', line: `full-run report ${n('6/6')} passed (V1 skipped), in ${n('55.2 s')}`, sum: 'One command, make verify, re-runs V1–V5, V8 and XCHECK, and anyone can run it; V7 is a standalone script, not part of the suite.',
+      facts: [`Full-run report ${n('6/6')} passed in ${n('55.2 s')}: V2–V5, V8, XCHECK (V1 skipped: needs a separate ${n('8.3 GB')} download)`, `Cross-checks ${n('43/43')}, all passing`, `Command: make verify (V1 needs a separate download of the Severson dataset, about ${n('8.3 GB')})`] },
+    V7: { layer: 'L1', name: 'Cell imbalance', line: `weakest-cell transient load ${n('−13.3%')} (screening)`, sum: 'With parameter mismatch across 15 series cells, checks whether the weakest cell gets dragged down.',
+      facts: [`Weakest-cell transient load ${n('−13.3%')}`, `A screening item, not a pass threshold`] },
+    V8: { layer: 'L2', name: 'Adaptive split', line: `aged peak ${n('6.06C')} → ${n('5.47C')}`, sum: 'After the battery ages to 80% health, τ is adjusted to keep the peak rate from rising.',
+      facts: [`Fixed τ: aged pack peak ${n('6.06C')}`, `Closed loop adjusts to τ = ${n('0.75 s')}: peak back down to ${n('5.47C')}`] },
+  } : {
     V1: { layer: 'L1', name: '物理擬合', line: `放電曲線 RMS 誤差 ${n('2.15%')}（門檻 ${n('5%')}）`, sum: 'PyBaMM 模擬的放電曲線，對照 Severson 2019 的實測資料。',
       facts: [`RMS 誤差 ${n('2.15%')}，門檻 ${n('5%')}`, `樣本限制：僅 ${n('3')} 顆電芯、b1 批次第 ${n('10')} 圈，我們照實標註`] },
     V2: { layer: 'L1', name: '電容 RC 模型', line: `壓降低估 ≤ ${n('2.93%')}（門檻 ${n('10%')}）`, sum: '一階 RC 電容模型；V2 檢查它相對 4 個非線性延伸模型低估多少壓降，屬自洽與敏感度檢查，不是對實測曲線的驗證。',
@@ -1470,10 +1505,10 @@ const Arch = (function () {
           <span class="layer-title">${L.title}</span>
           <span class="layer-tech">${L.tech}</span>
           <span class="layer-out"><b>OUT →</b><span>${L.out}</span></span>
-          <span class="layer-more">看細節</span>
+          <span class="layer-more">${tr('看細節', 'Details')}</span>
         </button>
       </li>`).join('');
-    $('rail-cols').innerHTML = LAYERS.map((L) => `<div class="rail-col" data-layer="${L.id}">${L.verify.length ? L.verify.map(vBtn).join('') : `<span class="rail-none">— ${L.status === 'concept' ? '尚無驗證關卡' : '顯示層 · 無關卡'}</span>`}</div>`).join('');
+    $('rail-cols').innerHTML = LAYERS.map((L) => `<div class="rail-col" data-layer="${L.id}">${L.verify.length ? L.verify.map(vBtn).join('') : `<span class="rail-none">— ${L.status === 'concept' ? tr('尚無驗證關卡', 'No verification gate yet') : tr('顯示層 · 無關卡', 'Display layer · no gate')}</span>`}</div>`).join('');
     $('rail-end').insertAdjacentHTML('afterbegin', vBtn('V6'));
 
     document.querySelectorAll('.layer').forEach((li) => {
@@ -1616,17 +1651,17 @@ const Arch = (function () {
   function lDetail(id) {
     const L = LAYERS.find((x) => x.id === id);
     const ver = L.verify.length
-      ? `<ul>${L.verify.map((v) => `<li class="${VCHECK[v].kind === 'disclose' ? 'disclose' : ''}"><b>${v}</b><span>${VCHECK[v].name}：${VCHECK[v].line}</span></li>`).join('')}</ul>`
+      ? `<ul>${L.verify.map((v) => `<li class="${VCHECK[v].kind === 'disclose' ? 'disclose' : ''}"><b>${v}</b><span>${VCHECK[v].name}${tr('：', ': ')}${VCHECK[v].line}</span></li>`).join('')}</ul>`
       : `<p class="none">${L.none}</p>`;
-    return `<div class="d-head"><div class="d-k">${L.id} · ${L.key} <span class="tag t-${L.status}">${STATUS[L.status]}${L.tagNote ? '（' + L.tagNote + '）' : ''}</span></div><h3 class="d-title">${L.title}</h3><p class="d-sum">${L.sum}</p></div>
+    return `<div class="d-head"><div class="d-k">${L.id} · ${L.key} <span class="tag t-${L.status}">${STATUS[L.status]}${L.tagNote ? tr('（', ' (') + L.tagNote + tr('）', ')') : ''}</span></div><h3 class="d-title">${L.title}</h3><p class="d-sum">${L.sum}</p></div>
       <ul class="d-facts">${L.facts.map((f) => `<li>${f}</li>`).join('')}</ul>
-      <div class="d-verify"><h4>對應驗證關卡</h4>${ver}</div>`;
+      <div class="d-verify"><h4>${tr('對應驗證關卡', 'Verification gates')}</h4>${ver}</div>`;
   }
   function vDetail(v) {
     const c = VCHECK[v], L = c.layer ? LAYERS.find((x) => x.id === c.layer) : null;
-    return `<div class="d-head"><div class="d-k">${v} · 驗證關卡 <span class="tag ${c.kind === 'disclose' ? 't-sim' : 't-impl'}">${c.kind === 'disclose' ? '公開揭露' : L ? '對應 ' + L.id + ' ' + L.title : '跨所有層'}</span></div><h3 class="d-title">${c.name}</h3><p class="d-sum">${c.sum}</p></div>
+    return `<div class="d-head"><div class="d-k">${v} · ${tr('驗證關卡', 'Verification gate')} <span class="tag ${c.kind === 'disclose' ? 't-sim' : 't-impl'}">${c.kind === 'disclose' ? tr('公開揭露', 'Publicly disclosed') : L ? tr('對應 ', 'For ') + L.id + ' ' + L.title : tr('跨所有層', 'Across all layers')}</span></div><h3 class="d-title">${c.name}</h3><p class="d-sum">${c.sum}</p></div>
       <ul class="d-facts">${c.facts.map((f) => `<li>${f}</li>`).join('')}</ul>
-      <div class="d-verify"><h4>如何重跑</h4><p class="none">一行指令 <span class="num">make verify</span> 會重跑 V1–V5、V8 與 ${n('43')} 項交叉驗證（V1 需另下載約 ${n('8.3 GB')} 資料集）；V7 為獨立腳本。拿到 repo 的人都能自己驗。</p></div>`;
+      <div class="d-verify"><h4>${tr('如何重跑', 'How to re-run')}</h4><p class="none">${EN ? `The single command <span class="num">make verify</span> re-runs V1–V5, V8 and ${n('43')} cross-checks (V1 needs a separate download of about ${n('8.3 GB')} of data); V7 is a standalone script. Anyone with the repo can verify it themselves.` : `一行指令 <span class="num">make verify</span> 會重跑 V1–V5、V8 與 ${n('43')} 項交叉驗證（V1 需另下載約 ${n('8.3 GB')} 資料集）；V7 為獨立腳本。拿到 repo 的人都能自己驗。`}</p></div>`;
   }
 
   function countX(dur) {
@@ -1724,7 +1759,7 @@ const Arch = (function () {
       await heroNums;
       HOME_PRE_OFF();
       console.warn('[sim] data load failed', e);
-      document.querySelector('.stage-foot').textContent = '資料載入失敗，請重新整理頁面。';
+      document.querySelector('.stage-foot').textContent = tr('資料載入失敗，請重新整理頁面。', 'Data failed to load. Please reload the page.');
       return;
     }
     if (dead) return;

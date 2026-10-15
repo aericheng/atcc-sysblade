@@ -750,3 +750,24 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .ai-audit-row dd{margin:0;font-size:24px}
   .sb-home .af-col p{font-size:14px}
 }
+
+/* ---------- language switch (zh <-> en) ---------- */
+.sb-home .nav-lang{flex:none;font-size:12.5px;font-weight:600;letter-spacing:.04em;line-height:1;text-decoration:none;color:var(--fg2);padding:5px 9px;border:1px solid var(--line);border-radius:999px;transition:color .25s,border-color .25s}
+.sb-home .nav-lang:hover{color:var(--fg);border-color:var(--fg2)}
+@media (max-width:1100px){.sb-home .nav nav{gap:14px}}
+
+/* ---------- English page (.sb-en): Latin headlines set in Inter, not the CJK face ---------- */
+.sb-home.sb-en{--f-zh:var(--hf-inter),var(--hf-zh),system-ui,sans-serif}
+/* Inter's descenders (g, p, y) sit lower than the CJK face's: give the clipped headline lines more room */
+.sb-home.sb-en .line{padding-bottom:.16em;margin-bottom:-.16em}
+/* the English hero headline is longer per line than the Chinese one: keep it clear of the hero sketch */
+.sb-home.sb-en .h1{font-size:clamp(44px,6.4vw,108px)}
+/* pinned stage: the English step titles need two lines at this size to stay above the readouts */
+.sb-home.sb-en.pinmode .step-t{font-size:clamp(26px,2.4vw,36px)}
+/* phones: the language switch needs room next to the scrolling section strip */
+@media (max-width:640px){
+  .sb-home .nav{gap:10px}
+  .sb-home .nav ul{max-width:calc(40vw - 56px)}
+  .sb-home .nav-lang{font-size:11.5px;padding:4px 7px}
+  .sb-home.sb-en .h1{font-size:clamp(34px,10vw,64px)}
+}

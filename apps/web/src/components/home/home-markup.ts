@@ -19,6 +19,7 @@ export const HOME_HTML = `<script>(function(){var d=document.documentElement;d.c
       <li><a href="#audit">稽核</a></li>
       <li><a href="#demo">Demo</a></li>
     </ul>
+    <a class="nav-lang" href="{{BASE}}/en/" hreflang="en" lang="en">EN</a>
     <span class="nav-chip mono" aria-hidden="true"><i></i><span id="nav-chip-v">P_LOAD —</span></span>
   </nav>
 </header>
