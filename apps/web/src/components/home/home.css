@@ -764,6 +764,13 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
 .sb-home.sb-en .h1{font-size:clamp(44px,6.4vw,108px)}
 /* pinned stage: the English step titles need two lines at this size to stay above the readouts */
 .sb-home.sb-en.pinmode .step-t{font-size:clamp(26px,2.4vw,36px)}
+/* nav: English labels ("Live sim", "60 s outage") must not wrap; tighten spacing on mid-width desktops */
+.sb-home .nav ul a{white-space:nowrap}
+@media (min-width:1101px) and (max-width:1440px){
+  .sb-home.sb-en .nav nav{gap:18px}
+  .sb-home.sb-en .nav ul{gap:14px;font-size:13px}
+}
+@media (min-width:1101px) and (max-width:1200px){.sb-home.sb-en .nav-chip{display:none}}
 /* phones: the language switch needs room next to the scrolling section strip */
 @media (max-width:640px){
   .sb-home .nav{gap:10px}
