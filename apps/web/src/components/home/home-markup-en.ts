@@ -332,7 +332,7 @@ export const HOME_HTML_EN = `<script>(function(){var d=document.documentElement;
 <section class="sec audit" id="audit" aria-labelledby="audit-title">
   <div class="sec-head">
     <p class="eyebrow"><span class="sec-no mono">08</span>Self-audit · 2026-10-09</p>
-    <h2 id="audit-title" class="h2"><span class="line"><span class="line-in">Before the ATCC final defense,</span></span><span class="line"><span class="line-in">I turned the same chain</span></span><span class="line"><span class="line-in"><em>on my own claims</em>.</span></span></h2>
+    <h2 id="audit-title" class="h2"><span class="line"><span class="line-in">Before the oral defense,</span></span><span class="line"><span class="line-in">I turned the same chain</span></span><span class="line"><span class="line-in"><em>on my own claims</em>.</span></span></h2>
     <p class="sec-side">The technical report has been submitted and will not be changed. After submitting it, I put the headline numbers from the competition back through the same verification chain: re-run them, change the protocol, look for counterexamples. The five items below are claims that needed correcting. Each one lists what was originally said, what the audit measured, and what is said now. All of it is recomputation on simulations or public datasets, with the assumptions written under each item.</p>
   </div>
 
