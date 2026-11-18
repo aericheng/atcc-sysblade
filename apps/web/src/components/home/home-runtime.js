@@ -712,7 +712,8 @@ const Sections = (function () {
     if (!pain.cv) return;
     const { cx, w, h } = fit(pain.cv), C = pal();
     const narrow = w < 560;
-    const L = 0, R = narrow ? 50 : 72, T = 22, B = 26;
+    // right gutter holds the kW ticks and the pk-pk bracket labels ("61.6 mV" needs ~66px from the plot edge)
+    const L = 0, R = narrow ? 68 : 72, T = 22, B = 26;
     const pw = w - L - R, ph = h - T - B;
     // voltage is the hero lane: it gets the most height, and sits directly under the load it reacts to
     const lanes = { a: [0, 0.17], b: [0.25, 0.45], c: [0.54, 1] };
@@ -826,20 +827,22 @@ const Sections = (function () {
       // labels sit on the side with more room
       const right = x < L + pw * 0.62, ax = right ? x + 10 : x - 10;
       cx.textAlign = right ? 'left' : 'right';
+      // keep each label inside the canvas: on phones the longer ones are wider than the room beside the guide
+      const put = (txt, y) => { const tw = cx.measureText(txt).width; cx.fillText(txt, right ? Math.max(0, Math.min(ax, w - 2 - tw)) : Math.min(w, Math.max(ax, tw + 2)), y); };
       mono('600'); cx.fillStyle = C.ink;
-      cx.fillText(`${up ? '+' : '−'}${Math.abs(dP).toFixed(0)} kW`, ax, yLa + 4);
+      put(`${up ? '+' : '−'}${Math.abs(dP).toFixed(0)} kW`, yLa + 4);
       const yb = Math.max(yVb0, yVb1) + 22;
       if (pain.alpha.bad > 0.5) {
-        cx.font = '600 16px ' + FONT.mono; cx.fillStyle = BAD;
-        cx.fillText(`${tr('純電池', 'Battery-only')} ${dVb > 0 ? '+' : '−'}${Math.abs(dVb).toFixed(1)} mV`, ax, yb);
+        cx.font = `600 ${narrow ? 13 : 16}px ` + FONT.mono; cx.fillStyle = BAD;
+        put(`${tr('純電池', 'Battery-only')} ${dVb > 0 ? '+' : '−'}${Math.abs(dVb).toFixed(1)} mV`, yb);
       }
       if (pain.alpha.good > 0.5) {
         mono('600'); cx.fillStyle = C.good;
-        cx.fillText(`HyperBuffer ${dVg > 0 ? '+' : '−'}${Math.abs(dVg).toFixed(1)} mV`, ax, yb + (pain.alpha.bad > 0.5 ? 19 : 0));
+        put(`HyperBuffer ${dVg > 0 ? '+' : '−'}${Math.abs(dVg).toFixed(1)} mV`, yb + (pain.alpha.bad > 0.5 ? 19 : 0));
       }
       // instant label at the top of the guide
       mono(); cx.fillStyle = C.ink; cx.globalAlpha = 0.8;
-      cx.fillText(`${up ? tr('負載上跳', 'Load steps up') : tr('負載下降', 'Load steps down')}${tr('瞬間', '')} · t = ${pain.T[i].toFixed(3)} s`, ax, T + ph * lanes.a[0] - 7);
+      put(`${up ? tr('負載上跳', 'Load steps up') : tr('負載下降', 'Load steps down')}${tr('瞬間', '')} · t = ${pain.T[i].toFixed(3)} s`, T + ph * lanes.a[0] - 7);
       cx.globalAlpha = 1;
     }
 
@@ -939,7 +942,7 @@ const Sections = (function () {
     if (!split.cv || !split.y) return;
     const { cx, w, h } = fit(split.cv), C = pal();
     const narrow = w < 560;
-    const L = 0, R = narrow ? 44 : 58, T = 12, B = 26, pw = w - L - R, ph = h - T - B;
+    const L = 0, R = narrow ? 54 : 58, T = 12, B = 26, pw = w - L - R, ph = h - T - B;
     const t0 = 0, t1 = 3;
     const top = [0, 0.6], bot = [0.7, 1];
     const X = (t) => L + ((t - t0) / (t1 - t0)) * pw;
@@ -953,7 +956,8 @@ const Sections = (function () {
     cx.font = '500 11px ' + FONT.zh; cx.fillStyle = C.dim; cx.textAlign = 'left';
     cx.fillText(tr('LIC 分到的功率（＋放電／−充電）', 'Power to the LIC (+ discharge / − charge)'), L, T + ph * bot[0] - 8);
     cx.font = '10.5px ' + FONT.mono; cx.textAlign = 'center';
-    for (let t = t0; t <= t1 + 1e-6; t += 0.5) cx.fillText(t.toFixed(1) + ' s', Math.min(L + pw - 16, Math.max(L + 16, X(t))), h - 8);
+    // phones: a tick every 0.5 s leaves the clamped end labels touching their neighbours
+    for (let t = t0; t <= t1 + 1e-6; t += narrow ? 1 : 0.5) cx.fillText(t.toFixed(1) + ' s', Math.min(L + pw - 16, Math.max(L + 16, X(t))), h - 8);
 
     const I = []; split.T.forEach((t, i) => { if (t <= t1 + 1e-9) I.push(i); });
     const path = (f, arr, stepwise) => { cx.beginPath(); I.forEach((i, n) => { const x = X(split.T[i]), y = f(arr[i]); if (!n) cx.moveTo(x, y); else if (stepwise) { cx.lineTo(x, f(arr[I[n - 1]])); cx.lineTo(x, y); } else cx.lineTo(x, y); }); };
@@ -1244,7 +1248,7 @@ const Outage = (function () {
     if (cv.width !== w * d || cv.height !== h * d) { cv.width = w * d; cv.height = h * d; }
     const cx = cv.getContext('2d'); cx.setTransform(d, 0, 0, d, 0, 0); cx.clearRect(0, 0, w, h);
     const narrow = w < 560;
-    const L = 0, R = narrow ? 40 : 52, T = 22, B = 20, pw = w - L - R, ph = h - T - B;
+    const L = 0, R = narrow ? 48 : 52, T = 22, B = 20, pw = w - L - R, ph = h - T - B;
     const X = (t) => L + uOf(t) * pw;
     const Y = (v) => T + ph * (1 - (v + 30) / 155);
     const { s, fault } = D[st.sc];
@@ -1370,7 +1374,7 @@ const Outage = (function () {
     }));
     // scrub by dragging on the timeline
     let drag = false;
-    const tAt = (e) => { const r = tl.cv.getBoundingClientRect(), pw = r.width - (r.width < 560 ? 40 : 52); return tOf(Math.max(0, Math.min(1, (e.clientX - r.left) / pw))); };
+    const tAt = (e) => { const r = tl.cv.getBoundingClientRect(), pw = r.width - (r.width < 560 ? 48 : 52); return tOf(Math.max(0, Math.min(1, (e.clientX - r.left) / pw))); };
     tl.cv.addEventListener('pointerdown', (e) => { drag = true; tl.cv.setPointerCapture(e.pointerId); setPlaying(false); st.userPaused = true; seek(tAt(e)); });
     tl.cv.addEventListener('pointermove', (e) => { if (drag) seek(tAt(e)); });
     tl.cv.addEventListener('pointerup', () => { drag = false; });

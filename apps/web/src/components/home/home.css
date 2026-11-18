@@ -309,14 +309,15 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .detail .d-head{grid-column:1/-1}
 }
 @media (max-width:1000px){
-  .sb-home .stage-grid{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"copy" "scene" "ro";row-gap:18px}
+  .sb-home .stage-pin{grid-template-columns:minmax(0,1fr)}
+  .sb-home .stage-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"copy" "scene" "ro";row-gap:18px}
   .sb-home #scene{max-height:none;height:auto}
   .sb-home .scene-wrap{-webkit-mask-image:none;mask-image:none;overflow:visible}
   .sb-home .readouts{flex-direction:row;padding-bottom:12px}
-  .sb-home .ro{flex:1;grid-template-columns:1fr;padding:10px 10px 10px 0}
+  .sb-home .ro{flex:1;min-width:0;grid-template-columns:minmax(0,1fr);padding:10px 10px 10px 0}
   .sb-home .ro + .ro{padding-left:12px;border-left:1px solid var(--d-line)}
   .sb-home .ro-v{font-size:clamp(20px,5.4vw,30px)}
-  .sb-home .ro-sub{text-align:left}
+  .sb-home .ro-sub{text-align:left;white-space:normal}
   .sb-home .stage-foot{flex-basis:100%;text-align:left;margin-left:0}
   .sb-home:not(.pinmode) .step:not([data-step="3"]) .step-s{display:none}
   .sb-home:not(.pinmode) .steps{gap:10px}
@@ -603,14 +604,16 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .nav-chip{display:none}
   .sb-home .out-grid{grid-template-columns:minmax(0,1fr) minmax(220px,280px)}
   .sb-home .out-ro{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;order:3}
+  .sb-home .oro{grid-template-columns:minmax(0,1fr)}
+  .sb-home .o-stage{text-align:left;white-space:normal}
 }
 @media (max-width:1000px){
   .sb-home .pains{grid-template-columns:1fr}
   .sb-home .pains li{border-right:0;margin-right:0;border-bottom:1px solid var(--line);padding:18px 0}
   .sb-home .cmp-stats{grid-template-columns:1fr 1fr}
   .sb-home .split-grid{grid-template-columns:1fr}
-  .sb-home .out-head{grid-template-columns:1fr}
-  .sb-home .out-grid{grid-template-columns:1fr}
+  .sb-home .out-head{grid-template-columns:minmax(0,1fr)}
+  .sb-home .out-grid{grid-template-columns:minmax(0,1fr)}
   .sb-home .out-ro{grid-template-columns:repeat(2,minmax(0,1fr))}
   .sb-home .out-stats{grid-template-columns:1fr 1fr;row-gap:22px}
   .sb-home .ai-grid{grid-template-columns:1fr}
@@ -627,11 +630,12 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .cmp-stats{grid-template-columns:1fr}
   .sb-home .cmp-top .seg{width:100%;justify-content:space-between}
   .sb-home .seg button{padding:7px 10px;font-size:11.5px}
+  .sb-home .outage .seg-dark{max-width:100%;flex-wrap:wrap;border-radius:18px}
   .sb-home #cmp{height:340px}
   .sb-home .tau-v{font-size:72px}
   .sb-home .tau-metrics dd{font-size:24px}
   .sb-home #splitc{height:300px}
-  .sb-home .out-ro{grid-template-columns:1fr 1fr}
+  .sb-home .out-ro{grid-template-columns:repeat(2,minmax(0,1fr))}
   .sb-home .oro dd{font-size:24px}
   .sb-home .bbu-list li{grid-template-columns:52px 1fr 58px 40px;gap:8px;font-size:11px}
   .sb-home .vgrid{grid-template-columns:1fr}
@@ -656,7 +660,7 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .out-ro{grid-area:3/1/4/2;align-self:end;display:grid;grid-template-columns:1fr 1fr;column-gap:20px;margin-top:clamp(10px,1.8vh,22px)}
   .sb-home .oro{padding:clamp(5px,.9vh,12px) 0}
   .sb-home .oro dd{font-size:clamp(22px,min(2.2vw,3.7vh),40px)}
-  .sb-home .oro .o-stage{grid-column:1/-1;text-align:left}
+  .sb-home .oro .o-stage{grid-column:1/-1;text-align:left;white-space:normal}
   .sb-home .out-scene{grid-area:1/2/4/3;align-self:stretch;position:relative;min-height:0}
   .sb-home #cab{position:absolute;inset:0;width:100%;height:100%;max-height:none}
   .sb-home .bbu-list{grid-area:1/3/3/4;align-self:start;margin-top:clamp(4px,1vh,12px)}

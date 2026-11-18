@@ -2006,7 +2006,7 @@ function ChartCard({
 }) {
   return (
     <div className="rounded-lg border border-border bg-background/30 p-4">
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex flex-col gap-1 lg:flex-row lg:items-baseline lg:justify-between lg:gap-0 mb-3">
         <h4 className="text-sm font-medium">{title}</h4>
         {subtitle && <span className="text-xs text-muted">{subtitle}</span>}
       </div>
@@ -2222,7 +2222,7 @@ function ErrorByLifetimeBucket({
             }}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
-          <Bar yAxisId="count" dataKey="count" name="電芯數" radius={[4, 4, 0, 0]}>
+          <Bar yAxisId="count" dataKey="count" name="電芯數" fill="var(--muted)" radius={[4, 4, 0, 0]}>
             {buckets.map((b, i) => (
               <RCell key={i} fill={barColour(b.mape)} />
             ))}
@@ -2372,7 +2372,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
 
       <CardBody className="space-y-6">
         {/* Per-cell summary tiles */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <Stat label="電芯 ID" value={cell.cell_id} hint={`batch ${cell.batch}`} />
           <Stat
             label="機隊狀態"

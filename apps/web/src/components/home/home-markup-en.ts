@@ -108,10 +108,10 @@ export const HOME_HTML_EN = `<script>(function(){var d=document.documentElement;
         <p class="kicker mono"><span class="k-no">02</span>Live simulation · transient_hybrid.json</p>
         <h2 id="stage-title" class="sr">Hybrid storage, live simulation</h2>
         <ol class="steps" id="steps">
-          <li class="step" data-step="0"><span class="step-n mono">01 / 04</span><h3 class="step-t">The load jumps<br>every 100&nbsp;ms.</h3><p class="step-s">AI rack power switches back and forth between 56 and 104&nbsp;kW, once every 100&nbsp;ms.</p></li>
-          <li class="step" data-step="1"><span class="step-n mono">02 / 04</span><h3 class="step-t">Capacitors<br><em class="c-lic">catch the spikes</em> first.</h3><p class="step-s">The LIC delivers up to 47.5&nbsp;kW instantly; when the load drops back, the battery slowly recharges it.</p></li>
-          <li class="step" data-step="2"><span class="step-n mono">03 / 04</span><h3 class="step-t">The battery only<br><em class="c-lfp">holds steady</em>.</h3><p class="step-s">The LFP sees only the filtered average power and settles steadily around 80&nbsp;kW.</p></li>
-          <li class="step" data-step="3"><span class="step-n mono">04 / 04</span><h3 class="step-t">τ = 0.5 s<br>splits high from low.</h3><p class="step-s">A first-order complementary filter allocates power in a 1&nbsp;kHz control loop. What you see is the actual output of the PyBaMM simulation (slowed down).</p></li>
+          <li class="step" data-step="0"><span class="step-n mono">01 / 04</span><h3 class="step-t">The load jumps <br>every 100&nbsp;ms.</h3><p class="step-s">AI rack power switches back and forth between 56 and 104&nbsp;kW, once every 100&nbsp;ms.</p></li>
+          <li class="step" data-step="1"><span class="step-n mono">02 / 04</span><h3 class="step-t">Capacitors <br><em class="c-lic">catch the spikes</em> first.</h3><p class="step-s">The LIC delivers up to 47.5&nbsp;kW instantly; when the load drops back, the battery slowly recharges it.</p></li>
+          <li class="step" data-step="2"><span class="step-n mono">03 / 04</span><h3 class="step-t">The battery only <br><em class="c-lfp">holds steady</em>.</h3><p class="step-s">The LFP sees only the filtered average power and settles steadily around 80&nbsp;kW.</p></li>
+          <li class="step" data-step="3"><span class="step-n mono">04 / 04</span><h3 class="step-t">τ = 0.5 s <br>splits high from low.</h3><p class="step-s">A first-order complementary filter allocates power in a 1&nbsp;kHz control loop. What you see is the actual output of the PyBaMM simulation (slowed down).</p></li>
         </ol>
       </div>
 
