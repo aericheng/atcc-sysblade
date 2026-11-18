@@ -326,7 +326,7 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .sec-head{grid-template-columns:1fr}
   .sb-home .layers{grid-template-columns:1fr}
   .sb-home .layer{border-right:0;border-bottom:1px solid var(--line)}
-  .sb-home .layer-btn{display:grid;grid-template-columns:minmax(0,1fr) 116px;grid-template-areas:"top top" "title glyph" "tech glyph" "out out" "more more";column-gap:16px;padding:18px 0 18px 30px}
+  .sb-home .layer-btn{display:grid;grid-template-columns:minmax(0,1fr) 116px;grid-template-areas:"top top" "title glyph" "tech glyph" "out out" "more more";column-gap:16px;padding:18px 0 18px 30px;height:auto}
   .sb-home .layer-top{grid-area:top}
   .sb-home .port{display:none}
   .sb-home .glyph{grid-area:glyph;margin:8px 0 0;height:48px;align-self:center}
@@ -363,6 +363,9 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .speed button{padding:4px 7px}
   .sb-home .legend{gap:10px 14px}
   .sb-home .layer-btn{grid-template-columns:minmax(0,1fr) 92px}
+  .sb-home .rail-end{gap:10px}
+  .sb-home .xcheck{font-size:26px}
+  .sb-home .xcheck em{margin-left:6px}
   .sb-home .d-title{font-size:26px}
 }
 
