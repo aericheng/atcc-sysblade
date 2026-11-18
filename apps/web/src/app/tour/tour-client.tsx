@@ -460,7 +460,7 @@ export function TourClient({
                   stroke="var(--danger)"
                   strokeWidth={2}
                   strokeDasharray="4 4"
-                  label={{ value: "1 台故障（8 → 7 台）", position: "insideTopRight", fill: "var(--danger)", fontSize: 11 }}
+                  label={{ value: "1 台故障（8 → 7 台）", position: "insideTopLeft", fill: "var(--danger)", fontSize: 11 }}
                   className="anim-marker-flash"
                 />
                 <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="每台 BBU 功率"
@@ -699,7 +699,7 @@ function Slide({
       data-tour-section
       data-active={active}
       data-section={idx}
-      className={`min-h-[88vh] flex items-center justify-center py-12 sm:py-16 transition-opacity duration-500 ${
+      className={`min-h-[88vh] scroll-mt-36 flex items-center justify-center py-12 sm:py-16 transition-opacity duration-500 ${
         active ? "opacity-100" : "opacity-30"
       } ${last ? "border-b border-border/30" : ""}`}
     >

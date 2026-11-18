@@ -828,9 +828,14 @@ const Sections = (function () {
       const right = x < L + pw * 0.62, ax = right ? x + 10 : x - 10;
       cx.textAlign = right ? 'left' : 'right';
       // keep each label inside the canvas: on phones the longer ones are wider than the room beside the guide
-      const put = (txt, y) => { const tw = cx.measureText(txt).width; cx.fillText(txt, right ? Math.max(0, Math.min(ax, w - 2 - tw)) : Math.min(w, Math.max(ax, tw + 2)), y); };
+      const put = (txt, y, plate) => {
+        const tw = cx.measureText(txt).width, tx = right ? Math.max(0, Math.min(ax, w - 2 - tw)) : Math.min(w, Math.max(ax, tw + 2));
+        // a label that sits on a waveform gets a background plate so the trace does not run through it
+        if (plate) { const fs = cx.fillStyle; cx.fillStyle = C.bg; cx.globalAlpha = 0.86; cx.fillRect((right ? tx : tx - tw) - 3, y - 11, tw + 6, 15); cx.globalAlpha = 1; cx.fillStyle = fs; }
+        cx.fillText(txt, tx, y);
+      };
       mono('600'); cx.fillStyle = C.ink;
-      put(`${up ? '+' : '−'}${Math.abs(dP).toFixed(0)} kW`, yLa + 4);
+      put(`${up ? '+' : '−'}${Math.abs(dP).toFixed(0)} kW`, yLa + 4, true);
       const yb = Math.max(yVb0, yVb1) + 22;
       if (pain.alpha.bad > 0.5) {
         cx.font = `600 ${narrow ? 13 : 16}px ` + FONT.mono; cx.fillStyle = BAD;

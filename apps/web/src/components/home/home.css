@@ -491,7 +491,7 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
 .sb-home .out-sub{font-size:15px;line-height:1.8;color:#a3b3ae;margin-bottom:18px}
 .sb-home .out-grid{display:grid;grid-template-columns:minmax(200px,250px) minmax(0,1fr) minmax(240px,300px);gap:clamp(20px,3vw,48px);align-items:center;margin-top:clamp(28px,4vh,48px)}
 .sb-home .out-ro{margin:0}
-.sb-home .oro{padding:12px 0;border-top:1px solid var(--d-line);display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 8px}
+.sb-home .oro{padding:12px 0;border-top:1px solid var(--d-line);display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 8px;align-content:start}
 .sb-home .oro dt{font-size:11px;letter-spacing:.1em;color:var(--d-dim);grid-column:1/-1}
 .sb-home .oro dd{margin:0;font-size:clamp(26px,2.4vw,38px);letter-spacing:-.04em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
 .sb-home .oro dd b{font-weight:500}
@@ -606,6 +606,7 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .out-ro{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;order:3}
   .sb-home .oro{grid-template-columns:minmax(0,1fr)}
   .sb-home .o-stage{text-align:left;white-space:normal}
+  .sb-home.sb-en .o-stage{line-height:1.45;min-height:2.9em}
 }
 @media (max-width:1000px){
   .sb-home .pains{grid-template-columns:1fr}
@@ -778,6 +779,24 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home.sb-en .nav ul{gap:14px;font-size:13px}
 }
 @media (min-width:1101px) and (max-width:1200px){.sb-home.sb-en .nav-chip{display:none}}
+/* outage, one-screen layout: English copy runs longer than the Chinese it was sized for.
+   Give the story column more width and tighter body text so the section still fits one screen,
+   and start the cabinet below the headline, which is wider than its column in English. */
+@media (min-width:1101px){
+  /* the cabinet's left-hand callouts reach back over the column gap: keep the paragraph clear of them */
+  .sb-home.sb-en .out-sub{font-size:clamp(12.5px,1.65vh,15px);line-height:1.6;padding-right:56px}
+  .sb-home.sb-en .outage .src-dark{font-size:10px;line-height:1.5}
+  .sb-home.sb-en .oro .o-stage{font-size:10px}
+  .sb-home.sb-en .out-stats{row-gap:clamp(6px,1vh,22px)}
+  .sb-home.sb-en .out-stats span{line-height:1.3}
+  .sb-home.sb-en .out-tl{height:clamp(72px,calc(20vh - 80px),220px)}
+  .sb-home.sb-en .out-scene{margin-top:clamp(74px,min(7.8vw,12.9vh),138px)}
+}
+/* wider side columns only where the cabinet still has room between them */
+@media (min-width:1360px){
+  .sb-home.sb-en .out-wrap{grid-template-columns:clamp(360px,30vw,520px) minmax(0,1fr) clamp(300px,23vw,400px)}
+  .sb-home.sb-en .out-sub{padding-right:clamp(60px,calc(270px - 14vw),116px)}
+}
 /* phones: the language switch needs room next to the scrolling section strip */
 @media (max-width:640px){
   .sb-home .nav{gap:10px}

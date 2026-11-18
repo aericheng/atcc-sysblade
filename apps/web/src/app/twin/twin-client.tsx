@@ -514,7 +514,7 @@ function ScopeCharts({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
               <YAxis
-                domain={[licCutoffV - 1, licNominalV + 1.5]}
+                domain={[licCutoffV - 1, licNominalV + 3.5]}
                 stroke=""
                 tickFormatter={(v) => v.toFixed(0)}
                 label={{ value: "電容組電壓 (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
@@ -532,7 +532,7 @@ function ScopeCharts({
                 strokeWidth={1.2}
                 label={{
                   value: `保護門檻 ${licCutoffV.toFixed(0)} V（UVLO）`,
-                  position: "insideTopRight",
+                  position: "insideBottomRight",
                   fill: "var(--danger)",
                   fontSize: 11,
                 }}
@@ -545,7 +545,8 @@ function ScopeCharts({
                 strokeWidth={0.8}
                 label={{
                   value: `額定 ${licNominalV.toFixed(1)} V`,
-                  position: "insideTopRight",
+                  position: "insideBottomRight",
+                  offset: 12,
                   fill: "var(--muted)",
                   fontSize: 11,
                 }}
@@ -1673,7 +1674,7 @@ export function TwinClient({
           </div>
         </CardHeader>
         <CardBody className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
               label="TCN MAPE（測試集）"
               value={modelValidation.metrics.test_mape_pct.toFixed(1)}

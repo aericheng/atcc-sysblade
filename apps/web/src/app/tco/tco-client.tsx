@@ -271,13 +271,13 @@ export function TcoClient() {
               label="機隊 10 年節省"
               value={formatUsd(result.fleet.savingUsd)}
               tone="success"
-              hint={`依目前輸入試算：較傳統 BBU 低 ${(result.fleet.savingPct * 100).toFixed(1)} %`}
+              hint={`依目前輸入試算：較傳統 BBU 低 ${(result.fleet.savingPct * 100).toFixed(1)} %`}
             />
             <Stat
               label="每機架節省"
               value={formatUsd(result.perRack.saving)}
               tone="primary"
-              hint={`依目前輸入試算：每機架 ${(result.perRack.savingPct * 100).toFixed(1)} %`}
+              hint={`依目前輸入試算：每機架 ${(result.perRack.savingPct * 100).toFixed(1)} %`}
             />
             <Stat
               label="回收期"
