@@ -1193,23 +1193,23 @@ const Outage = (function () {
     const call = (p, dx, txt, sub, anchor) => {
       const [x, y] = p;
       const x2 = x + dx;
-      mk('polyline', { points: `${f1(x)},${f1(y)} ${f1(x2)},${f1(y)}`, fill: 'none', stroke: '#33454c', 'stroke-width': 1 }, g);
+      const pl = mk('polyline', { points: `${f1(x)},${f1(y)} ${f1(x2)},${f1(y)}`, fill: 'none', stroke: '#33454c', 'stroke-width': 1 }, g);
       mk('circle', { cx: f1(x), cy: f1(y), r: 2.2, fill: C.ink }, g);
-      labels.push([x2, y, txt, sub, anchor]);
+      labels.push([x2, y, txt, sub, anchor, x, pl]);
     };
     const fz = (z) => P(X0, Y0 + DY, DZ - z / SC);
-    call(fz(31), -70, 'LIC ×2', tr('吸收前 2 秒的峰值', 'absorbs the first 2 s of peak'), 'end');
+    call(fz(31), -70, 'LIC ×2', tr('吸收前 2 秒的峰值', 'absorbs the first\n2 s of peak'), 'end');
     call(fz(104 + 4 * 38 - 2), -70, 'BBU ×8', tr('每台 2.5 kWh LFP', '2.5 kWh LFP each'), 'end');
     const [rx, ry] = P(X0 + DX, Y0 + DY * 0.5, DZ * 0.62);
     call([rx, ry], 62, tr('並聯輸出', 'Parallel output'), tr('→ 機櫃負載', '→ rack load'), 'start');
     E.geoBB = g.getBBox ? g.getBBox() : null;
-    E.calls = labels.map(([x2, y, txt, sub, anchor], n) => {
+    E.calls = labels.map(([x2, y, txt, sub, anchor, x0, pl], n) => {
       const lg = mk('g', { transform: `translate(${f1(x2)},${f1(y)})` }, g);
       const o = anchor === 'end' ? -6 : 6;
       mk('text', { x: o, y: -3, 'text-anchor': anchor, fill: C.ink, 'font-size': 14 }, lg).textContent = txt;
-      mk('text', { x: o, y: 15, 'text-anchor': anchor, fill: C.dim, 'font-size': 11.5 }, lg).textContent = sub;
+      sub.split('\n').forEach((ln, i) => { mk('text', { x: o, y: 15 + i * 14, 'text-anchor': anchor, fill: C.dim, 'font-size': 11.5 }, lg).textContent = ln; });
       if (n === 2) E.out = mk('text', { x: 6, y: 38, fill: C.ink, 'font-size': 22, 'font-weight': 500 }, lg);
-      return { lg, x: x2, y };
+      return { lg, x: x2, y, x0, pl, end: anchor === 'end' };
     });
     E.out.textContent = '120.0 kW';
     E.fullBB = g.getBBox ? g.getBBox() : null;
@@ -1225,15 +1225,39 @@ const Outage = (function () {
     const bb = wide ? E.geoBB : E.fullBB, pad = wide ? 4 : 12;
     const vb = [bb.x - pad, bb.y - pad, bb.width + pad * 2, bb.height + pad * 2];
     svg.setAttribute('viewBox', vb.map(f1).join(' '));
-    let s = 1;
+    let s = 1, k = 0;
     if (wide) {
       const r = svg.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) {
-        const k = 1 / Math.min(r.width / vb[2], r.height / vb[3]); // viewBox units per CSS px
+        k = 1 / Math.min(r.width / vb[2], r.height / vb[3]); // viewBox units per CSS px
         s = Math.max(1, Math.min(2.2, (13 * k) / 14));
       }
     }
-    E.calls.forEach((c) => c.lg.setAttribute('transform', `translate(${f1(c.x)},${f1(c.y)}) scale(${s.toFixed(3)})`));
+    const put = (c, x) => {
+      c.lg.setAttribute('transform', `translate(${f1(x)},${f1(c.y)}) scale(${s.toFixed(3)})`);
+      c.pl.setAttribute('points', `${f1(c.x0)},${f1(c.y)} ${f1(x)},${f1(c.y)}`);
+    };
+    E.calls.forEach((c) => put(c, c.x));
+    if (!k) return;
+    // The labels hang outside the cabinet, over the column gaps. Where the text of a side column reaches
+    // that far (longer English copy, narrow or tall windows), pull the label in along its leader.
+    const sec = $('outage'), rows = [];
+    ['.kicker', '.out-title', '.out-sub', '.out-ro', '.bbu-list', '.out-stats'].forEach((q) => {
+      const el = sec && sec.querySelector(q);
+      if (!el) return;
+      const rg = document.createRange(); rg.selectNodeContents(el);
+      for (const b of rg.getClientRects()) if (b.width > 0) rows.push(b);
+    });
+    const kw = E.out.textContent; E.out.textContent = '120.0 kW'; // measure with the widest reading
+    E.calls.forEach((c) => {
+      const b = c.lg.getBoundingClientRect(); let d = 0;
+      rows.forEach((q) => {
+        if (q.bottom < b.top - 4 || q.top > b.bottom + 4) return;
+        if (c.end ? q.left < b.left : q.right > b.right) d = Math.max(d, c.end ? q.right + 10 - b.left : b.right + 10 - q.left);
+      });
+      if (d > 0) put(c, c.x + (c.end ? 1 : -1) * Math.min(d * k, Math.max(0, Math.abs(c.x - c.x0) - 14 * k)));
+    });
+    E.out.textContent = kw;
   }
 
   /* ---------------- list ---------------- */
@@ -1306,7 +1330,7 @@ const Outage = (function () {
     $('o-lic-s').textContent = plv > 0.05 ? tr('放電 · 吸收峰值', 'Discharging · absorbing peak') : plv < -0.05 ? tr('回充', 'Recharging') : tr('待命', 'Standby');
     const pb = d.per[0][i];
     $('o-c').textContent = (pb / 2.5).toFixed(2);
-    const on = $('o-n'); on.textContent = n < 8 ? tr('7 台運作 · BBU-8 離線', '7 units running · BBU-8 offline') : tr('8 台運作', '8 units running'); on.classList.toggle('warn', n < 8);
+    const on = $('o-n'); on.innerHTML = n < 8 ? tr('7 台運作 · <span class="nb">BBU-8 離線</span>', '7 units running · <span class="nb">BBU-8 offline</span>') : tr('8 台運作', '8 units running'); on.classList.toggle('warn', n < 8);
     $('o-temp').textContent = s.t_cell_c[i].toFixed(2);
     $('o-tc').textContent = (t < 10 ? '0' : '') + t.toFixed(1);
     const sc = $('o-scrub'); sc.value = t.toFixed(2); sc.style.setProperty('--p', ((t / 60) * 100).toFixed(2) + '%');
@@ -1390,6 +1414,7 @@ const Outage = (function () {
     const t0 = q.has('ot') ? +q.get('ot') : RM ? 20 : 0;
     seek(t0);
     setPlaying(false);
+    raf(fitCab);
     if (!RM && !q.has('ot')) {
       const io = new TrackedIO((es) => es.forEach((e) => {
         st.visible = e.isIntersecting;
@@ -1850,7 +1875,7 @@ const Arch = (function () {
     ScrollTrigger.addEventListener('refresh', upd); disposers.push(() => ScrollTrigger.removeEventListener('refresh', upd));
 
     // outage entrance
-    gsap.from('.out-head > div:first-child, .out-sub, .outage .seg-dark, .out-ro .oro, .bbu-list li', { opacity: 0, y: 24, duration: 0.9, stagger: 0.04, ease: 'power3.out', scrollTrigger: { trigger: '#outage', start: 'top 60%', once: true } });
+    gsap.from('.out-head > div:first-child, .out-sub, .outage .seg-dark, .out-ro .oro, .bbu-list li', { opacity: 0, y: 24, duration: 0.9, stagger: 0.04, ease: 'power3.out', onComplete: () => { if (!dead) window.dispatchEvent(new Event('resize')); }, scrollTrigger: { trigger: '#outage', start: 'top 60%', once: true } });
     gsap.from('#cab', { opacity: 0, y: 40, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '#outage', start: 'top 55%', once: true } });
     // .out-bottom is display:contents on wide screens, so animate (and trigger on) its children
     gsap.from('.out-tl, .outage .transport, .out-stats > div', { opacity: 0, y: 24, duration: 1, stagger: 0.05, ease: 'power3.out', scrollTrigger: { trigger: '.out-tl', start: 'top 96%', once: true } });

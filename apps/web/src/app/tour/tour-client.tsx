@@ -208,7 +208,7 @@ export function TourClient({
   return (
     <div className="-mx-4 sm:-mx-6 -my-8 sm:-my-10">
       {/* Sticky controls */}
-      <div className="sticky top-14 z-30 border-b border-border bg-background/90 backdrop-blur-xl">
+      <div className="sticky top-14 z-30 bleed-bar backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             type="button"

@@ -988,11 +988,11 @@ export function TwinClient({
                 {Math.round((mainsFail.aged.dcir_growth ?? 0.5) * 100)}%）+ 容量衰減建模。
               </p>
               <div className="overflow-x-auto">
-                <table className="text-xs border-collapse w-full max-w-lg">
+                <table className="text-xs border-collapse w-full max-w-2xl">
                   <thead>
                     <tr className="text-muted">
                       <th className="px-2 py-1 text-left font-medium">指標</th>
-                      <th className="px-2 py-1 text-right font-medium">BoL（全新）</th>
+                      <th className="px-2 py-1 text-right font-medium sm:whitespace-nowrap">BoL（全新）</th>
                       <th className="px-2 py-1 text-right font-medium">{mainsFail.aged.aged_label}</th>
                     </tr>
                   </thead>

@@ -49,6 +49,18 @@ body {
   outline: none;
 }
 
+/* /tour sticky controls: the bar sits inside the max-width column, so paint its
+   backdrop and bottom rule out to both viewport edges like the site header.
+   border-image outset is ink only, so it never adds horizontal scroll. */
+.bleed-bar {
+  border-image: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background) 90%, transparent) calc(100% - 1px),
+      var(--border) calc(100% - 1px)
+    )
+    fill 0 / 0 / 0 100vw;
+}
+
 /* Subtle simulated-data watermark for /dashboard */
 .simulated-watermark {
   position: relative;
