@@ -106,6 +106,18 @@ body {
   from { opacity: 0; transform: translateX(40px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+/* The page gutter is narrower than a 40px slide below desktop widths: travelling less keeps the entering
+   block inside the gutter, so it never widens the page while it animates. */
+@media (max-width: 1279px) {
+  @keyframes tour-slide-left {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes tour-slide-right {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+}
 @keyframes tour-scale-in {
   from { opacity: 0; transform: scale(0.85); }
   to   { opacity: 1; transform: scale(1); }

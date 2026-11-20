@@ -682,10 +682,10 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
 /* English: "Offline" is wider than a C-rate figure. Size the last column from the row font (mono advance = .6em);
    it is a variable on the list so the header row, set smaller, keeps the same tracks. */
 .sb-home.sb-en .bbu-list{--bc:51px}
-.sb-home.sb-en .bbu-list li{grid-template-columns:58px 1fr 64px var(--bc)}
+.sb-home.sb-en .bbu-list li{grid-template-columns:58px minmax(0,1fr) 64px var(--bc)}
 @media (max-width:640px){
   .sb-home.sb-en .bbu-list{--bc:47px}
-  .sb-home.sb-en .bbu-list li{grid-template-columns:52px 1fr 58px var(--bc)}
+  .sb-home.sb-en .bbu-list li{grid-template-columns:52px minmax(0,1fr) 58px var(--bc)}
 }
 @media (min-width:1101px){.sb-home.sb-en .bbu-list{--bc:calc(clamp(12px,1.25vh,14px)*4.25)}}
 @media (max-width:640px){
@@ -826,6 +826,22 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home .oro{padding:3px 0}
   .sb-home .out-tl{height:clamp(74px,calc(30vh - 143px),80px);margin-top:8px}
   .sb-home.sb-en .out-tl{height:72px}
+}
+/* English copy runs longer: below about 690 px of height the story column sets the section height, so
+   step its type down; below 640 px the result figures on the right do, so tighten those too */
+@media (min-width:1101px) and (max-height:690px){
+  .sb-home.sb-en .out-title{font-size:28px;margin-top:6px}
+  .sb-home.sb-en .out-sub{font-size:12px;line-height:1.5;margin-top:8px}
+  .sb-home.sb-en .out-ro{margin-top:8px}
+  .sb-home.sb-en .oro{padding:2px 0}
+  .sb-home.sb-en .oro dt{font-size:10px}
+  .sb-home.sb-en .oro dd{font-size:20px}
+  .sb-home.sb-en .out-scene{margin-top:66px}
+}
+@media (min-width:1101px) and (max-height:640px){
+  .sb-home.sb-en .out-stats{row-gap:4px;padding-top:6px;margin-top:4px}
+  .sb-home.sb-en .out-stats b{font-size:21px}
+  .sb-home.sb-en .out-stats span{font-size:11px;line-height:1.25}
 }
 /* narrow one-screen windows wrap the source line a third time */
 @media (min-width:1101px) and (max-width:1200px) and (max-height:800px){

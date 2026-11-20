@@ -710,6 +710,11 @@ export function TwinClient({
     }
     return out;
   }, [mainsFail]);
+  // "EOL · 80% SOH (~year 10, …)" -> short column name + its qualifier
+  const agedLabel = mainsFail.aged?.aged_label ?? "";
+  const agedCut = agedLabel.indexOf(" (");
+  const agedLabelShort = agedCut > 0 ? agedLabel.slice(0, agedCut) : agedLabel;
+  const agedLabelNote = agedCut > 0 ? agedLabel.slice(agedCut + 1) : "";
 
   const rampLicData = useMemo(() => {
     const t = mainsFail.series.t;
@@ -992,8 +997,12 @@ export function TwinClient({
                   <thead>
                     <tr className="text-muted">
                       <th className="px-2 py-1 text-left font-medium">指標</th>
-                      <th className="px-2 py-1 text-right font-medium sm:whitespace-nowrap">BoL（全新）</th>
-                      <th className="px-2 py-1 text-right font-medium">{mainsFail.aged.aged_label}</th>
+                      <th className="px-2 py-1 text-right font-medium whitespace-nowrap">BoL（全新）</th>
+                      {/* phones: keep the header to the short name; the qualifier moves under the table */}
+                      <th className="px-2 py-1 text-right font-medium whitespace-nowrap sm:whitespace-normal">
+                        {agedLabelShort}
+                        {agedLabelNote && <span className="hidden sm:inline"> {agedLabelNote}</span>}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="tabular-nums text-foreground">
@@ -1030,6 +1039,11 @@ export function TwinClient({
                   </tbody>
                 </table>
               </div>
+              {agedLabelNote && (
+                <p className="mt-2 text-[11px] text-muted sm:hidden">
+                  {agedLabelShort} 欄：{agedLabelNote}
+                </p>
+              )}
               <p className="text-[11px] leading-relaxed text-muted mt-2">
                 連續供電為 {mainsFail.aged.continuous_c_rate_at_eol ?? 1.5} C，老化至 EOL 時仍高於截止電壓，因此連續備援時間受能量而非功率限制（EOL 時仍為 60 s 承諾的{" "}
                 {(mainsFail.aged.runtime_margin_vs_commitment_eol ?? 8).toFixed(0)}×）。6 C 峰值是由 LIC 主導、短於 100 ms 的脈衝（transient_hybrid.json），

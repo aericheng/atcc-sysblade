@@ -22,7 +22,11 @@ export function initHome(HOME, env) {
   class TrackedIO extends IntersectionObserver {
     constructor(cb, opt) { super(cb, opt); disposers.push(() => this.disconnect()); }
   }
-  const fetchData = (name) => fetch(base + '/scenarios/' + name).then((r) => { if (dead) throw ABORT; return r; });
+  // one retry on a dropped request: without the data a section would stay on its placeholder dashes
+  const fetchData = (name) => {
+    const go = () => fetch(base + '/scenarios/' + name).then((r) => { if (dead) throw ABORT; return r; });
+    return go().catch((e) => { if (dead || e === ABORT) throw e; return new Promise((res) => setTimeout(res, 600)).then(() => { if (dead) throw ABORT; return go(); }); });
+  };
   const HOME_PRE_OFF = () => document.documentElement.classList.remove('sbh-pre');
 
 // ===== sim.js =====
@@ -1201,15 +1205,16 @@ const Outage = (function () {
     call(fz(31), -70, 'LIC ×2', tr('吸收前 2 秒的峰值', 'absorbs the first\n2 s of peak'), 'end');
     call(fz(104 + 4 * 38 - 2), -70, 'BBU ×8', tr('每台 2.5 kWh LFP', '2.5 kWh LFP each'), 'end');
     const [rx, ry] = P(X0 + DX, Y0 + DY * 0.5, DZ * 0.62);
-    call([rx, ry], 62, tr('並聯輸出', 'Parallel output'), tr('→ 機櫃負載', '→ rack load'), 'start');
+    call([rx, ry], 62, tr('並聯輸出', 'Parallel|output'), tr('→ 機櫃負載', '→ rack load'), 'start');
     E.geoBB = g.getBBox ? g.getBBox() : null;
     E.calls = labels.map(([x2, y, txt, sub, anchor, x0, pl], n) => {
       const lg = mk('g', { transform: `translate(${f1(x2)},${f1(y)})` }, g);
       const o = anchor === 'end' ? -6 : 6;
-      mk('text', { x: o, y: -3, 'text-anchor': anchor, fill: C.ink, 'font-size': 14 }, lg).textContent = txt;
+      const tt = mk('text', { x: o, y: -3, 'text-anchor': anchor, fill: C.ink, 'font-size': 14 }, lg);
+      tt.textContent = txt.replace('|', ' ');
       sub.split('\n').forEach((ln, i) => { mk('text', { x: o, y: 15 + i * 14, 'text-anchor': anchor, fill: C.dim, 'font-size': 11.5 }, lg).textContent = ln; });
       if (n === 2) E.out = mk('text', { x: 6, y: 38, fill: C.ink, 'font-size': 22, 'font-weight': 500 }, lg);
-      return { lg, x: x2, y, x0, pl, end: anchor === 'end' };
+      return { lg, x: x2, y, x0, pl, end: anchor === 'end', tt, txt, o };
     });
     E.out.textContent = '120.0 kW';
     E.fullBB = g.getBBox ? g.getBBox() : null;
@@ -1237,7 +1242,15 @@ const Outage = (function () {
       c.lg.setAttribute('transform', `translate(${f1(x)},${f1(c.y)}) scale(${s.toFixed(3)})`);
       c.pl.setAttribute('points', `${f1(c.x0)},${f1(c.y)} ${f1(x)},${f1(c.y)}`);
     };
-    E.calls.forEach((c) => put(c, c.x));
+    // a title written as 'a|b' can stack upwards on two lines when its label has no room left (see below)
+    const stack = (c, on) => {
+      const w = c.txt.split('|');
+      if (!on || w.length !== 2) { c.tt.textContent = w.join(' '); return false; }
+      c.tt.textContent = '';
+      w.forEach((t, i) => { Stage.iso.mk('tspan', { x: c.o, y: i ? -3 : -19 }, c.tt).textContent = i ? t : t + ' '; });
+      return true;
+    };
+    E.calls.forEach((c) => { stack(c, false); put(c, c.x); });
     if (!k) return;
     // The labels hang outside the cabinet, over the column gaps. Where the text of a side column reaches
     // that far (longer English copy, narrow or tall windows), pull the label in along its leader.
@@ -1249,13 +1262,19 @@ const Outage = (function () {
       for (const b of rg.getClientRects()) if (b.width > 0) rows.push(b);
     });
     const kw = E.out.textContent; E.out.textContent = '120.0 kW'; // measure with the widest reading
-    E.calls.forEach((c) => {
+    const need = (c) => {
       const b = c.lg.getBoundingClientRect(); let d = 0;
       rows.forEach((q) => {
         if (q.bottom < b.top - 4 || q.top > b.bottom + 4) return;
         if (c.end ? q.left < b.left : q.right > b.right) d = Math.max(d, c.end ? q.right + 10 - b.left : b.right + 10 - q.left);
       });
-      if (d > 0) put(c, c.x + (c.end ? 1 : -1) * Math.min(d * k, Math.max(0, Math.abs(c.x - c.x0) - 14 * k)));
+      return d * k;
+    };
+    E.calls.forEach((c) => {
+      const room = Math.max(0, Math.abs(c.x - c.x0) - 24 * k);
+      let d = need(c);
+      if (d > room && stack(c, true)) d = need(c);
+      if (d > 0) put(c, c.x + (c.end ? 1 : -1) * Math.min(d, Math.max(0, Math.abs(c.x - c.x0) - 14 * k)));
     });
     E.out.textContent = kw;
   }
