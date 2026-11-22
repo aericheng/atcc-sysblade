@@ -843,6 +843,13 @@ html.sbh-pre .sb-home :is(.hero .eyebrow,.hero .line-in,.hero .lead,.hero .stat,
   .sb-home.sb-en .out-stats b{font-size:21px}
   .sb-home.sb-en .out-stats span{font-size:11px;line-height:1.25}
 }
+/* about 600 px of height (a 720-high screen with browser chrome): the readouts in the story column
+   still set the height, so close up the gaps above them and below the source line */
+@media (min-width:1101px) and (max-height:610px){
+  .sb-home.sb-en .out-sub{margin-top:4px}
+  .sb-home.sb-en .out-ro{margin-top:4px}
+  .sb-home.sb-en .out-wrap{padding-bottom:4px}
+}
 /* narrow one-screen windows wrap the source line a third time */
 @media (min-width:1101px) and (max-width:1200px) and (max-height:800px){
   .sb-home .out-wrap{padding-bottom:8px}
