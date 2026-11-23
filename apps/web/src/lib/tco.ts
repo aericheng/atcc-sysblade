@@ -64,7 +64,7 @@ export const TCO_LINE_ITEM_SOURCES: Array<{
     anchor:
       "傳統 NMC 6-8 yr 服務壽命,是資料中心工況下、受循環衰退 + 日曆壽命限制的 BBU 電池組的典型產業區間（方向性 — 具體交易請對照 Wood Mackenzie / IDTechEx 資料中心 BBU 出版品驗證）。10y 內更換 1.5× 每個 $1080；Sysblade LFP 在 BBU 工況下 10+ yr（Severson-fit 衰退 + duty_factor 0.33,見 /twin 老化圖）→ 更換 1×。",
     anchorEn:
-      "A 6-8 yr service life for traditional NMC is the typical industry range for a data-center BBU pack limited by cycle fade plus calendar life (directional; for specific transactions, check against Wood Mackenzie / IDTechEx data-center BBU publications). Over 10 years, replacement is 1.5× per $1080 unit; Sysblade LFP lasts 10+ yr under BBU duty (Severson-fit fade + duty_factor 0.33, see the /twin aging chart), so replacement is 1×.",
+      "A 6-8 yr service life for traditional NMC is the typical industry range for a data-center BBU pack limited by cycle fade plus calendar life (directional; for specific transactions, check against Wood Mackenzie / IDTechEx data-center BBU publications). Over 10 years, replacement is 1.5× per $1080 unit; Sysblade LFP lasts 10+ yr under BBU duty (Severson-fit fade + duty_factor 0.33, see the /en/twin aging chart), so replacement is 1×.",
   },
   {
     key: "transient",

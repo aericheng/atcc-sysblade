@@ -241,7 +241,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
               href={href("/twin")}
               className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
             >
-              {t("於 /twin 查看 conformal PI 區間帶", "See conformal PI bands on /twin")} <ArrowUpRight className="h-3 w-3" />
+              {t("於 /twin 查看 conformal PI 區間帶", "See conformal PI bands on /en/twin")} <ArrowUpRight className="h-3 w-3" />
             </a>
           </div>
 
@@ -291,7 +291,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
               </>,
               <>
                 The point estimate comes from the same TCN deployed on{" "}
-                <span className="text-foreground">/twin</span> (one model, two views). The ≫&nbsp;10&nbsp;yr
+                <span className="text-foreground">/en/twin</span> (one model, two views). The ≫&nbsp;10&nbsp;yr
                 figure is the cycle-fade margin (cycles&nbsp;÷&nbsp;50&nbsp;cyc/yr); the real limit is{" "}
                 <span className="text-foreground">calendar/storage life ~8–12&nbsp;yr</span> (proposal §G.3 /
                 Appendix C), so Tier-3 admission is triggered almost entirely by{" "}
@@ -328,7 +328,7 @@ export function DeviceDrilldown({ device, licRcEnvelope, onClose }: Props) {
               href={href("/twin")}
               className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline"
             >
-              {t("於 /twin 查看 v_lic(t) 曲線", "See the v_lic(t) curve on /twin")} <ArrowUpRight className="h-3 w-3" />
+              {t("於 /twin 查看 v_lic(t) 曲線", "See the v_lic(t) curve on /en/twin")} <ArrowUpRight className="h-3 w-3" />
             </a>
           </div>
 

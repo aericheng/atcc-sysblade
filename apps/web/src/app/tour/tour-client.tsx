@@ -660,7 +660,7 @@ export function TourClient({
               className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-4 py-2 text-sm font-medium hover:bg-primary/25 transition-colors"
             >
               {t("拖 SOH slider 自己看 → /twin",
-            "Drag the SOH slider yourself → /twin")}
+            "Drag the SOH slider yourself → /en/twin")}
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -697,7 +697,7 @@ export function TourClient({
               className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-5 py-3 text-sm font-medium hover:bg-primary/90 transition-colors anim-bounce-in anim-stagger-1"
             >
               {t("看斷電當下能撐多久 → /twin",
-            "See how long it holds at outage → /twin")}
+            "See how long it holds at outage → /en/twin")}
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <Link
@@ -705,7 +705,7 @@ export function TourClient({
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-2"
             >
               {t("看機隊健康儀表板 → /dashboard",
-            "See the fleet health dashboard → /dashboard")}
+            "See the fleet health dashboard → /en/dashboard")}
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <a

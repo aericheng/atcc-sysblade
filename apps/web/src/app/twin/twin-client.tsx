@@ -2779,10 +2779,10 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 模型誠實回報其在該處訓練訊號有限,而 healthy 電芯的窄 PI 則反映實際的信心度。
                   </>,
                   <>
-                /dashboard sorts online units into three buckets by their current physical state (SOH / RUL / temperature);
+                /en/dashboard sorts online units into three buckets by their current physical state (SOH / RUL / temperature);
                 the walkthrough instead buckets training cells by <em>predicted</em> cycle life —
                 which is why <span className="text-foreground">critical</span> appears
-                here but not on /dashboard. Every prediction carries a 90 % prediction interval via Monte Carlo Dropout (100 forward passes with dropout enabled)
+                here but not on /en/dashboard. Every prediction carries a 90 % prediction interval via Monte Carlo Dropout (100 forward passes with dropout enabled)
                 post-processed with split conformal — the wide PI on tail cells such as <em>critical</em> is
                 the model honestly reporting that its training signal there is limited, while the narrow PI on healthy cells reflects real confidence.
                   </>,

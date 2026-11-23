@@ -170,7 +170,7 @@ export function DashboardClient({
                     docs/audit/A2). This toggle projects that result onto the 1000-device fleet: a deterministic
                     ~6 % of devices switch to “1 BBU degraded within the rack” mode; per the V4 simulation, these
                     racks still complete the 60-second graceful shutdown with 7 units (V4 simulation PASS, not
-                    real operating data). For the underlying simulated waveforms see the /twin · V3 / V4 toggle.
+                    real operating data). For the underlying simulated waveforms see the /en/twin · V3 / V4 toggle.
                   </>,
                 )}
               </Disclosure>
@@ -500,7 +500,7 @@ export function DashboardClient({
                       life —{" "}
                       <span className="text-foreground">calendar/storage fade becomes the constraint at about 10 yr</span>{" "}
                       (now modelled: the Naumann √t calendar curve on{" "}
-                      <span className="text-foreground">/twin</span>, calibrated to the 8–12 yr LFP float life in
+                      <span className="text-foreground">/en/twin</span>, calibrated to the 8–12 yr LFP float life in
                       v2.2 Appendix C), so cycle fade is rarely the binding condition in replacement decisions.
                     </>,
                   )}
@@ -521,9 +521,9 @@ export function DashboardClient({
                         </>,
                         <>
                           Each device’s <span className="text-foreground">rul_cycles</span> is computed by the same TCN
-                          you see on <span className="text-foreground">/twin</span> — each device is matched to a
+                          you see on <span className="text-foreground">/en/twin</span> — each device is matched to a
                           Severson-anchored synthetic BBU-duty trajectory (analytic decay, not PyBaMM aging — see the
-                          /twin Regime mix disclosure); the TCN predicts that trajectory’s total cycle life, and we then
+                          /en/twin Regime mix disclosure); the TCN predicts that trajectory’s total cycle life, and we then
                           subtract the cycles the device has already used (age × 50 cyc/yr — engineering estimate,
                           anchored to the v2.1 §G.3 footnote “LFP BBU float 8–12 yr life”, not a verbatim quote of the
                           v2.1 §B.2 claim). One model is deployed across the whole fleet, rather than a separate decay
@@ -702,7 +702,7 @@ export function DashboardClient({
             {rulFromTcn ? (
               <>
                 <span className="text-foreground">
-                  {t("每個設備的 RUL 由 /twin 上呈現的同一個 TCN 計算", "Each device's RUL is computed by the same TCN shown on /twin")}
+                  {t("每個設備的 RUL 由 /twin 上呈現的同一個 TCN 計算", "Each device's RUL is computed by the same TCN shown on /en/twin")}
                 </span>{" "}
                 {t("— 同一模型,兩種視圖。", "— one model, two views.")}
               </>
