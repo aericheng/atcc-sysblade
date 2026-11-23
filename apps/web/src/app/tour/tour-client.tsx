@@ -24,6 +24,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { PlainInline } from "@/components/ui/plain";
+import { useT } from "@/lib/i18n";
 
 interface Scenario {
   series: Record<string, number[]>;
@@ -109,6 +110,7 @@ export function TourClient({
   rackGraceful: Scenario;
   rackNMinus1: Scenario;
 }) {
+  const { t, href } = useT();
   const [active, setActive] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
@@ -214,12 +216,12 @@ export function TourClient({
             type="button"
             onClick={togglePlay}
             className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-sm font-medium hover:bg-primary/25 transition-colors"
-            aria-label={isPlaying ? "暫停自動播放" : "播放導覽"}
+            aria-label={isPlaying ? t("暫停自動播放", "Pause autoplay") : t("播放導覽", "Play the tour")}
           >
             {isPlaying ? (
-              <><Pause className="h-4 w-4" /><span>暫停</span></>
+              <><Pause className="h-4 w-4" /><span>{t("暫停", "Pause")}</span></>
             ) : (
-              <><Play className="h-4 w-4" /><span>{active === N_SLIDES - 1 ? "重播" : "播放"}</span></>
+              <><Play className="h-4 w-4" /><span>{active === N_SLIDES - 1 ? t("重播", "Replay") : t("播放", "Play")}</span></>
             )}
           </button>
           <div className="flex-1 h-1.5 rounded-full bg-surface overflow-hidden">
@@ -257,11 +259,14 @@ export function TourClient({
             ATCC C13 · Sysblade HyperBuffer
           </p>
           <h1 className="mt-8 text-5xl sm:text-6xl md:text-7xl font-semibold tracking-tight leading-[0.95] anim-blur-in">
-            <span className="block">AI 機房需要</span>
-            <span className="block text-primary anim-pulse-glow">新的電池備援</span>
+            <span className="block">{t("AI 機房需要",
+            "AI data centers need")}</span>
+            <span className="block text-primary anim-pulse-glow">{t("新的電池備援",
+            "a new battery backup")}</span>
           </h1>
           <div className="mt-14 flex flex-col items-center gap-2 text-muted anim-fade-in anim-stagger-4">
-            <span className="text-xs uppercase tracking-widest">播放或捲動</span>
+            <span className="text-xs uppercase tracking-widest">{t("播放或捲動",
+            "Play or scroll")}</span>
             <ChevronDown className="h-5 w-5 animate-bounce" />
           </div>
         </div>
@@ -270,25 +275,27 @@ export function TourClient({
       {/* 2 — Pain (rotate-in 3 cards) */}
       <Slide idx={1} active={active === 1} refCb={(el) => (sectionRefs.current[1] = el)}>
         <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>痛點</Tag>
+          <Tag>{t("痛點", "Pain points")}</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            北美 Tier-2/3 AI 機房的三個痛點
+            {t("北美 Tier-2/3 AI 機房的三個痛點",
+            "Three pain points of North American Tier-2/3 AI data centers")}
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            分屬電化學、電力電子、機器學習三個領域 — 跨領域整合成本高，長期被分開處理。
+            {t("分屬電化學、電力電子、機器學習三個領域 — 跨領域整合成本高，長期被分開處理。",
+            "They sit in three separate fields: electrochemistry, power electronics and machine learning. Integrating across them is costly, so they have long been handled separately.")}
           </PlainInline>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
-            <PainIconCard icon={<Zap className="h-7 w-7" />} kicker="功率擺盪＋斷電峰值"
-              title="0.2–3 Hz · 斷電約 6C"
-              plain="斷電瞬間每台 BBU 約 6C 峰值；ORv3 下 BBU 平常不放電"
+            <PainIconCard icon={<Zap className="h-7 w-7" />} kicker={t("功率擺盪＋斷電峰值", "Power swings + outage peak")}
+              title={t("0.2–3 Hz · 斷電約 6C", "0.2–3 Hz · about 6C at outage")}
+              plain={t("斷電瞬間每台 BBU 約 6C 峰值；ORv3 下 BBU 平常不放電", "At the moment of outage each BBU sees a peak of about 6C; under ORv3 the BBU normally does not discharge")}
               className="anim-rotate-in anim-stagger-1" />
-            <PainIconCard icon={<Network className="h-7 w-7" />} kicker="HVDC 換代"
+            <PainIconCard icon={<Network className="h-7 w-7" />} kicker={t("HVDC 換代", "HVDC generation change")}
               title="48 V → ±400 V"
-              plain="買錯規格，換代期整批重買"
+              plain={t("買錯規格，換代期整批重買", "Buy the wrong spec and the whole fleet must be re-bought at the generation change")}
               className="anim-rotate-in anim-stagger-2" />
-            <PainIconCard icon={<Activity className="h-7 w-7" />} kicker="機隊維運"
-              title="1000+ 節 RUL 預測"
-              plain="不知道哪顆電池先壞"
+            <PainIconCard icon={<Activity className="h-7 w-7" />} kicker={t("機隊維運", "Fleet operations")}
+              title={t("1000+ 節 RUL 預測", "RUL prediction for 1000+ units")}
+              plain={t("不知道哪顆電池先壞", "No way to know which battery fails first")}
               className="anim-rotate-in anim-stagger-3" />
           </div>
         </div>
@@ -297,11 +304,13 @@ export function TourClient({
       {/* 3 — Solution headline (flip-in) */}
       <Slide idx={2} active={active === 2} refCb={(el) => (sectionRefs.current[2] = el)}>
         <div className="text-center max-w-4xl mx-auto px-6">
-          <Tag>解法</Tag>
+          <Tag>{t("解法", "Solution")}</Tag>
           <h2 className="mt-4 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight anim-flip-in">
             <span className="block">LFP + LIC</span>
-            <span className="block text-primary anim-pulse-glow">混合拓樸</span>
-            <span className="block text-3xl sm:text-4xl text-muted mt-3">+ 數位孿生 AI 維運服務</span>
+            <span className="block text-primary anim-pulse-glow">{t("混合拓樸",
+            "hybrid topology")}</span>
+            <span className="block text-3xl sm:text-4xl text-muted mt-3">{t("+ 數位孿生 AI 維運服務",
+            "+ digital twin AI operations service")}</span>
           </h2>
         </div>
       </Slide>
@@ -309,12 +318,14 @@ export function TourClient({
       {/* 4 — Architecture (8 BBU zoom-in sequence) */}
       <Slide idx={3} active={active === 3} refCb={(el) => (sectionRefs.current[3] = el)}>
         <div className="max-w-3xl mx-auto px-6 w-full">
-          <Tag>架構</Tag>
+          <Tag>{t("架構", "Architecture")}</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            8 BBU 並聯 per rack,N+1 容錯
+            {t("8 BBU 並聯 per rack,N+1 容錯",
+            "8 BBUs in parallel per rack, N+1 fault tolerance")}
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            8 台一組、多留 1 台 — 壞一台，剩 7 台仍完成 60 秒任務（模擬）。
+            {t("8 台一組、多留 1 台 — 壞一台，剩 7 台仍完成 60 秒任務（模擬）。",
+            "Eight units per group with one spare: if one fails, the remaining 7 still complete the 60-second mission (simulated).")}
           </PlainInline>
           <div className="mt-10 rounded-2xl border border-border bg-surface/40 p-6 sm:p-10">
             <div className="flex flex-wrap justify-center gap-2.5">
@@ -331,8 +342,8 @@ export function TourClient({
             </div>
             <div className="mt-8 grid grid-cols-3 gap-4 text-center anim-fade-in anim-stagger-4">
               <Mini value="8" label="BBU / rack" />
-              <Mini value="20" unit="kWh" label="總能量" />
-              <Mini value="60" unit="秒" label="優雅關機" />
+              <Mini value="20" unit="kWh" label={t("總能量", "Total energy")} />
+              <Mini value="60" unit={t("秒", "s")} label={t("優雅關機", "Graceful shutdown")} />
             </div>
           </div>
         </div>
@@ -341,23 +352,27 @@ export function TourClient({
       {/* 5 — V1: count-up + BarGauge */}
       <Slide idx={4} active={active === 4} refCb={(el) => (sectionRefs.current[4] = el)}>
         <div className="max-w-4xl mx-auto px-6 text-center w-full">
-          <Tag>V1 · 物理基礎</Tag>
+          <Tag>{t("V1 · 物理基礎", "V1 · Physics basis")}</Tag>
           <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-            PyBaMM Prada2013 對齊 Severson 公開實測
+            {t("PyBaMM Prada2013 對齊 Severson 公開實測",
+            "PyBaMM Prada2013 aligned to Severson public measurements")}
           </h2>
           <CountUpNumber active={active === 4} target={2.15} decimals={2} unit="% V RMS" />
           <p className="mt-6 text-base sm:text-lg text-foreground/90 anim-fade-in anim-stagger-3">
-            ≤ 5 % 目標
+            {t("≤ 5 % 目標",
+            "≤ 5 % target")}
           </p>
           <BarGauge
-            value={2.15} max={5.0} label="2.15 / 5.0 %" targetLabel="目標 5 %"
+            value={2.15} max={5.0} label="2.15 / 5.0 %" targetLabel={t("目標 5 %", "Target 5 %")}
             tone="success" className="mt-8 anim-slide-left anim-stagger-3"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            3 顆電芯 × cycle_life 534–1227 · 對齊論文的放電 V(Qd) 曲線擬合
+            {t("3 顆電芯 × cycle_life 534–1227 · 對齊論文的放電 V(Qd) 曲線擬合",
+            "3 cells × cycle_life 534–1227 · fit to the paper's discharge V(Qd) curves")}
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            與公開實測誤差僅 2.15 % — 模型可信，結論才可信。
+            {t("與公開實測誤差僅 2.15 % — 模型可信，結論才可信。",
+            "Only 2.15 % error against public measurements: the conclusions are only as credible as the model.")}
           </PlainInline>
         </div>
       </Slide>
@@ -365,21 +380,24 @@ export function TourClient({
       {/* 6 — V2: count-up + FormulaCard */}
       <Slide idx={5} active={active === 5} refCb={(el) => (sectionRefs.current[5] = el)}>
         <div className="max-w-4xl mx-auto px-6 text-center w-full">
-          <Tag>V2 · Datasheet 自洽</Tag>
+          <Tag>{t("V2 · Datasheet 自洽", "V2 · Datasheet self-consistency")}</Tag>
           <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-            電容 RC 等效電路 vs 廠商規格書
+            {t("電容 RC 等效電路 vs 廠商規格書",
+            "Capacitor RC equivalent circuit vs vendor datasheet")}
           </h2>
-          <CountUpNumber active={active === 5} target={2.93} decimals={2} unit="% 壓降低估" />
+          <CountUpNumber active={active === 5} target={2.93} decimals={2} unit={t("% 壓降低估", "% voltage-drop underestimate")} />
           <FormulaCard className="mt-8 anim-slide-right anim-stagger-3"
             formula="IPEAK = (V_R / 2) ÷ (Δt/C + R)"
             substitution="190 A = 8 V / (1.16 s / 58 F + 22 mΩ)"
-            check="模型 V drop @ Δt=1.16s = 8.00 V · 規格書 8.00 V"
+            check={t("模型 V drop @ Δt=1.16s = 8.00 V · 規格書 8.00 V", "Model V drop @ Δt=1.16s = 8.00 V · datasheet 8.00 V")}
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            純 RC 代入規格書 IPEAK 公式(同一公式反算,僅為自洽檢查):脈衝壓降誤差 0.000 % · 對 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降低估 2.93 %,門檻 10 %
+            {t("純 RC 代入規格書 IPEAK 公式(同一公式反算,僅為自洽檢查):脈衝壓降誤差 0.000 % · 對 4 個非線性延伸(pseudo-cap / self-discharge / T-ESR)最大壓降低估 2.93 %,門檻 10 %",
+            "Plain RC substituted into the datasheet IPEAK formula (back-calculated from the same formula; a self-consistency check only): pulse voltage-drop error 0.000 % · against 4 nonlinear extensions (pseudo-cap / self-discharge / T-ESR), maximum voltage-drop underestimate 2.93 %, threshold 10 %")}
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            壓降低估 ≤ 2.93 %（門檻 10 %）— 這是簡單 RC 對 4 個延伸模型的自洽與敏感度檢查，不是對實測曲線的驗證；錨點規格書的元件為 EDLC 超級電容。
+            {t("壓降低估 ≤ 2.93 %（門檻 10 %）— 這是簡單 RC 對 4 個延伸模型的自洽與敏感度檢查，不是對實測曲線的驗證；錨點規格書的元件為 EDLC 超級電容。",
+            "Voltage-drop underestimate ≤ 2.93 % (threshold 10 %). This is a self-consistency and sensitivity check of a simple RC against 4 extended models, not a validation against measured curves; the component in the anchor datasheet is an EDLC supercapacitor.")}
           </PlainInline>
         </div>
       </Slide>
@@ -387,22 +405,24 @@ export function TourClient({
       {/* 7 — V3 rack power chart (Recharts animated draw) */}
       <Slide idx={6} active={active === 6} refCb={(el) => (sectionRefs.current[6] = el)}>
         <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>V3 · 整 rack 60 秒模擬</Tag>
+          <Tag>{t("V3 · 整 rack 60 秒模擬", "V3 · Full-rack 60 s simulation")}</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            120 kW 峰值 → 30 kW 連續,LIC 吃瞬態
+            {t("120 kW 峰值 → 30 kW 連續,LIC 吃瞬態",
+            "120 kW peak → 30 kW continuous, with the LIC absorbing transients")}
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            尖峰給電容、平均給電池 — 各司其職。
+            {t("尖峰給電容、平均給電池 — 各司其職。",
+            "Peaks go to the capacitor, the average to the battery: each does its own job.")}
           </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
                 key={active === 6 ? "active" : "inactive"}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} ${t("秒", "s")}`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
-                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name="機架總負載"
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={2} dot={false} name={t("機架總負載", "Rack total load")}
                   isAnimationActive={active === 6} animationDuration={1500} />
                 <Line type="monotone" dataKey="p_lfp"   stroke="var(--success)" strokeWidth={2} dot={false} name="LFP"
                   isAnimationActive={active === 6} animationDuration={1500} animationBegin={300} />
@@ -418,9 +438,10 @@ export function TourClient({
       <Slide idx={7} active={active === 7} refCb={(el) => (sectionRefs.current[7] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>V3 · 熱模型</Tag>
+            <Tag>{t("V3 · 熱模型", "V3 · Thermal model")}</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              60 秒優雅關機全程,電芯升溫
+              {t("60 秒優雅關機全程,電芯升溫",
+            "Cell temperature rise over the full 60 s graceful shutdown")}
             </h2>
             <CountUpNumber active={active === 7} target={0.10} decimals={2} unit="K" tone="success" />
           </div>
@@ -429,10 +450,12 @@ export function TourClient({
             className="mt-8 anim-slide-up anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            集總熱模型 · I²R 發熱 vs 對流散熱 · 模擬值遠低於 50 °C 警戒線
+            {t("集總熱模型 · I²R 發熱 vs 對流散熱 · 模擬值遠低於 50 °C 警戒線",
+            "Lumped thermal model · I²R heating vs convective cooling · simulated value far below the 50 °C warning line")}
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            全程只升溫 0.1 度 — 離上限很遠。
+            {t("全程只升溫 0.1 度 — 離上限很遠。",
+            "Only 0.1 degree of rise over the whole run, far from the limit.")}
           </PlainInline>
         </div>
       </Slide>
@@ -440,19 +463,21 @@ export function TourClient({
       {/* 9 — V4 fault chart (with flashing marker) */}
       <Slide idx={8} active={active === 8} refCb={(el) => (sectionRefs.current[8] = el)}>
         <div className="max-w-5xl mx-auto px-6 w-full">
-          <Tag>V4 · N-1 容錯模擬</Tag>
+          <Tag>{t("V4 · N-1 容錯模擬", "V4 · N-1 fault-tolerance simulation")}</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            t = {fault_t} s 時 1 台 BBU 離線,剩 7 台撐到 60 s
+            {t(`t = ${fault_t} s 時 1 台 BBU 離線,剩 7 台撐到 60 s`,
+              `At t = ${fault_t} s one BBU goes offline; the remaining 7 carry the load to 60 s`)}
           </h2>
           <PlainInline className="mt-4 anim-fade-in anim-stagger-1">
-            故意壞 1 台，剩下 7 台仍完成 60 秒任務（模擬，V4 PASS）。
+            {t("故意壞 1 台，剩下 7 台仍完成 60 秒任務（模擬，V4 PASS）。",
+            "One unit is failed on purpose; the remaining 7 still complete the 60-second mission (simulated, V4 PASS).")}
           </PlainInline>
           <div className="mt-8 rounded-xl border border-border bg-surface/40 p-4 anim-fade-in anim-stagger-2">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={faultPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
                 key={active === 8 ? "active" : "inactive"}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} ${t("秒", "s")}`} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", fontSize: 12 }} />
                 <ReferenceLine
@@ -460,10 +485,10 @@ export function TourClient({
                   stroke="var(--danger)"
                   strokeWidth={2}
                   strokeDasharray="4 4"
-                  label={{ value: "1 台故障（8 → 7 台）", position: "insideTopLeft", fill: "var(--danger)", fontSize: 11 }}
+                  label={{ value: t("1 台故障（8 → 7 台）", "1 unit fault (8 → 7 units)"), position: "insideTopLeft", fill: "var(--danger)", fontSize: 11 }}
                   className="anim-marker-flash"
                 />
-                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name="每台 BBU 功率"
+                <Line type="stepAfter" dataKey="p_per_bbu" stroke="var(--success)" strokeWidth={2.2} dot={false} name={t("每台 BBU 功率", "Power per BBU")}
                   isAnimationActive={active === 8} animationDuration={1500} />
               </LineChart>
             </ResponsiveContainer>
@@ -474,20 +499,23 @@ export function TourClient({
       {/* 10 — V4 c-rate: arc gauge */}
       <Slide idx={9} active={active === 9} refCb={(el) => (sectionRefs.current[9] = el)}>
         <div className="max-w-4xl mx-auto px-6 text-center w-full">
-          <Tag>V4 · 故障後</Tag>
+          <Tag>{t("V4 · 故障後", "V4 · After the fault")}</Tag>
           <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-            剩 7 台撐起 8 台的負載,每 BBU 連續 C-rate
+            {t("剩 7 台撐起 8 台的負載,每 BBU 連續 C-rate",
+            "7 units carry the load of 8: continuous C-rate per BBU")}
           </h2>
           <ArcGauge
             value={1.71} max={2.5} unit="C"
-            limitLabel="廠商規格書 2.5 C 連續上限"
+            limitLabel={t("廠商規格書 2.5 C 連續上限", "Vendor datasheet 2.5 C continuous limit")}
             className="mt-8 anim-zoom-in anim-stagger-2"
           />
           <p className="mt-6 text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            整機架 N-1 容錯在實體上難以重現,孿生層可先行驗證 — 實機波形量測仍待完成
+            {t("整機架 N-1 容錯在實體上難以重現,孿生層可先行驗證 — 實機波形量測仍待完成",
+            "Full-rack N-1 fault tolerance is hard to reproduce on hardware; the twin layer can verify it first. Measured waveforms on real hardware are still to be completed.")}
           </p>
           <PlainInline className="mt-3 max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            故障後每台多扛 14 % — 仍遠低於原廠上限。
+            {t("故障後每台多扛 14 % — 仍遠低於原廠上限。",
+            "After the fault each unit carries 14 % more, still well below the manufacturer's limit.")}
           </PlainInline>
         </div>
       </Slide>
@@ -496,29 +524,33 @@ export function TourClient({
       <Slide idx={10} active={active === 10} refCb={(el) => (sectionRefs.current[10] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>RUL 預測 · 隨機切分</Tag>
+            <Tag>{t("RUL 預測 · 隨機切分", "RUL prediction · random split")}</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              Severson 134 顆電芯隨機切分 MAPE
+              {t("Severson 134 顆電芯隨機切分 MAPE",
+            "MAPE on a random split of 134 Severson cells")}
             </h2>
             <CountUpNumber active={active === 10} target={8.38} decimals={2} unit="%" tone="success" />
           </div>
           <TwoBar
             items={[
               { label: "Sysblade bagged-GBT", value: 8.38, color: "var(--success)" },
-              { label: "論文基準", value: 9.10, color: "var(--muted)" },
+              { label: t("論文基準", "Paper baseline"), value: 9.10, color: "var(--muted)" },
             ]}
             maxValue={10}
             unit="% MAPE"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 自我稽核：8.38% 是多組設定在測試集上挑出的最小值，改巢狀選擇、論文式過濾後中位數 12.69%，在論文條件下並未超越論文（docs/audit/A3-ml-rigor.md）
+            {t("13 特徵 K = 24 bagged-GBT + xstrict filter · R² 0.89 · 自我稽核：8.38% 是多組設定在測試集上挑出的最小值，改巢狀選擇、論文式過濾後中位數 12.69%，在論文條件下並未超越論文（docs/audit/A3-ml-rigor.md）",
+            "13 features, K = 24 bagged-GBT + xstrict filter · R² 0.89 · Self-audit: 8.38% is the minimum picked on the test set from several configurations; with nested selection and the paper-style filter the median is 12.69%, which does not beat the paper under the paper's conditions (docs/audit/A3-ml-rigor.md)")}
           </p>
           <p className="mt-2 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            改用較嚴苛的跨批次切分:bagged-GBT 退化至 17.91 %、bagged-OLS 為 13.87 %
+            {t("改用較嚴苛的跨批次切分:bagged-GBT 退化至 17.91 %、bagged-OLS 為 13.87 %",
+            "With a stricter cross-batch split: bagged-GBT degrades to 17.91 %, bagged-OLS is 13.87 %")}
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            隨機切分下誤差 8.4 % — 比原論文基準更準;換切分方式會變差,一併列出。
+            {t("隨機切分下誤差 8.4 % — 比原論文基準更準;換切分方式會變差,一併列出。",
+            "Under a random split the error is 8.4 %, more accurate than the original paper baseline; a different split makes it worse, and that is listed as well.")}
           </PlainInline>
         </div>
       </Slide>
@@ -527,27 +559,29 @@ export function TourClient({
       <Slide idx={11} active={active === 11} refCb={(el) => (sectionRefs.current[11] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>V5 · 誠實揭露</Tag>
+            <Tag>{t("V5 · 誠實揭露", "V5 · Honest disclosure")}</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              9 特徵 bagged-GBT 基線（非 TCN）放到 BBU 工況,MAPE 退化到
+              {t("9 特徵 bagged-GBT 基線（非 TCN）放到 BBU 工況,MAPE 退化到",
+            "A 9-feature bagged-GBT baseline (not the TCN) applied to BBU duty: MAPE degrades to")}
             </h2>
             <CountUpNumber active={active === 11} target={80.20} decimals={2} unit="%" tone="warning" />
           </div>
           <TwoBar
             items={[
-              { label: "Severson 自我測試", value: 9.04, color: "var(--success)" },
-              { label: "BBU duty 跨工況", value: 80.20, color: "var(--warning)" },
+              { label: t("Severson 自我測試", "Severson self-test"), value: 9.04, color: "var(--success)" },
+              { label: t("BBU duty 跨工況", "BBU duty cross-regime"), value: 80.20, color: "var(--warning)" },
             ]}
             maxValue={100}
             unit="% MAPE"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <div className="mt-6 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-foreground/90 leading-relaxed anim-blur-in anim-stagger-4">
-            OOD 是刻意設計 — Severson cycle_life &lt; 2200,BBU duty 4000–13000。
-            這個數字的存在正好是部署 SOP「新 protocol 退回 OLS、新化學體系客戶 PoC 重訓」的量化依據。
+            {t("OOD 是刻意設計 — Severson cycle_life < 2200,BBU duty 4000–13000。 這個數字的存在正好是部署 SOP「新 protocol 退回 OLS、新化學體系客戶 PoC 重訓」的量化依據。",
+            "The out-of-distribution (OOD) gap is by design: Severson cycle_life < 2200, BBU duty 4000–13000. This number is the quantitative basis for the deployment SOP: fall back to OLS for new protocols, retrain with a customer PoC for new chemistries.")}
           </div>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            換情境誤差會升 — 主動揭露，並訂好重新校準規則。
+            {t("換情境誤差會升 — 主動揭露，並訂好重新校準規則。",
+            "Error rises in a new regime. This is disclosed up front, with a recalibration rule already set.")}
           </PlainInline>
         </div>
       </Slide>
@@ -562,30 +596,32 @@ export function TourClient({
       <Slide idx={12} active={active === 12} refCb={(el) => (sectionRefs.current[12] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>邊緣推論 · 概念設計</Tag>
+            <Tag>{t("邊緣推論 · 概念設計", "Edge inference · concept design")}</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              ONNX INT8 動態量化,TCN 模型大小
+              {t("ONNX INT8 動態量化,TCN 模型大小",
+            "ONNX INT8 dynamic quantization, TCN model size")}
             </h2>
-            <CountUpNumber active={active === 12} target={2.36} decimals={2} unit="× 壓縮" />
+            <CountUpNumber active={active === 12} target={2.36} decimals={2} unit={t("× 壓縮", "× compression")} />
           </div>
           <BoxComparison
             items={[
               { label: "FP32", value: 127.7, color: "var(--muted)" },
-              { label: "INT8 動態量化", value: 54.2, color: "var(--primary)" },
+              { label: t("INT8 動態量化", "INT8 dynamic quantization"), value: 54.2, color: "var(--primary)" },
             ]}
             unit="KiB"
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            動態量化(僅量化權重)ΔMAPE +0.16 pp · 若要上 NPU 須全靜態 INT8:訓練後量化 ΔMAPE +8.80 pp,
-            改用量化感知訓練(QAT)可補回(MAPE 14.68 %)
+            {t("動態量化(僅量化權重)ΔMAPE +0.16 pp · 若要上 NPU 須全靜態 INT8:訓練後量化 ΔMAPE +8.80 pp, 改用量化感知訓練(QAT)可補回(MAPE 14.68 %)",
+            "Dynamic quantization (weights only) ΔMAPE +0.16 pp · for an NPU, fully static INT8 is required: post-training quantization ΔMAPE +8.80 pp, which quantization-aware training (QAT) recovers (MAPE 14.68 %)")}
           </p>
           <p className="mt-2 text-center text-xs text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            模型只含 Conv / ReLU / Pool / Gemm 等 NPU 原生運算子、無遞迴層 · STM32N6 NPU 部署為概念設計,延遲未上板實測 ·
-            前一版基線 RUL 模型以同法量化為 219 → 63 KiB(3.49×、ΔMAPE +0.10 pp);TCN 參數較少(31,281 vs 54,081),FP32 本身已較小
+            {t("模型只含 Conv / ReLU / Pool / Gemm 等 NPU 原生運算子、無遞迴層 · STM32N6 NPU 部署為概念設計,延遲未上板實測 · 前一版基線 RUL 模型以同法量化為 219 → 63 KiB(3.49×、ΔMAPE +0.10 pp);TCN 參數較少(31,281 vs 54,081),FP32 本身已較小",
+            "The model contains only NPU-native operators such as Conv / ReLU / Pool / Gemm and no recurrent layers · STM32N6 NPU deployment is a concept design, latency not measured on hardware · the previous baseline RUL model quantized the same way goes 219 → 63 KiB (3.49×, ΔMAPE +0.10 pp); the TCN has fewer parameters (31,281 vs 54,081), so its FP32 is already smaller")}
           </p>
           <PlainInline className="mt-3 text-center max-w-2xl mx-auto anim-fade-in anim-stagger-5">
-            模型夠小、運算子可上 NPU — 但邊緣端目前仍是概念設計,尚未上板實測。
+            {t("模型夠小、運算子可上 NPU — 但邊緣端目前仍是概念設計,尚未上板實測。",
+            "The model is small and its operators can run on an NPU, but the edge side is still a concept design and has not been measured on hardware.")}
           </PlainInline>
         </div>
       </Slide>
@@ -598,31 +634,33 @@ export function TourClient({
       <Slide idx={13} active={active === 13} refCb={(el) => (sectionRefs.current[13] = el)}>
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center">
-            <Tag>客戶最在乎</Tag>
+            <Tag>{t("客戶最在乎", "What customers care about most")}</Tag>
             <h2 className="mt-3 text-xl sm:text-2xl font-medium text-muted anim-slide-up">
-              斷電當下,機櫃還能撐多久 —— 電池老化到壽命末期也一樣?
+              {t("斷電當下,機櫃還能撐多久 —— 電池老化到壽命末期也一樣?",
+            "At the moment of outage, how long can the cabinet hold, and is it the same when the battery has aged to end of life?")}
             </h2>
-            <CountUpNumber active={active === 13} target={8} decimals={0} unit="× 於 60s 承諾" tone="success" />
+            <CountUpNumber active={active === 13} target={8} decimals={0} unit={t("× 於 60s 承諾", "× the 60 s commitment")} tone="success" />
           </div>
           <TwoBar
             items={[
-              { label: "新品備援續航時間", value: 600, color: "var(--muted)" },
-              { label: "壽命末期(EOL · 80% SOH)", value: 480, color: "var(--success)" },
+              { label: t("新品備援續航時間", "Hold time, new"), value: 600, color: "var(--muted)" },
+              { label: t("壽命末期(EOL · 80% SOH)", "End of life (EOL · 80% SOH)"), value: 480, color: "var(--success)" },
             ]}
             maxValue={640}
-            unit="秒 @ 機架峰值功率"
+            unit={t("秒 @ 機架峰值功率", "s @ rack peak power")}
             className="mt-8 anim-fade-in anim-stagger-3"
           />
           <p className="mt-6 text-center text-sm text-muted leading-relaxed max-w-2xl mx-auto anim-fade-in anim-stagger-4">
-            就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒優雅關機承諾的 8 倍餘量;
-            峰值功率能力仍保 67%(峰值與較高頻的擺盪主要由 LIC 承擔;τ = 0.5 s 截止 0.32 Hz,1 Hz 時 LFP 仍承擔約三成)。老化模型的內阻增幅採文獻典型值,屬模擬推估、非實測。
+            {t("就算電池老化到 80% SOH,斷電仍撐 480 秒 —— 60 秒優雅關機承諾的 8 倍餘量; 峰值功率能力仍保 67%(峰值與較高頻的擺盪主要由 LIC 承擔;τ = 0.5 s 截止 0.32 Hz,1 Hz 時 LFP 仍承擔約三成)。老化模型的內阻增幅採文獻典型值,屬模擬推估、非實測。",
+            "Even with the battery aged to 80% SOH it holds for 480 s after an outage, 8× the 60-second graceful-shutdown commitment; peak-power capability is still 67% (peaks and higher-frequency swings are carried mainly by the LIC; τ = 0.5 s gives a 0.32 Hz cutoff, and at 1 Hz the LFP still carries about 30 %). The aging model uses typical literature values for resistance growth; it is a simulated estimate, not a measurement.")}
           </p>
           <div className="mt-6 text-center anim-fade-in anim-stagger-5">
             <Link
-              href="/twin"
+              href={href("/twin")}
               className="inline-flex items-center gap-2 rounded-md bg-primary/15 text-primary border border-primary/30 px-4 py-2 text-sm font-medium hover:bg-primary/25 transition-colors"
             >
-              拖 SOH slider 自己看 → /twin
+              {t("拖 SOH slider 自己看 → /twin",
+            "Drag the SOH slider yourself → /twin")}
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -632,9 +670,10 @@ export function TourClient({
       {/* 15 — V6 verify (typewriter terminal) */}
       <Slide idx={14} active={active === 14} refCb={(el) => (sectionRefs.current[14] = el)}>
         <div className="max-w-3xl mx-auto px-6 w-full text-center">
-          <Tag>V6 · 一鍵重現</Tag>
+          <Tag>{t("V6 · 一鍵重現", "V6 · One-command reproduction")}</Tag>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight anim-slide-up">
-            任何審查者都能自行重跑
+            {t("任何審查者都能自行重跑",
+            "Any reviewer can rerun it themselves")}
           </h2>
           <TypewriterTerminal active={active === 14} className="mt-10" />
         </div>
@@ -643,25 +682,30 @@ export function TourClient({
       {/* 16 — CTA (bounce-in buttons) */}
       <Slide idx={15} active={active === 15} refCb={(el) => (sectionRefs.current[15] = el)} last>
         <div className="text-center max-w-4xl mx-auto px-6">
-          <Tag>下一步</Tag>
+          <Tag>{t("下一步", "Next steps")}</Tag>
           <h2 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight anim-scale-in">
-            <span className="block">看模擬跑、</span>
-            <span className="block text-primary anim-pulse-glow">查原始碼、</span>
-            <span className="block">問問題</span>
+            <span className="block">{t("看模擬跑、",
+            "See the simulation run,")}</span>
+            <span className="block text-primary anim-pulse-glow">{t("查原始碼、",
+            "read the source code,")}</span>
+            <span className="block">{t("問問題",
+            "ask questions")}</span>
           </h2>
           <div className="mt-12 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/twin"
+              href={href("/twin")}
               className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-5 py-3 text-sm font-medium hover:bg-primary/90 transition-colors anim-bounce-in anim-stagger-1"
             >
-              看斷電當下能撐多久 → /twin
+              {t("看斷電當下能撐多久 → /twin",
+            "See how long it holds at outage → /twin")}
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <Link
-              href="/dashboard"
+              href={href("/dashboard")}
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-2"
             >
-              看機隊健康儀表板 → /dashboard
+              {t("看機隊健康儀表板 → /dashboard",
+            "See the fleet health dashboard → /dashboard")}
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
             <a
@@ -670,12 +714,14 @@ export function TourClient({
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:bg-surface transition-colors anim-bounce-in anim-stagger-3"
             >
-              GitHub repo(工程審查)
+              {t("GitHub repo(工程審查)",
+            "GitHub repo (engineering review)")}
               <ExternalLink className="h-4 w-4" />
             </a>
           </div>
           <p className="mt-12 text-xs text-muted anim-fade-in anim-stagger-5">
-            ATCC 第 23 屆 C13 系統電 Sysgration · v2.0 twin-first 驗證
+            {t("ATCC 第 23 屆 C13 系統電 Sysgration · v2.0 twin-first 驗證",
+            "ATCC 23rd edition · C13 Sysgration · v2.0 twin-first validation")}
           </p>
         </div>
       </Slide>
@@ -855,6 +901,7 @@ function Thermometer({
 }: {
   value: number; ambient: number; warning: number; className?: string;
 }) {
+  const { t } = useT();
   // Map value→percent on 0..(warning + 10) scale.
   const scaleMax = warning + 10;
   const pct = Math.min(100, (value / scaleMax) * 100);
@@ -891,12 +938,12 @@ function Thermometer({
         <div className="flex items-center gap-2">
           <ThermoIcon className="h-5 w-5 text-success" />
           <span className="text-2xl font-semibold tabular-nums">{value.toFixed(2)}</span>
-          <span className="text-muted">°C 最大</span>
+          <span className="text-muted">°C {t("最大", "max")}</span>
         </div>
         <div className="text-xs text-muted">
-          環境 {ambient}°C → 最大 {value.toFixed(2)}°C
+          {t("環境", "Ambient")} {ambient}°C → {t("最大", "max")} {value.toFixed(2)}°C
           <br />
-          距警戒餘量 <span className="text-success font-medium">{(warning - value).toFixed(1)} K</span>
+          {t("距警戒餘量", "Margin to warning")} <span className="text-success font-medium">{(warning - value).toFixed(1)} K</span>
         </div>
       </div>
     </div>
@@ -910,6 +957,7 @@ function ArcGauge({
   value: number; max: number; unit: string; limitLabel?: string;
   className?: string;
 }) {
+  const { t } = useT();
   // Arc spans 180° (semicircle). Value→arc-length on 0..max.
   // SVG: cx=100, cy=100, r=80. Circumference of semicircle = π × r ≈ 251.
   const r = 80;
@@ -951,9 +999,9 @@ function ArcGauge({
         <text
           x={176} y={78}
           fill="var(--danger)" fontSize="10" fontWeight="600"
-          textAnchor="end" fontFamily="ui-monospace"
+          textAnchor="end" fontFamily={t("ui-monospace", "ui-monospace, SFMono-Regular, Consolas, monospace")}
         >
-          {max} {unit} 上限
+          {max} {unit} {t("上限", "limit")}
         </text>
       </svg>
       <div className="-mt-2 text-center">
@@ -961,7 +1009,7 @@ function ArcGauge({
           {value.toFixed(2)}
         </div>
         <div className="text-sm text-muted mt-1">
-          {unit} 連續
+          {unit} {t("連續", "continuous")}
         </div>
         {limitLabel && (
           <div className="text-xs text-muted mt-2 max-w-xs">{limitLabel}</div>
@@ -977,11 +1025,12 @@ function FormulaCard({
 }: {
   formula: string; substitution: string; check: string; className?: string;
 }) {
+  const { t } = useT();
   return (
     <div className={`max-w-xl mx-auto rounded-xl border border-border bg-surface/40 p-5 text-left font-mono text-sm ${className ?? ""}`}>
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted mb-3">
         <Cpu className="h-3.5 w-3.5" />
-        Maxwell BMOD0058 規格書
+        {t("Maxwell BMOD0058 規格書", "Maxwell BMOD0058 datasheet")}
       </div>
       <div className="text-foreground/90 leading-relaxed">{formula}</div>
       <div className="mt-3 text-accent leading-relaxed">{substitution}</div>
@@ -992,12 +1041,14 @@ function FormulaCard({
 
 /** Typewriter terminal — for V6 verify slide. */
 function TypewriterTerminal({ active, className }: { active: boolean; className?: string }) {
+  const { t } = useT();
   const line1 = useTypewriter("git clone github.com/aericheng/atcc-sysblade", 400, active, 0);
   const line2 = useTypewriter("make verify-fast", 250, active, 700);
   const showOutput = active;
   return (
     <div className={`rounded-xl border border-border bg-surface/80 px-6 py-5 text-left font-mono text-sm ${className ?? ""}`}>
-      <div className="text-muted text-xs mb-3 uppercase tracking-wider">終端機</div>
+      <div className="text-muted text-xs mb-3 uppercase tracking-wider">{t("終端機",
+            "Terminal")}</div>
       <div>
         <span className="text-success">$ </span>
         <span>{line1}</span>
@@ -1014,7 +1065,8 @@ function TypewriterTerminal({ active, className }: { active: boolean; className?
             [V6] V2 PASS · V3 PASS · V4 PASS · V5 PASS · V8 PASS · XCHECK PASS
           </div>
           <div className="text-success font-medium anim-fade-in" style={{ animationDelay: "1.5s" }}>
-            6/6 PASS · 整體 PASS(verify-fast 略過 V1;V1 需另下載 8.3 GB Severson 資料集,make verify 含 V1)
+            {t("6/6 PASS · 整體 PASS(verify-fast 略過 V1;V1 需另下載 8.3 GB Severson 資料集,make verify 含 V1)",
+            "6/6 PASS · overall PASS (verify-fast skips V1; V1 needs a separate 8.3 GB Severson dataset download, make verify includes V1)")}
           </div>
         </>
       )}

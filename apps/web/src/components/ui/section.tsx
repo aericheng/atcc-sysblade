@@ -51,7 +51,7 @@ export function SectionHeader({
     <div className={`${centered ? "text-center mx-auto" : ""} max-w-3xl ${className}`}>
       {kicker && (
         <div
-          className={`inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.22em] ${ACCENT_TEXT[accent]} ${centered ? "justify-center" : ""}`}
+          className={`inline-flex items-center gap-2 whitespace-nowrap text-xs font-medium uppercase tracking-[0.22em] ${ACCENT_TEXT[accent]} ${centered ? "justify-center" : ""}`}
         >
           {icon}
           {kicker}

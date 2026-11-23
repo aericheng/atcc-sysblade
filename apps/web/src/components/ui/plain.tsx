@@ -1,11 +1,14 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Disclosure } from "@/components/ui/disclosure";
 import { glossaryEntries, type GlossaryKey } from "@/lib/glossary";
+import { useT } from "@/lib/i18n";
 
 /* Plain-language guide primitives.
  *
- * Deliberately no "use client" and no hooks — like ui/section.tsx these render
- * in both Server Components (page.tsx) and client components. GlossaryPanel
+ * Client module (GlossaryPanel picks its language via useT()); PlainInline is
+ * still presentational and both can be rendered from Server Components. GlossaryPanel
  * composes the client Disclosure (native <details>, no-JS-safe), the same
  * pattern app/page.tsx already uses.
  *
@@ -37,21 +40,26 @@ export function GlossaryPanel({
   termKeys: GlossaryKey[];
   className?: string;
 }) {
+  const { t } = useT();
   const entries = glossaryEntries(termKeys);
   return (
     <div
       className={`rounded-lg border border-border bg-surface/40 px-4 py-3 ${className}`}
     >
-      <Disclosure summary={`名詞解釋 · 本頁 ${entries.length} 個關鍵術語`}>
+      <Disclosure summary={t(
+          `名詞解釋 · 本頁 ${entries.length} 個關鍵術語`,
+          `Glossary · ${entries.length} key terms on this page`,
+        )}>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mt-2">
           {entries.map((e) => (
             <div key={e.key}>
-              <dt className="text-foreground font-medium">{e.term}</dt>
+              <dt className="text-foreground font-medium">{t(e.term, e.termEn)}</dt>
               <dd className="mt-0.5 leading-relaxed">
-                {e.plain}
+                {t(e.plain, e.plainEn)}
                 {e.analogy && (
                   <span className="block mt-0.5 opacity-80">
-                    類比：{e.analogy}
+                    {t("類比：", "Analogy: ")}
+                    {t(e.analogy, e.analogyEn ?? e.analogy)}
                   </span>
                 )}
               </dd>

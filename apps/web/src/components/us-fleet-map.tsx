@@ -10,7 +10,8 @@ import {
 } from "react-simple-maps";
 // Bundled at build time so we don't have to think about basePath / CDN.
 import usStates from "../../public/us-states.json";
-import { type Device, type DeviceStatus, STATUS_COLOR, STATUS_LABEL } from "@/lib/types";
+import { type Device, type DeviceStatus, STATUS_COLOR, STATUS_LABELS } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
 interface CityAggregate {
   name: string;
@@ -67,6 +68,7 @@ const FLEET_VIEW = { center: [-96, 38] as [number, number], zoom: 1 };
 const CITY_DRILL_ZOOM = 60;
 
 export function USFleetMap({ devices, height = 380 }: Props) {
+  const { t, lang } = useT();
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [hovered, setHovered] = useState<Hover>(null);
   // Controlled view state — lets the user wheel/pinch zoom after drill-in
@@ -207,15 +209,15 @@ export function USFleetMap({ devices, height = 380 }: Props) {
       {effectiveAgg && (
         <>
           <div className="absolute top-3 left-3 rounded-md border border-border bg-background/85 backdrop-blur px-3 py-1.5 text-xs flex items-center gap-2">
-            <span className="text-muted">檢視中</span>
+            <span className="text-muted">{t("檢視中", "Viewing")}</span>
             <span className="font-semibold text-foreground">{effectiveAgg.name}</span>
             <span className="text-muted">·</span>
-            <span className="tabular-nums">{effectiveAgg.count} 台設備</span>
+            <span className="tabular-nums">{effectiveAgg.count} {t("台設備", "devices")}</span>
             {effectiveAgg.early_aging > 0 && (
               <>
                 <span className="text-muted">·</span>
                 <span className="tabular-nums" style={{ color: STATUS_COLOR.early_aging }}>
-                  {effectiveAgg.early_aging} 台老化
+                  {effectiveAgg.early_aging} {t("台老化", "aging")}
                 </span>
               </>
             )}
@@ -223,7 +225,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
               <>
                 <span className="text-muted">·</span>
                 <span className="tabular-nums" style={{ color: STATUS_COLOR.thermal_warn }}>
-                  {effectiveAgg.thermal_warn} 台警示
+                  {effectiveAgg.thermal_warn} {t("台警示", "warning")}
                 </span>
               </>
             )}
@@ -232,7 +234,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
             onClick={backToFleet}
             className="absolute top-3 right-3 rounded-md border border-border bg-background/85 backdrop-blur px-3 py-1.5 text-xs hover:bg-background"
           >
-← 返回機隊
+{t("← 返回機隊", "← Back to fleet")}
           </button>
         </>
       )}
@@ -240,7 +242,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
       {/* Empty hint when filter removed every device */}
       {!effectiveAgg && cities.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted pointer-events-none">
-          沒有設備符合目前的篩選條件。
+          {t("沒有設備符合目前的篩選條件。", "No devices match the current filter.")}
         </div>
       )}
 
@@ -251,13 +253,13 @@ export function USFleetMap({ devices, height = 380 }: Props) {
           className={`pointer-events-none absolute z-50 left-1/2 -translate-x-1/2 ${effectiveAgg ? "top-12" : "top-3"} rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-0.5 min-w-[180px]`}
         >
           <div className="font-semibold text-foreground">{hovered.c.name}</div>
-          <div className="text-muted">{hovered.c.count} 台設備 · 點擊以深入檢視</div>
+          <div className="text-muted">{hovered.c.count} {t("台設備 · 點擊以深入檢視", "devices · click to drill in")}</div>
           <div className="pt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5">
-            <span style={{ color: STATUS_COLOR.healthy }}>健康</span>
+            <span style={{ color: STATUS_COLOR.healthy }}>{STATUS_LABELS[lang].healthy}</span>
             <span className="text-right tabular-nums">{hovered.c.healthy}</span>
-            <span style={{ color: STATUS_COLOR.thermal_warn }}>熱警示</span>
+            <span style={{ color: STATUS_COLOR.thermal_warn }}>{STATUS_LABELS[lang].thermal_warn}</span>
             <span className="text-right tabular-nums">{hovered.c.thermal_warn}</span>
-            <span style={{ color: STATUS_COLOR.early_aging }}>早期老化</span>
+            <span style={{ color: STATUS_COLOR.early_aging }}>{STATUS_LABELS[lang].early_aging}</span>
             <span className="text-right tabular-nums">{hovered.c.early_aging}</span>
           </div>
         </div>
@@ -273,12 +275,12 @@ export function USFleetMap({ devices, height = 380 }: Props) {
             <span className="text-muted">SOH LFP</span>
             <span className="text-right tabular-nums">{(hovered.d.soh_lfp * 100).toFixed(1)}%</span>
             <span className="text-muted">RUL</span>
-            <span className="text-right tabular-nums">{hovered.d.rul_cycles} 次循環</span>
-            <span className="text-muted">LFP 溫度</span>
+            <span className="text-right tabular-nums">{hovered.d.rul_cycles} {t("次循環", "cycles")}</span>
+            <span className="text-muted">{t("LFP 溫度", "LFP temp")}</span>
             <span className="text-right tabular-nums">{hovered.d.temp_lfp_c}°C</span>
-            <span className="text-muted">狀態</span>
+            <span className="text-muted">{t("狀態", "Status")}</span>
             <span className="text-right font-medium" style={{ color: STATUS_COLOR[hovered.d.status] }}>
-              {STATUS_LABEL[hovered.d.status]}
+              {STATUS_LABELS[lang][hovered.d.status]}
             </span>
           </div>
         </div>
@@ -289,7 +291,7 @@ export function USFleetMap({ devices, height = 380 }: Props) {
         {(["healthy", "thermal_warn", "early_aging"] as const).map((s) => (
           <div key={s} className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: STATUS_COLOR[s] }} />
-            <span className="text-muted">{STATUS_LABEL[s]}</span>
+            <span className="text-muted">{STATUS_LABELS[lang][s]}</span>
           </div>
         ))}
       </div>

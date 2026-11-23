@@ -35,6 +35,18 @@ export const STATUS_LABEL: Record<DeviceStatus, string> = {
   early_aging: "早期老化",
 };
 
+/** English display labels for the /en/ pages; pick with STATUS_LABELS[lang]. */
+export const STATUS_LABEL_EN: Record<DeviceStatus, string> = {
+  healthy: "Healthy",
+  thermal_warn: "Thermal warning",
+  early_aging: "Early aging",
+};
+
+export const STATUS_LABELS: Record<"zh" | "en", Record<DeviceStatus, string>> = {
+  zh: STATUS_LABEL,
+  en: STATUS_LABEL_EN,
+};
+
 /**
  * LIC bank RC envelope — system-level reference derived from the PyBaMM
  * hybrid transient scenario (closed-form RC: v_lic = V_nominal − Q/C − i × ESR,

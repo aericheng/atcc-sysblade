@@ -39,43 +39,62 @@
 export const TCO_LINE_ITEM_SOURCES: Array<{
   key: keyof Omit<RackCosts, "total">;
   label: string;
+  /** English display label (zh `label` is kept verbatim). */
+  labelEn: string;
   source: string;
   anchor: string;
+  /** English display text for `anchor` (zh `anchor` is kept verbatim). */
+  anchorEn: string;
 }> = [
   {
     key: "initial",
     label: "初期採購（8 × BBU ASP）",
+    labelEn: "Initial purchase (8 × BBU ASP)",
     source: "v2.2 §G.3 Table 6, row 1",
     anchor:
       "傳統 NMC BBU 的 ASP $720/unit 反映 2020 年代中期中階機架 BBU 的採購價格（方向性產業基準 — 具體交易請對照 BloombergNEF / IDTechEx 電池價格調查驗證）。Sysblade 目標 $1080/unit 反映 LFP+LIC 混合 + 嵌入式 Twin（成本工程見 v2.2 §E.2 BOM 表）。",
+    anchorEn:
+      "The traditional NMC BBU ASP of $720/unit reflects mid-range rack BBU purchase prices in the mid-2020s (directional industry benchmark; for specific transactions, check against BloombergNEF / IDTechEx battery price surveys). The Sysblade target of $1080/unit reflects the LFP + LIC hybrid plus the embedded Twin (cost engineering: see the v2.2 §E.2 BOM table).",
   },
   {
     key: "replacements",
     label: "10 年內的更換成本",
+    labelEn: "Replacement cost over 10 years",
     source: "v2.2 §G.3 Table 6, row 2",
     anchor:
       "傳統 NMC 6-8 yr 服務壽命,是資料中心工況下、受循環衰退 + 日曆壽命限制的 BBU 電池組的典型產業區間（方向性 — 具體交易請對照 Wood Mackenzie / IDTechEx 資料中心 BBU 出版品驗證）。10y 內更換 1.5× 每個 $1080；Sysblade LFP 在 BBU 工況下 10+ yr（Severson-fit 衰退 + duty_factor 0.33,見 /twin 老化圖）→ 更換 1×。",
+    anchorEn:
+      "A 6-8 yr service life for traditional NMC is the typical industry range for a data-center BBU pack limited by cycle fade plus calendar life (directional; for specific transactions, check against Wood Mackenzie / IDTechEx data-center BBU publications). Over 10 years, replacement is 1.5× per $1080 unit; Sysblade LFP lasts 10+ yr under BBU duty (Severson-fit fade + duty_factor 0.33, see the /twin aging chart), so replacement is 1×.",
   },
   {
     key: "transient",
     label: "瞬變停機成本",
+    labelEn: "Transient downtime cost",
     source: "v2.2 §G.3 Table 6, row 3",
     anchor:
       "〔假設情境：本作品模擬未證明電壓驟降會導致重啟〕電壓驟降導致重啟的停機成本,保守採用 Uptime Institute 停電分析常引用的機架級瞬變事件成本區間估算（方向性 — 具體期數 + 頁碼由團隊待補）。傳統 NMC 在 80 kW × 100 ms 下約每年 ~6 次驟降重啟 ≈ $4800/rack/10y；Sysblade LIC 吸收次秒級事件 → 降低約 ~75 % 至 $1200/rack/10y（依 §B.1 LFP 功率應力下降 5.7×；此為自訂 ±30%／100 ms 示意波形的 10 秒全窗示意值，含濾波器啟動暫態，不是上界、也非電池壽命倍率；τ = 0.5 s 截止 0.318 Hz，0.2–0.25 Hz 擺盪幾乎不分流。計入 DC-DC 電流迴路〔頻寬假設 26–42 Hz〕後功率約降 3.1–3.9×，電壓倍率已撤回；200 Hz 波形需約 340 Hz 迴路頻寬才有 1.5×。全部來自模擬，見 docs/audit/A1、A2）。",
+    anchorEn:
+      "[Assumed scenario: this work's simulation does not prove that voltage sags cause restarts] The downtime cost of sag-induced restarts is estimated conservatively from the rack-level transient-event cost ranges commonly cited in Uptime Institute outage analyses (directional; specific issues and page numbers to be added by the team). Traditional NMC at 80 kW × 100 ms sees about 6 sag restarts per year, ≈ $4800/rack/10y; Sysblade's LIC absorbs sub-second events, cutting this by about 75 % to $1200/rack/10y (based on the 5.7× drop in LFP power stress in §B.1; this is an illustrative full-window value over 10 s for the custom ±30 % / 100 ms demonstration waveform, includes the filter start-up transient, is not an upper bound, and is not a battery-life multiplier; with τ = 0.5 s the cutoff is 0.318 Hz, so 0.2-0.25 Hz swings are barely diverted. With the DC-DC current loop included [bandwidth assumed 26-42 Hz], power drops by about 3.1-3.9×; the voltage multiplier has been withdrawn; a 200 Hz waveform would need a loop bandwidth of about 340 Hz to reach 1.5×. All figures come from simulation; see docs/audit/A1, A2).",
   },
   {
     key: "ops",
     label: "維運人力（預測性維護）",
+    labelEn: "Operations labor (predictive maintenance)",
     source: "v2.2 §G.3 Table 6, row 4",
     anchor:
       "傳統 BBU 巡檢人力估計約 ~50 h/rack/10y、約 ~$100/h ≈ $5000 — 對標 ASHRAE TC 9.9 熱導則 + 產業機架維運基準的資料中心維運成本區間（方向性 — 具體文件 + 頁碼由團隊待補）。Sysblade Twin 驅動的預測性維運降至 ~20 h/rack/10y ≈ $2000（RUL 觸發的 Tier-3 更換,取代排程巡檢）。",
+    anchorEn:
+      "Traditional BBU inspection labor is estimated at about 50 h/rack/10y at about $100/h ≈ $5000, benchmarked against the ASHRAE TC 9.9 thermal guidelines plus industry rack-operations benchmarks for data-center operating cost (directional; specific documents and page numbers to be added by the team). Sysblade's Twin-driven predictive operations reduces this to about 20 h/rack/10y ≈ $2000 (RUL-triggered Tier-3 replacement replaces scheduled inspection).",
   },
   {
     key: "hvdc",
     label: "HVDC 轉換改裝",
+    labelEn: "HVDC transition retrofit",
     source: "v2.2 §G.3 Table 6, row 5",
     anchor:
       "48V→±400V HVDC 改裝估計約 ~$600/rack/yr × 8y ≈ $4800,適用於產業轉換期間需整批汰換的舊款 NMC 套組（方向性 — Schneider/Vertiv/Eaton 在此類別發表 HVDC 遷移白皮書；具體文件由團隊待補）。Sysblade ORV3-ready 介面 → 降至 $1800/rack/10y 殘餘整合成本（無需化學體系重工）。",
+    anchorEn:
+      "A 48V→±400V HVDC retrofit is estimated at about $600/rack/yr × 8y ≈ $4800, applicable to legacy NMC packs that must be replaced wholesale during the industry transition (directional; Schneider / Vertiv / Eaton publish HVDC migration white papers in this category; specific documents to be added by the team). Sysblade's ORV3-ready interface cuts this to $1800/rack/10y of residual integration cost (no chemistry rework needed).",
   },
 ];
 
@@ -216,13 +235,14 @@ export function computeTco(inputs: TcoInputs): TcoResult {
 }
 
 /** Format paybackYears with N/A handling for the sentinel value. */
-export function formatPayback(years: number): string {
+export function formatPayback(years: number, lang: "zh" | "en" = "zh"): string {
+  const en = lang === "en";
   if (!Number.isFinite(years) || years <= 0) return "N/A";
-  if (years < 1) return `${(years * 12).toFixed(1)} 月`;
-  if (years < 10) return `${years.toFixed(1)} 年`;
+  if (years < 1) return `${(years * 12).toFixed(1)} ${en ? "mo" : "月"}`;
+  if (years < 10) return `${years.toFixed(1)} ${en ? "yr" : "年"}`;
   // Over 10 years means the user's input combination puts payback past
   // the TCO horizon — practically un-recoverable for this scenario.
-  return ">10 年";
+  return en ? ">10 yr" : ">10 年";
 }
 
 export function formatUsd(n: number): string {

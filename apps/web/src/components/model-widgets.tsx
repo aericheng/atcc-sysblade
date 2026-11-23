@@ -22,6 +22,7 @@ import {
   dcirGrowth,
   BACKUP_COMMITMENT_S,
 } from "@/lib/aging";
+import { useT } from "@/lib/i18n";
 
 function Slider({
   label,
@@ -77,6 +78,7 @@ function lifeTone(yr: number): string {
  * point that hotter + fuller storage shortens calendar life.
  */
 export function CalendarWidget() {
+  const { t } = useT();
   const [tempC, setTempC] = useState(30);
   const [soc, setSoc] = useState(0.9);
   const life = calendarLifeYears(tempC, soc);
@@ -97,12 +99,12 @@ export function CalendarWidget() {
   return (
     <div className="rounded-lg border border-border bg-background/40 p-4">
       <div className="mb-3 text-sm font-medium text-foreground">
-        試試看 — 日曆壽命 vs 儲存條件
+        {t("試試看 — 日曆壽命 vs 儲存條件", "Try it — calendar life vs storage conditions")}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-center">
         <div className="space-y-3">
           <Slider
-            label="儲存溫度"
+            label={t("儲存溫度", "Storage temperature")}
             value={tempC}
             min={20}
             max={45}
@@ -111,7 +113,7 @@ export function CalendarWidget() {
             display={`${tempC} °C`}
           />
           <Slider
-            label="充電狀態（浮充水位）"
+            label={t("充電狀態（浮充水位）", "State of charge (float level)")}
             value={soc}
             min={0.4}
             max={1.0}
@@ -121,24 +123,24 @@ export function CalendarWidget() {
           />
         </div>
         <div className="text-center sm:text-right">
-          <div className="text-[10px] uppercase tracking-wider text-muted">日曆壽命 → 80% SOH</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("日曆壽命 → 80% SOH", "Calendar life → 80% SOH")}</div>
           <div
             className="text-3xl sm:text-4xl font-semibold tabular-nums"
             style={{ color: lifeTone(life) }}
           >
-            {life >= 100 ? "100+" : life.toFixed(1)} <span className="text-base">年</span>
+            {life >= 100 ? "100+" : life.toFixed(1)} <span className="text-base">{t("年", "yr")}</span>
           </div>
         </div>
       </div>
       <div className="mt-3 flex items-stretch gap-1">
         {/* Y-axis gutter — labels positioned with the same yToY math as the SVG */}
         <div className="relative w-16 shrink-0 text-[9px] text-muted" style={{ height: 80 }}>
-          <span className="absolute right-0 top-0 -translate-y-1/2">健康 100%</span>
+          <span className="absolute right-0 top-0 -translate-y-1/2">{t("健康 100%", "Health 100%")}</span>
           <span
             className="absolute right-0 -translate-y-1/2 text-warning"
             style={{ top: `${(gateY / H) * 100}%` }}
           >
-            80% 門檻
+            {t("80% 門檻", "80% limit")}
           </span>
           <span className="absolute right-0 bottom-0 translate-y-1/2">60%</span>
         </div>
@@ -149,16 +151,25 @@ export function CalendarWidget() {
         </svg>
       </div>
       <div className="mt-1 ml-[68px] flex justify-between text-[10px] text-muted">
-        <span>0 年</span>
-        <span>5 年</span>
-        <span>10 年</span>
-        <span>15 年</span>
-        <span>{YEARS} 年</span>
+        <span>{t("0 年", "0 yr")}</span>
+        <span>{t("5 年", "5 yr")}</span>
+        <span>{t("10 年", "10 yr")}</span>
+        <span>{t("15 年", "15 yr")}</span>
+        <span>{t(`${YEARS} 年`, `${YEARS} yr`)}</span>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        {t(
+          <>
         儲存溫度越高、電量越滿，壽命越短（Arrhenius × SOC、Naumann √t 形式;絕對尺度
         校準至提案的 8–12 年 LFP 浮充壽命）。DC 備援長期處於接近滿電狀態，
         因此日曆老化 — 而非循環 — 才是綁定限制。
+          </>,
+          <>
+        The hotter the storage and the fuller the charge, the shorter the life (Arrhenius × SOC, Naumann √t form; absolute scale
+        calibrated to the proposal&apos;s 8–12 year LFP float life). DC backup sits near full charge for long periods,
+        so calendar aging — not cycling — is the binding limit.
+          </>,
+        )}
       </p>
     </div>
   );
@@ -169,6 +180,7 @@ export function CalendarWidget() {
  * margin vs the 60 s commitment, and LFP peak-power capability update live.
  */
 export function AgedPowerWidget() {
+  const { t } = useT();
   const [soh, setSoh] = useState(0.8);
   const runtime = backupRuntimeSeconds(soh);
   const margin = runtime / BACKUP_COMMITMENT_S;
@@ -178,10 +190,10 @@ export function AgedPowerWidget() {
   return (
     <div className="rounded-lg border border-border bg-background/40 p-4">
       <div className="mb-3 text-sm font-medium text-foreground">
-        試試看 — 任何老化階段下的備援能力
+        {t("試試看 — 任何老化階段下的備援能力", "Try it — backup capability at any stage of aging")}
       </div>
       <Slider
-        label="電池組健康狀態（全新 → 壽命末期）"
+        label={t("電池組健康狀態（全新 → 壽命末期）", "Pack state of health (new → end of life)")}
         value={soh}
         min={0.7}
         max={1.0}
@@ -191,11 +203,11 @@ export function AgedPowerWidget() {
       />
       <div className="mt-3 grid grid-cols-3 gap-3 text-center">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted">備援續航時間</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("備援續航時間", "Backup runtime")}</div>
           <div className="text-2xl font-semibold tabular-nums text-foreground">{Math.round(runtime)} s</div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted">vs 60 s 承諾值</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("vs 60 s 承諾值", "vs 60 s commitment")}</div>
           <div
             className="text-2xl font-semibold tabular-nums"
             style={{ color: margin >= 1 ? "var(--success)" : "var(--danger)" }}
@@ -204,15 +216,25 @@ export function AgedPowerWidget() {
           </div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted">峰值功率能力</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("峰值功率能力", "Peak power capability")}</div>
           <div className="text-2xl font-semibold tabular-nums text-foreground">{Math.round(peakRet * 100)} %</div>
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        {t(
+          <>
         續航時間隨容量等比變化（∝ SOH），即使在壽命末期仍遠高於 60 s 承諾值。
         峰值功率能力會隨內阻上升而下降（在此 SOH 下 +{Math.round(dcir * 100)}%）
         — 峰值與較高頻的擺盪主要由電容承擔（τ = 0.5 s 截止 0.32 Hz；1 Hz 時 LFP
         仍承擔約三成），可減輕這項限制（模擬；滿載不降載再掉一台時 LFP 仍會超過 6C 設計點，見首頁自我稽核）。
+          </>,
+          <>
+        Runtime scales with capacity (∝ SOH) and stays far above the 60 s commitment even at end of life.
+        Peak power capability falls as internal resistance rises (+{Math.round(dcir * 100)}% at this SOH)
+        — the capacitors carry most of the peaks and higher-frequency swings (τ = 0.5 s, cutoff 0.32 Hz; at 1 Hz the LFP
+        still carries about 30%), which eases this limit (simulated; if one more unit drops out at full load without throttling, the LFP still exceeds the 6C design point, see the self-audit on the homepage).
+          </>,
+        )}
       </p>
     </div>
   );
@@ -223,6 +245,7 @@ export function AgedPowerWidget() {
  * and watch the per-cell SOH-after-7-years bars and the weakest cell update live.
  */
 export function PackThermalWidget({ nSeries = 15, inletC = 28 }: { nSeries?: number; inletC?: number }) {
+  const { t } = useT();
   const [outletC, setOutletC] = useState(40);
   const cells = Array.from({ length: nSeries }, (_, i) => {
     const t = inletC + ((outletC - inletC) * i) / (nSeries - 1);
@@ -235,10 +258,10 @@ export function PackThermalWidget({ nSeries = 15, inletC = 28 }: { nSeries?: num
   return (
     <div className="rounded-lg border border-border bg-background/40 p-4">
       <div className="mb-3 text-sm font-medium text-foreground">
-        試試看 — 機架熱梯度決定最弱電芯
+        {t("試試看 — 機架熱梯度決定最弱電芯", "Try it — the rack thermal gradient picks the weakest cell")}
       </div>
       <Slider
-        label={`熱通道出風口溫度（進風口固定 ${inletC} °C）`}
+        label={t(`熱通道出風口溫度（進風口固定 ${inletC} °C）`, `Hot-aisle outlet temperature (inlet fixed at ${inletC} °C)`)}
         value={outletC}
         min={inletC}
         max={50}
@@ -254,7 +277,7 @@ export function PackThermalWidget({ nSeries = 15, inletC = 28 }: { nSeries?: num
             className="absolute right-0 translate-y-1/2 text-warning"
             style={{ bottom: `${((0.8 - 0.55) / (0.85 - 0.55)) * 100}%` }}
           >
-            80% 門檻
+            {t("80% 門檻", "80% limit")}
           </span>
           <span className="absolute right-0 bottom-0 translate-y-1/2">55%</span>
         </div>
@@ -271,7 +294,10 @@ export function PackThermalWidget({ nSeries = 15, inletC = 28 }: { nSeries?: num
               <div
                 key={c.idx}
                 className="relative flex-1 self-stretch flex flex-col items-center justify-end"
-                title={`電芯 ${c.idx} · ${c.t.toFixed(1)} °C · SOH@7年 ${(c.soh * 100).toFixed(1)}%`}
+                title={t(
+                  `電芯 ${c.idx} · ${c.t.toFixed(1)} °C · SOH@7年 ${(c.soh * 100).toFixed(1)}%`,
+                  `Cell ${c.idx} · ${c.t.toFixed(1)} °C · SOH@7yr ${(c.soh * 100).toFixed(1)}%`,
+                )}
               >
                 <div
                   className="w-full rounded-t"
@@ -287,40 +313,49 @@ export function PackThermalWidget({ nSeries = 15, inletC = 28 }: { nSeries?: num
         </div>
       </div>
       <div className="mt-1 ml-[52px] flex justify-between text-[10px] text-muted">
-        <span>電芯 1（冷端）</span>
-        <span>電芯 8</span>
-        <span>電芯 15（熱端）</span>
+        <span>{t("電芯 1（冷端）", "Cell 1 (cold end)")}</span>
+        <span>{t("電芯 8", "Cell 8")}</span>
+        <span>{t("電芯 15（熱端）", "Cell 15 (hot end)")}</span>
       </div>
       <div className="mt-1 ml-[52px] flex items-center gap-4 text-[10px] text-muted">
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--danger)" }} />
-          最熱／最弱電芯
+          {t("最熱／最弱電芯", "Hottest / weakest cell")}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2 w-2 rounded-sm" style={{ background: "var(--success)", opacity: 0.6 }} />
-          其餘電芯（顏色越深越接近冷端）
+          {t("其餘電芯（顏色越深越接近冷端）", "Other cells (darker = closer to the cold end)")}
         </span>
       </div>
       <div className="mt-2 grid grid-cols-3 gap-3 text-center">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted">最弱電芯 SOH @ 7 年</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("最弱電芯 SOH @ 7 年", "Weakest cell SOH @ 7 yr")}</div>
           <div className="text-xl font-semibold tabular-nums text-danger">
             {(weakest.soh * 100).toFixed(0)} %
           </div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted">冷端壽命</div>
-          <div className="text-xl font-semibold tabular-nums text-foreground">{lifeCold.toFixed(1)} 年</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("冷端壽命", "Cold-end life")}</div>
+          <div className="text-xl font-semibold tabular-nums text-foreground">{lifeCold.toFixed(1)} {t("年", "yr")}</div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted">熱端壽命</div>
-          <div className="text-xl font-semibold tabular-nums text-danger">{lifeHot.toFixed(1)} 年</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("熱端壽命", "Hot-end life")}</div>
+          <div className="text-xl font-semibold tabular-nums text-danger">{lifeHot.toFixed(1)} {t("年", "yr")}</div>
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        {t(
+          <>
         串聯電芯共用同一電流，因此整串受限於最弱的成員 — 而最熱的
         電芯老化最快。管理熱的<em>均勻性</em>（而不只是平均溫度），才是
         保護整串壽命的關鍵。
+          </>,
+          <>
+        Series cells share one current, so the whole string is limited by its weakest member — and the hottest
+        cell ages fastest. Managing thermal <em>uniformity</em> (not just the average temperature) is what
+        protects the string&apos;s life.
+          </>,
+        )}
       </p>
     </div>
   );

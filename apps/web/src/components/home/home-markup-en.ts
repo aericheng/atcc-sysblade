@@ -416,8 +416,8 @@ export const HOME_HTML_EN = `<script>(function(){var d=document.documentElement;
     <p class="sec-side">The links below open in a new window. All device data in the dashboard is simulated.</p>
   </div>
   <ul class="links">
-    <li><a href="{{BASE}}/twin/" target="_blank" rel="noopener"><span class="ln mono">/twin</span><span class="lt">Digital twin</span><span class="ld">Full interactive pages for transients, outage, N−1, aging and model validation</span><span class="la" aria-hidden="true">↗</span></a></li>
-    <li><a href="{{BASE}}/dashboard/" target="_blank" rel="noopener"><span class="ln mono">/dashboard</span><span class="lt">Fleet dashboard</span><span class="ld">Health and replacement queue for 1000 BBUs · simulated data</span><span class="la" aria-hidden="true">↗</span></a></li>
+    <li><a href="{{BASE}}/en/twin/" target="_blank" rel="noopener"><span class="ln mono">/twin</span><span class="lt">Digital twin</span><span class="ld">Full interactive pages for transients, outage, N−1, aging and model validation</span><span class="la" aria-hidden="true">↗</span></a></li>
+    <li><a href="{{BASE}}/en/dashboard/" target="_blank" rel="noopener"><span class="ln mono">/dashboard</span><span class="lt">Fleet dashboard</span><span class="ld">Health and replacement queue for 1000 BBUs · simulated data</span><span class="la" aria-hidden="true">↗</span></a></li>
     <li><a href="https://github.com/aericheng/atcc-sysblade" target="_blank" rel="noopener"><span class="ln mono">GitHub</span><span class="lt">Source code and verification chain</span><span class="ld">Clone it and run make verify to re-run V1–V5, V8 and XCHECK; V7 is a standalone script</span><span class="la" aria-hidden="true">↗</span></a></li>
   </ul>
 </section>

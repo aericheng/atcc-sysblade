@@ -26,6 +26,8 @@ import { PlainInline, GlossaryPanel } from "@/components/ui/plain";
 import { Stat } from "@/components/ui/stat";
 import { Activity, Cpu, FlaskConical, Microscope } from "lucide-react";
 import { CalendarWidget, AgedPowerWidget, PackThermalWidget } from "@/components/model-widgets";
+import { useT } from "@/lib/i18n";
+import { nMinus1VerdictEn } from "@/lib/verdict";
 
 // Per-cycle feature definitions for the walkthrough chart. These mirror
 // packages/battery-twin/data_loaders/severson_parser.py and must stay in
@@ -34,16 +36,17 @@ import { CalendarWidget, AgedPowerWidget, PackThermalWidget } from "@/components
 const PER_CYCLE_FEATURES: Array<{
   key: string;
   label: string;
+  labelEn: string;
   unit: string;
   color: string;
 }> = [
-  { key: "cycle_norm",  label: "循環進度",     unit: "0–1",     color: "#94a3b8" }, // slate
-  { key: "qd_max",      label: "放電容量", unit: "Ah",      color: "#6366f1" }, // indigo
-  { key: "qd_range",    label: "Qd 範圍",           unit: "Ah",      color: "#a78bfa" }, // violet
-  { key: "v_mean",      label: "平均電壓",       unit: "V",       color: "#22d3ee" }, // cyan
-  { key: "v_std",       label: "電壓波動",      unit: "V (std)", color: "#34d399" }, // emerald
-  { key: "t_max",       label: "峰值溫度",   unit: "°C",      color: "#fbbf24" }, // amber
-  { key: "duration_s",  label: "循環時長",     unit: "s",       color: "#f87171" }, // red
+  { key: "cycle_norm",  label: "循環進度",     labelEn: "Cycle progress",    unit: "0–1",     color: "#94a3b8" }, // slate
+  { key: "qd_max",      label: "放電容量", labelEn: "Discharge cap.", unit: "Ah",      color: "#6366f1" }, // indigo
+  { key: "qd_range",    label: "Qd 範圍",           labelEn: "Qd range",          unit: "Ah",      color: "#a78bfa" }, // violet
+  { key: "v_mean",      label: "平均電壓",       labelEn: "Mean voltage",      unit: "V",       color: "#22d3ee" }, // cyan
+  { key: "v_std",       label: "電壓波動",      labelEn: "Voltage spread",    unit: "V (std)", color: "#34d399" }, // emerald
+  { key: "t_max",       label: "峰值溫度",   labelEn: "Peak temp.",  unit: "°C",      color: "#fbbf24" }, // amber
+  { key: "duration_s",  label: "循環時長",     labelEn: "Cycle duration",    unit: "s",       color: "#f87171" }, // red
 ];
 
 interface Scenario {
@@ -380,6 +383,7 @@ function ScopeCharts({
   licPeakKw?: number;
   licDroopV?: number;
 }) {
+  const { t } = useT();
   const [paused, setPaused] = useState(false);
   const sweep = useSweep(4500, 1500, paused);
   // useDeferredValue lets React drop sweep updates if the main thread is
@@ -403,21 +407,21 @@ function ScopeCharts({
       onPointerLeave={() => setPaused(false)}
     >
       <ChartCard
-        title="電芯電壓（V）"
-        subtitle="ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP · 等溫假設"
-        plain="線越平越好 — 綠色（混合）比黃色（純電池）穩得多。"
+        title={t("電芯電壓（V）", "Cell voltage (V)")}
+        subtitle={t("ms 級解析度 PyBaMM DFN 求解 · Prada2013 LFP · 等溫假設", "PyBaMM DFN solve at ms resolution · Prada2013 LFP · isothermal assumption")}
+        plain={t("線越平越好 — 綠色（混合）比黃色（純電池）穩得多。", "The flatter the line, the better — green (hybrid) is far steadier than yellow (battery only).")}
       >
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <ReferenceArea
               x1={4} x2={6} fill="rgba(99,102,241,0.06)" stroke="none"
-              label={{ value: "穩態視窗", position: "insideTopLeft", fill: "var(--muted)", fontSize: 10 }}
+              label={{ value: t("穩態視窗", "Steady-state window"), position: "insideTopLeft", fill: "var(--muted)", fontSize: 10 }}
             />
-            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
+            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => t(`${v} 秒`, `${v} s`)} stroke="" allowDataOverflow />
             <YAxis
               domain={[3.05, 3.5]} stroke="" tickFormatter={(v) => v.toFixed(2)}
-              label={{ value: "電芯電壓 (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
+              label={{ value: t("電芯電壓 (V)", "Cell voltage (V)"), angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
             />
             <Tooltip content={<DarkTooltip />} />
             <Line
@@ -426,7 +430,7 @@ function ScopeCharts({
               stroke={mode === "hybrid" ? "var(--success)" : "var(--warning)"}
               strokeWidth={1.2}
               dot={false}
-              name="電芯電壓"
+              name={t("電芯電壓", "Cell voltage")}
               isAnimationActive={false}
             />
             {showLeadingDot && (
@@ -443,23 +447,26 @@ function ScopeCharts({
           </LineChart>
         </ResponsiveContainer>
         <p className="text-xs text-muted mt-2">
-          <span className="text-foreground font-medium">標示區間 [4 s, 6 s]</span> = 穩態視窗。游標懸停以暫停掃描並讀取數值。
+          {t(
+            <><span className="text-foreground font-medium">標示區間 [4 s, 6 s]</span> = 穩態視窗。游標懸停以暫停掃描並讀取數值。</>,
+            <><span className="text-foreground font-medium">Shaded band [4 s, 6 s]</span> = steady-state window. Hover to pause the sweep and read values.</>,
+          )}
         </p>
       </ChartCard>
 
       <ChartCard
-        title={mode === "hybrid" ? "功率分流：總功率 → LIC + LFP" : "功率：完整曲線經由 LFP"}
-        subtitle={mode === "hybrid" ? "低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 較高頻成分主要由 LIC 承擔（1 Hz 時 LFP 仍承擔約三成）" : "輸入：80 kW ±30% 方波（High 104 kW / Low 56 kW，每 100 ms 切換）· 無濾波 — 單級路徑"}
+        title={mode === "hybrid" ? t("功率分流：總功率 → LIC + LFP", "Power split: total power → LIC + LFP") : t("功率：完整曲線經由 LFP", "Power: the full curve goes through the LFP")}
+        subtitle={mode === "hybrid" ? t("低通濾波器 τ = 0.5 s · 截止 ≈ 0.32 Hz · 較高頻成分主要由 LIC 承擔（1 Hz 時 LFP 仍承擔約三成）", "Low-pass filter τ = 0.5 s · cutoff ≈ 0.32 Hz · higher-frequency content goes mainly to the LIC (at 1 Hz the LFP still carries about 30%)") : t("輸入：80 kW ±30% 方波（High 104 kW / Low 56 kW，每 100 ms 切換）· 無濾波 — 單級路徑", "Input: 80 kW ±30% square wave (High 104 kW / Low 56 kW, switching every 100 ms) · no filter — single-stage path")}
         plain={
           mode === "hybrid"
-            ? "快於 0.5 秒的變化給電容，慢的給電池。"
-            : "沒有分流 — 電池硬吃每一次跳動。"
+            ? t("快於 0.5 秒的變化給電容，慢的給電池。", "Changes faster than 0.5 s go to the capacitors; slower ones go to the battery.")
+            : t("沒有分流 — 電池硬吃每一次跳動。", "No split — the battery takes every jump head-on.")
         }
       >
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
+            <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => t(`${v} 秒`, `${v} s`)} stroke="" allowDataOverflow />
             <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
             <Tooltip content={<DarkTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
@@ -469,7 +476,7 @@ function ScopeCharts({
               stroke="var(--muted)"
               strokeWidth={0.8}
               dot={false}
-              name="機架總功率"
+              name={t("機架總功率", "Total rack power")}
               isAnimationActive={false}
             />
             <Line
@@ -478,7 +485,7 @@ function ScopeCharts({
               stroke="var(--primary)"
               strokeWidth={1.6}
               dot={false}
-              name={mode === "hybrid" ? "電池承受的功率（已平滑）" : "電池承受的功率（完整）"}
+              name={mode === "hybrid" ? t("電池承受的功率（已平滑）", "Battery power (smoothed)") : t("電池承受的功率（完整）", "Battery power (full)")}
               isAnimationActive={false}
             />
             {showLeadingDot && (
@@ -505,19 +512,22 @@ function ScopeCharts({
           obvious. */}
       {mode === "hybrid" && licCutoffV != null && licNominalV != null && (
         <ChartCard
-          title="LIC 電容組電壓（閉合解形式 RC 模型）"
-          subtitle={`48 V 模組 × 2 並聯 · C =${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`}
-          plain="綠線離紅色保護線越遠越安全 — 餘裕充足。"
+          title={t("LIC 電容組電壓（閉合解形式 RC 模型）", "LIC bank voltage (closed-form RC model)")}
+          subtitle={t(
+            `48 V 模組 × 2 並聯 · C =${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · 觀測 v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "通過" : "未通過"} UVLO @ ${licCutoffV.toFixed(0)} V`,
+            `48 V module × 2 in parallel · C =${(licCF ?? 0).toFixed(0)} F · ESR = ${((licESR ?? 0) * 1000).toFixed(2)} mΩ · observed v_min ${(licVMin ?? 0).toFixed(2)} V · ${licPassesCutoff ? "passes" : "fails"} UVLO @ ${licCutoffV.toFixed(0)} V`,
+          )}
+          plain={t("綠線離紅色保護線越遠越安全 — 餘裕充足。", "The farther the green line stays from the red protection line, the safer — there is ample margin.")}
         >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={sweptData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => `${v} 秒`} stroke="" allowDataOverflow />
+              <XAxis dataKey="t" type="number" domain={xDomain} tickFormatter={(v) => t(`${v} 秒`, `${v} s`)} stroke="" allowDataOverflow />
               <YAxis
                 domain={[licCutoffV - 1, licNominalV + 3.5]}
                 stroke=""
                 tickFormatter={(v) => v.toFixed(0)}
-                label={{ value: "電容組電壓 (V)", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
+                label={{ value: t("電容組電壓 (V)", "Bank voltage (V)"), angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
               />
               <Tooltip content={<DarkTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
@@ -531,7 +541,7 @@ function ScopeCharts({
                 strokeDasharray="6 4"
                 strokeWidth={1.2}
                 label={{
-                  value: `保護門檻 ${licCutoffV.toFixed(0)} V（UVLO）`,
+                  value: t(`保護門檻 ${licCutoffV.toFixed(0)} V（UVLO）`, `Protection cutoff ${licCutoffV.toFixed(0)} V (UVLO)`),
                   position: "insideBottomRight",
                   fill: "var(--danger)",
                   fontSize: 11,
@@ -544,7 +554,7 @@ function ScopeCharts({
                 strokeDasharray="2 4"
                 strokeWidth={0.8}
                 label={{
-                  value: `額定 ${licNominalV.toFixed(1)} V`,
+                  value: t(`額定 ${licNominalV.toFixed(1)} V`, `Nominal ${licNominalV.toFixed(1)} V`),
                   position: "insideBottomRight",
                   offset: 12,
                   fill: "var(--muted)",
@@ -557,7 +567,7 @@ function ScopeCharts({
                 stroke="var(--success)"
                 strokeWidth={1.6}
                 dot={false}
-                name="電容組電壓"
+                name={t("電容組電壓", "Bank voltage")}
                 isAnimationActive={false}
               />
               {showLeadingDot && leadingPoint.v_lic != null && (
@@ -574,6 +584,8 @@ function ScopeCharts({
             </LineChart>
           </ResponsiveContainer>
           <p className="text-xs text-muted mt-2">
+            {t(
+              <>
             從最壞情況壓降到規格書 UVLO 之間有{" "}
             <span className="text-success font-medium">{(licHeadroomV ?? 0).toFixed(2)} V 餘量</span>。壓降{" "}
             <span className="text-foreground">由 ESR 主導</span>：{" "}
@@ -581,10 +593,29 @@ function ScopeCharts({
             {((licESR ?? 0) * 1000).toFixed(2)} mΩ ≈ {(licDroopV ?? 0).toFixed(2)} V，
             而累積電荷項（∫i·dt / C）在峰值能量偏移時貢獻剩餘的約 0.78 V。量產階段將以量產選型
             Musashi ULTIMO CPQ3300SD 的資料表驗證 ESR(SOC) + bulk-C(V) 曲線。
+              </>,
+              <>
+            Between the worst-case droop and the datasheet UVLO there is{" "}
+            <span className="text-success font-medium">{(licHeadroomV ?? 0).toFixed(2)} V of headroom</span>. The droop is{" "}
+            <span className="text-foreground">dominated by ESR</span>:{" "}
+            {(((licPeakKw ?? 0) * 1000) / (licNominalV ?? 51.3)).toFixed(0)} A peak ×{" "}
+            {((licESR ?? 0) * 1000).toFixed(2)} mΩ ≈ {(licDroopV ?? 0).toFixed(2)} V,
+            while the accumulated-charge term (∫i·dt / C) contributes the remaining ~0.78 V at the peak energy excursion. In production,
+            the ESR(SOC) + bulk-C(V) curves will be verified against the datasheet of the production part, Musashi ULTIMO CPQ3300SD.
+              </>,
+            )}
           </p>
           <p className="text-xs text-muted mt-1.5">
+            {t(
+              <>
             參數錨定：Eaton XLR-48R6167-R 規格書（賽後查證該型號為 EDLC 超級電容、而非 LIC；量產選型已改為
             Musashi ULTIMO CPQ3300SD，模擬的物理結構不受影響）。
+              </>,
+              <>
+            Parameters anchored to: the Eaton XLR-48R6167-R datasheet (a post-competition check found this part is an EDLC supercapacitor, not a LIC; the production
+            part is now Musashi ULTIMO CPQ3300SD, which does not change the physical structure of the simulation).
+              </>,
+            )}
           </p>
         </ChartCard>
       )}
@@ -611,6 +642,9 @@ export function TwinClient({
   packImbalance: PackImbalanceScenario;
   modelValidation: ModelValidation;
 }) {
+  const { t, lang, locale } = useT();
+  // English cell text in the pack-balance table is longer; tighten its cells on phones.
+  const balPad = lang === "en" ? "px-1 sm:px-2" : "px-2";
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
   // V3 (normal 8 BBU) vs V4 (N-1 fault) toggle for rack-scale section
   const [rackMode, setRackMode] = useState<"normal" | "n-1">("normal");
@@ -790,18 +824,37 @@ export function TwinClient({
           aria-hidden
           className="pointer-events-none absolute -top-6 left-0 -z-10 h-44 w-44 rounded-full bg-primary/15 blur-[100px]"
         />
-        <div className="text-xs uppercase tracking-[0.22em] text-primary font-medium">電池數位孿生 · PyBaMM DFN (LFP) + 一階 LIC 等效模型</div>
+        <div className="text-xs uppercase tracking-[0.22em] text-primary font-medium">{t("電池數位孿生 · PyBaMM DFN (LFP) + 一階 LIC 等效模型", "Battery digital twin · PyBaMM DFN (LFP) + first-order LIC equivalent model")}</div>
         <div className="accent-rule bg-primary mt-3 mb-1" />
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1]">
-          模擬：以電容分流 <span className="gradient-text">GB200 的功率擺盪與斷電峰值</span>。
+          {t(
+            <>模擬：以電容分流 <span className="gradient-text">GB200 的功率擺盪與斷電峰值</span>。</>,
+            <>Simulation: capacitors share <span className="gradient-text">GB200 power swings and outage peaks</span>.</>,
+          )}
         </h1>
         <p className="text-sm sm:text-base text-muted max-w-3xl leading-relaxed">
+          {t(
+            <>
           電池的<span className="text-foreground font-medium">數位孿生</span>：物理模型重現真實電池行為，
           參數錨定公開實測與規格書；Eaton XLR 實為 EDLC，模擬工作點超出其額定（見首頁自我稽核）。切換按鈕，看<span className="text-success font-medium">電容分流讓電池輕鬆多少</span>。
+            </>,
+            <>
+          A <span className="text-foreground font-medium">digital twin</span> of the battery: a physics model reproduces real battery behavior,
+          with parameters anchored to public measurements and datasheets; the Eaton XLR is actually an EDLC, and the simulated operating point exceeds its rating (see the self-audit on the homepage). Flip the toggle to see <span className="text-success font-medium">how much the capacitor split eases the battery&apos;s load</span>.
+            </>,
+          )}
         </p>
         <p className="text-xs text-muted max-w-3xl leading-relaxed">
+          {t(
+            <>
           方法：PyBaMM DFN 求解 LFP 電芯 · LIC 側以 R<sub>esr</sub> × C<sub>bulk</sub> 等效模型表示（資料表為基準，非電化學模型）
           · 情境：單一機架、80 kW 基準、每 100 ms ±30 % 方波脈衝
+            </>,
+            <>
+          Method: PyBaMM DFN solves the LFP cell · the LIC side is an R<sub>esr</sub> × C<sub>bulk</sub> equivalent model (datasheet-based, not an electrochemical model)
+          · Scenario: one rack, 80 kW baseline, ±30 % square-wave pulses every 100 ms
+            </>,
+          )}
         </p>
       </header>
 
@@ -815,8 +868,8 @@ export function TwinClient({
 
       {/* Mode toggle */}
       <div className="flex flex-wrap rounded-lg border border-border bg-surface/50 p-1 max-w-full sm:inline-flex sm:w-auto">
-        <ModeButton active={mode === "lfp"} onClick={() => setMode("lfp")} label="僅 LFP（基準）" />
-        <ModeButton active={mode === "hybrid"} onClick={() => setMode("hybrid")} label="LFP + LIC 混合" />
+        <ModeButton active={mode === "lfp"} onClick={() => setMode("lfp")} label={t("僅 LFP（基準）", "LFP only (baseline)")} />
+        <ModeButton active={mode === "hybrid"} onClick={() => setMode("hybrid")} label={t("LFP + LIC 混合", "LFP + LIC hybrid")} />
       </div>
 
       {/* Main scenario card */}
@@ -824,14 +877,23 @@ export function TwinClient({
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>{mode === "hybrid" ? "混合 · 功率分流 + 電芯響應" : "基準 · 純 LFP 電芯響應"}</CardTitle>
-              <Disclosure summary="您看到的是什麼" className="mt-2">
+              <CardTitle>{mode === "hybrid" ? t("混合 · 功率分流 + 電芯響應", "Hybrid · power split + cell response") : t("基準 · 純 LFP 電芯響應", "Baseline · LFP-only cell response")}</CardTitle>
+              <Disclosure summary={t("您看到的是什麼", "What you are looking at")} className="mt-2">
                 {mode === "hybrid"
-                  ? "DC-DC 控制律以一階低通濾波(τ=0.5 s,截止 ≈0.32 Hz)分流:較高頻成分主要導入鋰離子電容,但截止頻率是 −3 dB 點而非分界,1 Hz 時 LFP 仍承擔約三成;LFP 電池組承受的是平滑後的功率,電芯電壓維持在平台區、電極應力下降(此處只模擬功率波動,不換算為壽命倍率)。模型範圍:PyBaMM DFN 僅求解 LFP 電芯,LIC 以一階 R_esr × C_bulk 等效模型表示（參數錨定 Eaton XLR-48R6167-R 規格書，賽後查證該型號為 EDLC 而非 LIC）,量產時以量產選型 Musashi ULTIMO CPQ3300SD 的資料表曲線驗證。"
-                  : "基準情境:傳統純電池 BBU 承受完整的 ±30 % 功率波動,LFP 電芯電壓追隨每個脈衝,使化學體系承受應力並增加局部發熱。"}
+                  ? t(
+                      "DC-DC 控制律以一階低通濾波(τ=0.5 s,截止 ≈0.32 Hz)分流:較高頻成分主要導入鋰離子電容,但截止頻率是 −3 dB 點而非分界,1 Hz 時 LFP 仍承擔約三成;LFP 電池組承受的是平滑後的功率,電芯電壓維持在平台區、電極應力下降(此處只模擬功率波動,不換算為壽命倍率)。模型範圍:PyBaMM DFN 僅求解 LFP 電芯,LIC 以一階 R_esr × C_bulk 等效模型表示（參數錨定 Eaton XLR-48R6167-R 規格書，賽後查證該型號為 EDLC 而非 LIC）,量產時以量產選型 Musashi ULTIMO CPQ3300SD 的資料表曲線驗證。",
+                      "The DC-DC control law splits power with a first-order low-pass filter (τ = 0.5 s, cutoff ≈ 0.32 Hz): higher-frequency content goes mainly to the lithium-ion capacitors, but the cutoff is the −3 dB point, not a hard boundary, and at 1 Hz the LFP still carries about 30%. The LFP pack sees smoothed power, so the cell voltage stays on its plateau and electrode stress falls (only the power swing is simulated here; it is not converted into a lifetime multiplier). Model scope: PyBaMM DFN solves only the LFP cell; the LIC is a first-order R_esr × C_bulk equivalent model (parameters anchored to the Eaton XLR-48R6167-R datasheet; a post-competition check found this part is an EDLC, not a LIC). In production it will be verified against the datasheet curves of the production part, Musashi ULTIMO CPQ3300SD.",
+                    )
+                  : t(
+                      "基準情境:傳統純電池 BBU 承受完整的 ±30 % 功率波動,LFP 電芯電壓追隨每個脈衝,使化學體系承受應力並增加局部發熱。",
+                      "Baseline scenario: a conventional battery-only BBU takes the full ±30 % power swing; the LFP cell voltage follows every pulse, stressing the chemistry and adding local heating.",
+                    )}
               </Disclosure>
               <PlainInline className="mt-2">
-                快的波動給電容、慢的平均給電池 — 電池只承受平滑後的功率。
+                {t(
+                  "快的波動給電容、慢的平均給電池 — 電池只承受平滑後的功率。",
+                  "Fast swings go to the capacitors, the slow average goes to the battery — the battery only sees smoothed power.",
+                )}
               </PlainInline>
             </div>
             <span
@@ -839,30 +901,35 @@ export function TwinClient({
                 mode === "hybrid" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"
               }`}
             >
-              {mode === "hybrid" ? "含 LIC" : "不含 LIC"}
+              {mode === "hybrid" ? t("含 LIC", "With LIC") : t("不含 LIC", "No LIC")}
             </span>
           </div>
         </CardHeader>
         <CardBody className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
-              label="電芯電壓峰對峰值（穩態）"
+              label={t("電芯電壓峰對峰值（穩態）", "Cell voltage peak-to-peak (steady state)")}
               value={
                 mode === "hybrid" ? (stableHybrid * 1000).toFixed(1) : (stableLfp * 1000).toFixed(1)
               }
               unit="mV"
               tone={mode === "hybrid" ? "success" : "warning"}
-              hint={mode === "hybrid" ? `較基準低 ${reduction.toFixed(1)}×` : "電芯追隨每一個瞬態脈衝"}
+              hint={mode === "hybrid" ? t(`較基準低 ${reduction.toFixed(1)}×`, `${reduction.toFixed(1)}× lower than baseline`) : t("電芯追隨每一個瞬態脈衝", "The cell follows every transient pulse")}
             />
             <Stat
-              label="功率標準差 → LFP"
+              label={t("功率標準差 → LFP", "Power std. dev. → LFP")}
               value={mode === "hybrid" ? pStdHybrid.toFixed(1) : pStdLfp.toFixed(1)}
               unit="kW"
               tone={mode === "hybrid" ? "success" : "warning"}
-              hint={mode === "hybrid" ? `電流平滑 ${pReduction.toFixed(1)}×（自訂 ±30 %／100 ms 示意波形下的 10 秒全窗示意值，含濾波器啟動暫態，不是上界也不是電池壽命倍率；τ = 0.5 s 截止 0.318 Hz，0.2–0.25 Hz 的擺盪幾乎不分流。計入 DC-DC 電流迴路〔頻寬假設 26–42 Hz〕後功率約降 3.1–3.9×，電壓峰對峰倍率已撤回；見 docs/audit/A1、A2）` : "負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受"}
+              hint={mode === "hybrid"
+                ? t(
+                    `電流平滑 ${pReduction.toFixed(1)}×（自訂 ±30 %／100 ms 示意波形下的 10 秒全窗示意值，含濾波器啟動暫態，不是上界也不是電池壽命倍率；τ = 0.5 s 截止 0.318 Hz，0.2–0.25 Hz 的擺盪幾乎不分流。計入 DC-DC 電流迴路〔頻寬假設 26–42 Hz〕後功率約降 3.1–3.9×，電壓峰對峰倍率已撤回；見 docs/audit/A1、A2）`,
+                    `Current smoothed ${pReduction.toFixed(1)}× (an illustrative value over the full 10 s window of a custom ±30 % / 100 ms illustrative waveform, including the filter's start-up transient; it is neither an upper bound nor a battery-lifetime multiplier. With τ = 0.5 s the cutoff is 0.318 Hz, and swings at 0.2–0.25 Hz are almost not diverted. With the DC-DC current loop included [bandwidth assumed at 26–42 Hz], power falls by about 3.1–3.9×; the voltage peak-to-peak ratio has been withdrawn. See docs/audit/A1, A2)`,
+                  )
+                : t("負載方波（80 kW ±30%）的標準差，非運轉設定值 — 完整波動皆由電芯承受", "Std. dev. of the load square wave (80 kW ±30%), not an operating setpoint — the cell takes the full swing")}
             />
             <Stat
-              label="LIC 峰值能量偏移"
+              label={t("LIC 峰值能量偏移", "LIC peak energy excursion")}
               value={
                 mode === "hybrid"
                   ? `${(hybrid.stats.lic_peak_excursion_kj ?? 0).toFixed(2)}`
@@ -876,18 +943,21 @@ export function TwinClient({
               tone={mode === "hybrid" ? "primary" : "default"}
               hint={
                 mode === "hybrid"
-                  ? `∫p_lic·dt 運行最大值 · 相對於額定 LIC 容量有 ${(hybrid.stats.lic_headroom_ratio ?? 0).toFixed(0)}× 餘量`
-                  : "基準情況下未啟用"
+                  ? t(
+                      `∫p_lic·dt 運行最大值 · 相對於額定 LIC 容量有 ${(hybrid.stats.lic_headroom_ratio ?? 0).toFixed(0)}× 餘量`,
+                      `Running maximum of ∫p_lic·dt · ${(hybrid.stats.lic_headroom_ratio ?? 0).toFixed(0)}× headroom against rated LIC capacity`,
+                    )
+                  : t("基準情況下未啟用", "Not engaged in the baseline")
               }
             />
             <Stat
-              label="LIC 電壓壓降（RC 模型）"
+              label={t("LIC 電壓壓降（RC 模型）", "LIC voltage droop (RC model)")}
               value={
                 mode === "hybrid"
                   ? (hybrid.stats.lic_v_droop_v ?? 0).toFixed(2)
                   : "—"
               }
-              unit={mode === "hybrid" ? "V（相對額定）" : ""}
+              unit={mode === "hybrid" ? t("V（相對額定）", "V (vs nominal)") : ""}
               tone={
                 mode === "hybrid"
                   ? (hybrid.stats.lic_passes_cutoff ? "success" : "danger")
@@ -895,8 +965,11 @@ export function TwinClient({
               }
               hint={
                 mode === "hybrid"
-                  ? `閉合解形式 RC · C ${(hybrid.stats.lic_c_f ?? 0).toFixed(0)} F · ESR ${((hybrid.stats.lic_esr_ohm ?? 0) * 1000).toFixed(2)} mΩ · v_min ${(hybrid.stats.lic_v_min ?? 0).toFixed(2)} V（距規格書 ${(hybrid.stats.lic_v_min_datasheet ?? 0).toFixed(0)} V 截止有 ${(hybrid.stats.lic_headroom_to_cutoff_v ?? 0).toFixed(1)} V）`
-                  : "基準情況下未啟用"
+                  ? t(
+                      `閉合解形式 RC · C ${(hybrid.stats.lic_c_f ?? 0).toFixed(0)} F · ESR ${((hybrid.stats.lic_esr_ohm ?? 0) * 1000).toFixed(2)} mΩ · v_min ${(hybrid.stats.lic_v_min ?? 0).toFixed(2)} V（距規格書 ${(hybrid.stats.lic_v_min_datasheet ?? 0).toFixed(0)} V 截止有 ${(hybrid.stats.lic_headroom_to_cutoff_v ?? 0).toFixed(1)} V）`,
+                      `Closed-form RC · C ${(hybrid.stats.lic_c_f ?? 0).toFixed(0)} F · ESR ${((hybrid.stats.lic_esr_ohm ?? 0) * 1000).toFixed(2)} mΩ · v_min ${(hybrid.stats.lic_v_min ?? 0).toFixed(2)} V (${(hybrid.stats.lic_headroom_to_cutoff_v ?? 0).toFixed(1)} V above the ${(hybrid.stats.lic_v_min_datasheet ?? 0).toFixed(0)} V datasheet cutoff)`,
+                    )
+                  : t("基準情況下未啟用", "Not engaged in the baseline")
               }
             />
           </div>
@@ -923,16 +996,22 @@ export function TwinClient({
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>市電中斷 · 機架尺度 60 s 平緩降載</CardTitle>
-              <Disclosure summary="您看到的是什麼" className="mt-2">
-                {"以模擬資料對應 whitepaper §2.1.1 動態降載敘事。階段 A(0–0.5 s):LIC 主導的峰值保持,每 BBU 6 C 脈衝(在車規 LFP 資料表 5–10 C 脈衝規格內);階段 B(0.5–2.0 s):隨 GPU 降頻,從 120 kW 線性降至 30 kW;階段 C(2.0–60 s):30 kW 連續 = 每 BBU 1.5 C(在 1–3 C 連續規格內)。GPU power-cap 收斂時間為工程佔位值,量產前須於 GB200 / Bluefield BMC 實機量測(HANDOVER §6 待解問題)。"}
+              <CardTitle>{t("市電中斷 · 機架尺度 60 s 平緩降載", "Mains failure · rack-scale 60 s graceful ramp-down")}</CardTitle>
+              <Disclosure summary={t("您看到的是什麼", "What you are looking at")} className="mt-2">
+                {t(
+                  "以模擬資料對應 whitepaper §2.1.1 動態降載敘事。階段 A(0–0.5 s):LIC 主導的峰值保持,每 BBU 6 C 脈衝(在車規 LFP 資料表 5–10 C 脈衝規格內);階段 B(0.5–2.0 s):隨 GPU 降頻,從 120 kW 線性降至 30 kW;階段 C(2.0–60 s):30 kW 連續 = 每 BBU 1.5 C(在 1–3 C 連續規格內)。GPU power-cap 收斂時間為工程佔位值,量產前須於 GB200 / Bluefield BMC 實機量測(HANDOVER §6 待解問題)。",
+                  "Simulated data mapped to the dynamic ramp-down narrative in whitepaper §2.1.1. Stage A (0–0.5 s): LIC-led peak hold, a 6 C pulse per BBU (within the 5–10 C pulse rating of automotive-grade LFP datasheets); Stage B (0.5–2.0 s): as the GPUs throttle, a linear ramp from 120 kW down to 30 kW; Stage C (2.0–60 s): 30 kW continuous = 1.5 C per BBU (within the 1–3 C continuous rating). The GPU power-cap settling time is an engineering placeholder and must be measured on real GB200 / Bluefield BMC hardware before production (HANDOVER §6 open question).",
+                )}
               </Disclosure>
               <PlainInline className="mt-2">
-                突然斷電：電容扛第一秒尖峰，電池撐滿 60 秒 — 存檔完成再關機。
+                {t(
+                  "突然斷電：電容扛第一秒尖峰，電池撐滿 60 秒 — 存檔完成再關機。",
+                  "Sudden outage: the capacitors take the first-second spike, the battery holds for the full 60 s — work is saved before shutdown.",
+                )}
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
-              模擬 · 以物理為基準
+              {t("模擬 · 以物理為基準", "Simulated · physics-based")}
             </span>
           </div>
         </CardHeader>
@@ -940,64 +1019,92 @@ export function TwinClient({
           {mainsFail.aged && (
             <div>
               <div className="text-sm font-medium text-foreground mb-1">
-                若市電中斷，機架能維持供電多久 — 現在以及歷經數年老化之後？
+                {t(
+                  "若市電中斷，機架能維持供電多久 — 現在以及歷經數年老化之後？",
+                  "If mains power fails, how long can the rack stay powered — today, and after years of aging?",
+                )}
               </div>
               <p className="text-xs text-muted mb-3">
-                此卡以模擬回答這個問題。拖動電池組的健康狀態 —
-                備援續航時間直到壽命末期都遠高於 60 秒優雅關機承諾。
+                {t(
+                  "此卡以模擬回答這個問題。拖動電池組的健康狀態 — 備援續航時間直到壽命末期都遠高於 60 秒優雅關機承諾。",
+                  "This card answers that question by simulation. Drag the pack's state of health — backup runtime stays far above the 60 s graceful-shutdown commitment all the way to end of life.",
+                )}
               </p>
               <AgedPowerWidget />
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
-              label="已用能量 vs 機架容量"
+              label={t("已用能量 vs 機架容量", "Energy used vs rack capacity")}
               value={((mainsFail.stats.dod_pct as number) ?? 0).toFixed(2)}
               unit={`% / ${(((mainsFail.stats.energy_capacity_kj as number) ?? 0) / 3600).toFixed(0)} kWh`}
               tone="success"
-              hint={`已輸出 ${((mainsFail.stats.energy_delivered_kj as number) ?? 0).toFixed(0)} kJ · 相對於每機架 20 kWh LFP 容量有 ${((mainsFail.stats.energy_headroom_ratio as number) ?? 0).toFixed(0)}× 餘量`}
+              hint={t(
+                `已輸出 ${((mainsFail.stats.energy_delivered_kj as number) ?? 0).toFixed(0)} kJ · 相對於每機架 20 kWh LFP 容量有 ${((mainsFail.stats.energy_headroom_ratio as number) ?? 0).toFixed(0)}× 餘量`,
+                `${((mainsFail.stats.energy_delivered_kj as number) ?? 0).toFixed(0)} kJ delivered · ${((mainsFail.stats.energy_headroom_ratio as number) ?? 0).toFixed(0)}× headroom against 20 kWh of LFP capacity per rack`,
+              )}
             />
             <Stat
-              label="每 BBU C-rate"
+              label={t("每 BBU C-rate", "C-rate per BBU")}
               value={`${((mainsFail.stats.peak_c_rate_per_bbu as number) ?? 0).toFixed(0)} / ${((mainsFail.stats.continuous_c_rate_per_bbu as number) ?? 0).toFixed(1)}`}
-              unit="C 峰值 / 連續"
+              unit={t("C 峰值 / 連續", "C peak / continuous")}
               tone="primary"
-              hint={`${((mainsFail.stats.p_peak_per_bbu_kw as number) ?? 0).toFixed(0)} kW × ${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 脈衝（在車規 LFP 5-10 C 脈衝規格內）· ${((mainsFail.stats.p_continuous_per_bbu_kw as number) ?? 0).toFixed(2)} kW 連續（在 1-3 C 連續規格內）`}
+              hint={t(
+                `${((mainsFail.stats.p_peak_per_bbu_kw as number) ?? 0).toFixed(0)} kW × ${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 脈衝（在車規 LFP 5-10 C 脈衝規格內）· ${((mainsFail.stats.p_continuous_per_bbu_kw as number) ?? 0).toFixed(2)} kW 連續（在 1-3 C 連續規格內）`,
+                `${((mainsFail.stats.p_peak_per_bbu_kw as number) ?? 0).toFixed(0)} kW × ${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s pulse (within the automotive-grade LFP 5-10 C pulse rating) · ${((mainsFail.stats.p_continuous_per_bbu_kw as number) ?? 0).toFixed(2)} kW continuous (within the 1-3 C continuous rating)`,
+              )}
             />
             <Stat
-              label="LIC 壓降 @ t = 0"
+              label={t("LIC 壓降 @ t = 0", "LIC droop @ t = 0")}
               value={((mainsFail.stats.lic_v_droop_v as number) ?? 0).toFixed(2)}
-              unit="V（相對額定）"
+              unit={t("V（相對額定）", "V (vs nominal)")}
               tone={mainsFail.stats.lic_passes_cutoff ? "success" : "danger"}
-              hint={`v_min ${((mainsFail.stats.lic_v_min as number) ?? 0).toFixed(2)} V · 距規格書 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 0).toFixed(0)} V 截止有 ${((mainsFail.stats.lic_headroom_to_cutoff_v as number) ?? 0).toFixed(1)} V 餘量（2 組 48 V 模組並聯）`}
+              hint={t(
+                `v_min ${((mainsFail.stats.lic_v_min as number) ?? 0).toFixed(2)} V · 距規格書 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 0).toFixed(0)} V 截止有 ${((mainsFail.stats.lic_headroom_to_cutoff_v as number) ?? 0).toFixed(1)} V 餘量（2 組 48 V 模組並聯）`,
+                `v_min ${((mainsFail.stats.lic_v_min as number) ?? 0).toFixed(2)} V · ${((mainsFail.stats.lic_headroom_to_cutoff_v as number) ?? 0).toFixed(1)} V of headroom above the ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 0).toFixed(0)} V datasheet cutoff (2 × 48 V modules in parallel)`,
+              )}
             />
             <Stat
-              label="LFP 電芯電壓波動"
+              label={t("LFP 電芯電壓波動", "LFP cell voltage swing")}
               value={(((mainsFail.stats.v_cell_swing as number) ?? 0) * 1000).toFixed(0)}
-              unit="mV 峰對峰值"
+              unit={t("mV 峰對峰值", "mV peak-to-peak")}
               tone="default"
-              hint={`v_min ${((mainsFail.stats.v_cell_min as number) ?? 0).toFixed(3)} V → v_max ${((mainsFail.stats.v_cell_max as number) ?? 0).toFixed(3)} V · LFP 在整個 60 s 降載過程中維持在平台區`}
+              hint={t(
+                `v_min ${((mainsFail.stats.v_cell_min as number) ?? 0).toFixed(3)} V → v_max ${((mainsFail.stats.v_cell_max as number) ?? 0).toFixed(3)} V · LFP 在整個 60 s 降載過程中維持在平台區`,
+                `v_min ${((mainsFail.stats.v_cell_min as number) ?? 0).toFixed(3)} V → v_max ${((mainsFail.stats.v_cell_max as number) ?? 0).toFixed(3)} V · the LFP stays on its plateau throughout the 60 s ramp-down`,
+              )}
             />
           </div>
 
           {mainsFail.aged && (
             <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
               <div className="text-sm font-medium text-foreground mb-1">
-                全新 vs 壽命末期備援的詳細比較
+                {t("全新 vs 壽命末期備援的詳細比較", "Backup in detail: new vs end of life")}
               </div>
               <p className="text-xs text-muted mb-3">
+                {t(
+                  <>
                 上方四項數據是<span className="text-foreground">全新</span>電池組。
                 客戶真正關心的是第 7 年 / EOL：當市電在歷經數年老化後中斷，
                 還剩多少功率與續航？以 DCIR 成長（在{" "}
                 {Math.round((mainsFail.aged.aged_soh ?? 0.8) * 100)}% SOH 時 +
                 {Math.round((mainsFail.aged.dcir_growth ?? 0.5) * 100)}%）+ 容量衰減建模。
+                  </>,
+                  <>
+                The four figures above are for a <span className="text-foreground">new</span> pack.
+                What customers actually care about is year 7 / EOL: when mains power fails after years of aging,
+                how much power and runtime is left? Modeled with DCIR growth (+
+                {Math.round((mainsFail.aged.dcir_growth ?? 0.5) * 100)}% at{" "}
+                {Math.round((mainsFail.aged.aged_soh ?? 0.8) * 100)}% SOH) + capacity fade.
+                  </>,
+                )}
               </p>
               <div className="overflow-x-auto">
                 <table className="text-xs border-collapse w-full max-w-2xl">
                   <thead>
                     <tr className="text-muted">
-                      <th className="px-2 py-1 text-left font-medium">指標</th>
-                      <th className="px-2 py-1 text-right font-medium whitespace-nowrap">BoL（全新）</th>
+                      <th className="px-2 py-1 text-left font-medium">{t("指標", "Metric")}</th>
+                      <th className="px-2 py-1 text-right font-medium whitespace-nowrap">{t("BoL（全新）", "BoL (new)")}</th>
                       {/* phones: keep the header to the short name; the qualifier moves under the table */}
                       <th className="px-2 py-1 text-right font-medium whitespace-nowrap sm:whitespace-normal">
                         {agedLabelShort}
@@ -1007,7 +1114,7 @@ export function TwinClient({
                   </thead>
                   <tbody className="tabular-nums text-foreground">
                     <tr className="border-t border-border/40">
-                      <td className="px-2 py-1 text-left">機架峰值時的備援續航時間</td>
+                      <td className="px-2 py-1 text-left">{t("機架峰值時的備援續航時間", "Backup runtime at rack peak")}</td>
                       <td className="px-2 py-1 text-right">
                         {Math.round(mainsFail.aged.backup_runtime_s_bol_peakbasis)} s
                       </td>
@@ -1016,7 +1123,7 @@ export function TwinClient({
                       </td>
                     </tr>
                     <tr className="border-t border-border/40">
-                      <td className="px-2 py-1 text-left">… 相對 60 s 承諾的餘量</td>
+                      <td className="px-2 py-1 text-left">{t("… 相對 60 s 承諾的餘量", "… margin vs the 60 s commitment")}</td>
                       <td className="px-2 py-1 text-right">
                         {(mainsFail.aged.backup_runtime_s_bol_peakbasis / 60).toFixed(0)}×
                       </td>
@@ -1025,61 +1132,76 @@ export function TwinClient({
                       </td>
                     </tr>
                     <tr className="border-t border-border/40">
-                      <td className="px-2 py-1 text-left">LFP 峰值功率能力</td>
+                      <td className="px-2 py-1 text-left">{t("LFP 峰值功率能力", "LFP peak-power capability")}</td>
                       <td className="px-2 py-1 text-right">100%</td>
                       <td className="px-2 py-1 text-right text-warning">
                         {Math.round((mainsFail.aged.peak_power_retention ?? 0.667) * 100)}%
                       </td>
                     </tr>
                     <tr className="border-t border-border/40">
-                      <td className="px-2 py-1 text-left">連續供電維持（1.5 C）</td>
-                      <td className="px-2 py-1 text-right">維持</td>
-                      <td className="px-2 py-1 text-right">維持</td>
+                      <td className="px-2 py-1 text-left">{t("連續供電維持（1.5 C）", "Continuous supply held (1.5 C)")}</td>
+                      <td className="px-2 py-1 text-right">{t("維持", "Held")}</td>
+                      <td className="px-2 py-1 text-right">{t("維持", "Held")}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
               {agedLabelNote && (
                 <p className="mt-2 text-[11px] text-muted sm:hidden">
-                  {agedLabelShort} 欄：{agedLabelNote}
+                  {agedLabelShort} {t("欄：", "column: ")}{agedLabelNote}
                 </p>
               )}
               <p className="text-[11px] leading-relaxed text-muted mt-2">
+                {t(
+                  <>
                 連續供電為 {mainsFail.aged.continuous_c_rate_at_eol ?? 1.5} C，老化至 EOL 時仍高於截止電壓，因此連續備援時間受能量而非功率限制（EOL 時仍為 60 s 承諾的{" "}
                 {(mainsFail.aged.runtime_margin_vs_commitment_eol ?? 8).toFixed(0)}×）。6 C 峰值是由 LIC 主導、短於 100 ms 的脈衝（transient_hybrid.json），
                 LFP 老化後的峰值功率保持率不決定系統峰值；表中該列只是揭露 LFP 單電芯本身的數字。內阻增幅採文獻典型值，屬模擬推估、非實測。
+                  </>,
+                  <>
+                Continuous supply is {mainsFail.aged.continuous_c_rate_at_eol ?? 1.5} C and stays above the cutoff voltage even when aged to EOL, so continuous backup time is limited by energy, not power (still{" "}
+                {(mainsFail.aged.runtime_margin_vs_commitment_eol ?? 8).toFixed(0)}× the 60 s commitment at EOL). The 6 C peak is an LIC-led pulse shorter than 100 ms (transient_hybrid.json),
+                so the aged LFP&apos;s peak-power retention does not set the system peak; that table row only discloses the LFP cell&apos;s own figure. The internal-resistance growth uses typical literature values and is a simulated estimate, not a measurement.
+                  </>,
+                )}
               </p>
             </div>
           )}
 
           <ChartCard
-            title="機架功率分流 · 0-60 s"
-            subtitle={`Stage A 0-${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 於 ${(mainsFail.stages?.ramp_s ?? 1.5).toFixed(1)} s 內線性降載 ${(mainsFail.stages?.peak_kw ?? 120).toFixed(0)} → ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`}
-            plain="藍色（電容）扛開頭尖峰，綠色（電池）接手長尾。"
+            title={t("機架功率分流 · 0-60 s", "Rack power split · 0-60 s")}
+            subtitle={t(
+              `Stage A 0-${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 於 ${(mainsFail.stages?.ramp_s ?? 1.5).toFixed(1)} s 內線性降載 ${(mainsFail.stages?.peak_kw ?? 120).toFixed(0)} → ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`,
+              `Stage A 0-${(mainsFail.stages?.peak_hold_s ?? 0.5).toFixed(1)} s peak hold · Stage B linear ramp ${(mainsFail.stages?.peak_kw ?? 120).toFixed(0)} → ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW within ${(mainsFail.stages?.ramp_s ?? 1.5).toFixed(1)} s · Stage C ${(mainsFail.stages?.continuous_kw ?? 30).toFixed(0)} kW continuous`,
+            )}
+            plain={t("藍色（電容）扛開頭尖峰，綠色（電池）接手長尾。", "Blue (capacitors) takes the opening spike; green (battery) takes over the long tail.")}
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rampPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => t(`${v.toFixed(0)} 秒`, `${v.toFixed(0)} s`)} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip content={<DarkTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
-                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name="機架總功率" isAnimationActive={false} />
-                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name="LFP 電池組" isAnimationActive={false} />
-                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name="LIC 電容組" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name={t("機架總功率", "Total rack power")} isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name={t("LFP 電池組", "LFP pack")} isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name={t("LIC 電容組", "LIC bank")} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
 
           <ChartCard
-            title="LIC 電容組電壓包絡 · 閉合解形式 RC"
-            subtitle={`2 組 48 V 模組並聯（參數錨定 Eaton XLR-48R6167-R 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）· v_nominal 51.3 V · 資料表截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`}
-            plain="全程遠離紅色保護線 — 餘裕充足。"
+            title={t("LIC 電容組電壓包絡 · 閉合解形式 RC", "LIC bank voltage envelope · closed-form RC")}
+            subtitle={t(
+              `2 組 48 V 模組並聯（參數錨定 Eaton XLR-48R6167-R 規格書，該型號實為 EDLC；量產改用 Musashi ULTIMO CPQ3300SD）· v_nominal 51.3 V · 資料表截止 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`,
+              `2 × 48 V modules in parallel (parameters anchored to the Eaton XLR-48R6167-R datasheet; that part is actually an EDLC; production switches to Musashi ULTIMO CPQ3300SD) · v_nominal 51.3 V · datasheet cutoff ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V`,
+            )}
+            plain={t("全程遠離紅色保護線 — 餘裕充足。", "Stays well clear of the red protection line throughout — ample margin.")}
           >
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={rampLicData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => t(`${v.toFixed(0)} 秒`, `${v.toFixed(0)} s`)} />
                 <YAxis domain={[35, 55]} stroke="" tickFormatter={(v) => `${v} V`} />
                 <Tooltip content={<DarkTooltip />} />
                 <ReferenceLine
@@ -1087,13 +1209,16 @@ export function TwinClient({
                   stroke="var(--danger)"
                   strokeDasharray="4 4"
                   label={{
-                    value: `保護門檻 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V（UVLO）`,
+                    value: t(
+                      `保護門檻 ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V（UVLO）`,
+                      `Protection cutoff ${((mainsFail.stats.lic_v_min_datasheet as number) ?? 38).toFixed(0)} V (UVLO)`,
+                    ),
                     position: "insideTopRight",
                     fill: "var(--danger)",
                     fontSize: 11,
                   }}
                 />
-                <Line type="monotone" dataKey="v_lic" stroke="var(--primary)" strokeWidth={1.8} dot={false} name="電容組電壓" isAnimationActive={false} />
+                <Line type="monotone" dataKey="v_lic" stroke="var(--primary)" strokeWidth={1.8} dot={false} name={t("電容組電壓", "Bank voltage")} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -1105,18 +1230,27 @@ export function TwinClient({
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>機架尺度 60s 平緩降載 · 正常 vs N-1 故障注入</CardTitle>
-              <Disclosure summary="您看到的是什麼" className="mt-2">
+              <CardTitle>{t("機架尺度 60s 平緩降載 · 正常 vs N-1 故障注入", "Rack-scale 60 s graceful ramp-down · normal vs N-1 fault injection")}</CardTitle>
+              <Disclosure summary={t("您看到的是什麼", "What you are looking at")} className="mt-2">
                 {rackMode === "n-1"
-                  ? "V4 故障注入模擬:60 s graceful 事件中於 t=15.0 s 強制 1 台 BBU 離線,由剩餘 7 台分擔原本 8 台的負載。故障後每 BBU 連續 C-rate 由 1.50 C 升至 1.71 C(車規 LFP 連續安全上限 2.5 C → PASS)。整 rack N-1 容錯在實體上極難重現,孿生層只需調整 n_bbu_arr 即可直接驗證。"
-                  : "V3 整 rack 60 s graceful 整合模擬:8 BBU 並聯 + 電容組(2 組 48 V 模組並聯,參數錨定 Eaton XLR-48R6167-R 規格書;賽後查證該型號為 EDLC 而非 LIC,量產選型改為 Musashi ULTIMO CPQ3300SD)+ 一階互補濾波器 τ=0.5 s + GPU power-cap 三段降載(峰值保持 0.5 s / 線性降載 1.5 s / 連續 58 s)+ 集總電芯熱模型。每 BBU 峰值 6.0 C 脈衝 < 2 s、連續 1.50 C,皆在車規 LFP 資料表允許區內。"}
+                  ? t(
+                      "V4 故障注入模擬:60 s graceful 事件中於 t=15.0 s 強制 1 台 BBU 離線,由剩餘 7 台分擔原本 8 台的負載。故障後每 BBU 連續 C-rate 由 1.50 C 升至 1.71 C(車規 LFP 連續安全上限 2.5 C → PASS)。整 rack N-1 容錯在實體上極難重現,孿生層只需調整 n_bbu_arr 即可直接驗證。",
+                      "V4 fault-injection simulation: during the 60 s graceful event, 1 BBU is forced offline at t=15.0 s and the remaining 7 share the load of the original 8. After the fault, the continuous C-rate per BBU rises from 1.50 C to 1.71 C (automotive-grade LFP continuous safety limit 2.5 C → PASS). Rack-level N-1 fault tolerance is very hard to reproduce physically; in the twin, changing n_bbu_arr is enough to test it directly.",
+                    )
+                  : t(
+                      "V3 整 rack 60 s graceful 整合模擬:8 BBU 並聯 + 電容組(2 組 48 V 模組並聯,參數錨定 Eaton XLR-48R6167-R 規格書;賽後查證該型號為 EDLC 而非 LIC,量產選型改為 Musashi ULTIMO CPQ3300SD)+ 一階互補濾波器 τ=0.5 s + GPU power-cap 三段降載(峰值保持 0.5 s / 線性降載 1.5 s / 連續 58 s)+ 集總電芯熱模型。每 BBU 峰值 6.0 C 脈衝 < 2 s、連續 1.50 C,皆在車規 LFP 資料表允許區內。",
+                      "V3 full-rack 60 s graceful integrated simulation: 8 BBUs in parallel + capacitor bank (2 × 48 V modules in parallel, parameters anchored to the Eaton XLR-48R6167-R datasheet; a post-competition check found this part is an EDLC, not a LIC, and the production part is now Musashi ULTIMO CPQ3300SD) + first-order complementary filter τ=0.5 s + three-stage GPU power-cap ramp-down (0.5 s peak hold / 1.5 s linear ramp / 58 s continuous) + lumped cell thermal model. Per BBU, the 6.0 C peak pulse lasts < 2 s and continuous is 1.50 C, both within the range allowed by automotive-grade LFP datasheets.",
+                    )}
               </Disclosure>
               <PlainInline className="mt-2">
-                故意弄壞 1 台：剩 7 台照樣完成 60 秒任務，出力仍在上限內。
+                {t(
+                  "故意弄壞 1 台：剩 7 台照樣完成 60 秒任務，出力仍在上限內。",
+                  "Knock out 1 unit on purpose: the remaining 7 still complete the 60 s task, with output still within limits.",
+                )}
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
-              V3 / V4 · 孿生驗證 · 模擬資料
+              {t("V3 / V4 · 孿生驗證 · 模擬資料", "V3 / V4 · twin validation · simulated data")}
             </span>
           </div>
         </CardHeader>
@@ -1132,7 +1266,7 @@ export function TwinClient({
               }`}
               onClick={() => setRackMode("normal")}
             >
-              V3 · 正常（8 BBU 對稱）
+              {t("V3 · 正常（8 BBU 對稱）", "V3 · normal (8 BBU, symmetric)")}
             </button>
             <button
               type="button"
@@ -1143,20 +1277,23 @@ export function TwinClient({
               }`}
               onClick={() => setRackMode("n-1")}
             >
-              V4 · N-1 故障 @ t={activeRack.fault_injection?.fault_time_s ?? 15}s（7 BBU）
+              {t(
+                <>V4 · N-1 故障 @ t={activeRack.fault_injection?.fault_time_s ?? 15}s（7 BBU）</>,
+                <>V4 · N-1 fault @ t={activeRack.fault_injection?.fault_time_s ?? 15}s (7 BBU)</>,
+              )}
             </button>
           </div>
 
           {/* Stats grid — same layout for both modes, V4 stats fall back when not present */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
-              label={rackMode === "n-1" ? "故障後每 BBU C-rate" : "每 BBU C-rate"}
+              label={rackMode === "n-1" ? t("故障後每 BBU C-rate", "C-rate per BBU after fault") : t("每 BBU C-rate", "C-rate per BBU")}
               value={
                 rackMode === "n-1"
                   ? ((activeRack.stats.c_rate_continuous_post_fault as number | undefined) ?? 0).toFixed(2)
                   : ((activeRack.stats.continuous_c_rate_per_bbu as number | undefined) ?? 0).toFixed(2)
               }
-              unit="C 連續"
+              unit={t("C 連續", "C continuous")}
               tone={
                 rackMode === "n-1"
                   ? activeRack.pass_criteria?.pass_c_rate
@@ -1166,21 +1303,33 @@ export function TwinClient({
               }
               hint={
                 rackMode === "n-1"
-                  ? `相對 8-BBU 基準 +${((activeRack.stats.c_rate_post_increase_pct as number | undefined) ?? 0).toFixed(0)}% · 上限 ${activeRack.pass_criteria?.c_rate_continuous_post_limit ?? 2.5}C 車規 LFP 連續規格`
-                  : `${((activeRack.stats.p_continuous_per_bbu_kw as number | undefined) ?? 0).toFixed(2)} kW × 58 s 連續（在 1-3 C 車規 LFP 規格內）`
+                  ? t(
+                      `相對 8-BBU 基準 +${((activeRack.stats.c_rate_post_increase_pct as number | undefined) ?? 0).toFixed(0)}% · 上限 ${activeRack.pass_criteria?.c_rate_continuous_post_limit ?? 2.5}C 車規 LFP 連續規格`,
+                      `+${((activeRack.stats.c_rate_post_increase_pct as number | undefined) ?? 0).toFixed(0)}% vs the 8-BBU baseline · limit ${activeRack.pass_criteria?.c_rate_continuous_post_limit ?? 2.5}C automotive-grade LFP continuous rating`,
+                    )
+                  : t(
+                      `${((activeRack.stats.p_continuous_per_bbu_kw as number | undefined) ?? 0).toFixed(2)} kW × 58 s 連續（在 1-3 C 車規 LFP 規格內）`,
+                      `${((activeRack.stats.p_continuous_per_bbu_kw as number | undefined) ?? 0).toFixed(2)} kW × 58 s continuous (within the 1-3 C automotive-grade LFP rating)`,
+                    )
               }
             />
             <Stat
-              label="T_cell 相對環境溫升"
+              label={t("T_cell 相對環境溫升", "T_cell rise above ambient")}
               value={((activeRack.stats.t_cell_rise_c as number | undefined) ?? 0).toFixed(2)}
-              unit={`K（最高 ${((activeRack.stats.t_cell_max_c as number | undefined) ?? 25).toFixed(1)} °C）`}
+              unit={t(
+                `K（最高 ${((activeRack.stats.t_cell_max_c as number | undefined) ?? 25).toFixed(1)} °C）`,
+                `K (max ${((activeRack.stats.t_cell_max_c as number | undefined) ?? 25).toFixed(1)} °C)`,
+              )}
               tone={activeRack.thermal_model?.passes_thermal_limit ? "success" : "danger"}
-              hint={`集總電芯熱模型 · 環境 ${activeRack.thermal_model?.t_ambient_c ?? 25} °C · 警告 ${activeRack.thermal_model?.t_warning_c ?? 50} °C · whitepaper §6.1`}
+              hint={t(
+                `集總電芯熱模型 · 環境 ${activeRack.thermal_model?.t_ambient_c ?? 25} °C · 警告 ${activeRack.thermal_model?.t_warning_c ?? 50} °C · whitepaper §6.1`,
+                `Lumped cell thermal model · ambient ${activeRack.thermal_model?.t_ambient_c ?? 25} °C · warning ${activeRack.thermal_model?.t_warning_c ?? 50} °C · whitepaper §6.1`,
+              )}
             />
             <Stat
-              label="LFP 電芯電壓波動"
+              label={t("LFP 電芯電壓波動", "LFP cell voltage swing")}
               value={(((activeRack.stats.v_cell_swing_v as number | undefined) ?? 0) * 1000).toFixed(0)}
-              unit="mV 峰對峰值"
+              unit={t("mV 峰對峰值", "mV peak-to-peak")}
               tone={
                 rackMode === "n-1"
                   ? activeRack.pass_criteria?.pass_v_swing
@@ -1190,14 +1339,17 @@ export function TwinClient({
               }
               hint={
                 rackMode === "n-1"
-                  ? `上限 ${(((activeRack.pass_criteria?.v_cell_swing_limit_v as number | undefined) ?? 0.5) * 1000).toFixed(0)} mV（降級模式採 2× V3 預算）`
-                  : "LFP 在整個 60 s 降載過程中維持在平台區"
+                  ? t(
+                      `上限 ${(((activeRack.pass_criteria?.v_cell_swing_limit_v as number | undefined) ?? 0.5) * 1000).toFixed(0)} mV（降級模式採 2× V3 預算）`,
+                      `Limit ${(((activeRack.pass_criteria?.v_cell_swing_limit_v as number | undefined) ?? 0.5) * 1000).toFixed(0)} mV (degraded mode uses 2× the V3 budget)`,
+                    )
+                  : t("LFP 在整個 60 s 降載過程中維持在平台區", "The LFP stays on its plateau throughout the 60 s ramp-down")
               }
             />
             <Stat
-              label="LIC 壓降"
+              label={t("LIC 壓降", "LIC droop")}
               value={((activeRack.stats.v_lic_droop_v as number | undefined) ?? 0).toFixed(2)}
-              unit="V（相對額定）"
+              unit={t("V（相對額定）", "V (vs nominal)")}
               tone={activeRack.pass_criteria?.pass_lic_headroom !== false ? "success" : "danger"}
               // rack_n_minus_1.json has no stats.v_lic_min — fall back to the
               // minimum of series.v_lic (the generator derives the UVLO headroom
@@ -1211,8 +1363,8 @@ export function TwinClient({
                 const headroom = activeRack.stats.v_lic_headroom_to_uvlo_v as number | undefined;
                 return [
                   vMin != null ? `v_min ${vMin.toFixed(2)} V` : null,
-                  headroom != null ? `距 UVLO 38 V 有 ${headroom.toFixed(2)} V 餘量` : null,
-                  "LIC 電容組不受 BBU 損失影響",
+                  headroom != null ? t(`距 UVLO 38 V 有 ${headroom.toFixed(2)} V 餘量`, `${headroom.toFixed(2)} V of headroom above UVLO 38 V`) : null,
+                  t("LIC 電容組不受 BBU 損失影響", "The LIC bank is unaffected by the BBU loss"),
                 ]
                   .filter(Boolean)
                   .join(" · ");
@@ -1230,30 +1382,35 @@ export function TwinClient({
               }`}
             >
               <span className="font-medium">
-                {activeRack.pass_criteria.overall_pass ? "N-1 冗餘通過" : "N-1 冗餘未通過"}
+                {activeRack.pass_criteria.overall_pass ? t("N-1 冗餘通過", "N-1 redundancy passes") : t("N-1 冗餘未通過", "N-1 redundancy fails")}
               </span>
               {" — "}
-              {activeRack.headline_verdict}
+              {rackMode === "n-1"
+                ? t(activeRack.headline_verdict, nMinus1VerdictEn(rackNMinus1) ?? activeRack.headline_verdict)
+                : activeRack.headline_verdict}
             </div>
           )}
 
           <ChartCard
             title={
               rackMode === "n-1"
-                ? `機架功率分流 · 於 t=${activeRack.fault_injection?.fault_time_s ?? 15}s 注入故障`
-                : "機架功率分流 · 0–60 s（正常 8 BBU 對稱）"
+                ? t(`機架功率分流 · 於 t=${activeRack.fault_injection?.fault_time_s ?? 15}s 注入故障`, `Rack power split · fault injected at t=${activeRack.fault_injection?.fault_time_s ?? 15}s`)
+                : t("機架功率分流 · 0–60 s（正常 8 BBU 對稱）", "Rack power split · 0–60 s (normal, 8 BBU symmetric)")
             }
-            subtitle={`Stage A ${(activeRack.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 線性降載 ${(activeRack.stages?.peak_kw ?? 120).toFixed(0)} → ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`}
+            subtitle={t(
+              `Stage A ${(activeRack.stages?.peak_hold_s ?? 0.5).toFixed(1)} s 峰值保持 · Stage B 線性降載 ${(activeRack.stages?.peak_kw ?? 120).toFixed(0)} → ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW 連續`,
+              `Stage A ${(activeRack.stages?.peak_hold_s ?? 0.5).toFixed(1)} s peak hold · Stage B linear ramp ${(activeRack.stages?.peak_kw ?? 120).toFixed(0)} → ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW · Stage C ${(activeRack.stages?.continuous_kw ?? 30).toFixed(0)} kW continuous`,
+            )}
             plain={
               rackMode === "n-1"
-                ? "紅線處一台故障 — 曲線幾乎不動。"
-                : "電容接尖峰、電池接長尾。"
+                ? t("紅線處一台故障 — 曲線幾乎不動。", "One unit fails at the red line — the curves barely move.")
+                : t("電容接尖峰、電池接長尾。", "Capacitors catch the spike, the battery takes the long tail.")
             }
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={rackPowerData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => t(`${v.toFixed(0)} 秒`, `${v.toFixed(0)} s`)} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip content={<DarkTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
@@ -1263,37 +1420,43 @@ export function TwinClient({
                     stroke="var(--danger)"
                     strokeDasharray="4 4"
                     label={{
-                      value: `1 台故障（${activeRack.fault_injection.n_bbu_normal} → ${activeRack.fault_injection.n_bbu_degraded} 台）`,
+                      value: t(
+                        `1 台故障（${activeRack.fault_injection.n_bbu_normal} → ${activeRack.fault_injection.n_bbu_degraded} 台）`,
+                        `1 unit fails (${activeRack.fault_injection.n_bbu_normal} → ${activeRack.fault_injection.n_bbu_degraded} units)`,
+                      ),
                       position: "insideTopRight",
                       fill: "var(--danger)",
                       fontSize: 11,
                     }}
                   />
                 )}
-                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name="機架總功率" isAnimationActive={false} />
-                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name="LFP 電池組" isAnimationActive={false} />
-                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name="LIC 電容組" isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_total" stroke="var(--warning)" strokeWidth={1.6} dot={false} name={t("機架總功率", "Total rack power")} isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lfp" stroke="var(--success)" strokeWidth={1.6} dot={false} name={t("LFP 電池組", "LFP pack")} isAnimationActive={false} />
+                <Line type="monotone" dataKey="p_lic" stroke="var(--primary)" strokeWidth={1.4} dot={false} name={t("LIC 電容組", "LIC bank")} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
 
           <ChartCard
-            title="每 BBU LFP 功率"
+            title={t("每 BBU LFP 功率", "LFP power per BBU")}
             subtitle={
               rackMode === "n-1"
-                ? `存活的 BBU 在 t=${activeRack.fault_injection?.fault_time_s ?? 15}s 之後分擔機架負載；階躍上升反映負載重分配`
-                : "8-BBU 對稱負載 — 所有 BBU 承受相同的縮放電流"
+                ? t(
+                    `存活的 BBU 在 t=${activeRack.fault_injection?.fault_time_s ?? 15}s 之後分擔機架負載；階躍上升反映負載重分配`,
+                    `The surviving BBUs share the rack load after t=${activeRack.fault_injection?.fault_time_s ?? 15}s; the step up reflects load redistribution`,
+                  )
+                : t("8-BBU 對稱負載 — 所有 BBU 承受相同的縮放電流", "8-BBU symmetric load — every BBU carries the same scaled current")
             }
             plain={
               rackMode === "n-1"
-                ? "故障後每台多扛約 14 % — 仍在安全區。"
-                : "八台平分 — 每台都很輕鬆。"
+                ? t("故障後每台多扛約 14 % — 仍在安全區。", "After the fault each unit carries about 14 % more — still in the safe zone.")
+                : t("八台平分 — 每台都很輕鬆。", "Eight units share evenly — each runs well within its rating.")
             }
           >
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={rackPerBbuData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => t(`${v.toFixed(0)} 秒`, `${v.toFixed(0)} s`)} />
                 <YAxis stroke="" tickFormatter={(v) => `${v} kW`} />
                 <Tooltip content={<DarkTooltip />} />
                 {rackMode === "n-1" && activeRack.fault_injection && (
@@ -1309,7 +1472,7 @@ export function TwinClient({
                   stroke="var(--success)"
                   strokeWidth={1.8}
                   dot={false}
-                  name="每台 BBU 功率"
+                  name={t("每台 BBU 功率", "Power per BBU")}
                   isAnimationActive={false}
                 />
               </LineChart>
@@ -1318,14 +1481,17 @@ export function TwinClient({
 
           {rackThermalData.length > 0 && (
             <ChartCard
-              title="電芯熱軌跡 · 集總熱容 + 對流冷卻"
-              subtitle={`I²·R_int 加熱 vs h·A·ΔT 冷卻 · 電芯 C_th 70 J/K · R_int 8 mΩ · 環境 ${activeRack.thermal_model?.t_ambient_c ?? 25} °C`}
-              plain="溫升不到 1 度 — 離警告線很遠。"
+              title={t("電芯熱軌跡 · 集總熱容 + 對流冷卻", "Cell thermal trajectory · lumped heat capacity + convective cooling")}
+              subtitle={t(
+                `I²·R_int 加熱 vs h·A·ΔT 冷卻 · 電芯 C_th 70 J/K · R_int 8 mΩ · 環境 ${activeRack.thermal_model?.t_ambient_c ?? 25} °C`,
+                `I²·R_int heating vs h·A·ΔT cooling · cell C_th 70 J/K · R_int 8 mΩ · ambient ${activeRack.thermal_model?.t_ambient_c ?? 25} °C`,
+              )}
+              plain={t("溫升不到 1 度 — 離警告線很遠。", "The temperature rises by less than 1 degree — far from the warning line.")}
             >
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={rackThermalData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => `${v.toFixed(0)} 秒`} />
+                  <XAxis dataKey="t" type="number" domain={[0, 60]} stroke="" tickFormatter={(v) => t(`${v.toFixed(0)} 秒`, `${v.toFixed(0)} s`)} />
                   <YAxis
                     domain={[
                       (activeRack.thermal_model?.t_ambient_c ?? 25) - 1,
@@ -1343,7 +1509,7 @@ export function TwinClient({
                     stroke="var(--danger)"
                     strokeDasharray="4 4"
                     label={{
-                      value: `警告線 ${activeRack.thermal_model?.t_warning_c ?? 50} °C`,
+                      value: t(`警告線 ${activeRack.thermal_model?.t_warning_c ?? 50} °C`, `Warning line ${activeRack.thermal_model?.t_warning_c ?? 50} °C`),
                       position: "insideTopRight",
                       fill: "var(--danger)",
                       fontSize: 11,
@@ -1380,40 +1546,49 @@ export function TwinClient({
       {/* Aging */}
       <Card>
         <CardHeader>
-          <CardTitle>BBU 工作模式下的健康狀態</CardTitle>
-          <Disclosure summary="為何 BBU 曲線高於 Severson 1C/1C" className="mt-2">
-            {"容量衰減曲線校準至 Severson 2019 LFP 平均行為。BBU duty 採 0.33 有效循環因子:日曆循環 N 對應 N × 0.33 等效滿循環,因此 80 % SOH 的日曆年齡遠晚於等效 1C/1C 實驗。循環衰減並非 DC 備援工況的約束條件 — 電池組多半在高 SOC 閒置,由日曆/儲存衰減主導。soh_calendar 疊加 Naumann-2018 √t 日曆模型(Arrhenius T × 單調 SOC),校準至 80 % SOH 落在 ~10 yr(對應 v2.2 附件 C 的 8–12 yr LFP 浮充壽命);soh_binding = min(循環, 日曆) 即客戶實際所見。"}
+          <CardTitle>{t("BBU 工作模式下的健康狀態", "State of health under BBU duty")}</CardTitle>
+          <Disclosure summary={t("為何 BBU 曲線高於 Severson 1C/1C", "Why the BBU curve sits above Severson 1C/1C")} className="mt-2">
+            {t(
+              "容量衰減曲線校準至 Severson 2019 LFP 平均行為。BBU duty 採 0.33 有效循環因子:日曆循環 N 對應 N × 0.33 等效滿循環,因此 80 % SOH 的日曆年齡遠晚於等效 1C/1C 實驗。循環衰減並非 DC 備援工況的約束條件 — 電池組多半在高 SOC 閒置,由日曆/儲存衰減主導。soh_calendar 疊加 Naumann-2018 √t 日曆模型(Arrhenius T × 單調 SOC),校準至 80 % SOH 落在 ~10 yr(對應 v2.2 附件 C 的 8–12 yr LFP 浮充壽命);soh_binding = min(循環, 日曆) 即客戶實際所見。",
+              "The capacity-fade curve is calibrated to the average Severson 2019 LFP behavior. BBU duty uses an effective cycle factor of 0.33: N calendar cycles correspond to N × 0.33 equivalent full cycles, so the calendar age at 80 % SOH comes far later than in an equivalent 1C/1C experiment. Cycle fade is not the binding constraint for DC backup duty — the pack mostly idles at high SOC, where calendar/storage fade dominates. soh_calendar overlays the Naumann-2018 √t calendar model (Arrhenius T × monotonic SOC), calibrated so that 80 % SOH falls at ~10 yr (matching the 8–12 yr LFP float life in v2.2 Appendix C); soh_binding = min(cycle, calendar) is what the customer actually sees.",
+            )}
           </Disclosure>
           <PlainInline className="mt-2">
-            備援模式下電池老得很慢 — 真正的壽命上限是日曆老化，約 10 年。
+            {t(
+              "備援模式下電池老得很慢 — 真正的壽命上限是日曆老化，約 10 年。",
+              "In backup duty the battery ages very slowly — the real lifetime limit is calendar aging, about 10 years.",
+            )}
           </PlainInline>
         </CardHeader>
         <CardBody className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Stat
-              label="SOH @ 2,400 BBU 循環"
+              label={t("SOH @ 2,400 BBU 循環", "SOH @ 2,400 BBU cycles")}
               value={`${(((aging.stats["soh_at_2400_bbu_cycles"] as number) ?? 0) * 100).toFixed(1)}`}
               unit="%"
               tone="success"
-              hint="高於 80 % 業界汰換閾值"
+              hint={t("高於 80 % 業界汰換閾值", "Above the 80 % industry replacement threshold")}
             />
             <Stat
-              label="跌破 80 % SOH 的循環數"
+              label={t("跌破 80 % SOH 的循環數", "Cycles to fall below 80 % SOH")}
               value={Math.round((aging.stats["cycle_at_80pct_soh_bbu"] as number) ?? 0)}
-              unit="循環"
+              unit={t("循環", "cycles")}
               tone="primary"
-              hint="僅以循環衰減計算可達約 67 年 — 但日曆 / 儲存衰減會先成為瓶頸（下方紅色虛線曲線）。拖動互動式日曆模型，觀察熱與充電水平如何改變它。"
+              hint={t(
+                "僅以循環衰減計算可達約 67 年 — 但日曆 / 儲存衰減會先成為瓶頸（下方紅色虛線曲線）。拖動互動式日曆模型，觀察熱與充電水平如何改變它。",
+                "From cycle fade alone this would take about 67 years — but calendar / storage fade becomes the bottleneck first (the red dashed curve below). Drag the interactive calendar model to see how heat and charge level change it.",
+              )}
             />
             <Stat
-              label="拐點（全循環參考）"
+              label={t("拐點（全循環參考）", "Knee (full-cycling reference)")}
               value={Math.round((aging.stats["knee_cycle"] as number) ?? 0)}
-              unit="循環"
-              hint="Severson 2019 校準點"
+              unit={t("循環", "cycles")}
+              hint={t("Severson 2019 校準點", "Severson 2019 calibration point")}
             />
           </div>
           <ChartCard
-            title="容量衰減 · 3,000 循環視野"
-            plain="綠線（實際工況）老得慢 — 真正的上限是紅線：日曆老化約 10 年。"
+            title={t("容量衰減 · 3,000 循環視野", "Capacity fade · 3,000-cycle horizon")}
+            plain={t("綠線（實際工況）老得慢 — 真正的上限是紅線：日曆老化約 10 年。", "The green line (actual duty) ages slowly — the real limit is the red line: calendar aging at about 10 years.")}
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={agingData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1428,7 +1603,7 @@ export function TwinClient({
                   stroke="var(--warning)"
                   strokeWidth={1.4}
                   dot={false}
-                  name="完整 1C/1C 循環（Severson 參考）"
+                  name={t("完整 1C/1C 循環（Severson 參考）", "Full 1C/1C cycling (Severson reference)")}
                   isAnimationActive={false}
                 />
                 <Line
@@ -1437,7 +1612,7 @@ export function TwinClient({
                   stroke="var(--success)"
                   strokeWidth={1.8}
                   dot={false}
-                  name="BBU 浮充工作模式循環衰減（提案 §G.3）"
+                  name={t("BBU 浮充工作模式循環衰減（提案 §G.3）", "Cycle fade under BBU float duty (proposal §G.3)")}
                   isAnimationActive={false}
                 />
                 <Line
@@ -1447,16 +1622,18 @@ export function TwinClient({
                   strokeWidth={1.8}
                   strokeDasharray="5 3"
                   dot={false}
-                  name="浮充 SOC 下的日曆 / 儲存衰減（年 = 循環 ÷ 50）"
+                  name={t("浮充 SOC 下的日曆 / 儲存衰減（年 = 循環 ÷ 50）", "Calendar / storage fade at float SOC (years = cycles ÷ 50)")}
                   isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
           {calendarSensitivity.length > 0 && (
-            <Disclosure summary="日曆 vs 循環 — 究竟哪個限制先成為瓶頸" className="mt-1">
+            <Disclosure summary={t("日曆 vs 循環 — 究竟哪個限制先成為瓶頸", "Calendar vs cycling — which limit binds first")} className="mt-1">
               <CalendarWidget />
               <p className="mt-4 mb-3">
+                {t(
+                  <>
                 BBU 浮充工作模式下的循環衰減在約{" "}
                 {Math.round((aging.stats["cycle_life_years_at_80"] as number) ?? 0)}&nbsp;年跌破 80&nbsp;% SOH。
                 但備援電池組大多在高 SOC 下閒置，此時{" "}
@@ -1474,12 +1651,33 @@ export function TwinClient({
                 </span>
                 。絕對尺度以附件&nbsp;C 為基準；Naumann 形式 + 文獻範圍的
                 Ea（≈58&nbsp;kJ/mol）僅提供 T/SOC 敏感度斜率，而非主要的壽命數字。
+                  </>,
+                  <>
+                Under BBU float duty, cycle fade crosses 80&nbsp;% SOH at about{" "}
+                {Math.round((aging.stats["cycle_life_years_at_80"] as number) ?? 0)}&nbsp;years.
+                But a backup pack mostly idles at high SOC, where{" "}
+                <span className="text-foreground">calendar / storage fade dominates</span> —
+                the red dashed curve is the Naumann-2018 √t calendar model under DC float conditions (Arrhenius&nbsp;T ×
+                monotonic&nbsp;SOC), calibrated so that 80&nbsp;% SOH falls at{" "}
+                <span className="text-foreground">
+                  {(aging.stats["calendar_life_years_at_80"] as number) ?? 0}&nbsp;years
+                </span>{" "}
+                — within the 8–12&nbsp;year LFP float-life range cited in v2.2 Appendix&nbsp;C. So the{" "}
+                <span className="text-foreground">
+                  binding life = min(cycle, calendar) = calendar ≈
+                  {" "}
+                  {(aging.stats["binding_life_years_at_80"] as number) ?? 0}&nbsp;years
+                </span>
+                . The absolute scale is based on Appendix&nbsp;C; the Naumann form + a literature-range
+                Ea (≈58&nbsp;kJ/mol) only provide the T/SOC sensitivity slope, not the headline lifetime figure.
+                  </>,
+                )}
               </p>
               <div className="overflow-x-auto">
                 <table className="text-xs border-collapse">
                   <thead>
                     <tr className="text-muted">
-                      <th className="px-2 py-1 text-left font-medium">日曆壽命（至 80% SOH 的年數）</th>
+                      <th className="px-2 py-1 text-left font-medium">{t("日曆壽命（至 80% SOH 的年數）", "Calendar life (years to 80% SOH)")}</th>
                       {[25, 30, 35].map((t) => (
                         <th key={t} className="px-2 py-1 text-right font-medium">
                           {t} °C
@@ -1491,7 +1689,7 @@ export function TwinClient({
                     {[0.5, 0.7, 0.9].map((soc) => (
                       <tr key={soc} className="border-t border-border/40">
                         <td className="px-2 py-1 text-left">
-                          SOC {Math.round(soc * 100)}%{soc === 0.9 ? "（浮充）" : ""}
+                          SOC {Math.round(soc * 100)}%{soc === 0.9 ? t("（浮充）", " (float)") : ""}
                         </td>
                         {[25, 30, 35].map((t) => {
                           const row = calendarSensitivity.find(
@@ -1518,16 +1716,22 @@ export function TwinClient({
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>電芯間不平衡與熱老化 · {pi.string.n_series}S 串列</CardTitle>
-              <Disclosure summary="為何單一代表性電芯不足以說明全貌" className="mt-2">
-                {"對單一電芯老化模型無法表達的電池組層級效應做一階篩選(業師 2026-06-04):(1) 15S 串列中電芯間容量/電阻/SOC 分散 — 最弱電芯限制串列可用容量、最熱電芯限制串列壽命;(2) 機架 inlet→outlet 熱梯度驅動 Arrhenius 局部加速日曆老化;(3) 業師建議的 2 電芯+電容 A/B 拓樸對比。此為界定 EVT 範圍的篩選研究,非完整電化學;單一代表電芯 DFN 仍是主要老化引擎。"}
+              <CardTitle>{t(<>電芯間不平衡與熱老化 · {pi.string.n_series}S 串列</>, <>Cell-to-cell imbalance and thermal aging · {pi.string.n_series}S string</>)}</CardTitle>
+              <Disclosure summary={t("為何單一代表性電芯不足以說明全貌", "Why a single representative cell does not tell the whole story")} className="mt-2">
+                {t(
+                  "對單一電芯老化模型無法表達的電池組層級效應做一階篩選(業師 2026-06-04):(1) 15S 串列中電芯間容量/電阻/SOC 分散 — 最弱電芯限制串列可用容量、最熱電芯限制串列壽命;(2) 機架 inlet→outlet 熱梯度驅動 Arrhenius 局部加速日曆老化;(3) 業師建議的 2 電芯+電容 A/B 拓樸對比。此為界定 EVT 範圍的篩選研究,非完整電化學;單一代表電芯 DFN 仍是主要老化引擎。",
+                  "A first-order screen of pack-level effects that a single-cell aging model cannot express (industry mentor, 2026-06-04): (1) cell-to-cell spread in capacity / resistance / SOC in a 15S string — the weakest cell limits the string's usable capacity, and the hottest cell limits the string's life; (2) the rack inlet→outlet thermal gradient drives locally accelerated Arrhenius calendar aging; (3) the 2-cell + capacitor A/B topology comparison the mentor suggested. This is a screening study to scope EVT, not full electrochemistry; the single representative-cell DFN remains the main aging engine.",
+                )}
               </Disclosure>
               <PlainInline className="mt-2">
-                整串電池的壽命由最弱、最熱的那顆決定 — 本節就在檢驗它。
+                {t(
+                  "整串電池的壽命由最弱、最熱的那顆決定 — 本節就在檢驗它。",
+                  "A string's life is set by its weakest, hottest cell — this section tests exactly that.",
+                )}
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-warning/15 text-warning px-3 py-1 text-xs font-medium">
-              可靠度 · 篩選
+              {t("可靠度 · 篩選", "Reliability · screening")}
             </span>
           </div>
         </CardHeader>
@@ -1535,9 +1739,18 @@ export function TwinClient({
           {/* (1) per-cell SOH @ 7 yr — the weakest cell drags the string */}
           <div>
             <div className="mb-2 text-xs text-muted">
+              {t(
+                <>
               {pi.string.n_series}S 串列中各電芯經 7 年後的 SOH（機架入風口→出風口
               梯度 {pi.thermal_gradient.t_inlet_c}→{pi.thermal_gradient.t_outlet_c} °C）。{" "}
               <span className="text-danger">最熱 / 最弱的電芯</span>會拖累整個串列。
+                </>,
+                <>
+              SOH of each cell in the {pi.string.n_series}S string after 7 years (rack inlet→outlet
+              gradient {pi.thermal_gradient.t_inlet_c}→{pi.thermal_gradient.t_outlet_c} °C).{" "}
+              The <span className="text-danger">hottest / weakest cell</span> drags down the whole string.
+                </>,
+              )}
             </div>
             <div className="relative flex items-end gap-1 h-36 border-b border-border/40">
               {/* 80 % replacement gate line */}
@@ -1545,7 +1758,7 @@ export function TwinClient({
                 className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-warning/60"
                 style={{ bottom: `${((0.8 - 0.55) / (0.85 - 0.55)) * 100}%` }}
               >
-                <span className="absolute -top-4 right-0 text-[10px] text-warning">80% 門檻</span>
+                <span className="absolute -top-4 right-0 text-[10px] text-warning">{t("80% 門檻", "80% limit")}</span>
               </div>
               {pi.string.cells.map((c) => {
                 const h = ((c.soh_at_7yr - 0.55) / (0.85 - 0.55)) * 100;
@@ -1557,7 +1770,10 @@ export function TwinClient({
                   <div
                     key={c.idx}
                     className="relative flex-1 self-stretch flex flex-col items-center justify-end"
-                    title={`電芯 ${c.idx} · ${c.temp_c}°C · SOH@7yr ${(c.soh_at_7yr * 100).toFixed(1)}% · 日曆壽命 ${c.calendar_life_yr} yr`}
+                    title={t(
+                      `電芯 ${c.idx} · ${c.temp_c}°C · SOH@7yr ${(c.soh_at_7yr * 100).toFixed(1)}% · 日曆壽命 ${c.calendar_life_yr} yr`,
+                      `Cell ${c.idx} · ${c.temp_c}°C · SOH@7yr ${(c.soh_at_7yr * 100).toFixed(1)}% · calendar life ${c.calendar_life_yr} yr`,
+                    )}
                   >
                     <div
                       className="w-full rounded-t"
@@ -1572,9 +1788,12 @@ export function TwinClient({
               })}
             </div>
             <div className="mt-1 flex justify-between text-[10px] text-muted">
-              <span>電芯 0 · {pi.thermal_gradient.t_inlet_c}°C（冷入風口）</span>
+              <span>{t(<>電芯 0 · {pi.thermal_gradient.t_inlet_c}°C（冷入風口）</>, <>Cell 0 · {pi.thermal_gradient.t_inlet_c}°C (cold inlet)</>)}</span>
               <span>
-                電芯 {pi.string.n_series - 1} · {pi.thermal_gradient.t_outlet_c}°C（熱出風口）
+                {t(
+                  <>電芯 {pi.string.n_series - 1} · {pi.thermal_gradient.t_outlet_c}°C（熱出風口）</>,
+                  <>Cell {pi.string.n_series - 1} · {pi.thermal_gradient.t_outlet_c}°C (hot outlet)</>,
+                )}
               </span>
             </div>
           </div>
@@ -1582,31 +1801,40 @@ export function TwinClient({
           {/* string + thermal stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
-              label="串列 SOH @ 7 年（最弱）"
+              label={t("串列 SOH @ 7 年（最弱）", "String SOH @ 7 yr (weakest)")}
               value={(pi.string.string_soh_at_7yr * 100).toFixed(1)}
               unit="%"
               tone="danger"
-              hint={`vs ${(pi.string.mean_soh_at_7yr * 100).toFixed(1)}% 平均 — 最弱的電芯決定整個串列`}
+              hint={t(
+                `vs ${(pi.string.mean_soh_at_7yr * 100).toFixed(1)}% 平均 — 最弱的電芯決定整個串列`,
+                `vs ${(pi.string.mean_soh_at_7yr * 100).toFixed(1)}% average — the weakest cell sets the whole string`,
+              )}
             />
             <Stat
-              label="不平衡容量損失"
+              label={t("不平衡容量損失", "Imbalance capacity loss")}
               value={pi.string.imbalance_penalty_pct.toFixed(1)}
               unit="%"
               tone="warning"
-              hint={`主動平衡可回復 +${pi.string.balance_recovery_pct.toFixed(1)}% 可用容量（JK-BMS 8S 主動平衡）`}
+              hint={t(
+                `主動平衡可回復 +${pi.string.balance_recovery_pct.toFixed(1)}% 可用容量（JK-BMS 8S 主動平衡）`,
+                `Active balancing can recover +${pi.string.balance_recovery_pct.toFixed(1)}% usable capacity (JK-BMS 8S active balancing)`,
+              )}
             />
             <Stat
-              label="熱端日曆壽命"
+              label={t("熱端日曆壽命", "Hot-end calendar life")}
               value={pi.thermal_gradient.calendar_life_hot_yr.toFixed(1)}
               unit="yr"
               tone="danger"
-              hint={`vs 冷端 ${pi.thermal_gradient.calendar_life_cold_yr.toFixed(1)} 年 — 由 ${(pi.thermal_gradient.t_outlet_c - pi.thermal_gradient.t_inlet_c).toFixed(0)}°C 梯度造成 ${pi.thermal_gradient.life_spread_pct.toFixed(0)}% 的差距`}
+              hint={t(
+                `vs 冷端 ${pi.thermal_gradient.calendar_life_cold_yr.toFixed(1)} 年 — 由 ${(pi.thermal_gradient.t_outlet_c - pi.thermal_gradient.t_inlet_c).toFixed(0)}°C 梯度造成 ${pi.thermal_gradient.life_spread_pct.toFixed(0)}% 的差距`,
+                `vs ${pi.thermal_gradient.calendar_life_cold_yr.toFixed(1)} yr at the cold end — a gap of ${pi.thermal_gradient.life_spread_pct.toFixed(0)}% caused by the ${(pi.thermal_gradient.t_outlet_c - pi.thermal_gradient.t_inlet_c).toFixed(0)}°C gradient`,
+              )}
             />
             <Stat
-              label="最弱電芯"
+              label={t("最弱電芯", "Weakest cell")}
               value={`#${pi.string.weakest_idx}`}
               tone="default"
-              hint="串列電芯共用電流 → 整個串列的容量受此電芯限制"
+              hint={t("串列電芯共用電流 → 整個串列的容量受此電芯限制", "Series cells share one current → the whole string's capacity is limited by this cell")}
             />
           </div>
 
@@ -1615,56 +1843,81 @@ export function TwinClient({
           {/* 2-cell + capacitor arrangement study */}
           <div className="rounded-lg border border-border bg-surface/40 p-4">
             <div className="text-sm font-medium text-foreground mb-1">
-              2 電芯 + 電容排列 — 平衡研究
+              {t("2 電芯 + 電容排列 — 平衡研究", "2 cells + capacitor arrangement — balancing study")}
             </div>
             <p className="text-xs text-muted mb-3">
+              {t(
+                <>
               兩顆電芯（弱 = {pi.topology_ab.weak_cell_r_factor}× R）+ 兩顆電容、兩種排列方式，
               在 {pi.topology_ab.transient_a} A 瞬變下對弱電芯的保護效果對比：
+                </>,
+                <>
+              Two cells (weak = {pi.topology_ab.weak_cell_r_factor}× R) + two capacitors in two arrangements,
+              comparing how well each protects the weak cell under a {pi.topology_ab.transient_a} A transient:
+                </>,
+              )}
             </p>
             <div className="overflow-x-auto">
               <table className="text-xs border-collapse w-full max-w-2xl">
                 <thead>
                   <tr className="text-muted">
-                    <th className="px-2 py-1 text-left font-medium">拓樸</th>
-                    <th className="px-2 py-1 text-right font-medium">弱電芯瞬變</th>
-                    <th className="px-2 py-1 text-right font-medium">強電芯瞬變</th>
-                    <th className="px-2 py-1 text-right font-medium">是否自平衡？</th>
+                    <th className={`${balPad} py-1 text-left font-medium`}>{t("拓樸", "Topology")}</th>
+                    <th className={`${balPad} py-1 text-right font-medium`}>{t("弱電芯瞬變", "Weak cell")}</th>
+                    <th className={`${balPad} py-1 text-right font-medium`}>{t("強電芯瞬變", "Strong cell")}</th>
+                    <th className={`${balPad} py-1 text-right font-medium`}>{t("是否自平衡？", "Self-balancing?")}</th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums text-foreground">
                   <tr className="border-t border-border/40">
-                    <td className="px-2 py-1 text-left">先並後串（每電芯獨立電容）</td>
-                    <td className="px-2 py-1 text-right text-success">
+                    <td className={`${balPad} py-1 text-left`}>{t("先並後串（每電芯獨立電容）", "Parallel-then-series (capacitor per cell)")}</td>
+                    <td className={`${balPad} py-1 text-right text-success`}>
                       {pi.topology_ab.parallel_then_series.weak_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className="px-2 py-1 text-right">
+                    <td className={`${balPad} py-1 text-right`}>
                       {pi.topology_ab.parallel_then_series.strong_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className="px-2 py-1 text-right text-success">是</td>
+                    <td className={`${balPad} py-1 text-right text-success`}>{t("是", "Yes")}</td>
                   </tr>
                   <tr className="border-t border-border/40">
-                    <td className="px-2 py-1 text-left">先串後並（共用電容）</td>
-                    <td className="px-2 py-1 text-right">
+                    <td className={`${balPad} py-1 text-left`}>{t("先串後並（共用電容）", "Series-then-parallel (shared capacitors)")}</td>
+                    <td className={`${balPad} py-1 text-right`}>
                       {pi.topology_ab.series_then_parallel.weak_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className="px-2 py-1 text-right">
+                    <td className={`${balPad} py-1 text-right`}>
                       {pi.topology_ab.series_then_parallel.strong_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className="px-2 py-1 text-right text-muted">否</td>
+                    <td className={`${balPad} py-1 text-right text-muted`}>{t("否", "No")}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="text-[11px] leading-relaxed text-muted mt-2">
+              {t(
+                <>
               先並後串（每電芯獨立電容）相較先串後並，弱電芯瞬變負擔降低約{" "}
               {pi.topology_ab.weak_cell_transient_reduction_pct.toFixed(0)}%，且高內阻電芯會把較多電流分給電容而自然平衡；兩者電容數相同（2 顆），差別只在擺放位置。
               此為一階篩檢模擬，尚待工程驗證階段（EVT）實機確認。
+                </>,
+                <>
+              Compared with series-then-parallel, parallel-then-series (a capacitor per cell) cuts the weak cell&apos;s transient load by about{" "}
+              {pi.topology_ab.weak_cell_transient_reduction_pct.toFixed(0)}%, and the high-resistance cell naturally balances by passing more current to its capacitor; both use the same number of capacitors (2) and differ only in where they are placed.
+              This is a first-order screening simulation, still to be confirmed on hardware in the engineering validation test (EVT) phase.
+                </>,
+              )}
             </p>
           </div>
 
           <p className="text-[11px] leading-relaxed text-muted">
+            {t(
+              <>
             串聯電芯電流相同，整串可用容量受最弱電芯限制，老化速度則由最熱的電芯決定。
             主動平衡（BoM 規劃採 JK-BMS 8S 主動平衡板）可讓每顆電芯都貢獻容量、減少不均衡損失；此為設計規劃，尚未實測。
+              </>,
+              <>
+            Series cells carry the same current, so the string&apos;s usable capacity is limited by its weakest cell, while its aging rate is set by the hottest cell.
+            Active balancing (the BoM plans a JK-BMS 8S active-balancing board) lets every cell contribute capacity and reduces imbalance loss; this is a design plan and has not been measured.
+              </>,
+            )}
           </p>
         </CardBody>
       </Card>
@@ -1674,53 +1927,71 @@ export function TwinClient({
         <CardHeader>
           <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
             <div className="min-w-0">
-              <CardTitle>模型驗證 · 在 Severson 實測 + Severson 錨定的合成 BBU 工況上訓練的 TCN</CardTitle>
-              <Disclosure summary="關於此模型" className="mt-2">
-                {"PyTorch TCN(時間卷積網路:4 層 dilated Conv1d,31,281 參數),以 188 顆 LFP 電芯的逐循環摘要特徵訓練(138 顆 Severson 2019 batch 1+2+3 + 50 顆 Severson 錨定的合成 BBU-duty 電芯;解析式衰減 + 各電芯雜訊,非 PyBaMM 老化 — 合成電芯與其標籤共用衰減函數,僅作為工況擴增,見 whitepaper §3.3.5/§3.3.8)。匯出為 ONNX 並於 onnxruntime CPU 上量測,作為 STM32N6 NPU 部署路徑的代理基準。"}
+              <CardTitle>{t("模型驗證 · 在 Severson 實測 + Severson 錨定的合成 BBU 工況上訓練的 TCN", "Model validation · a TCN trained on measured Severson data + Severson-anchored synthetic BBU duty")}</CardTitle>
+              <Disclosure summary={t("關於此模型", "About this model")} className="mt-2">
+                {t(
+                  "PyTorch TCN(時間卷積網路:4 層 dilated Conv1d,31,281 參數),以 188 顆 LFP 電芯的逐循環摘要特徵訓練(138 顆 Severson 2019 batch 1+2+3 + 50 顆 Severson 錨定的合成 BBU-duty 電芯;解析式衰減 + 各電芯雜訊,非 PyBaMM 老化 — 合成電芯與其標籤共用衰減函數,僅作為工況擴增,見 whitepaper §3.3.5/§3.3.8)。匯出為 ONNX 並於 onnxruntime CPU 上量測,作為 STM32N6 NPU 部署路徑的代理基準。",
+                  "PyTorch TCN (temporal convolutional network: 4 dilated Conv1d layers, 31,281 parameters), trained on per-cycle summary features from 188 LFP cells (138 Severson 2019 batch 1+2+3 cells + 50 Severson-anchored synthetic BBU-duty cells; analytic decay + per-cell noise, not PyBaMM aging — the synthetic cells share a decay function with their labels and serve only as duty augmentation, see whitepaper §3.3.5/§3.3.8). Exported to ONNX and measured on onnxruntime CPU as a proxy benchmark for the STM32N6 NPU deployment path.",
+                )}
               </Disclosure>
               <PlainInline className="mt-2">
-                AI 以 138 顆公開實測電芯＋50 顆合成 BBU 工況電芯訓練 — 準與不準的情境都如實標示。
+                {t(
+                  "AI 以 138 顆公開實測電芯＋50 顆合成 BBU 工況電芯訓練 — 準與不準的情境都如實標示。",
+                  "The AI is trained on 138 publicly measured cells + 50 synthetic BBU-duty cells — where it is accurate and where it is not are both shown as they are.",
+                )}
               </PlainInline>
             </div>
             <span className="shrink-0 rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-medium">
-              W2 重現
+              {t("W2 重現", "W2 reproduction")}
             </span>
           </div>
         </CardHeader>
         <CardBody className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat
-              label="TCN MAPE（測試集）"
+              label={t("TCN MAPE（測試集）", "TCN MAPE (test set)")}
               value={modelValidation.metrics.test_mape_pct.toFixed(1)}
               unit="%"
               tone="primary"
-              hint={`橫跨 Severson + BBU 工況的 ${modelValidation.metrics.n_test} 顆保留電芯 · 方法揭露：此值為單一切分、單一種子，訓練時 early stopping 以測試集監控（val = test，見 tcn_rul_report.json _meta.protocol）。自我稽核改用獨立驗證集、10 個種子重跑：TCN 中位數 28.2%（3/10 種子 >60%），同切分 bagged-GBT 14.4%、10/10 種子較佳；精度以 GBT 為準，TCN 因可完整靜態 INT8 量化而保留，定位為部署管線示範（docs/audit/A3-ml-rigor.md）。`}
+              hint={t(
+                `橫跨 Severson + BBU 工況的 ${modelValidation.metrics.n_test} 顆保留電芯 · 方法揭露：此值為單一切分、單一種子，訓練時 early stopping 以測試集監控（val = test，見 tcn_rul_report.json _meta.protocol）。自我稽核改用獨立驗證集、10 個種子重跑：TCN 中位數 28.2%（3/10 種子 >60%），同切分 bagged-GBT 14.4%、10/10 種子較佳；精度以 GBT 為準，TCN 因可完整靜態 INT8 量化而保留，定位為部署管線示範（docs/audit/A3-ml-rigor.md）。`,
+                `${modelValidation.metrics.n_test} held-out cells spanning Severson + BBU duty · method disclosure: this value comes from a single split and a single seed, and early stopping during training monitored the test set (val = test, see tcn_rul_report.json _meta.protocol). The self-audit re-ran with a separate validation set and 10 seeds: TCN median 28.2% (3/10 seeds >60%); on the same splits bagged-GBT reaches 14.4% and is better on 10/10 seeds. Accuracy claims rest on the GBT; the TCN is kept because it supports full static INT8 quantization and serves as a deployment-pipeline demo (docs/audit/A3-ml-rigor.md).`,
+              )}
             />
             <Stat
-              label="ONNX 延遲 · 筆電 CPU"
+              label={t("ONNX 延遲 · 筆電 CPU", "ONNX latency · laptop CPU")}
               value={modelValidation.latency.p99_ms.toFixed(2)}
               unit="ms (p99)"
               tone="success"
               // TCN FP32 latency from model_validation.json → latency (generator
               // scripts/export_tcn_onnx.py). No NPU number is shown: edge
               // deployment is a concept design and has not been run on hardware.
-              hint={`TCN FP32 ONNX 於筆電 CPU（onnxruntime,${modelValidation.latency.samples} 次）p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms / p99 ${modelValidation.latency.p99_ms.toFixed(2)} ms,遠低於 ${modelValidation.latency.target_ms} ms 目標 · STM32N6 NPU 部署為概念設計、未上板,不列 NPU 延遲`}
+              hint={t(
+                `TCN FP32 ONNX 於筆電 CPU（onnxruntime,${modelValidation.latency.samples} 次）p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms / p99 ${modelValidation.latency.p99_ms.toFixed(2)} ms,遠低於 ${modelValidation.latency.target_ms} ms 目標 · STM32N6 NPU 部署為概念設計、未上板,不列 NPU 延遲`,
+                `TCN FP32 ONNX on a laptop CPU (onnxruntime, ${modelValidation.latency.samples} runs) p50 ${modelValidation.latency.p50_ms.toFixed(2)} ms / p99 ${modelValidation.latency.p99_ms.toFixed(2)} ms, far below the ${modelValidation.latency.target_ms} ms target · STM32N6 NPU deployment is a concept design and has not been run on a board, so no NPU latency is listed`,
+              )}
             />
             <Stat
-              label="ONNX 大小"
+              label={t("ONNX 大小", "ONNX size")}
               value={modelValidation.model.onnx_size_kb.toFixed(1)}
               unit="KiB"
               tone="default"
               // INT8 numbers from data/processed/tcn_rul_report.json → tcn_quantisation
               // (fp32_onnx_kib 127.66, dynamic_int8_kib 54.18,
               // dynamic_compression_ratio 2.356, dynamic_int8_delta_mape_pp 0.162).
-              hint={`TCN FP32 計算圖；動態 INT8（僅量化權重）127.7 → 54.2 KiB（2.36× 壓縮,ΔMAPE +0.16 pp）；說明書所列 219 → 63 KiB／3.49×（ΔMAPE +0.10 pp）為前一版基線模型的量化結果 · 邊緣端 STM32N6 為概念設計、未上板 · 與 PyTorch 數值誤差在 ${modelValidation.model.onnx_torch_max_diff.toExponential(1)} 以內`}
+              hint={t(
+                `TCN FP32 計算圖；動態 INT8（僅量化權重）127.7 → 54.2 KiB（2.36× 壓縮,ΔMAPE +0.16 pp）；說明書所列 219 → 63 KiB／3.49×（ΔMAPE +0.10 pp）為前一版基線模型的量化結果 · 邊緣端 STM32N6 為概念設計、未上板 · 與 PyTorch 數值誤差在 ${modelValidation.model.onnx_torch_max_diff.toExponential(1)} 以內`,
+                `TCN FP32 graph; dynamic INT8 (weights only) 127.7 → 54.2 KiB (2.36× compression, ΔMAPE +0.16 pp); the 219 → 63 KiB / 3.49× (ΔMAPE +0.10 pp) listed in the write-up is the quantization result of the previous baseline model · the STM32N6 edge target is a concept design and has not been run on a board · numerical difference from PyTorch within ${modelValidation.model.onnx_torch_max_diff.toExponential(1)}`,
+              )}
             />
             <Stat
-              label="測試 R²"
+              label={t("測試 R²", "Test R²")}
               value={modelValidation.metrics.test_r2.toFixed(3)}
               tone="default"
-              hint={`訓練 MAPE ${modelValidation.metrics.train_mape_pct.toFixed(1)} % · ${modelValidation.metrics.n_train} 顆電芯`}
+              hint={t(
+                `訓練 MAPE ${modelValidation.metrics.train_mape_pct.toFixed(1)} % · ${modelValidation.metrics.n_train} 顆電芯`,
+                `Train MAPE ${modelValidation.metrics.train_mape_pct.toFixed(1)} % · ${modelValidation.metrics.n_train} cells`,
+              )}
             />
           </div>
 
@@ -1732,7 +2003,7 @@ export function TwinClient({
             modelValidation.uncertainty?.raw_median_pi_width_cycles != null &&
             modelValidation.uncertainty?.conformal_median_pi_width_cycles != null && (
               <div className="rounded-md border border-border bg-background/30 px-4 py-2.5 text-xs leading-relaxed">
-                <span className="text-foreground font-medium">90 % PI 中位寬度 · </span>
+                <span className="text-foreground font-medium">{t("90 % PI 中位寬度 · ", "90 % PI median width · ")}</span>
                 <span className="text-warning tabular-nums">
                   {Math.round(modelValidation.uncertainty.raw_median_pi_width_cycles).toLocaleString()}
                 </span>{" "}
@@ -1741,6 +2012,8 @@ export function TwinClient({
                   {Math.round(modelValidation.uncertainty.conformal_median_pi_width_cycles).toLocaleString()} cycles
                 </span>{" "}
                 <span className="text-foreground">
+                  {t(
+                    <>
                   （收窄 {(
                     (1 -
                       modelValidation.uncertainty.conformal_median_pi_width_cycles /
@@ -1748,8 +2021,21 @@ export function TwinClient({
                     100
                   ).toFixed(0)}
                   %）
+                    </>,
+                    <>
+                  (narrowed by {(
+                    (1 -
+                      modelValidation.uncertainty.conformal_median_pi_width_cycles /
+                        modelValidation.uncertainty.raw_median_pi_width_cycles) *
+                    100
+                  ).toFixed(0)}
+                  %)
+                    </>,
+                  )}
                 </span>
-                <Disclosure summary="如何做到（split conformal 校準）" className="mt-1.5">
+                <Disclosure summary={t("如何做到（split conformal 校準）", "How it is done (split conformal calibration)")} className="mt-1.5">
+                  {t(
+                    <>
                   MC Dropout {modelValidation.uncertainty.n_samples} 個樣本 + split conformal,
                   q ={" "}
                   <span className="text-foreground tabular-nums">
@@ -1759,6 +2045,19 @@ export function TwinClient({
                   {modelValidation.uncertainty.conformal_n_calibration} 顆電芯,涵蓋率維持在{" "}
                   {((modelValidation.uncertainty.conformal_test_coverage_90pct ?? modelValidation.uncertainty.test_coverage_90pct) * 100).toFixed(0)}
                   %。Whitepaper §3.3.7。
+                    </>,
+                    <>
+                  MC Dropout with {modelValidation.uncertainty.n_samples} samples + split conformal,
+                  q ={" "}
+                  <span className="text-foreground tabular-nums">
+                    {modelValidation.uncertainty.conformal_q_factor.toFixed(2)}
+                  </span>
+                  , held-out calibration set ={" "}
+                  {modelValidation.uncertainty.conformal_n_calibration} cells, coverage held at{" "}
+                  {((modelValidation.uncertainty.conformal_test_coverage_90pct ?? modelValidation.uncertainty.test_coverage_90pct) * 100).toFixed(0)}
+                  %. Whitepaper §3.3.7.
+                    </>,
+                  )}
                 </Disclosure>
               </div>
             )}
@@ -1775,13 +2074,19 @@ export function TwinClient({
             const domain: [number, number] = [Math.max(0, Math.floor(lo - pad)), Math.ceil(hi + pad)];
           return (
           <ChartCard
-            title={`預測 vs 實際循環壽命 · 全部 ${modelValidation.predicted_vs_actual.length} 顆電芯`}
+            title={t(
+              `預測 vs 實際循環壽命 · 全部 ${modelValidation.predicted_vs_actual.length} 顆電芯`,
+              `Predicted vs actual cycle life · all ${modelValidation.predicted_vs_actual.length} cells`,
+            )}
             // Split label: model_validation.json metrics.split reads "random_80_20_seed42"
             // (generator label bug — TEST_SIZE only); the actual protocol is
             // random_60_20_20_seed42 per tcn_rul_report.json _meta.split and the
             // same JSON's description ("Same seed=42 / 60-20-20 split").
-            subtitle={`切分 random 60/20/20（seed 42）· ${modelValidation.metrics.n_train} 訓練 · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} 校準 · ${modelValidation.metrics.n_test} 測試`}
-            plain="點越貼近對角線，預測越準 — 中間空白是模型沒看過的區間。"
+            subtitle={t(
+              `切分 random 60/20/20（seed 42）· ${modelValidation.metrics.n_train} 訓練 · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} 校準 · ${modelValidation.metrics.n_test} 測試`,
+              `Split random 60/20/20 (seed 42) · ${modelValidation.metrics.n_train} train · ${modelValidation.uncertainty?.conformal_n_calibration ?? 0} calibration · ${modelValidation.metrics.n_test} test`,
+            )}
+            plain={t("點越貼近對角線，預測越準 — 中間空白是模型沒看過的區間。", "The closer the points sit to the diagonal, the more accurate the prediction — the empty middle is a range the model has not seen.")}
           >
             <ResponsiveContainer width="100%" height={360}>
               <ScatterChart margin={{ top: 12, right: 16, left: 12, bottom: 24 }}>
@@ -1789,22 +2094,22 @@ export function TwinClient({
                 <XAxis
                   type="number"
                   dataKey="actual"
-                  name="實際"
+                  name={t("實際", "Actual")}
                   domain={domain}
                   allowDataOverflow={false}
                   stroke=""
                   tickFormatter={(v) => `${v}`}
-                  label={{ value: "實際循環壽命", position: "insideBottom", offset: -8, fill: "var(--muted)", fontSize: 11 }}
+                  label={{ value: t("實際循環壽命", "Actual cycle life"), position: "insideBottom", offset: -8, fill: "var(--muted)", fontSize: 11 }}
                 />
                 <YAxis
                   type="number"
                   dataKey="predicted"
-                  name="預測"
+                  name={t("預測", "Predicted")}
                   domain={domain}
                   allowDataOverflow={false}
                   stroke=""
                   tickFormatter={(v) => `${v}`}
-                  label={{ value: "預測循環壽命", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
+                  label={{ value: t("預測循環壽命", "Predicted cycle life"), angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 11 }}
                 />
                 <ZAxis range={[24, 24]} />
                 <Tooltip
@@ -1822,11 +2127,11 @@ export function TwinClient({
                         <div className="font-medium">{d.cell_id}</div>
                         <div className="text-muted">batch {d.batch} · {d.split}</div>
                         <div className="grid grid-cols-2 gap-x-3 pt-1">
-                          <span className="text-muted">實際</span>
+                          <span className="text-muted">{t("實際", "Actual")}</span>
                           <span className="text-right tabular-nums">{d.actual}</span>
-                          <span className="text-muted">預測</span>
+                          <span className="text-muted">{t("預測", "Predicted")}</span>
                           <span className="text-right tabular-nums">{d.predicted}</span>
-                          <span className="text-muted">誤差</span>
+                          <span className="text-muted">{t("誤差", "Error")}</span>
                           <span className={`text-right tabular-nums ${Math.abs(err) > 20 ? "text-warning" : "text-success"}`}>
                             {err > 0 ? "+" : ""}{err.toFixed(1)}%
                           </span>
@@ -1864,28 +2169,28 @@ export function TwinClient({
                     lifetimes (≥5,000) reads directly off the chart, while
                     held-out test points are still visible against train. */}
                 <Scatter
-                  name="Severson · 訓練"
+                  name={t("Severson · 訓練", "Severson · train")}
                   data={modelValidation.predicted_vs_actual.filter(
                     (p) => p.batch !== "bbu" && p.split === "train",
                   )}
                   fill="rgba(99,102,241,0.45)"
                 />
                 <Scatter
-                  name="Severson · 測試"
+                  name={t("Severson · 測試", "Severson · test")}
                   data={modelValidation.predicted_vs_actual.filter(
                     (p) => p.batch !== "bbu" && p.split === "test",
                   )}
                   fill="rgba(34,211,238,0.95)"
                 />
                 <Scatter
-                  name="合成 BBU 工況 · 訓練"
+                  name={t("合成 BBU 工況 · 訓練", "Synthetic BBU duty · train")}
                   data={modelValidation.predicted_vs_actual.filter(
                     (p) => p.batch === "bbu" && p.split === "train",
                   )}
                   fill="rgba(251,191,36,0.55)"
                 />
                 <Scatter
-                  name="合成 BBU 工況 · 測試"
+                  name={t("合成 BBU 工況 · 測試", "Synthetic BBU duty · test")}
                   data={modelValidation.predicted_vs_actual.filter(
                     (p) => p.batch === "bbu" && p.split === "test",
                   )}
@@ -1894,12 +2199,24 @@ export function TwinClient({
               </ScatterChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted mt-2">
+              {t(
+                <>
               冷藍色 = <span className="text-foreground font-medium">Severson 2019 電芯</span>（100–2,000 循環）；
               暖琥珀色 = <span className="text-foreground font-medium">Severson 錨定的合成 BBU 工況電芯</span>（5,000–13,000 循環）。
               兩者之間的 <span className="text-warning font-medium">2,000–4,000 空白</span>就是{" "}
               <span className="text-warning font-medium">工況落差</span>。
+                </>,
+                <>
+              Cool blue = <span className="text-foreground font-medium">Severson 2019 cells</span> (100–2,000 cycles);
+              warm amber = <span className="text-foreground font-medium">Severson-anchored synthetic BBU-duty cells</span> (5,000–13,000 cycles).
+              The <span className="text-warning font-medium">2,000–4,000 gap</span> between them is the{" "}
+              <span className="text-warning font-medium">duty gap</span>.
+                </>,
+              )}
             </p>
-            <Disclosure summary="關於工況落差與跨化學體系測試的更多說明" className="mt-2">
+            <Disclosure summary={t("關於工況落差與跨化學體系測試的更多說明", "More on the duty gap and cross-chemistry tests")} className="mt-2">
+              {t(
+                <>
               實驗室快充與溫和浮充工作模式都無法產生 2,000–4,000 範圍內的電芯,
               因此要填補中段需要中等應力的合成電芯。
               跨化學體系遷移（NASA NMC、CALCE LCO）已測試並排除（whitepaper §B）；
@@ -1911,6 +2228,21 @@ export function TwinClient({
                 : "（未提供）"}{" "}
               同時維持涵蓋率 ≥90 % —
               逐顆電芯量化跨越落差區的不確定性。
+                </>,
+                <>
+              Neither lab fast charging nor gentle float duty produces cells in the 2,000–4,000 range,
+              so filling the middle needs moderately stressed synthetic cells.
+              Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out (whitepaper §B);
+              the answer is wider LFP coverage, not more chemistries. The 90 % prediction interval in the per-cell walkthrough below —
+              MC Dropout post-processed with split conformal — is narrowed by{" "}
+              {modelValidation.uncertainty?.conformal_median_pi_width_cycles != null &&
+              modelValidation.uncertainty?.raw_median_pi_width_cycles
+                ? `${((1 - modelValidation.uncertainty.conformal_median_pi_width_cycles / modelValidation.uncertainty.raw_median_pi_width_cycles) * 100).toFixed(0)} %`
+                : "(not provided)"}{" "}
+              relative to the raw sampler while keeping coverage ≥90 % —
+              quantifying, cell by cell, the uncertainty across the gap.
+                </>,
+              )}
             </Disclosure>
           </ChartCard>
           );
@@ -1935,10 +2267,24 @@ export function TwinClient({
           />
 
           <div className="rounded-md border border-border bg-background/30 px-4 py-2.5">
-            <Disclosure summary={<>架構 · <span className="text-foreground">{modelValidation.model.n_parameters.toLocaleString()} 個參數</span></>}>
+            <Disclosure
+              summary={t(
+                <>架構 · <span className="text-foreground">{modelValidation.model.n_parameters.toLocaleString()} 個參數</span></>,
+                <>Architecture · <span className="text-foreground">{modelValidation.model.n_parameters.toLocaleString(locale)} parameters</span></>,
+              )}
+            >
+              {t(
+                <>
               {modelValidation.model.architecture} · 輸入 {JSON.stringify(modelValidation.model.input_shape)}{" "}
               （循環 2–100 × 7 個特徵：{" "}
               <code className="text-foreground">{modelValidation.model.feature_names.join(", ")}</code>）。
+                </>,
+                <>
+              {modelValidation.model.architecture} · input {JSON.stringify(modelValidation.model.input_shape)}{" "}
+              (cycles 2–100 × 7 features:{" "}
+              <code className="text-foreground">{modelValidation.model.feature_names.join(", ")}</code>).
+                </>,
+              )}
             </Disclosure>
           </div>
         </CardBody>
@@ -1952,40 +2298,60 @@ export function TwinClient({
       {/* Method panel — short tagline visible, full body collapsed */}
       <Card>
         <CardHeader>
-          <CardTitle>方法 · 您實際看到的是什麼</CardTitle>
+          <CardTitle>{t("方法 · 您實際看到的是什麼", "Method · what you are actually looking at")}</CardTitle>
         </CardHeader>
         <CardBody className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm leading-relaxed">
           <Method
             icon={<FlaskConical className="h-4 w-4" />}
-            title="物理"
-            tagline={
+            title={t("物理", "Physics")}
+            tagline={t(
               <>
                 <span className="text-foreground font-medium">Doyle-Fuller-Newman PDE</span>,{" "}
                 PyBaMM 26.4.1, <span className="text-foreground">Prada 2013 LFP</span>。
-              </>
-            }
-            details="每機架 8 顆 BBU 並聯,將 120 kW 峰值分攤為每 BBU 15 kW（每電芯 6C）。電池組層級的功率映射到一顆代表性電芯,使機架峰值電流對應到（較小的）Prada 電芯上約 6C — 在不重建完整電池組的情況下符合 2.5 kWh / 48 V / 15S 的 BBU 規格。常見陷阱：把單顆 BBU 的 2.5 kWh 除以機架的 120 kW 會得到誤導性的 48C；正確算法是 20 kWh（8 × 2.5）÷ 120 kW = 理論上 600 s,對應 60 s 優雅關機規格。"
+              </>,
+              <>
+                <span className="text-foreground font-medium">Doyle-Fuller-Newman PDE</span>,{" "}
+                PyBaMM 26.4.1, <span className="text-foreground">Prada 2013 LFP</span>.
+              </>,
+            )}
+            details={t(
+              "每機架 8 顆 BBU 並聯,將 120 kW 峰值分攤為每 BBU 15 kW（每電芯 6C）。電池組層級的功率映射到一顆代表性電芯,使機架峰值電流對應到（較小的）Prada 電芯上約 6C — 在不重建完整電池組的情況下符合 2.5 kWh / 48 V / 15S 的 BBU 規格。常見陷阱：把單顆 BBU 的 2.5 kWh 除以機架的 120 kW 會得到誤導性的 48C；正確算法是 20 kWh（8 × 2.5）÷ 120 kW = 理論上 600 s,對應 60 s 優雅關機規格。",
+              "8 BBUs per rack in parallel split the 120 kW peak into 15 kW per BBU (6C per cell). Pack-level power is mapped onto one representative cell, so the rack peak current corresponds to about 6C on the (smaller) Prada cell — matching the 2.5 kWh / 48 V / 15S BBU spec without rebuilding the full pack. A common pitfall: dividing one BBU's 2.5 kWh by the rack's 120 kW gives a misleading 48C; the correct calculation is 20 kWh (8 × 2.5) ÷ 120 kW = 600 s in theory, against the 60 s graceful-shutdown spec.",
+            )}
           />
           <Method
             icon={<Activity className="h-4 w-4" />}
-            title="混合分流"
-            tagline={
+            title={t("混合分流", "Hybrid split")}
+            tagline={t(
               <>
                 一階 LIC 等效模型 + LPF,{" "}
                 <span className="text-foreground font-medium">τ = 0.5 s</span>,截止 ≈ 0.32 Hz。
-              </>
-            }
-            details="LIC 側以其 R_esr × C_bulk 主導時間常數表示（參數錨定 Eaton XLR-48R6167-R 規格書 48 V / 166 F · ~5 mΩ ESR → τ ≈ 0.83 s；該型號賽後查證為 EDLC 而非 LIC）；展示刻意採用較緊的控制律設定點 τ = 0.5 s,使 DC-DC 比被動耦合推送更多高頻成分到 LIC。高於截止的成分導向 LIC,緩慢殘量導向 LFP。10 Hz GB200 脈衝遠高於截止；30–90 s 優雅關機事件遠低於截止。此處未建模 LIC 偽電容、電極動力學與自放電 — 量產階段使用量產選型 Musashi ULTIMO CPQ3300SD 資料表的 ESR(SOC) + bulk-C(V) 曲線或迴路內量測。"
+              </>,
+              <>
+                First-order LIC equivalent model + LPF,{" "}
+                <span className="text-foreground font-medium">τ = 0.5 s</span>, cutoff ≈ 0.32 Hz.
+              </>,
+            )}
+            details={t(
+              "LIC 側以其 R_esr × C_bulk 主導時間常數表示（參數錨定 Eaton XLR-48R6167-R 規格書 48 V / 166 F · ~5 mΩ ESR → τ ≈ 0.83 s；該型號賽後查證為 EDLC 而非 LIC）；展示刻意採用較緊的控制律設定點 τ = 0.5 s,使 DC-DC 比被動耦合推送更多高頻成分到 LIC。高於截止的成分導向 LIC,緩慢殘量導向 LFP。10 Hz GB200 脈衝遠高於截止；30–90 s 優雅關機事件遠低於截止。此處未建模 LIC 偽電容、電極動力學與自放電 — 量產階段使用量產選型 Musashi ULTIMO CPQ3300SD 資料表的 ESR(SOC) + bulk-C(V) 曲線或迴路內量測。",
+              "The LIC side is represented by its dominant R_esr × C_bulk time constant (parameters anchored to the Eaton XLR-48R6167-R datasheet, 48 V / 166 F · ~5 mΩ ESR → τ ≈ 0.83 s; a post-competition check found this part is an EDLC, not a LIC); the demo deliberately uses a tighter control-law setpoint, τ = 0.5 s, so the DC-DC pushes more high-frequency content into the LIC than passive coupling would. Content above the cutoff goes to the LIC; the slow remainder goes to the LFP. The 10 Hz GB200 pulses are far above the cutoff; 30–90 s graceful-shutdown events are far below it. LIC pseudocapacitance, electrode kinetics and self-discharge are not modeled here — production will use the ESR(SOC) + bulk-C(V) curves from the datasheet of the production part, Musashi ULTIMO CPQ3300SD, or in-loop measurements.",
+            )}
           />
           <Method
             icon={<Cpu className="h-4 w-4" />}
-            title="老化"
-            tagline={
+            title={t("老化", "Aging")}
+            tagline={t(
               <>
                 <span className="text-foreground font-medium">以 Severson 2019 校準</span>的解析式 SOH 擬合。
-              </>
-            }
-            details="在 3,000 循環上執行真正的 DFN 在運算上不可行,因此我們採用解析式擬合。0.33 的 BBU 工作模式係數反映浮充運作搭配罕見的深度事件 — 在提案 §G.3 中明確說明。"
+              </>,
+              <>
+                An analytic SOH fit <span className="text-foreground font-medium">calibrated to Severson 2019</span>.
+              </>,
+            )}
+            details={t(
+              "在 3,000 循環上執行真正的 DFN 在運算上不可行,因此我們採用解析式擬合。0.33 的 BBU 工作模式係數反映浮充運作搭配罕見的深度事件 — 在提案 §G.3 中明確說明。",
+              "Running a true DFN over 3,000 cycles is computationally infeasible, so we use an analytic fit. The 0.33 BBU duty factor reflects float operation with rare deep events — stated explicitly in proposal §G.3.",
+            )}
           />
         </CardBody>
       </Card>
@@ -2116,18 +2482,20 @@ type Bucket = {
 // inside a tick string and the long forms collided badly on mobile widths,
 // so the axis carries only the one-word category and the range is shown
 // in the chart subtitle + tooltip instead.
-const BUCKET_DEFS: Array<{ label: string; range: string; min: number; max: number }> = [
-  { label: "短",       range: "<400",      min: 0,    max: 400 },
-  { label: "中低",      range: "400–700",   min: 400,  max: 700 },
-  { label: "典型",      range: "700–1000",  min: 700,  max: 1000 },
-  { label: "中高",      range: "1000–1300", min: 1000, max: 1300 },
-  { label: "長",       range: "≥1300",     min: 1300, max: Infinity },
+const BUCKET_DEFS: Array<{ label: string; labelEn: string; range: string; min: number; max: number }> = [
+  { label: "短",       labelEn: "Short",    range: "<400",      min: 0,    max: 400 },
+  { label: "中低",      labelEn: "Lower",    range: "400–700",   min: 400,  max: 700 },
+  { label: "典型",      labelEn: "Typical",  range: "700–1000",  min: 700,  max: 1000 },
+  { label: "中高",      labelEn: "Upper",    range: "1000–1300", min: 1000, max: 1300 },
+  { label: "長",       labelEn: "Long",     range: "≥1300",     min: 1300, max: Infinity },
 ];
 
 function buildBuckets(
   rows: ModelValidation["predicted_vs_actual"],
+  lang: "zh" | "en",
 ): Bucket[] {
-  return BUCKET_DEFS.map((b) => {
+  return BUCKET_DEFS.map((def) => {
+    const b = { ...def, label: lang === "en" ? def.labelEn : def.label };
     const sub = rows.filter((r) => r.actual >= b.min && r.actual < b.max);
     const n = sub.length;
     if (n === 0) {
@@ -2174,7 +2542,8 @@ function ErrorByLifetimeBucket({
   conformalNCalibration?: number;
   conformalNarrowingPct?: number;
 }) {
-  const buckets = useMemo(() => buildBuckets(data), [data]);
+  const { t, lang } = useT();
+  const buckets = useMemo(() => buildBuckets(data, lang), [data, lang]);
 
   // Bar tinted darker red as MAPE climbs — gives the eye an immediate
   // 'this bucket is fine vs this bucket is the problem' read.
@@ -2186,8 +2555,8 @@ function ErrorByLifetimeBucket({
 
   return (
     <ChartCard
-      title="依電芯壽命分組的誤差模式"
-      subtitle="分組 · <400 / 400–700 / 700–1000 / 1000–1300 / ≥1300 循環"
+      title={t("依電芯壽命分組的誤差模式", "Error pattern by cell lifetime")}
+      subtitle={t("分組 · <400 / 400–700 / 700–1000 / 1000–1300 / ≥1300 循環", "Buckets · <400 / 400–700 / 700–1000 / 1000–1300 / ≥1300 cycles")}
     >
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={buckets} margin={{ top: 8, right: 32, left: 8, bottom: 48 }}>
@@ -2199,7 +2568,7 @@ function ErrorByLifetimeBucket({
             height={56}
             tick={<RotatedTick />}
           />
-          <YAxis yAxisId="count" stroke="" label={{ value: "電芯", angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 10 }} />
+          <YAxis yAxisId="count" stroke="" label={{ value: t("電芯", "Cells"), angle: -90, position: "insideLeft", fill: "var(--muted)", fontSize: 10 }} />
           <YAxis
             yAxisId="mape"
             orientation="right"
@@ -2219,13 +2588,13 @@ function ErrorByLifetimeBucket({
                     {b.label} <span className="text-muted text-[10px]">({b.range})</span>
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 pt-1.5">
-                    <span className="text-muted">電芯數</span>
+                    <span className="text-muted">{t("電芯數", "Cells")}</span>
                     <span className="text-right tabular-nums">{b.count}</span>
-                    <span className="text-muted">平均實際</span>
+                    <span className="text-muted">{t("平均實際", "Mean actual")}</span>
                     <span className="text-right tabular-nums">{b.avgActual.toFixed(0)}</span>
-                    <span className="text-muted">平均預測</span>
+                    <span className="text-muted">{t("平均預測", "Mean predicted")}</span>
                     <span className="text-right tabular-nums">{b.avgPred.toFixed(0)}</span>
-                    <span className="text-muted">平均帶號誤差</span>
+                    <span className="text-muted">{t("平均帶號誤差", "Mean signed error")}</span>
                     <span className={`text-right tabular-nums ${b.meanErr > 0 ? "text-warning" : "text-accent"}`}>
                       {b.meanErr >= 0 ? "+" : ""}{b.meanErr.toFixed(1)}%
                     </span>
@@ -2237,7 +2606,7 @@ function ErrorByLifetimeBucket({
             }}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
-          <Bar yAxisId="count" dataKey="count" name="電芯數" fill="var(--muted)" radius={[4, 4, 0, 0]}>
+          <Bar yAxisId="count" dataKey="count" name={t("電芯數", "Cells")} fill="var(--muted)" radius={[4, 4, 0, 0]}>
             {buckets.map((b, i) => (
               <RCell key={i} fill={barColour(b.mape)} />
             ))}
@@ -2255,12 +2624,30 @@ function ErrorByLifetimeBucket({
         </ComposedChart>
       </ResponsiveContainer>
       <p className="text-xs text-muted mt-2">
+        {t(
+          <>
         長條 = 電芯數,琥珀色線 = 各分組內的 MAPE。{" "}
         <span className="text-warning font-medium">短壽命分組</span>的{" "}
         <span className="text-warning font-medium">MAPE 最大</span>,因為 Severson 僅有少數幾顆{" "}
         <span className="text-foreground font-medium">早期失效電芯</span>。
+          </>,
+          <>
+        Bars = cell count, amber line = MAPE within each bucket.{" "}
+        The <span className="text-warning font-medium">short-life bucket</span> has the{" "}
+        <span className="text-warning font-medium">largest MAPE</span>, because Severson has only a few{" "}
+        <span className="text-foreground font-medium">early-failure cells</span>.
+          </>,
+        )}
       </p>
-      <Disclosure summary={`為何 TCN MAPE 約為 ~${overallMapePct.toFixed(0)} % 以及 PIs 如何處理它`} className="mt-2">
+      <Disclosure
+        summary={t(
+          `為何 TCN MAPE 約為 ~${overallMapePct.toFixed(0)} % 以及 PIs 如何處理它`,
+          `Why the TCN MAPE is ~${overallMapePct.toFixed(0)} % and how the PIs handle it`,
+        )}
+        className="mt-2"
+      >
+        {t(
+          <>
         長壽命分組現在由 50 顆以 Severson 為基準、循環壽命 5,000–13,000 的合成 BBU 工作模式電芯主導 —
         加入它們拓寬了模型的工況涵蓋範圍,使其能描述實際的 BBU 運作點。
         目前 TCN 整體測試 MAPE 為 {overallMapePct.toFixed(1)} %（whitepaper §3.3.7 / §3.3.8）。供參考：前一版基線（LSTM）僅用 Severson 訓練時為 16.2 %（lstm_severson_only_eval.json），模型與測試集不同，非同條件比較。
@@ -2272,6 +2659,21 @@ function ErrorByLifetimeBucket({
         於 {conformalNCalibration ?? 37} 顆電芯的校準集,§3.3.7）,
         {conformalNarrowingPct != null ? `中位區間寬度相較原始收窄 ${conformalNarrowingPct.toFixed(0)} %,` : ""}
         同時維持涵蓋率 ≥90 %。
+          </>,
+          <>
+        The long-life bucket is now dominated by 50 Severson-based synthetic BBU-duty cells with cycle lives of 5,000–13,000 —
+        adding them widened the model&apos;s duty coverage so it can describe the actual BBU operating point.
+        The current overall TCN test MAPE is {overallMapePct.toFixed(1)} % (whitepaper §3.3.7 / §3.3.8). For reference only: the previous baseline (LSTM) trained on Severson alone scored 16.2 % (lstm_severson_only_eval.json); the model and test set differ, so this is not a like-for-like comparison.
+        The short-life bucket is the most obvious data gap (Severson early-failure cells are sparse).
+        Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out
+        (§3.3.5 / Appendix B); the answer is more LFP early-failure data, not more chemistries. The per-cell walkthrough above reports a 90 % prediction interval for every cell —
+        MC Dropout post-processed with split conformal (q_factor{" "}
+        {conformalQFactor != null ? conformalQFactor.toFixed(2) : "0.56"}{" "}
+        on a calibration set of {conformalNCalibration ?? 37} cells, §3.3.7),
+        {conformalNarrowingPct != null ? ` narrowing the median interval width by ${conformalNarrowingPct.toFixed(0)} % relative to raw,` : ""}{" "}
+        while keeping coverage ≥90 %.
+          </>,
+        )}
       </Disclosure>
     </ChartCard>
   );
@@ -2282,6 +2684,8 @@ function ErrorByLifetimeBucket({
 // stop overlapping on phone widths.
 function RotatedTick(props: { x?: number; y?: number; payload?: { value: string } }) {
   const { x = 0, y = 0, payload } = props;
+  // English category names are longer than the one- or two-character Chinese ones; tilt them further so they clear each other on phones.
+  const { lang } = useT();
   return (
     <g transform={`translate(${x},${y})`}>
       <text
@@ -2289,7 +2693,7 @@ function RotatedTick(props: { x?: number; y?: number; payload?: { value: string 
         y={0}
         dy={8}
         textAnchor="end"
-        transform="rotate(-30)"
+        transform={lang === "en" ? "rotate(-45)" : "rotate(-30)"}
         fill="var(--muted)"
         fontSize={11}
       >
@@ -2325,8 +2729,16 @@ const STATUS_LABEL: Record<Walkthrough["fleet_status"], string> = {
   early_aging: "Tier-3 佇列",
   critical: "提前失效",
 };
+const STATUS_LABEL_EN: Record<Walkthrough["fleet_status"], string> = {
+  healthy: "Main population",
+  warning: "Watch list",
+  early_aging: "Tier-3 queue",
+  critical: "Early failure",
+};
 
 function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] }) {
+  const { t, lang, locale } = useT();
+  const statusLabel = lang === "en" ? STATUS_LABEL_EN : STATUS_LABEL;
   const [pickedId, setPickedId] = useState<string>(walkthroughs[0].cell_id);
   const cell = walkthroughs.find((w) => w.cell_id === pickedId) ?? walkthroughs[0];
 
@@ -2339,22 +2751,52 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
           <div className="flex items-start gap-3 min-w-0">
             <Microscope className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div className="min-w-0">
-              <CardTitle>推論逐步檢視 · 模型逐顆電芯看到了什麼</CardTitle>
+              <CardTitle>{t("推論逐步檢視 · 模型逐顆電芯看到了什麼", "Inference walkthrough · what the model sees, cell by cell")}</CardTitle>
               <p className="text-sm text-muted mt-2 max-w-3xl leading-relaxed">
+                {t(
+                  <>
                 橫跨 <span className="text-foreground font-medium">四種預測狀態</span>的{" "}
                 <span className="text-foreground font-medium">{walkthroughs.length} 顆電芯</span>{" "}
                 （healthy / warning / early_aging / critical），各自帶有一個{" "}
                 <span className="text-success font-medium">90 % conformal 收窄後 PI</span>。
+                  </>,
+                  <>
+                <span className="text-foreground font-medium">{walkthroughs.length} cells</span> across{" "}
+                <span className="text-foreground font-medium">four predicted states</span>{" "}
+                (healthy / warning / early_aging / critical), each carrying a{" "}
+                <span className="text-success font-medium">conformal-narrowed 90 % PI</span>.
+                  </>,
+                )}
               </p>
-              <Disclosure summary="分組與 PIs 如何運作" className="mt-2">
+              <Disclosure summary={t("分組與 PIs 如何運作", "How the buckets and PIs work")} className="mt-2">
+                {t(
+                  <>
                 /dashboard 依設備當前的物理狀態（SOH / RUL / 溫度）將線上設備分為
                 三個分組；逐步檢視則依<em>預測</em>循環壽命將訓練電芯分組 —
                 這也是為何 <span className="text-foreground">critical</span> 出現在
                 此處卻不出現在 /dashboard 的原因。每筆預測透過 Monte Carlo Dropout（100 次啟用 dropout 的前向傳遞）
                 並經 split conformal 後處理,帶有 90 % 預測區間 — 像 <em>critical</em> 這類尾端電芯的寬 PI 是
                 模型誠實回報其在該處訓練訊號有限,而 healthy 電芯的窄 PI 則反映實際的信心度。
+                  </>,
+                  <>
+                /dashboard sorts online units into three buckets by their current physical state (SOH / RUL / temperature);
+                the walkthrough instead buckets training cells by <em>predicted</em> cycle life —
+                which is why <span className="text-foreground">critical</span> appears
+                here but not on /dashboard. Every prediction carries a 90 % prediction interval via Monte Carlo Dropout (100 forward passes with dropout enabled)
+                post-processed with split conformal — the wide PI on tail cells such as <em>critical</em> is
+                the model honestly reporting that its training signal there is limited, while the narrow PI on healthy cells reflects real confidence.
+                  </>,
+                )}
               </Disclosure>
-              <Disclosure summary="工況混合 · Severson b1–3 vs 以 Severson 為基準的合成 bbu_* 電芯" className="mt-1">
+              <Disclosure
+                summary={t(
+                  "工況混合 · Severson b1–3 vs 以 Severson 為基準的合成 bbu_* 電芯",
+                  "Duty mix · Severson b1–3 vs Severson-based synthetic bbu_* cells",
+                )}
+                className="mt-1"
+              >
+                {t(
+                  <>
                 <span className="text-foreground">Severson 快充電芯</span>（b1/b2/b3 ID,
                 3.6C–8C,實驗室應力壽命 100–2,000 循環）與{" "}
                 <span className="text-foreground">以 Severson 為基準的合成 BBU 工作模式電芯</span>{" "}
@@ -2368,6 +2810,23 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
                 實際的 BBU 運作點 — 挑選一顆 `bbu_*` 電芯,觀察模型在您客戶電池組將實際運作的
                 工況上會如何預測。Whitepaper
                 §3.3.5 涵蓋校準方法論。
+                  </>,
+                  <>
+                <span className="text-foreground">Severson fast-charge cells</span> (b1/b2/b3 IDs,
+                3.6C–8C, lab-stress lifetimes of 100–2,000 cycles) and{" "}
+                <span className="text-foreground">Severson-based synthetic BBU-duty cells</span>{" "}
+                (bbu_* IDs, ~0.05C float, ~50 cycles/year → 5,000–13,000 cycle lifetimes).{" "}
+                <span className="text-warning">
+                  The synthetic cells use an analytic Severson-fitted SOH curve + per-cell noise,
+                  not PyBaMM aging (full PyBaMM for 100 cells × 10k cycles is computationally
+                  infeasible). They serve only as <em>duty augmentation</em> — production evidence rests on the real Severson cells.
+                </span>{" "}
+                The TCN is trained on both duties (188 cells in total), so it can describe
+                the actual BBU operating point — pick a `bbu_*` cell to see how the model predicts under the duty
+                your customers&apos; packs will actually run. Whitepaper
+                §3.3.5 covers the calibration methodology.
+                  </>,
+                )}
               </Disclosure>
             </div>
           </div>
@@ -2388,28 +2847,34 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
       <CardBody className="space-y-6">
         {/* Per-cell summary tiles */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Stat label="電芯 ID" value={cell.cell_id} hint={`batch ${cell.batch}`} />
+          <Stat label={t("電芯 ID", "Cell ID")} value={cell.cell_id} hint={`batch ${cell.batch}`} />
           <Stat
-            label="機隊狀態"
-            value={STATUS_LABEL[cell.fleet_status]}
+            label={t("機隊狀態", "Fleet status")}
+            value={statusLabel[cell.fleet_status]}
             tone={STATUS_TONE[cell.fleet_status]}
-            hint={`${cell.fleet_status} · 約佔 TCN 訓練電芯分布的 ~${cell.fleet_pct.toFixed(0)}%`}
+            hint={t(
+              `${cell.fleet_status} · 約佔 TCN 訓練電芯分布的 ~${cell.fleet_pct.toFixed(0)}%`,
+              `${cell.fleet_status} · ~${cell.fleet_pct.toFixed(0)}% of the TCN training-cell distribution`,
+            )}
           />
           <Stat
-            label="實際循環壽命"
-            value={cell.actual.toLocaleString()}
-            unit="循環"
+            label={t("實際循環壽命", "Actual cycle life")}
+            value={t(cell.actual.toLocaleString(), cell.actual.toLocaleString(locale))}
+            unit={t("循環", "cycles")}
             tone="default"
           />
           <Stat
-            label="預測（點預測）"
-            value={cell.predicted.toLocaleString()}
-            unit="循環"
+            label={t("預測（點預測）", "Predicted (point estimate)")}
+            value={t(cell.predicted.toLocaleString(), cell.predicted.toLocaleString(locale))}
+            unit={t("循環", "cycles")}
             tone="primary"
-            hint={`誤差欄以此點預測計算 · MC Dropout 中位數 ${cell.pi_median.toLocaleString()} · 90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout 100 個樣本 + split conformal`}
+            hint={t(
+              `誤差欄以此點預測計算 · MC Dropout 中位數 ${cell.pi_median.toLocaleString()} · 90% PI [${cell.pi_lower.toLocaleString()}–${cell.pi_upper.toLocaleString()}] · MC Dropout 100 個樣本 + split conformal`,
+              `The error tile uses this point estimate · MC Dropout median ${cell.pi_median.toLocaleString(locale)} · 90% PI [${cell.pi_lower.toLocaleString(locale)}–${cell.pi_upper.toLocaleString(locale)}] · MC Dropout 100 samples + split conformal`,
+            )}
           />
           <Stat
-            label="誤差（點預測 vs 實際）"
+            label={t("誤差（點預測 vs 實際）", "Error (point estimate vs actual)")}
             value={`${errorPct >= 0 ? "+" : ""}${errorPct.toFixed(1)}`}
             unit="%"
             tone={
@@ -2421,8 +2886,14 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
             }
             hint={
               cell.actual >= cell.pi_lower && cell.actual <= cell.pi_upper
-                ? `實際值 ${cell.actual.toLocaleString()} 落在 conformal 90 % PI 之內 — 此電芯的校準涵蓋率成立。`
-                : `實際值 ${cell.actual.toLocaleString()} 落在 conformal 90 % PI 之外 — 罕見（≤10 %）的未命中；若為反覆出現的尾端電芯模式,可放寬 α 或擴充校準集。`
+                ? t(
+                    `實際值 ${cell.actual.toLocaleString()} 落在 conformal 90 % PI 之內 — 此電芯的校準涵蓋率成立。`,
+                    `The actual value ${cell.actual.toLocaleString(locale)} falls inside the conformal 90 % PI — calibrated coverage holds for this cell.`,
+                  )
+                : t(
+                    `實際值 ${cell.actual.toLocaleString()} 落在 conformal 90 % PI 之外 — 罕見（≤10 %）的未命中；若為反覆出現的尾端電芯模式,可放寬 α 或擴充校準集。`,
+                    `The actual value ${cell.actual.toLocaleString(locale)} falls outside the conformal 90 % PI — a rare (≤10 %) miss; if this is a recurring tail-cell pattern, α can be relaxed or the calibration set expanded.`,
+                  )
             }
           />
         </div>
@@ -2430,10 +2901,18 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
         {/* INPUT — all 7 per-cycle features overlaid in one chart */}
         <div className="rounded-lg border border-border bg-background/30 p-5 space-y-3">
           <div>
-            <h4 className="text-sm font-medium">每循環量測（循環 2 → 100）</h4>
+            <h4 className="text-sm font-medium">{t("每循環量測（循環 2 → 100）", "Per-cycle measurements (cycles 2 → 100)")}</h4>
             <p className="text-xs text-muted leading-relaxed mt-1">
+              {t(
+                <>
               <span className="text-foreground font-medium">全部七項 TCN 輸入特徵</span>,逐條正規化至{" "}
               <span className="text-foreground font-medium">[0, 1]</span>。游標懸停以查看原始數值。
+                </>,
+                <>
+              <span className="text-foreground font-medium">All seven TCN input features</span>, each normalized to{" "}
+              <span className="text-foreground font-medium">[0, 1]</span>. Hover to see the raw values.
+                </>,
+              )}
             </p>
           </div>
           <CombinedFeatureChart inputRaw={cell.input_raw} />
@@ -2449,6 +2928,7 @@ function InferenceWalkthrough({ walkthroughs }: { walkthroughs: Walkthrough[] })
  *  on / off so the chart stays readable on phone widths where 7 overlaid
  *  traces would otherwise crowd into a coloured fog. */
 function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
+  const { t } = useT();
   // Per-feature min/max across the 99 cycles, used to map raw → [0, 1].
   const ranges = useMemo(() => {
     return PER_CYCLE_FEATURES.map((_, fi) => {
@@ -2511,7 +2991,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
               if (visibleFeatures.length === 0) return null;
               return (
                 <div className="rounded border border-border bg-background/95 backdrop-blur px-3 py-2 text-xs shadow-xl space-y-1">
-                  <div className="text-muted">循環 {p.cycle}</div>
+                  <div className="text-muted">{t("循環", "Cycle")} {p.cycle}</div>
                   <div className="grid grid-cols-[14px_1fr_auto_auto] gap-x-2 gap-y-0.5 items-center">
                     {visibleFeatures.map((f) => (
                       <Fragment key={f.key}>
@@ -2519,7 +2999,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
                           className="inline-block h-2 w-2 rounded-full"
                           style={{ background: f.color }}
                         />
-                        <span className="text-muted">{f.label}</span>
+                        <span className="text-muted">{t(f.label, f.labelEn)}</span>
                         <span className="tabular-nums text-foreground">{fmt(p[`${f.key}_raw`])}</span>
                         <span className="text-muted text-[10px]">{f.unit}</span>
                       </Fragment>
@@ -2538,7 +3018,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
-              name={f.label}
+              name={t(f.label, f.labelEn)}
               hide={hidden.has(f.key)}
             />
           ))}
@@ -2550,7 +3030,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
           desktop keeps them side-by-side for density. */}
       <div className="mt-3">
         <div className="flex items-center justify-between text-[10px] text-muted mb-1.5">
-          <span>{noneVisible ? "全部已隱藏 — 點按任一列即可重新加回" : "點按任一列即可切換該線條"}</span>
+          <span>{noneVisible ? t("全部已隱藏 — 點按任一列即可重新加回", "All hidden — tap any row to add it back") : t("點按任一列即可切換該線條", "Tap any row to toggle its line")}</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -2558,7 +3038,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
               disabled={hidden.size === 0}
               className="text-primary hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-default"
             >
-              全部顯示
+              {t("全部顯示", "Show all")}
             </button>
             <span className="text-muted/60">·</span>
             <button
@@ -2567,7 +3047,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
               disabled={noneVisible}
               className="text-muted hover:text-foreground disabled:opacity-40 disabled:cursor-default"
             >
-              全部隱藏
+              {t("全部隱藏", "Hide all")}
             </button>
           </div>
         </div>
@@ -2590,7 +3070,7 @@ function CombinedFeatureChart({ inputRaw }: { inputRaw: number[][] }) {
                     className="inline-block h-2 w-2 rounded-full shrink-0"
                     style={{ background: isHidden ? "transparent" : f.color, borderColor: f.color, borderWidth: 1, borderStyle: "solid" }}
                   />
-                  <span className={`truncate ${isHidden ? "line-through text-muted" : "text-foreground"}`}>{f.label}</span>
+                  <span className={`truncate ${isHidden ? "line-through text-muted" : "text-foreground"}`}>{t(f.label, f.labelEn)}</span>
                 </span>
                 <span className="text-muted text-[10px] tabular-nums whitespace-nowrap sm:ml-auto sm:pl-2 pl-4">
                   {fmt(r.min)}–{fmt(r.max)} {f.unit}
