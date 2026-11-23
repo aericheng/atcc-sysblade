@@ -644,7 +644,7 @@ export function TwinClient({
 }) {
   const { t, lang, locale } = useT();
   // English cell text in the pack-balance table is longer; tighten its cells on phones.
-  const balPad = lang === "en" ? "px-1 sm:px-2" : "px-2";
+  const balPad = lang === "en" ? "px-1 max-[359px]:px-0.5 sm:px-2" : "px-2";
   const [mode, setMode] = useState<"lfp" | "hybrid">("hybrid");
   // V3 (normal 8 BBU) vs V4 (N-1 fault) toggle for rack-scale section
   const [rackMode, setRackMode] = useState<"normal" | "n-1">("normal");
@@ -1858,7 +1858,7 @@ export function TwinClient({
               )}
             </p>
             <div className="overflow-x-auto">
-              <table className="text-xs border-collapse w-full max-w-2xl">
+              <table className={`text-xs border-collapse w-full max-w-2xl ${lang === "en" ? "max-[359px]:text-[11px]" : ""}`}>
                 <thead>
                   <tr className="text-muted">
                     <th className={`${balPad} py-1 text-left font-medium`}>{t("拓樸", "Topology")}</th>
@@ -1870,23 +1870,23 @@ export function TwinClient({
                 <tbody className="tabular-nums text-foreground">
                   <tr className="border-t border-border/40">
                     <td className={`${balPad} py-1 text-left`}>{t("先並後串（每電芯獨立電容）", "Parallel-then-series (capacitor per cell)")}</td>
-                    <td className={`${balPad} py-1 text-right text-success`}>
+                    <td className={`${balPad} py-1 text-right whitespace-nowrap text-success`}>
                       {pi.topology_ab.parallel_then_series.weak_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className={`${balPad} py-1 text-right`}>
+                    <td className={`${balPad} py-1 text-right whitespace-nowrap`}>
                       {pi.topology_ab.parallel_then_series.strong_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className={`${balPad} py-1 text-right text-success`}>{t("是", "Yes")}</td>
+                    <td className={`${balPad} py-1 text-right whitespace-nowrap text-success`}>{t("是", "Yes")}</td>
                   </tr>
                   <tr className="border-t border-border/40">
                     <td className={`${balPad} py-1 text-left`}>{t("先串後並（共用電容）", "Series-then-parallel (shared capacitors)")}</td>
-                    <td className={`${balPad} py-1 text-right`}>
+                    <td className={`${balPad} py-1 text-right whitespace-nowrap`}>
                       {pi.topology_ab.series_then_parallel.weak_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className={`${balPad} py-1 text-right`}>
+                    <td className={`${balPad} py-1 text-right whitespace-nowrap`}>
                       {pi.topology_ab.series_then_parallel.strong_cell_transient_a.toFixed(2)} A
                     </td>
-                    <td className={`${balPad} py-1 text-right text-muted`}>{t("否", "No")}</td>
+                    <td className={`${balPad} py-1 text-right whitespace-nowrap text-muted`}>{t("否", "No")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -2653,7 +2653,7 @@ function ErrorByLifetimeBucket({
         目前 TCN 整體測試 MAPE 為 {overallMapePct.toFixed(1)} %（whitepaper §3.3.7 / §3.3.8）。供參考：前一版基線（LSTM）僅用 Severson 訓練時為 16.2 %（lstm_severson_only_eval.json），模型與測試集不同，非同條件比較。
         短壽命分組是最明顯的資料缺口（Severson 早期失效電芯稀少）。
         跨化學體系遷移（NASA NMC、CALCE LCO）已測試並排除
-        （§3.3.5 / 附錄 B）；答案是增加 LFP 早期失效資料,而非增加化學體系。上方逐顆檢視為每顆電芯回報 90 % 預測區間 —
+        （§3.3.5 / 附錄 B）；答案是增加 LFP 早期失效資料,而非增加化學體系。下方逐顆檢視為每顆電芯回報 90 % 預測區間 —
         MC Dropout 經 split conformal 後處理（q_factor{" "}
         {conformalQFactor != null ? conformalQFactor.toFixed(2) : "0.56"}{" "}
         於 {conformalNCalibration ?? 37} 顆電芯的校準集,§3.3.7）,
@@ -2666,7 +2666,7 @@ function ErrorByLifetimeBucket({
         The current overall TCN test MAPE is {overallMapePct.toFixed(1)} % (whitepaper §3.3.7 / §3.3.8). For reference only: the previous baseline (LSTM) trained on Severson alone scored 16.2 % (lstm_severson_only_eval.json); the model and test set differ, so this is not a like-for-like comparison.
         The short-life bucket is the most obvious data gap (Severson early-failure cells are sparse).
         Cross-chemistry transfer (NASA NMC, CALCE LCO) was tested and ruled out
-        (§3.3.5 / Appendix B); the answer is more LFP early-failure data, not more chemistries. The per-cell walkthrough above reports a 90 % prediction interval for every cell —
+        (§3.3.5 / Appendix B); the answer is more LFP early-failure data, not more chemistries. The per-cell walkthrough below reports a 90 % prediction interval for every cell —
         MC Dropout post-processed with split conformal (q_factor{" "}
         {conformalQFactor != null ? conformalQFactor.toFixed(2) : "0.56"}{" "}
         on a calibration set of {conformalNCalibration ?? 37} cells, §3.3.7),

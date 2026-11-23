@@ -133,7 +133,9 @@ function inputsMatchPreset(inputs: TcoInputs, p: TcoInputs): boolean {
 export function TcoClient() {
   const { t, lang, locale } = useT();
   // English headers are wider; give the number columns a gutter so they do not run together on phones.
-  const numPad = lang === "en" ? "pl-1 sm:pl-3" : "";
+  const numPad = lang === "en" ? "pl-1 max-[359px]:pl-0.5 sm:pl-3" : "";
+  // Below 360 px the English cost table is set one size smaller so it fits without scrolling.
+  const tightEn = lang === "en" ? "max-[359px]:text-xs" : "";
   const [inputs, setInputs] = useState<TcoInputs>(() => ({ ...PRESETS[DEFAULT_PRESET] }));
   const result = useMemo(() => computeTco(inputs), [inputs]);
 
@@ -357,9 +359,9 @@ export function TcoClient() {
         </CardHeader>
         <CardBody>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className={`w-full text-sm ${tightEn}`}>
               <thead>
-                <tr className="text-muted text-xs uppercase tracking-wider">
+                <tr className={`text-muted text-xs uppercase tracking-wider ${lang === "en" ? "max-[359px]:tracking-normal" : ""}`}>
                   <th className="text-left py-2">{t("成本項目", "Cost item")}</th>
                   <th className={`text-right py-2 whitespace-nowrap ${numPad}`}>{t<React.ReactNode>("傳統", <><span className="sm:hidden">Legacy</span><span className="hidden sm:inline">Traditional</span></>)}</th>
                   <th className={`text-right py-2 whitespace-nowrap ${numPad}`}>Sysblade</th>
